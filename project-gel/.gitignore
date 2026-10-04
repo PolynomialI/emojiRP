@@ -1,0 +1,6 @@
+# screenshots and generated test files
+test/shots/
+test/visual.html
+test/_main.js
+test/_worker.js
+test/*.log

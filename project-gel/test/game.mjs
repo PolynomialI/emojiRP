@@ -1,0 +1,152 @@
+// Headless tests of the built game: boot, menus, a bot playthrough with screenshots.
+// usage: node test/game.mjs boot|play [chapter] [--phone] [--shots] [--seed]
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import path from 'node:path';
+import fs from 'node:fs';
+const dir = path.dirname(new URL(import.meta.url).pathname);
+const url = 'file://' + path.join(dir, '..', 'dist', 'project-gel.html');
+const shots = path.join(dir, 'shots');
+fs.mkdirSync(shots, { recursive: true });
+const args = process.argv.slice(2);
+const mode = args[0] || 'boot';
+const phone = args.includes('--phone');
+const wantShots = args.includes('--shots');
+const chapter = Number(args.find(a => /^\d+$/.test(a)) || 1);
+const errors = [];
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
+const ctx = await browser.newContext(phone
+  ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true }
+  : { viewport: { width: 1280, height: 720 } });
+const page = await ctx.newPage();
+page.setDefaultTimeout(300000);
+page.on('pageerror', e => errors.push('pageerror: ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
+page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.type() + ': ' + m.text()); else if (process.env.LOG) console.log('console:', m.text()); });
+await page.addInitScript({ path: path.join(dir, 'harness.js') });
+if (process.env.SAVE) await page.addInitScript(s => { localStorage.setItem('projectGel.save.v1', s); }, process.env.SAVE);
+const t0 = Date.now();
+process.on('unhandledRejection', async e => { console.log('FAILED:', e.message.split('\n')[0]); console.log('ERRORS:\n' + errors.join('\n')); try { console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan))); console.log('state', await page.evaluate(() => G.state)); } catch (_) {} await browser.close(); process.exit(1); });
+await page.goto(url);
+const shot = async name => { await page.waitForTimeout(450); await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + name + '.png') }); };
+const render = async (n = 1) => page.evaluate(n => __frames(n, 1 / 60, true), n);
+await page.waitForFunction(() => G.state === 'home' || !document.getElementById('loadError').hidden, null, { timeout: 120000 });
+console.log('home after', Date.now() - t0, 'ms');
+const loadErr = await page.evaluate(() => document.getElementById('loadError').hidden ? '' : document.getElementById('loadError').textContent);
+if (loadErr) { console.log('LOAD ERROR:', loadErr); console.log(errors.join('\n')); await browser.close(); process.exit(1); }
+await page.waitForFunction(() => MESHJOB.done.size === MESH_ORDER.length, null, { timeout: 180000 });
+console.log('all meshes after', Date.now() - t0, 'ms', await page.evaluate(() => MESHJOB.fallback ? '(main-thread fallback)' : '(workers)'));
+await page.evaluate(() => { __manual(); __installNanCheck(); __installDmgLog(); });
+await render(3);
+if (mode === 'boot') {
+  await render(30); await shot('home');
+  for (const tab of ['upgrades', 'skins', 'chapters']) { await page.click(`.tab[data-tab="${tab}"]`); await render(2); await shot('menu-' + tab); await page.click(`#${tab} .back`); }
+  await page.click('#btnSettings'); await render(1); await shot('menu-settings');
+  await page.click('#btnSettingsDone');
+}
+if (mode === 'play') {
+  const runs = Number((args.find(a => a.startsWith('--runs=')) || '--runs=1').split('=')[1]);
+  const verbose = runs === 1;
+  const summary = [];
+  for (let run = 0; run < runs; run++) {
+    await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); for (const k in __dmg) delete __dmg[k]; __bot.picks.length = 0; }, chapter);
+    if (process.env.META) await page.evaluate(m => { const v = Number(m); for (const k in G.save.upgrades) if (k !== 'offline') G.save.upgrades[k] = v; }, process.env.META);
+    await page.click('#btnPlay');
+    await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+    await page.evaluate(() => { window.readInput = () => __botInput(); __bot.on = true; });
+    const stats = [];
+    const shotAt = new Set(wantShots ? [20, 95, 200, 302, 330] : []);
+    let levelShot = !wantShots, chestShot = !wantShots, deaths = [];
+    const wall = Date.now();
+    for (let guard = 0; guard < 4000; guard++) {
+      const st = await page.evaluate(() => {
+        // simulate up to 1 second of game time, stopping at any state that needs a decision
+        for (let i = 0; i < 60; i++) {
+          __frames(1);
+          if (G.state !== 'run' && G.state !== 'victory' && G.state !== 'dying') break;
+        }
+        const r = G.run;
+        return { state: G.state, t: r ? Math.round(r.t) : 0, hp: r ? Math.round(r.hp) : 0, max: r ? Math.round(r.maxHp) : 0, lvl: r ? r.level : 0, en: r ? r.enemies.length : 0, kills: r ? r.kills : 0, gems: r ? r.gems.length : 0, boss: r && r.bosses.length ? r.bosses.map(b => Math.round(b.hp)).join('/') : '' };
+      });
+      if (stats.length === 0 || st.t - stats[stats.length - 1].t >= 15 || st.state !== 'run') stats.push(st);
+      for (const s of [...shotAt]) if (st.t >= s) { shotAt.delete(s); await render(2); await shot(`play-c${chapter}-t${s}`); }
+      if (st.state === 'levelup') {
+        if (!levelShot) { levelShot = true; await render(1); await shot('levelup'); }
+        await page.evaluate(() => __botPick());
+      } else if (st.state === 'chest') {
+        await page.waitForFunction(() => !document.getElementById('btnChest').disabled, null, { timeout: 10000, polling: 100 });
+        if (!chestShot) { chestShot = true; await render(1); await shot('chest'); }
+        await page.click('#btnChest');
+      } else if (st.state === 'revive') {
+        deaths.push(st.t);
+        if (wantShots) { await render(1); await shot('revive'); }
+        await page.click(process.env.NOREVIVE ? '#btnGiveUp' : '#btnRevive');
+      } else if (st.state === 'pause') {
+        await page.evaluate(() => resumeGame());
+      } else if (st.state === 'results') {
+        await render(2); if (wantShots) await shot('results');
+        break;
+      } else if (!['run', 'victory', 'dying'].includes(st.state)) { console.log('unexpected state', st.state); break; }
+    }
+    if (verbose) for (const s of stats) console.log(JSON.stringify(s));
+    const fin = await page.evaluate(() => ({ won: G.run.won, t: Math.round(G.run.t), lvl: G.run.level, kills: G.run.kills, coins: G.run.earned, slots: G.run.slots.map(s => s.id + s.lvl).join(' ') }));
+    const peak = Math.max(...stats.map(s => s.en));
+    const dmg = await page.evaluate(() => { const o = {}; for (const k in __dmg) { const src = k.split(' ')[1]; o[src] = (o[src] || 0) + __dmg[k]; } return o; });
+    console.log(`#${run + 1} ${fin.won ? 'WON ' : 'LOST'} t=${fin.t} lvl=${fin.lvl} kills=${fin.kills} coins=${fin.coins} deaths=[${deaths}] peakEnemies=${peak} wall=${((Date.now() - wall) / 1000).toFixed(0)}s`);
+    console.log('   slots:', fin.slots, ' dmg:', JSON.stringify(dmg));
+    if (verbose) { console.log('   picks:', await page.evaluate(() => __bot.picks.join(' '))); console.log('   en over time:', stats.map(s => s.t + ':' + s.en).join(' ')); }
+    summary.push(fin.won);
+    await page.click('#btnContinue');
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+  }
+  console.log(`WIN RATE ${summary.filter(Boolean).length}/${runs}`);
+}
+if (mode === 'skills') {
+  // every skill at max level, in two groups, with a crowd to hit
+  const groups = { a: ['ball', 'fists', 'grenade', 'missile', 'mine', 'blade', 'reach', 'power'], b: ['lightning', 'aura', 'worms', 'buddies', 'axe', 'laser', 'shield', 'thick'] };
+  for (const g of (args.find(a => a.startsWith('--group=')) || '--group=a,b').split('=')[1].split(',')) {
+    await page.click('#btnPlay');
+    await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+    await page.evaluate(ids => {
+      window.readInput = () => __botInput(); __bot.on = true;
+      const run = G.run;
+      run.slots.length = 0;
+      for (const id of ids) { const max = SKILLS[id] ? 5 : PASSIVES[id].max; for (let i = 0; i < max; i++) addOrLevel(id); }
+      run.t = 150; run.events = run.events.filter(e => e.t > 150);
+      const h = G.hero.pos;
+      for (let i = 0; i < 50; i++) { const a = i / 50 * TAU, r = 3.5 + (i % 3) * 1.2; spawnEnemy(i % 7 ? 'stickman' : 'brute', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }
+    }, groups[g]);
+    for (let k = 0; k < 3; k++) {
+      await page.evaluate(() => { for (let i = 0; i < 50; i++) { __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') { UI.closeChest(); } } });
+      await render(2); await shot(`skills-${g}-${k}`);
+    }
+    await page.evaluate(() => { if (G.state === 'run') pauseGame(); });
+    await render(1); await shot(`pause-${g}`);
+    await page.click('#btnQuit'); await page.click('#btnQuitYes');
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.click('#btnContinue');
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+  }
+}
+if (mode === 'bosses') {
+  // jump straight to each boss fight and photograph its signature attack
+  for (const n of [1, 2, 3, 4, 5]) {
+    await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); }, n);
+    await page.click('#btnPlay');
+    await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+    await page.evaluate(() => {
+      window.readInput = () => __botInput(); __bot.on = true;
+      for (const id of ['ball', 'missile', 'blade', 'aura']) for (let i = 0; i < 4; i++) addOrLevel(id);
+      G.run.t = 299; G.run.events = G.run.events.filter(e => e.kind === 'boss');
+    });
+    for (let k = 0; k < 3; k++) {
+      await page.evaluate(k => { for (let i = 0; i < [100, 140, 110][k]; i++) { __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); } }, k);
+      await render(2); await shot(`boss-c${n}-${k}`);
+    }
+    await page.evaluate(() => { if (G.state === 'run' || G.state === 'victory') finishRun(false); });
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.click('#btnContinue');
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+  }
+}
+console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
+console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
+await browser.close();

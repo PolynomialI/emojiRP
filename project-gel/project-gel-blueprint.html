@@ -1,0 +1,1561 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Project Gel Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=JetBrains+Mono:wght@400;600&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
+<style>
+/* Layout: a long-form design document. Sticky contents rail on the left, one reading column on the right; tables, mockups and the live render widen within it. */
+:root {
+  --bg: #f3f6f9;
+  --surface: #ffffff;
+  --surface-2: #e9eff5;
+  --line: #d2dce6;
+  --fg: #0f2233;
+  --fg-dim: #4a6074;
+  --accent: #0a7fa6;
+  --accent-soft: #dcf2fa;
+  --violet: #5a3fd1;
+  --orange: #b9580f;
+  --ok: #12704f;
+  --ok-soft: #daf2e8;
+  --warn: #8a5800;
+  --warn-soft: #fbefd4;
+  --muted-soft: #e4eaf0;
+  --you: #6a3fc4;
+  --you-soft: #ece5fb;
+  --font-display: 'Fredoka', 'Nunito Sans', system-ui, sans-serif;
+  --font-body: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* The game's own palette: identical in both themes, used by swatches, mockups and the render */
+  --g-night: #0a1f33;
+  --g-slate-deep: #17344d;
+  --g-slate: #2b4c68;
+  --g-slate-hi: #3e6788;
+  --g-panel: #12304a;
+  --g-cyan: #18d2ff;
+  --g-cyan-hi: #8ef3ff;
+  --g-violet: #7b55f5;
+  --g-pink: #ff5fb8;
+  --g-orange: #f5891f;
+  --g-orange-shade: #b9580f;
+  --g-mint: #5cf2ae;
+  --g-gold: #ffc63a;
+  --g-red: #ff4d3d;
+  --g-white: #ffffff;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1724; --surface: #102233; --surface-2: #142a3e; --line: #23405a; --fg: #e3edf5; --fg-dim: #9cb2c5;
+    --accent: #4fd8ff; --accent-soft: #0f3447; --violet: #a891ff; --orange: #ff9d45;
+    --ok: #62d8aa; --ok-soft: #0f3328; --warn: #f0b54a; --warn-soft: #3a2c0d; --muted-soft: #1a3046; --you: #c3a9ff; --you-soft: #2a2149;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1724; --surface: #102233; --surface-2: #142a3e; --line: #23405a; --fg: #e3edf5; --fg-dim: #9cb2c5;
+  --accent: #4fd8ff; --accent-soft: #0f3447; --violet: #a891ff; --orange: #ff9d45;
+  --ok: #62d8aa; --ok-soft: #0f3328; --warn: #f0b54a; --warn-soft: #3a2c0d; --muted-soft: #1a3046; --you: #c3a9ff; --you-soft: #2a2149;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16.5px/1.62 var(--font-body); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.15; text-wrap: balance; margin: 0; }
+p { margin: 0; text-wrap: pretty; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+
+.page { max-width: 1200px; margin: 0 auto; padding-inline: 20px; padding-block: 0 96px; }
+.masthead { padding-block: 56px 40px; display: grid; gap: 18px; max-width: 900px; }
+.eyebrow { font: 600 0.74rem/1.3 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.masthead h1 { font-size: clamp(2.8rem, 7vw, 4.6rem); font-weight: 700; letter-spacing: -0.01em; }
+.lede { font-size: 1.18rem; color: var(--fg-dim); max-width: 64ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 600 0.78rem/1.35 var(--font-mono); padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg-dim); }
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 22px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.legend div { display: grid; gap: 4px; align-content: start; font-size: 0.92rem; color: var(--fg-dim); }
+.note { font-size: 0.95rem; color: var(--fg-dim); border-left: 3px solid var(--line); padding-left: 14px; max-width: 70ch; }
+
+.badge { display: inline-flex; align-items: center; font: 600 0.68rem/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; white-space: nowrap; justify-self: start; }
+.b-src { background: var(--ok-soft); color: var(--ok); }
+.b-prop { background: var(--muted-soft); color: var(--fg-dim); }
+.b-ver { background: var(--warn-soft); color: var(--warn); }
+.b-you { background: var(--you-soft); color: var(--you); }
+
+.layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+.toc { position: sticky; top: calc(20px + env(safe-area-inset-top, 0px)); align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; padding-block: 8px; }
+.toc p { font: 600 0.72rem/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); margin-bottom: 12px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: toc; }
+.toc li { counter-increment: toc; }
+.toc a { display: grid; grid-template-columns: 2.1em 1fr; padding: 5px 8px; border-radius: 8px; color: var(--fg-dim); text-decoration: none; font-size: 0.92rem; line-height: 1.35; }
+.toc a::before { content: counter(toc, decimal-leading-zero); font: 0.74rem/1.6 var(--font-mono); color: var(--fg-dim); opacity: 0.7; }
+.toc a:hover { background: var(--surface-2); color: var(--fg); }
+@media (max-width: 980px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .toc { position: static; max-height: none; }
+  .toc ol { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+
+main { display: grid; gap: 72px; min-width: 0; }
+section { display: grid; gap: 20px; scroll-margin-top: 20px; min-width: 0; }
+.sec-head { display: grid; gap: 6px; }
+.sec-num { font: 600 0.78rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.08em; }
+section h2 { font-size: clamp(1.7rem, 3.4vw, 2.2rem); }
+section h3 { font-size: 1.28rem; margin-top: 10px; }
+.prose { display: grid; gap: 12px; max-width: 70ch; }
+.prose p, .prose li { color: var(--fg); }
+ul.list, ol.list { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 72ch; }
+ul.list li::marker { color: var(--accent); }
+
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 0.93rem; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 0.7rem/1.3 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-dim); background: var(--surface-2); white-space: nowrap; }
+td.num, th.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 0.86rem; }
+td:first-child { font-weight: 700; }
+td .badge { margin-top: 2px; }
+.stats td:first-child { font-weight: 600; color: var(--fg-dim); white-space: nowrap; }
+.stats td.up { color: var(--accent); font-weight: 600; }
+
+.pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.pillar { padding: 18px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 8px; align-content: start; }
+.pillar h3 { font-size: 1.12rem; margin: 0; }
+.pillar p { font-size: 0.95rem; color: var(--fg-dim); }
+
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.flow span { padding: 8px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 0.9rem; font-weight: 600; }
+.flow i { font-style: normal; color: var(--fg-dim); font-family: var(--font-mono); }
+
+.skills { display: grid; gap: 18px; }
+.skill { display: grid; gap: 14px; padding: 20px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+.skill-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.skill-head h3 { font-size: 1.32rem; margin: 0 6px 0 0; }
+.skill .what { color: var(--fg); max-width: 72ch; }
+.skill .tbl { border-radius: 10px; }
+.art { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 20px; margin: 0; }
+.art div { display: grid; gap: 2px; align-content: start; }
+.art dt { font: 600 0.68rem/1.4 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--violet); }
+.art dd { margin: 0; font-size: 0.94rem; color: var(--fg-dim); }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 12px; }
+.sw { display: grid; gap: 6px; font-size: 0.84rem; }
+.sw b { display: block; height: 58px; border-radius: 10px; border: 1px solid var(--line); }
+.sw span { font-weight: 700; }
+.sw code { color: var(--fg-dim); }
+
+.cards2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.card { padding: 18px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 8px; align-content: start; }
+.card h3, .card h4 { margin: 0; font-size: 1.1rem; }
+.card p, .card li { font-size: 0.94rem; color: var(--fg-dim); }
+
+.render { display: grid; gap: 12px; margin: 0; }
+.render-stage { position: relative; border-radius: 14px; overflow: hidden; background: var(--g-night); aspect-ratio: 16 / 9; max-width: 100%; }
+.render-stage canvas { display: block; width: 100%; height: 100%; }
+.render-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { font: 600 0.88rem/1 var(--font-body); padding: 10px 14px; background: var(--surface); color: var(--fg-dim); border: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); }
+.render figcaption { font-size: 0.92rem; color: var(--fg-dim); max-width: 75ch; }
+#renderNote { position: absolute; inset: auto 12px 12px 12px; color: #e3edf5; font-size: 0.85rem; }
+
+/* Phone mockups: the game's own UI, so they use the game palette in both themes */
+.phones { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 28px 22px; }
+.mock { display: grid; gap: 12px; align-content: start; margin: 0; }
+.mock figcaption { display: grid; gap: 4px; font-size: 0.9rem; color: var(--fg-dim); }
+.mock figcaption strong { color: var(--fg); font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.phone { width: 100%; max-width: 270px; aspect-ratio: 9 / 19.5; margin-inline: auto; padding: 8px; border-radius: 36px; background: #050f19; box-shadow: 0 18px 40px rgba(5, 15, 25, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.screen { position: relative; height: 100%; border-radius: 28px; overflow: hidden; color: var(--g-white); font-family: var(--font-display); font-weight: 600;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 52%, rgba(62, 103, 136, 0.55), rgba(10, 31, 51, 0) 70%),
+    repeating-linear-gradient(0deg, rgba(5, 15, 25, 0.35) 0 2px, transparent 2px 22px),
+    repeating-linear-gradient(90deg, rgba(5, 15, 25, 0.28) 0 2px, transparent 2px 30px),
+    var(--g-slate-deep);
+}
+.screen.dark { background: radial-gradient(ellipse 80% 50% at 50% 40%, var(--g-slate-deep), var(--g-night) 75%); }
+.dim { position: absolute; inset: 0; background: rgba(6, 18, 30, 0.72); }
+.g-top { position: absolute; inset: 12px 10px auto 10px; display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 999px; background: rgba(5, 15, 25, 0.6); box-shadow: inset 0 0 0 1.5px var(--g-slate); }
+.coin { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3c4, var(--g-gold) 55%, #c88b12); }
+.gem { width: 13px; height: 13px; border-radius: 3px; transform: rotate(45deg) scale(0.85); background: linear-gradient(135deg, #c9b8ff, var(--g-violet)); }
+.lvl { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--g-panel); box-shadow: inset 0 0 0 2.5px var(--g-cyan); font-size: 11px; }
+.gear { margin-left: auto; width: 24px; height: 24px; border-radius: 8px; background: var(--g-panel); box-shadow: inset 0 0 0 1.5px var(--g-slate-hi); display: grid; place-items: center; }
+.gear::after { content: ''; width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid var(--g-cyan-hi); }
+.jelly { display: grid; place-items: center; border-radius: 18px; color: var(--g-night); background: linear-gradient(180deg, var(--g-cyan-hi), var(--g-cyan) 45%); box-shadow: inset 0 -5px 0 #0a9cc4, 0 4px 0 #076c8a; text-shadow: none; }
+.jelly.gold { background: linear-gradient(180deg, #ffe39a, var(--g-gold) 50%); box-shadow: inset 0 -5px 0 #d89a14, 0 4px 0 #9c6c06; }
+.jelly.violet { color: var(--g-white); background: linear-gradient(180deg, #a98cff, var(--g-violet) 50%); box-shadow: inset 0 -5px 0 #5a38d0, 0 4px 0 #3d2596; }
+.jelly.grey { color: rgba(255,255,255,0.6); background: linear-gradient(180deg, #4f6b84, #3b566d 50%); box-shadow: inset 0 -5px 0 #2c4357, 0 4px 0 #1c2d3c; }
+.panel { border-radius: 16px; background: rgba(18, 48, 74, 0.92); box-shadow: inset 0 0 0 2px var(--g-slate); }
+.outline { -webkit-text-stroke: 3px var(--g-night); paint-order: stroke fill; }
+.nav { position: absolute; inset: auto 8px 10px 8px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; gap: 4px; font-size: 8.5px; text-align: center; color: rgba(255, 255, 255, 0.7); }
+.nav i { display: block; width: 28px; height: 24px; margin: 0 auto 3px; border-radius: 8px; background: var(--g-panel); box-shadow: inset 0 0 0 1.5px var(--g-slate-hi); }
+.nav .on i { width: 44px; height: 38px; border-radius: 14px; background: linear-gradient(180deg, var(--g-cyan-hi), var(--g-cyan)); box-shadow: inset 0 -4px 0 #0a9cc4; }
+.nav .on { color: var(--g-white); }
+.xpbar { position: absolute; inset: 12px 10px auto 10px; height: 14px; border-radius: 8px; background: rgba(5, 15, 25, 0.7); box-shadow: inset 0 0 0 1.5px var(--g-slate); overflow: hidden; }
+.xpbar b { position: absolute; inset: 2px auto 2px 2px; width: 62%; border-radius: 6px; background: linear-gradient(90deg, #2fd39a, var(--g-mint)); }
+.xpbar span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 9px; }
+.hudrow { position: absolute; inset: 32px 10px auto 10px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
+.timer { font-size: 18px; }
+.pausebtn { width: 26px; height: 26px; border-radius: 9px; background: var(--g-panel); box-shadow: inset 0 0 0 1.5px var(--g-slate-hi); display: grid; place-items: center; }
+.pausebtn::after { content: ''; width: 8px; height: 10px; border-left: 3px solid var(--g-white); border-right: 3px solid var(--g-white); box-sizing: border-box; }
+.slots { position: absolute; inset: 64px 10px auto 10px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.slot { aspect-ratio: 1; border-radius: 7px; background: rgba(5, 15, 25, 0.55); box-shadow: inset 0 0 0 1.5px var(--g-slate); position: relative; }
+.slot.f { background: linear-gradient(160deg, #1d4a6d, var(--g-panel)); box-shadow: inset 0 0 0 1.5px var(--g-cyan); }
+.slot.p { box-shadow: inset 0 0 0 1.5px var(--g-gold); }
+.slot u { position: absolute; inset: auto 3px 3px 3px; height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--g-cyan-hi) var(--l, 40%), rgba(255,255,255,0.15) var(--l, 40%)); }
+.ico { width: 46%; height: 46%; position: absolute; inset: 22% 27% auto; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--g-cyan-hi), var(--g-cyan) 50%, #0a86b0); }
+.ico.v { background: radial-gradient(circle at 35% 30%, #cdb9ff, var(--g-violet) 55%, #4527a8); }
+.ico.dome { border-radius: 50% 50% 22% 22%; height: 34%; top: 36%; }
+.ico.drop { border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+.ico.g { background: radial-gradient(circle at 35% 30%, #fff1c2, var(--g-gold) 55%, #b98008); }
+.joy { position: absolute; left: 50%; bottom: 60px; width: 92px; height: 92px; margin-left: -46px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.05); }
+.joy::after { content: ''; position: absolute; width: 38px; height: 38px; left: 44px; top: 16px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); }
+.dot { position: absolute; width: 11px; height: 15px; }
+.gemdot { position: absolute; width: 6px; height: 6px; transform: rotate(45deg); border-radius: 1.5px; background: var(--g-mint); box-shadow: 0 0 6px rgba(92, 242, 174, 0.8); }
+.cards { position: absolute; inset: 120px 12px auto 12px; display: grid; gap: 10px; }
+.lvcard { display: grid; grid-template-columns: 44px 1fr; gap: 10px; padding: 10px; border-radius: 14px; background: linear-gradient(180deg, #1a4363, var(--g-panel)); box-shadow: inset 0 0 0 2px var(--g-slate-hi), 0 4px 0 #071a2b; }
+.lvcard.sel { box-shadow: inset 0 0 0 2.5px var(--g-cyan), 0 4px 0 #071a2b; }
+.lvcard .tile { position: relative; width: 44px; height: 44px; border-radius: 11px; background: var(--g-night); box-shadow: inset 0 0 0 2px var(--g-cyan); }
+.lvcard.pas .tile { box-shadow: inset 0 0 0 2px var(--g-gold); }
+.lvcard .tile .ico { width: 56%; height: 56%; inset: 22%; }
+.lvcard .tile .ico.dome { height: 38%; top: 34%; }
+.lvcard small { display: block; font-size: 8px; letter-spacing: 0.1em; color: var(--g-mint); }
+.lvcard .nm { display: block; font-size: 13px; line-height: 1.15; }
+.lvcard .ds { display: block; font: 600 9.5px/1.3 var(--font-body); color: rgba(255, 255, 255, 0.78); margin-top: 2px; }
+.center-title { position: absolute; inset: 58px 0 auto 0; text-align: center; }
+.statgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center; }
+.statgrid div { padding: 8px 4px; border-radius: 12px; background: rgba(5, 15, 25, 0.5); }
+.statgrid em { display: block; font-style: normal; font-size: 15px; }
+.statgrid small { font-size: 8px; color: rgba(255, 255, 255, 0.65); letter-spacing: 0.08em; }
+.uprow { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: center; padding: 8px; border-radius: 13px; background: linear-gradient(180deg, #1a4363, var(--g-panel)); box-shadow: inset 0 0 0 1.5px var(--g-slate-hi); }
+.uprow .tile { position: relative; width: 34px; height: 34px; border-radius: 9px; background: var(--g-night); box-shadow: inset 0 0 0 1.5px var(--g-gold); }
+.uprow .nm { font-size: 11.5px; line-height: 1.1; }
+.uprow .ds { display: block; font: 600 8.5px/1.25 var(--font-body); color: rgba(255,255,255,0.7); }
+.uprow .jelly { font-size: 10px; padding: 7px 8px 9px; border-radius: 11px; display: flex; gap: 4px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="goo" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4.5" result="b"/>
+      <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"/>
+    </filter>
+    <filter id="gooS" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="b"/>
+      <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
+    </filter>
+    <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5fe6ff"/><stop offset="0.6" stop-color="#18d2ff"/><stop offset="1" stop-color="#13b5f0"/>
+    </linearGradient>
+    <radialGradient id="gFist" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#b9a2ff"/><stop offset="0.7" stop-color="#7b55f5"/><stop offset="1" stop-color="#5b3bd8"/>
+    </radialGradient>
+    <symbol id="hero" viewBox="0 0 140 150">
+      <g filter="url(#goo)">
+        <ellipse cx="70" cy="72" rx="31" ry="33" fill="url(#gBody)"/>
+        <circle cx="70" cy="36" r="20" fill="url(#gBody)"/>
+        <ellipse cx="45" cy="70" rx="15" ry="8" fill="url(#gBody)" transform="rotate(-20 45 70)"/>
+        <ellipse cx="96" cy="64" rx="15" ry="8" fill="url(#gBody)" transform="rotate(25 96 64)"/>
+        <circle cx="26" cy="78" r="14" fill="url(#gFist)"/>
+        <circle cx="114" cy="54" r="14" fill="url(#gFist)"/>
+        <ellipse cx="57" cy="113" rx="10" ry="19" fill="url(#gBody)"/>
+        <ellipse cx="83" cy="113" rx="10" ry="19" fill="url(#gBody)"/>
+        <ellipse cx="53" cy="132" rx="14" ry="8" fill="url(#gBody)"/>
+        <ellipse cx="87" cy="132" rx="14" ry="8" fill="url(#gBody)"/>
+      </g>
+      <ellipse cx="62" cy="28" rx="7" ry="4.5" fill="#fff" opacity="0.75" transform="rotate(-25 62 28)"/>
+      <ellipse cx="58" cy="58" rx="9" ry="5" fill="#fff" opacity="0.45" transform="rotate(-30 58 58)"/>
+      <circle cx="22" cy="73" r="3.4" fill="#fff" opacity="0.7"/>
+      <circle cx="110" cy="49" r="3.4" fill="#fff" opacity="0.7"/>
+      <path d="M8 96 C 4 60, 30 34, 64 30" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+      <path d="M132 34 C 140 70, 120 100, 92 108" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+    </symbol>
+    <symbol id="stick" viewBox="0 0 30 42">
+      <g filter="url(#gooS)" fill="#f5891f" stroke="#f5891f" stroke-linecap="round">
+        <circle cx="15" cy="7.5" r="6" stroke="none"/>
+        <path d="M15 14 L14 26" stroke-width="5.5" fill="none"/>
+        <path d="M15 17 L7 24 M15 17 L23 22" stroke-width="3.6" fill="none"/>
+        <path d="M14 26 L8 38 M14 26 L22 36" stroke-width="4" fill="none"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="page">
+  <header class="masthead">
+    <p class="eyebrow">Game blueprint · v0.1 · 2 October 2026</p>
+    <h1>Project Gel</h1>
+    <p class="lede">A ground-up remake of Blob Hero's survivor loop, rebuilt in real-time 3D around a hero that is actually made of goo. This is the plan: what we know about the original, every skill with stats and art notes, how it handles, how it looks, how the menus work, and the order to build it in.</p>
+    <div class="chips">
+      <span class="chip">Target: web (Three.js), portrait phones first</span>
+      <span class="chip">App-store route: Unity</span>
+      <span class="chip">Status: planning, no code yet</span>
+    </div>
+    <div class="legend" aria-label="Legend">
+      <div><span class="badge b-src">Sourced</span>Found in public information about the original. See Sources.</div>
+      <div><span class="badge b-prop">Proposed</span>Our design or number. Replace with measured values from the original where they differ.</div>
+      <div><span class="badge b-ver">Verify</span>Mentioned by one weak source. Confirm in the game before relying on it.</div>
+      <div><span class="badge b-you">Your list</span>Named by you. Not found in any public source I could reach.</div>
+    </div>
+    <p class="note">"Project Gel" is a codename. Mechanics can follow Blob Hero closely, but the name, characters, art and audio have to be our own before anything is published.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p>Contents</p>
+      <ol>
+        <li><a href="#original">The original</a></li>
+        <li><a href="#pillars">Design pillars</a></li>
+        <li><a href="#loop">Core loop and runs</a></li>
+        <li><a href="#handling">Gameplay handling</a></li>
+        <li><a href="#skills">Attack and defense skills</a></li>
+        <li><a href="#passives">Passive skills</a></li>
+        <li><a href="#meta">Pickups and meta progression</a></li>
+        <li><a href="#enemies">Enemies and bosses</a></li>
+        <li><a href="#art">3D art direction</a></li>
+        <li><a href="#tech">Blob technology</a></li>
+        <li><a href="#ui">Menus and UI</a></li>
+        <li><a href="#perf">Performance budget</a></li>
+        <li><a href="#roadmap">Build stages</a></li>
+        <li><a href="#verify">Verify in the original</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <!-- 01 -->
+      <section id="original">
+        <div class="sec-head"><span class="sec-num">01</span><h2>What we know about the original</h2></div>
+        <div class="prose">
+          <p>Blob Hero is a free mobile survivor game published by Rollic Games in March 2022. Public sources describe the loop and name a handful of skills, but none of them publish per-level numbers. The research for this document could search the web but not open most pages, so the facts below come from search summaries of the linked sources.</p>
+        </div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Topic</th><th>What the sources say</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Publisher and platforms</td><td>Rollic Games. iOS and Android, free to play. Google Play package <code>com.quok.blobHero</code>.</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Release</td><td>27 March 2022.</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Controls</td><td>Swipe to move. The blob attacks on its own.</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Leveling</td><td>Pick one of three skills per level-up. One write-up mentions eight skills to fill.</td><td><span class="badge b-src">Sourced</span> <span class="badge b-ver">8 slots</span></td></tr>
+              <tr><td>Named attacks</td><td>Blob Balls, Blob Grenades, and "Blob Magic" spells (store description).</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Skills in guides</td><td>Blade (an example shows it at level 4), auras, lightning blasts, worms that attack enemies, HP recharging, speed, magnetism.</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Pickups</td><td>Chests with perks, health, magnets, coins.</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Between runs</td><td>Upgrade stats after a run: damage, health, offline earnings.</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Optional videos</td><td>Watch a video to unlock perks or to revive.</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Chapters</td><td>Chapter-based with bosses. Gameplay footage reaches at least chapter 105.</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Other mentions</td><td>Spinning axes, magic missiles, lightning strikes, summoned extra blobs; three playable characters.</td><td><span class="badge b-ver">Verify</span></td></tr>
+              <tr><td>Per-skill numbers</td><td>Not published anywhere I could reach. Every number in this document is a proposal until measured (see 14).</td><td><span class="badge b-prop">Proposed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 02 -->
+      <section id="pillars">
+        <div class="sec-head"><span class="sec-num">02</span><h2>Design pillars</h2></div>
+        <div class="pillars">
+          <div class="pillar"><h3>The blob is alive</h3><p>The hero never holds still. It breathes, jiggles, squashes when it stops and stretches when it runs. Every attack is made of its own goo and visibly leaves its body.</p></div>
+          <div class="pillar"><h3>One thumb</h3><p>Drag anywhere to move. Everything else is automatic. A full run has to be playable one-handed on a phone held upright.</p></div>
+          <div class="pillar"><h3>Readable chaos</h3><p>Glossy cyan hero, matte orange horde, muted blue floor. With 400 enemies on screen the player still finds the hero instantly.</p></div>
+          <div class="pillar"><h3>Short runs, long growth</h3><p>Five-minute chapters that end in a boss. Permanent upgrades between them make the next attempt stronger.</p></div>
+        </div>
+      </section>
+
+      <!-- 03 -->
+      <section id="loop">
+        <div class="sec-head"><span class="sec-num">03</span><h2>Core loop and run structure</h2></div>
+        <div class="flow" aria-label="Core loop">
+          <span>Pick chapter</span><i>→</i><span>Survive waves</span><i>→</i><span>Collect XP gems</span><i>→</i><span>Level up: pick 1 of 3</span><i>→</i><span>Elites drop chests</span><i>→</i><span>Boss at 5:00</span><i>→</i><span>Coins</span><i>→</i><span>Permanent upgrades</span><i>↺</i>
+        </div>
+        <h3>One chapter <span class="badge b-prop">Proposed</span></h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th class="num">Time</th><th>What happens</th></tr></thead>
+            <tbody>
+              <tr><td class="num">0:00</td><td>Stickmen trickle in, 0.8 per second.</td></tr>
+              <tr><td class="num">0:45</td><td>Sprinters join.</td></tr>
+              <tr><td class="num">1:30</td><td>Swarm ring: 24 stickmen close in from every side at once.</td></tr>
+              <tr><td class="num">2:00</td><td>Elite #1 arrives. It drops a chest.</td></tr>
+              <tr><td class="num">3:00</td><td>Brutes join. Spawn rate rises to 2.5 per second.</td></tr>
+              <tr><td class="num">3:30</td><td>Swarm ring of 40.</td></tr>
+              <tr><td class="num">4:00</td><td>Elite #2.</td></tr>
+              <tr><td class="num">4:30</td><td>Final surge: 4 spawns per second.</td></tr>
+              <tr><td class="num">5:00</td><td>The boss arrives and normal spawns drop to 1 per second. The chapter ends when the boss dies.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Run rules</h3>
+        <ul class="list">
+          <li><strong>Skill slots:</strong> 8, any mix of attack and passive skills. <span class="badge b-ver">Verify</span></li>
+          <li><strong>Max skill level:</strong> 5. Guides show at least level 4. <span class="badge b-ver">Verify</span></li>
+          <li><strong>XP to the next level:</strong> 5 + 4L + 0.25L². About 20 level-ups in a full chapter, enough for roughly half of the 40 possible skill levels, so choices matter. <span class="badge b-prop">Proposed</span></li>
+          <li><strong>Level-up offers:</strong> 3 cards. Once 4 or more slots are filled, offers lean toward skills you already own (60% owned, 40% new), and never offer a new skill when all slots are full. <span class="badge b-prop">Proposed</span></li>
+          <li><strong>Death:</strong> one revive per run: full heal, 1 s of invulnerability, nearby enemies pushed back 4 m. The original gates revives behind an optional video. <span class="badge b-src">Sourced</span></li>
+          <li><strong>Difficulty across chapters:</strong> enemy HP ×1.15 and damage ×1.08 per chapter. Within a run, enemy HP rises 12% per minute. <span class="badge b-prop">Proposed</span></li>
+          <li><strong>Chapter count:</strong> 100+, built from 6 arenas and difficulty tiers. Every 5th chapter is a double boss. <span class="badge b-prop">Proposed</span></li>
+        </ul>
+      </section>
+
+      <!-- 04 -->
+      <section id="handling">
+        <div class="sec-head"><span class="sec-num">04</span><h2>Gameplay handling</h2></div>
+        <div class="prose"><p>All values are <span class="badge b-prop">Proposed</span> starting points for tuning. One world unit is one meter, and the hero is 1.6 m tall.</p></div>
+        <h3>Controls</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Device</th><th>Input</th></tr></thead>
+            <tbody>
+              <tr><td>Phone</td><td>Floating joystick. Touching anywhere below the top bar sets the stick's center. 8 dp dead zone; speed ramps from zero to full between 8 and 48 dp; the knob stops at 64 dp. Lifting the finger stops the hero. The ring shows at 40% opacity under the thumb.</td></tr>
+              <tr><td>Desktop</td><td>WASD or arrow keys, with diagonals normalized. Click and drag behaves like the phone stick.</td></tr>
+              <tr><td>Gamepad</td><td>Left stick with a 0.15 radial dead zone.</td></tr>
+              <tr><td>Attacking</td><td>No button. Every skill fires on its own.</td></tr>
+              <tr><td>Pausing</td><td>Top-right button, Esc, or the app losing focus.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Movement</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Property</th><th class="num">Value</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td>Top speed</td><td class="num">4.5 m/s</td><td>About 2.8 body lengths per second: faster than every enemy except Sprinters.</td></tr>
+              <tr><td>Reach top speed</td><td class="num">0.08 s</td><td>Snappy. Phone players feel any lag in a drag.</td></tr>
+              <tr><td>Stop from top speed</td><td class="num">0.06 s</td><td>Lifting the thumb has to stop the hero at once.</td></tr>
+              <tr><td>Turn rate</td><td class="num">900°/s</td><td>Faces the new direction within a tenth of a second.</td></tr>
+              <tr><td>Lean into movement</td><td class="num">10°</td><td>Sells speed. The jelly springs add lag on top.</td></tr>
+              <tr><td>Hurtbox radius</td><td class="num">0.42 m</td><td>The visible body is about 0.55 m, so near-misses feel fair.</td></tr>
+              <tr><td>Gem pickup radius</td><td class="num">1.6 m</td><td>Gems fly in at 4 m/s and accelerate at 40 m/s².</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Crowds and damage</h3>
+        <ul class="list">
+          <li>Enemies never fully block the hero. Each overlapping enemy slows the hero by 6%, up to 45%. Getting surrounded is dangerous because you slow down, not because you get stuck.</li>
+          <li>The hero pushes enemies aside (hero mass 10, enemy mass 1). Enemies push apart from each other using a spatial-hash grid.</li>
+          <li>Contact damage: each enemy can hurt you at most once every 0.5 s. There's no general invulnerability after a hit, only 0.4 s after closing the level-up screen and 1 s after a revive.</li>
+        </ul>
+        <h3>Targeting rules</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Rule</th><th>Picks</th></tr></thead>
+            <tbody>
+              <tr><td>Nearest</td><td>The closest enemy within the skill's range.</td></tr>
+              <tr><td>Random</td><td>A random enemy that is on screen.</td></tr>
+              <tr><td>Cluster</td><td>The center of the busiest 2 × 2 m grid cell within range.</td></tr>
+              <tr><td>Around</td><td>An area centered on the hero.</td></tr>
+              <tr><td>Facing</td><td>The direction the hero is moving or last moved.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Camera</h3>
+        <ul class="list">
+          <li>Perspective, tilted 52° down. It never rotates.</li>
+          <li>Shows 11 m of width at the hero's depth on a portrait phone, 19 m in landscape. The field of view is calculated from those widths.</li>
+          <li>Follows with a critically damped spring (0.12 s) and leads 0.8 m in the direction of movement.</li>
+          <li>Shake: 0.08 m for 0.15 s when the hero is hit; 0.25 m for 0.3 s on boss slams; never on kills. A setting turns it off.</li>
+        </ul>
+        <h3>Feedback</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Event</th><th>Response</th></tr></thead>
+            <tbody>
+              <tr><td>Enemy hit</td><td>White flash for 60 ms, squash to 90% for 80 ms, knockback set by the skill.</td></tr>
+              <tr><td>Enemy death</td><td>Deflates over 120 ms, leaves an orange splat that fades over 2 s, and pops out a gem with a 0.3 s hop.</td></tr>
+              <tr><td>Hero hit</td><td>Red rim flash for 100 ms, squash to 85%, light haptic tick.</td></tr>
+              <tr><td>Low health (under 25%)</td><td>Slow heartbeat pulse at the screen edges.</td></tr>
+              <tr><td>Level up</td><td>0.25 s freeze with a ring burst, then the card screen. The game stays paused while you choose.</td></tr>
+              <tr><td>Damage numbers</td><td>On by default, at most 40 on screen. Hits on one enemy within 0.2 s merge into one number.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 05 -->
+      <section id="skills">
+        <div class="sec-head"><span class="sec-num">05</span><h2>Attack and defense skills</h2></div>
+        <div class="prose">
+          <p>Thirteen skills, each with five levels. Damage is before the hero's damage multiplier, and changed values are highlighted. Every number is <span class="badge b-prop">Proposed</span>. The badge next to each name says whether the <em>skill itself</em> is confirmed in the original.</p>
+          <p>Every skill is made of the hero's own goo and uses the same material. Light, fast skills lean cyan; heavy ones lean violet; armed or charged states glow hot pink. Each card says what the skill looks like, how it moves, how it hits, and where it leaves the body.</p>
+        </div>
+        <div class="skills">
+
+          <article class="skill" id="sk-ball">
+            <div class="skill-head"><h3>Blob Ball</h3><span class="badge b-src">Sourced name</span><span class="chip">Starter skill</span><span class="chip">Nearest · 8 m</span></div>
+            <p class="what">Fires balls of goo at the closest enemy. Projectile speed 12 m/s.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage</td><td class="num">12</td><td class="num">12</td><td class="num up">16</td><td class="num">16</td><td class="num up">22</td></tr>
+                <tr><td>Cooldown</td><td class="num">0.9 s</td><td class="num">0.9 s</td><td class="num">0.9 s</td><td class="num up">0.8 s</td><td class="num up">0.7 s</td></tr>
+                <tr><td>Balls per volley</td><td class="num">1</td><td class="num up">2</td><td class="num">2</td><td class="num up">3</td><td class="num">3</td></tr>
+                <tr><td>Pierce</td><td class="num">0</td><td class="num">0</td><td class="num up">1</td><td class="num">1</td><td class="num up">2</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A glossy 0.22 m sphere in the hero's own material: cyan body, white highlight dot.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Buds out of the palm over 0.08 s on a stretchy strand that snaps.</dd></div>
+              <div><dt>Moves</dt><dd>Wobbles along its path, squashing between 85% and 115% twelve times a second. Short white-to-cyan ribbon trail.</dd></div>
+              <div><dt>Hits</dt><dd>Flattens into a 0.6 m splat on the floor and throws six droplets. The splat fades over 1.5 s.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-fists">
+            <div class="skill-head"><h3>Blob Fists</h3><span class="badge b-ver">Seen in your key art</span><span class="chip">Nearest · orbit 1.3 m</span></div>
+            <p class="what">Goo fists orbit the hero at 160°/s. Every few seconds each fist punches out at the nearest enemy and swings back. Heavy knockback (3 m).</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage per punch</td><td class="num">20</td><td class="num up">26</td><td class="num">26</td><td class="num up">34</td><td class="num up">44</td></tr>
+                <tr><td>Punch interval</td><td class="num">2.0 s</td><td class="num up">1.8 s</td><td class="num up">1.6 s</td><td class="num">1.6 s</td><td class="num up">1.2 s</td></tr>
+                <tr><td>Fists</td><td class="num">2</td><td class="num">2</td><td class="num up">3</td><td class="num">3</td><td class="num up">4</td></tr>
+                <tr><td>Reach</td><td class="num">2.4 m</td><td class="num">2.4 m</td><td class="num up">2.8 m</td><td class="num">2.8 m</td><td class="num up">3.2 m</td></tr>
+                <tr><td>Impact shockwave</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num up">1.0 m</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>Exactly like the reference image: chunky fists with a cyan-to-violet gradient and a soft white outline glow.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Extra fists (L3, L5) bud out of the shoulders and pinch off.</dd></div>
+              <div><dt>Moves</dt><dd>The orbit leaves a white swoosh arc that tapers out over 0.25 s. A punch stretches the fist toward its target on a thinning goo strand, keeping its volume.</dd></div>
+              <div><dt>Hits</dt><dd>The fist swells 30% on impact and throws off a white ring. L5 adds a flat floor shockwave.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-grenade">
+            <div class="skill-head"><h3>Blob Grenade</h3><span class="badge b-src">Sourced name</span><span class="chip">Cluster · 7 m</span></div>
+            <p class="what">Lobs a heavy goo ball onto the densest group of enemies. 0.7 s flight, arc peaking at 2.5 m, splash damage on landing.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage</td><td class="num">30</td><td class="num">30</td><td class="num up">42</td><td class="num">42</td><td class="num up">55</td></tr>
+                <tr><td>Cooldown</td><td class="num">3.0 s</td><td class="num">3.0 s</td><td class="num up">2.6 s</td><td class="num">2.6 s</td><td class="num up">2.2 s</td></tr>
+                <tr><td>Grenades</td><td class="num">1</td><td class="num up">2</td><td class="num">2</td><td class="num up">3</td><td class="num">3</td></tr>
+                <tr><td>Blast radius</td><td class="num">1.8 m</td><td class="num">1.8 m</td><td class="num up">2.2 m</td><td class="num">2.2 m</td><td class="num up">2.6 m</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A denser violet orb with a glowing core and three short wobbly spikes.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Pulled out of the chest by the throwing arm and released at the top of the swing.</dd></div>
+              <div><dt>Moves</dt><dd>The core blinks like a fuse, 2 times a second at launch and 8 just before landing.</dd></div>
+              <div><dt>Hits</dt><dd>Inflates for 0.1 s, then bursts into 14 droplets with a flat shockwave ring and a bloom flash. Leaves a violet splat.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-missile">
+            <div class="skill-head"><h3>Blob Missile</h3><span class="badge b-you">Your list</span><span class="chip">Random · 10 m</span></div>
+            <p class="what">Homing goo missiles. They launch 1.5 m up, then dive at random enemies at 9 m/s, turning at up to 300°/s.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage</td><td class="num">18</td><td class="num">18</td><td class="num up">24</td><td class="num">24</td><td class="num up">30</td></tr>
+                <tr><td>Cooldown</td><td class="num">2.0 s</td><td class="num">2.0 s</td><td class="num">2.0 s</td><td class="num up">1.8 s</td><td class="num up">1.6 s</td></tr>
+                <tr><td>Missiles</td><td class="num">2</td><td class="num up">3</td><td class="num">3</td><td class="num up">4</td><td class="num up">6</td></tr>
+                <tr><td>Splash radius</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num up">0.8 m</td><td class="num">0.8 m</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>Teardrop goo slugs with long tapering tails.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Grow as bumps along the hero's back, then fire upward like a fountain.</dd></div>
+              <div><dt>Moves</dt><dd>Corkscrew violet ribbon trails. The tail stretches on tight turns.</dd></div>
+              <div><dt>Hits</dt><dd>A small pop and splat. From L4, a ring of droplets for the splash.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-mine">
+            <div class="skill-head"><h3>Blob Mine</h3><span class="badge b-you">Your list</span><span class="chip">Dropped behind the hero</span></div>
+            <p class="what">Drops sticky mines where the hero stands. A mine arms after 0.5 s, triggers when an enemy comes within 0.9 m, and melts away after 12 s.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage</td><td class="num">40</td><td class="num">40</td><td class="num up">60</td><td class="num">60</td><td class="num up">80</td></tr>
+                <tr><td>Drop interval</td><td class="num">2.5 s</td><td class="num">2.5 s</td><td class="num">2.5 s</td><td class="num up">2.0 s</td><td class="num up">1.6 s</td></tr>
+                <tr><td>Max mines out</td><td class="num">4</td><td class="num">4</td><td class="num up">6</td><td class="num">6</td><td class="num up">8</td></tr>
+                <tr><td>Blast radius</td><td class="num">2.0 m</td><td class="num up">2.5 m</td><td class="num">2.5 m</td><td class="num">2.5 m</td><td class="num up">3.0 m</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A squat 0.35 m goo dome whose base spreads into a puddle stuck to the floor (one merged shape, not a ball on a disc).</dd></div>
+              <div><dt>Leaves the body</dt><dd>Oozes out of the heel as the hero walks and stays behind.</dd></div>
+              <div><dt>Moves</dt><dd>Breathes slowly (scale 1.0 to 1.06, once a second). When armed, the core turns from cyan to hot pink and blinks.</dd></div>
+              <div><dt>Hits</dt><dd>Inflates 25% in 0.08 s, then bursts outward in a flat, mostly horizontal splash.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-blade">
+            <div class="skill-head"><h3>Blade</h3><span class="badge b-src">Sourced name</span><span class="chip">Around · orbit</span></div>
+            <p class="what">Crescent blades orbit the hero and cut anything they pass. Each enemy can be hit once every 0.5 s.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage</td><td class="num">10</td><td class="num">10</td><td class="num up">14</td><td class="num">14</td><td class="num up">18</td></tr>
+                <tr><td>Blades</td><td class="num">2</td><td class="num up">3</td><td class="num">3</td><td class="num up">4</td><td class="num up">5</td></tr>
+                <tr><td>Orbit radius</td><td class="num">1.6 m</td><td class="num">1.6 m</td><td class="num up">1.9 m</td><td class="num">1.9 m</td><td class="num up">2.2 m</td></tr>
+                <tr><td>Spin</td><td class="num">180°/s</td><td class="num">180°/s</td><td class="num">180°/s</td><td class="num up">210°/s</td><td class="num up">240°/s</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>Thin crescents of hardened, glassier goo: more see-through, with a sharp highlight along the edge and a faint violet tint.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Slice off the hero's sides like a knife through jelly on first pickup.</dd></div>
+              <div><dt>Moves</dt><dd>Tilted 15° toward the camera so the shape reads. A faint continuous white swoosh ring.</dd></div>
+              <div><dt>Hits</dt><dd>A thin white slash line across the enemy and a short spray of orange droplets.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-lightning">
+            <div class="skill-head"><h3>Lightning</h3><span class="badge b-src">Sourced</span><span class="chip">Random · on screen</span></div>
+            <p class="what">Lightning strikes random enemies. From L4, each bolt jumps to one more enemy within 2.5 m for 60% damage.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage</td><td class="num">25</td><td class="num">25</td><td class="num up">35</td><td class="num">35</td><td class="num up">45</td></tr>
+                <tr><td>Cooldown</td><td class="num">2.2 s</td><td class="num">2.2 s</td><td class="num up">2.0 s</td><td class="num">2.0 s</td><td class="num up">1.6 s</td></tr>
+                <tr><td>Strikes</td><td class="num">2</td><td class="num up">3</td><td class="num">3</td><td class="num up">4</td><td class="num up">6</td></tr>
+                <tr><td>Impact radius</td><td class="num">0.6 m</td><td class="num">0.6 m</td><td class="num up">0.9 m</td><td class="num">0.9 m</td><td class="num up">1.2 m</td></tr>
+                <tr><td>Jumps</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num up">1</td><td class="num up">2</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A small goo cloud puffs into being 3 m above the target, then a jagged electric cyan-white bolt drops from it.</dd></div>
+              <div><dt>Leaves the body</dt><dd>A spark crackles across the hero's surface a moment before each strike, tying the bolt to the blob.</dd></div>
+              <div><dt>Moves</dt><dd>The bolt is a camera-facing ribbon of 6 to 8 segments, re-randomized twice over its 0.12 s life.</dd></div>
+              <div><dt>Hits</dt><dd>A scorch splat on the floor, a bloom flash, and enemies briefly shown in silhouette.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-aura">
+            <div class="skill-head"><h3>Aura</h3><span class="badge b-src">Sourced</span><span class="chip">Around</span></div>
+            <p class="what">A goo puddle around the hero damages everything standing in it every 0.5 s. From L3, it also slows them.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage per tick</td><td class="num">5</td><td class="num">5</td><td class="num up">7</td><td class="num">7</td><td class="num up">10</td></tr>
+                <tr><td>Radius</td><td class="num">1.8 m</td><td class="num up">2.1 m</td><td class="num">2.1 m</td><td class="num up">2.5 m</td><td class="num up">2.8 m</td></tr>
+                <tr><td>Slow</td><td class="num">—</td><td class="num">—</td><td class="num up">15%</td><td class="num">15%</td><td class="num up">25%</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A see-through jelly puddle on the floor with slow, rippling light patterns and a brighter rim.</dd></div>
+              <div><dt>Leaves the body</dt><dd>The hero's feet melt into the puddle: it is one blended shape with the body, not a decal under it.</dd></div>
+              <div><dt>Moves</dt><dd>Lags behind the hero by about 0.1 s, then catches up with a wobble.</dd></div>
+              <div><dt>Hits</dt><dd>Enemies inside pick up a cyan tint and wobble on each tick.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-worms">
+            <div class="skill-head"><h3>Worms</h3><span class="badge b-src">Sourced</span><span class="chip">Random · seek</span></div>
+            <p class="what">Goo worms tunnel under the floor toward enemies, surface, and bite (every 0.5 s) until they expire. New worms every 6 s.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Worms per cast</td><td class="num">1</td><td class="num up">2</td><td class="num">2</td><td class="num up">3</td><td class="num">3</td></tr>
+                <tr><td>Bite damage</td><td class="num">15</td><td class="num">15</td><td class="num up">20</td><td class="num">20</td><td class="num up">25</td></tr>
+                <tr><td>Lifetime</td><td class="num">6 s</td><td class="num">6 s</td><td class="num up">8 s</td><td class="num">8 s</td><td class="num up">10 s</td></tr>
+                <tr><td>Surfacing burst</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num up">40 in 1.2 m</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A 7-segment worm built as one smooth chain (not a string of beads), tinted cyan-green to read apart from the hero.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Drips from the hero's base and dives into the floor.</dd></div>
+              <div><dt>Moves</dt><dd>Underground, it shows as a moving bulge in the floor with ripple rings. It surfaces in an arc.</dd></div>
+              <div><dt>Hits</dt><dd>A squash-and-snap bite. It sinks back into a puddle when it expires.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-buddies">
+            <div class="skill-head"><h3>Blob Buddies</h3><span class="badge b-ver">Verify</span><span class="chip">Seek</span></div>
+            <p class="what">Summons small copies of the hero that hop at enemies and headbutt them (every 0.6 s). New buddies every 12 s.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Buddies</td><td class="num">1</td><td class="num up">2</td><td class="num">2</td><td class="num up">3</td><td class="num up">4</td></tr>
+                <tr><td>Headbutt damage</td><td class="num">8</td><td class="num">8</td><td class="num up">12</td><td class="num">12</td><td class="num up">16</td></tr>
+                <tr><td>Lifetime</td><td class="num">10 s</td><td class="num">10 s</td><td class="num">10 s</td><td class="num up">15 s</td><td class="num">15 s</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>35%-scale hero copies in the same material, with simplified limbs.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Split off the hero like a cell dividing, with a stretched bridge that snaps.</dd></div>
+              <div><dt>Moves</dt><dd>Hop locomotion: stretch on take-off, squash on landing.</dd></div>
+              <div><dt>Hits</dt><dd>On expiry they hop back and merge into the hero over 0.3 s.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-axe">
+            <div class="skill-head"><h3>Goo Axe</h3><span class="badge b-ver">Verify</span><span class="chip">Facing ±30°</span></div>
+            <p class="what">Throws spinning axes that fly out, pass through every enemy, and come back like a boomerang.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage</td><td class="num">22</td><td class="num">22</td><td class="num up">30</td><td class="num">30</td><td class="num up">38</td></tr>
+                <tr><td>Cooldown</td><td class="num">1.8 s</td><td class="num">1.8 s</td><td class="num up">1.6 s</td><td class="num">1.6 s</td><td class="num up">1.4 s</td></tr>
+                <tr><td>Axes</td><td class="num">1</td><td class="num up">2</td><td class="num">2</td><td class="num up">3</td><td class="num">3</td></tr>
+                <tr><td>Range</td><td class="num">5 m</td><td class="num">5 m</td><td class="num">5 m</td><td class="num up">5.5 m</td><td class="num up">6.5 m</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A chunky goo axe: thick head, see-through cutting edge.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Formed in the hand from a pulled-out lump of goo.</dd></div>
+              <div><dt>Moves</dt><dd>Spins 720°/s on its vertical axis and wobbles when it changes direction.</dd></div>
+              <div><dt>Hits</dt><dd>A chunky slash streak. On the return catch, the axe is absorbed back into the hand.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-laser">
+            <div class="skill-head"><h3>Blob Laser</h3><span class="badge b-prop">Proposed addition</span><span class="chip">Nearest · 7 m beam</span></div>
+            <p class="what">A 0.4 m-wide goo jet that sweeps toward the nearest enemy at 90°/s and damages every 0.1 s. Not found in any source; drop it if the original doesn't have it.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Damage per tick</td><td class="num">6</td><td class="num">6</td><td class="num up">8</td><td class="num">8</td><td class="num up">10</td></tr>
+                <tr><td>Beam duration</td><td class="num">1.2 s</td><td class="num up">1.5 s</td><td class="num">1.5 s</td><td class="num up">1.8 s</td><td class="num">1.8 s</td></tr>
+                <tr><td>Cooldown</td><td class="num">4.0 s</td><td class="num">4.0 s</td><td class="num up">3.5 s</td><td class="num">3.5 s</td><td class="num up">3.0 s</td></tr>
+                <tr><td>Beams</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num up">2</td><td class="num">2</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A pressurized goo jet, not a sci-fi laser: a cylinder with flowing texture and a bright core.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Sprays from an opening that forms in the chest. At L4 a second jet fires from the back.</dd></div>
+              <div><dt>Moves</dt><dd>Ripple bulges travel along the jet. The hero leans back from the pressure.</dd></div>
+              <div><dt>Hits</dt><dd>Splashes where the jet ends and leaves a trail of small splats.</dd></div>
+            </dl>
+          </article>
+
+          <article class="skill" id="sk-shield">
+            <div class="skill-head"><h3>Bubble Shield</h3><span class="badge b-ver">Verify</span><span class="chip">Defense</span></div>
+            <p class="what">A bubble that absorbs hits, then recharges. From L3, popping it damages and knocks back nearby enemies.</p>
+            <div class="tbl"><table class="stats">
+              <thead><tr><th></th><th class="num">L1</th><th class="num">L2</th><th class="num">L3</th><th class="num">L4</th><th class="num">L5</th></tr></thead>
+              <tbody>
+                <tr><td>Hits absorbed</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num up">2</td><td class="num">2</td></tr>
+                <tr><td>Recharge</td><td class="num">10 s</td><td class="num up">8 s</td><td class="num">8 s</td><td class="num">8 s</td><td class="num up">5 s</td></tr>
+                <tr><td>Pop damage</td><td class="num">—</td><td class="num">—</td><td class="num up">20</td><td class="num">20</td><td class="num up">40</td></tr>
+                <tr><td>Pop knockback</td><td class="num">—</td><td class="num">—</td><td class="num up">2 m</td><td class="num">2 m</td><td class="num up">3 m</td></tr>
+              </tbody>
+            </table></div>
+            <dl class="art">
+              <div><dt>Looks</dt><dd>A thin soap-film sphere with shifting cyan-violet-pink sheen at its edges.</dd></div>
+              <div><dt>Leaves the body</dt><dd>Blown from the hero's surface like a bubble, inflating in 0.3 s.</dd></div>
+              <div><dt>Moves</dt><dd>Ripples across its surface when hit.</dd></div>
+              <div><dt>Hits</dt><dd>Pops into a ring of droplets and a soft shockwave.</dd></div>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <!-- 06 -->
+      <section id="passives">
+        <div class="sec-head"><span class="sec-num">06</span><h2>Passive skills</h2></div>
+        <div class="prose"><p>Passives take a slot like any skill. Each one also changes how the hero looks, so a build can be read from the blob itself. Values are per level.</p></div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Passive</th><th>Per level</th><th class="num">Max</th><th>Status</th><th>Shows on the hero</th></tr></thead>
+            <tbody>
+              <tr><td>Thick Goo</td><td>+20% max HP, and heals that amount</td><td class="num">5</td><td><span class="badge b-src">Sourced idea</span></td><td>Hero grows 2% per level</td></tr>
+              <tr><td>Regen</td><td>Heal 0.4% of max HP per second</td><td class="num">5</td><td><span class="badge b-src">Sourced</span></td><td>Tiny bubbles rise inside the body</td></tr>
+              <tr><td>Speed</td><td>+8% move speed</td><td class="num">5</td><td><span class="badge b-src">Sourced</span></td><td>Longer stretch when running</td></tr>
+              <tr><td>Magnet</td><td>+30% gem pickup radius</td><td class="num">5</td><td><span class="badge b-src">Sourced</span></td><td>Faint floor ring at the radius when gems are near</td></tr>
+              <tr><td>Power</td><td>+10% damage</td><td class="num">5</td><td><span class="badge b-prop">Proposed</span></td><td>Inner core glows brighter</td></tr>
+              <tr><td>Armor</td><td>−6% damage taken</td><td class="num">5</td><td><span class="badge b-ver">Verify</span></td><td>Glossier, firmer surface; wobbles less when hit</td></tr>
+              <tr><td>Haste</td><td>Skills recharge 6% faster</td><td class="num">5</td><td><span class="badge b-prop">Proposed</span></td><td>Faster idle jiggle</td></tr>
+              <tr><td>Reach</td><td>+10% skill area</td><td class="num">5</td><td><span class="badge b-prop">Proposed</span></td><td>Skill goo is visibly bigger</td></tr>
+              <tr><td>Multishot</td><td>+1 projectile for Ball, Grenade, Missile and Axe; +1 strike for Lightning</td><td class="num">2</td><td><span class="badge b-prop">Proposed</span></td><td>None</td></tr>
+              <tr><td>Growth</td><td>+8% XP gained</td><td class="num">5</td><td><span class="badge b-prop">Proposed</span></td><td>None</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 07 -->
+      <section id="meta">
+        <div class="sec-head"><span class="sec-num">07</span><h2>Pickups and meta progression</h2></div>
+        <h3>Pickups</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Pickup</th><th>Effect</th><th>Drops from</th><th>Looks</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>XP gem</td><td>1, 5 or 25 XP (mint, blue, violet). Past 300 gems on the floor, new ones merge into the nearest.</td><td>Every enemy</td><td>Small faceted jelly cubes that bob and spin</td><td><span class="badge b-prop">Proposed</span></td></tr>
+              <tr><td>Coin</td><td>1 to 10 coins</td><td>Elites, chests, 2% of enemies</td><td>Spinning gold jelly coin</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Health</td><td>Heals 30% of max HP</td><td>1% of enemies, elites</td><td>A pulsing cyan jelly heart</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Magnet</td><td>Pulls every gem on the map to the hero within 1.5 s</td><td>0.5% of enemies</td><td>A horseshoe made of goo</td><td><span class="badge b-src">Sourced</span></td></tr>
+              <tr><td>Chest</td><td>A perk roulette that levels up owned skills: 1 skill (70%), 3 (25%) or 5 (5%)</td><td>Elites</td><td>Rounded chest whose jelly lid bounces open</td><td><span class="badge b-src">Sourced</span> <span class="badge b-prop">Odds</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Permanent upgrades</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Upgrade</th><th>Per level</th><th class="num">Cost of level n</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Damage</td><td>+3% damage</td><td class="num">50 × 1.18ⁿ</td><td><span class="badge b-src">Sourced</span> <span class="badge b-prop">Numbers</span></td></tr>
+              <tr><td>Health</td><td>+5% max HP</td><td class="num">50 × 1.18ⁿ</td><td><span class="badge b-src">Sourced</span> <span class="badge b-prop">Numbers</span></td></tr>
+              <tr><td>Offline earnings</td><td>+10 coins per hour away, stored for up to 8 hours</td><td class="num">80 × 1.20ⁿ</td><td><span class="badge b-src">Sourced</span> <span class="badge b-prop">Numbers</span></td></tr>
+              <tr><td>Speed</td><td>+1% move speed, up to 20 levels</td><td class="num">120 × 1.25ⁿ</td><td><span class="badge b-prop">Proposed</span></td></tr>
+              <tr><td>Magnet</td><td>+5% pickup radius, up to 20 levels</td><td class="num">100 × 1.22ⁿ</td><td><span class="badge b-prop">Proposed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">Economy target: clearing chapter 1 pays about 200 coins, rising 8% per chapter, so early on a clear buys about two upgrades.</p>
+      </section>
+
+      <!-- 08 -->
+      <section id="enemies">
+        <div class="sec-head"><span class="sec-num">08</span><h2>Enemies and bosses</h2></div>
+        <div class="prose"><p>The orange stickman comes from your reference image. Every other enemy is <span class="badge b-prop">Proposed</span>. All enemies are one connected mesh each (see section 10), matte orange so they never compete with the glossy hero.</p></div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Enemy</th><th>First seen</th><th class="num">HP (ch. 1)</th><th class="num">Speed</th><th class="num">Hit</th><th class="num">XP</th><th>Behavior</th><th>Look</th></tr></thead>
+            <tbody>
+              <tr><td>Stickman</td><td>Ch. 1</td><td class="num">10</td><td class="num">2.2 m/s</td><td class="num">5</td><td class="num">1</td><td>Walks straight at the hero</td><td>Standard orange stickman, 1.1 m tall</td></tr>
+              <tr><td>Sprinter</td><td>Ch. 1, 0:45</td><td class="num">6</td><td class="num">3.6 m/s</td><td class="num">4</td><td class="num">1</td><td>Fast; arrives in lines of 3 to 5</td><td>Thinner limbs, leans forward, yellow-orange</td></tr>
+              <tr><td>Brute</td><td>Ch. 2</td><td class="num">60</td><td class="num">1.6 m/s</td><td class="num">12</td><td class="num">5</td><td>Shoves other enemies aside</td><td>1.6× size, chunky torso, red-orange</td></tr>
+              <tr><td>Archer</td><td>Ch. 4</td><td class="num">14</td><td class="num">2.0 m/s</td><td class="num">8</td><td class="num">2</td><td>Stops 6 m away and fires every 2.5 s after a 0.4 s aim line</td><td>Carries a bow; arrows are thin orange darts</td></tr>
+              <tr><td>Splitter</td><td>Ch. 6</td><td class="num">24</td><td class="num">2.0 m/s</td><td class="num">6</td><td class="num">2</td><td>Splits into two half-size stickmen when killed</td><td>Rounder body with a seam down the middle</td></tr>
+              <tr><td>Shield-bearer</td><td>Ch. 8</td><td class="num">40</td><td class="num">1.8 m/s</td><td class="num">8</td><td class="num">3</td><td>Blocks projectiles from the front</td><td>Round orange shield; open to flank attacks</td></tr>
+              <tr><td>Elite (any type)</td><td>2:00 and 4:00</td><td class="num">×30</td><td class="num">×0.9</td><td class="num">×2</td><td class="num">25</td><td>Same behavior; drops a chest</td><td>1.5× size, gold outline, a crown nub</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Bosses <span class="badge b-prop">Proposed</span></h3>
+        <div class="prose"><p>One boss per chapter, rotating; every 5th chapter brings two at once. Chapter 1 boss HP is 2,500, ×1.2 per chapter. Bosses use the same mesh pipeline as enemies, scaled 2.5 to 3.5×, each with one silhouette feature so it reads at a glance. All attacks are telegraphed with red decals on the floor.</p></div>
+        <div class="cards2">
+          <div class="card"><h4>Big Stomper</h4><p>A giant stickman in a helmet. Ground slam: 3 m red circle, 1.2 s warning, 40 damage. Every 10 s it calls a ring of 8 stickmen.</p></div>
+          <div class="card"><h4>Hurler</h4><p>Wears a boulder backpack and keeps 7 m away. Throws 3 boulders at once onto red target circles (1.0 s warning, 25 damage, 1.5 m radius). Jumps away when you get close.</p></div>
+          <div class="card"><h4>Charger</h4><p>Horned. Shows a red lane for 0.8 s, then charges along it at 14 m/s, three times in a row. Then it sits dizzy for 2.5 s and takes 50% extra damage.</p></div>
+          <div class="card"><h4>Twins</h4><p>Two stickmen joined by a glowing rope that hurts on touch (15 damage). Killing one enrages the other (+40% speed).</p></div>
+          <div class="card"><h4>Conductor</h4><p>Holds a baton and stands in the middle of the arena, raising spiral waves of enemies and firing slow rings of orange orbs with gaps to slip through.</p></div>
+        </div>
+      </section>
+
+      <!-- 09 -->
+      <section id="art">
+        <div class="sec-head"><span class="sec-num">09</span><h2>3D art direction</h2></div>
+        <h3>Reading the reference image</h3>
+        <ul class="list">
+          <li><strong>Hero:</strong> glossy, saturated cyan with vinyl-toy proportions: a big torso, short thick legs, and a head that reads as a bump on the torso rather than a separate ball.</li>
+          <li><strong>Hands:</strong> chunky fists with a violet-blue gradient and white glow outlines. White swoosh arcs trace their path.</li>
+          <li><strong>Enemies:</strong> matte orange stickmen with round heads and long soft shadows, about 70% of the hero's height.</li>
+          <li><strong>Floor:</strong> big beveled slate-blue stones, low contrast, darkening into navy at the edges.</li>
+        </ul>
+
+        <h3>Palette</h3>
+        <div class="swatches">
+          <div class="sw"><b style="background: var(--g-night)"></b><span>Night</span><code>#0A1F33</code></div>
+          <div class="sw"><b style="background: var(--g-slate-deep)"></b><span>Deep slate</span><code>#17344D</code></div>
+          <div class="sw"><b style="background: var(--g-slate)"></b><span>Floor stone</span><code>#2B4C68</code></div>
+          <div class="sw"><b style="background: var(--g-slate-hi)"></b><span>Stone edge</span><code>#3E6788</code></div>
+          <div class="sw"><b style="background: var(--g-cyan)"></b><span>Hero cyan</span><code>#18D2FF</code></div>
+          <div class="sw"><b style="background: var(--g-cyan-hi)"></b><span>Hero light</span><code>#8EF3FF</code></div>
+          <div class="sw"><b style="background: var(--g-violet)"></b><span>Goo violet</span><code>#7B55F5</code></div>
+          <div class="sw"><b style="background: var(--g-pink)"></b><span>Armed pink</span><code>#FF5FB8</code></div>
+          <div class="sw"><b style="background: var(--g-orange)"></b><span>Enemy orange</span><code>#F5891F</code></div>
+          <div class="sw"><b style="background: var(--g-orange-shade)"></b><span>Enemy shadow</span><code>#B9580F</code></div>
+          <div class="sw"><b style="background: var(--g-mint)"></b><span>XP mint</span><code>#5CF2AE</code></div>
+          <div class="sw"><b style="background: var(--g-gold)"></b><span>Coin gold</span><code>#FFC63A</code></div>
+          <div class="sw"><b style="background: var(--g-red)"></b><span>Danger</span><code>#FF4D3D</code></div>
+          <div class="sw"><b style="background: var(--g-white)"></b><span>Swoosh</span><code>#FFFFFF</code></div>
+        </div>
+
+        <h3>Live reference render</h3>
+        <figure class="render">
+          <div class="render-stage">
+            <canvas id="gelRender" aria-label="Live 3D render of a cyan goo hero punching between orange stickmen on a blue stone floor"></canvas>
+            <p id="renderNote" hidden></p>
+          </div>
+          <div class="render-tools">
+            <div class="seg" role="group" aria-label="Enemy construction">
+              <button type="button" id="kConnected" aria-pressed="true">Enemies: connected</button>
+              <button type="button" id="kStacked" aria-pressed="false">Enemies: stacked</button>
+            </div>
+          </div>
+          <figcaption>Drawn live in your browser with the technique section 10 recommends. The hero is 15 shapes blended into one surface, and its arms stretch and thin as it punches. The stickmen are 9 shapes each. Switch to "stacked" to see the shapes-on-top-of-each-other look to avoid: hard creases at every joint. This is a look target for material and construction, not the game.</figcaption>
+        </figure>
+
+        <h3>Materials</h3>
+        <div class="cards2">
+          <div class="card"><h4>Hero goo</h4>
+            <ul class="list">
+              <li>Cyan body shading to violet toward the fists (a hint at the feet), driven by distance to those parts.</li>
+              <li>Wrapped diffuse lighting so shadows stay soft and colorful.</li>
+              <li>Fake subsurface glow: thin parts (limbs, head edge) brighten.</li>
+              <li>Pale cyan rim light, strength 0.55.</li>
+              <li>A tight white highlight plus a broad soft sheen. No textures needed.</li>
+            </ul>
+          </div>
+          <div class="card"><h4>Skill goo</h4>
+            <ul class="list">
+              <li>The hero shader on projectile meshes, with a brighter core and less subsurface.</li>
+              <li>Cyan for light, fast skills; violet for heavy ones; hot pink when armed or charged.</li>
+            </ul>
+          </div>
+          <div class="card"><h4>Enemies</h4>
+            <ul class="list">
+              <li>Three-band toon shading (lit <code>#F5891F</code>, mid <code>#DA7016</code>, shadow <code>#B9580F</code>) with soft band edges.</li>
+              <li>Faint warm rim, no specular highlight. Matte by design.</li>
+            </ul>
+          </div>
+          <div class="card"><h4>Floor</h4>
+            <ul class="list">
+              <li>One beveled stone tile mesh, instanced in offset rows, with ±6% brightness and ±2° rotation per tile.</li>
+              <li>Darkened tile edges baked in. The arena center is lit and the edges fall off into navy.</li>
+            </ul>
+          </div>
+          <div class="card"><h4>Effects</h4>
+            <ul class="list">
+              <li>Glowing ribbons for swooshes and trails, white core fading to cyan.</li>
+              <li>Floor decals for splats, scorch marks and red danger warnings.</li>
+              <li>A 2 cm white outline only on fists and projectiles, as in the key art.</li>
+            </ul>
+          </div>
+          <div class="card"><h4>Skill icons</h4>
+            <ul class="list">
+              <li>3D renders of the actual goo object in the real materials, seen from three-quarters above, on a rounded navy tile.</li>
+              <li>Cyan frame for attack skills, gold frame for passives.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>Lighting, camera and post-processing</h3>
+        <ul class="list">
+          <li><strong>Key light:</strong> one directional light from the upper left, 55° high, neutral white. Sky fill <code>#3A6A8F</code>, ground fill <code>#0A1F33</code>.</li>
+          <li><strong>Shadows:</strong> the hero casts a real soft shadow. Enemies use instanced soft shadow blobs stretched away from the light, which matches the long shadows in the reference and costs almost nothing.</li>
+          <li><strong>Post-processing, in order:</strong> bloom (threshold 0.85, strength 0.6, so only effects glow), color grade (shadows lifted toward navy, saturation +8%), vignette 0.35, anti-aliasing. The low preset drops bloom.</li>
+        </ul>
+
+        <h3>Animation rules</h3>
+        <ul class="list">
+          <li>The hero has no keyframed animation. Its run cycle is generated from speed (0.9 m stride, 5 cm bob) with springy follow-through on every part.</li>
+          <li>Squash on stop (height 88% for 0.12 s), stretch on start, breathing at idle (once every 4 s), a jolt when hit.</li>
+          <li>Volume stays constant: when a part squashes to height <em>s</em>, its width scales by 1/√<em>s</em>.</li>
+          <li>Enemies play a baked 12-frame run cycle at a rate matched to their speed, each starting at a random point so crowds don't march in step.</li>
+        </ul>
+      </section>
+
+      <!-- 10 -->
+      <section id="tech">
+        <div class="sec-head"><span class="sec-num">10</span><h2>Blob technology</h2></div>
+        <div class="prose"><p>This is the section the whole look depends on. The hero has to move like real goo, and enemies have to look like one connected body instead of shapes piled on each other.</p></div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Need</th><th>Technique</th></tr></thead>
+            <tbody>
+              <tr><td>Hero: dynamic, jiggly, able to stretch, split and merge</td><td>Signed distance field (SDF) character: 15 shapes blended with a smooth minimum, posed by a procedural rig with spring physics, drawn by a custom shader (raymarching) inside the hero's on-screen bounding box. It writes depth so it sorts correctly with the 3D world.</td></tr>
+              <tr><td>Skill goo leaving the body</td><td>While attached, extra spheres grow inside the hero's distance field. At the moment of release they hand off to a normal mesh projectile of the same size and position, with a wobble shader.</td></tr>
+              <tr><td>Enemies: connected-looking, hundreds at once</td><td>One smooth mesh per enemy type, built by turning a smooth-blended distance field into a mesh. Rigged to a 10-bone skeleton and animated on the GPU from a baked animation texture: one draw call per enemy type.</td></tr>
+              <tr><td>Puddles (Aura, mine bases, splats)</td><td>Flat floor quads whose shader blends 2D circles smoothly, so overlapping puddles merge into one shape. With Aura active, the hero's field gains a flat floor primitive so the body visibly melts into the puddle.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Choosing the hero technique</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Approach</th><th>Blending quality</th><th>Stretch, split, merge</th><th>Phone cost</th><th>Effort</th><th>Verdict</th></tr></thead>
+            <tbody>
+              <tr><td>SDF raymarching</td><td>Perfectly smooth everywhere</td><td>All three, freely</td><td>Medium (fine for one character)</td><td>Medium-high: custom shader</td><td>Use for the hero</td></tr>
+              <tr><td>Remeshing every frame (marching cubes)</td><td>Smooth but faceted at low resolution; can flicker</td><td>All three</td><td>High: rebuilds a mesh on the CPU every frame</td><td>Medium</td><td>Avoid</td></tr>
+              <tr><td>Skinned mesh with jiggle bones</td><td>Good, but the shape is fixed</td><td>Stretch only</td><td>Low</td><td>Low: standard pipeline</td><td>Low-end fallback for the hero; use for enemies</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Hero rig</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Part</th><th>Shape</th><th class="num">Size (m)</th><th>Blend radius (m)</th></tr></thead>
+            <tbody>
+              <tr><td>Pelvis</td><td>Sphere</td><td class="num">r 0.29</td><td>—</td></tr>
+              <tr><td>Chest</td><td>Ellipsoid</td><td class="num">0.36 × 0.31 × 0.27</td><td>0.18 into the pelvis</td></tr>
+              <tr><td>Head</td><td>Sphere</td><td class="num">r 0.235</td><td>0.17, so it reads as a bump, not a ball</td></tr>
+              <tr><td>Upper arm ×2</td><td>Capsule</td><td class="num">r 0.115 → 0.075 stretched</td><td>0.12 into the body</td></tr>
+              <tr><td>Forearm ×2</td><td>Capsule</td><td class="num">r 0.105</td><td>0.06 within the arm</td></tr>
+              <tr><td>Fist ×2</td><td>Sphere</td><td class="num">r 0.165 → 0.215 on impact</td><td>0.09</td></tr>
+              <tr><td>Thigh ×2</td><td>Capsule</td><td class="num">r 0.13</td><td>0.10 into the body</td></tr>
+              <tr><td>Shin ×2</td><td>Capsule</td><td class="num">r 0.115</td><td>0.06</td></tr>
+              <tr><td>Foot ×2</td><td>Ellipsoid</td><td class="num">0.15 × 0.085 × 0.19</td><td>0.07</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="list">
+          <li><strong>Springs:</strong> every part follows its animated position through a damped spring (stiffness 220, damping ratio 0.45), which gives overshoot and jiggle. The head and fists use stiffness 140 for more lag.</li>
+          <li><strong>Living surface:</strong> a slow 3D ripple with 8 mm amplitude is always on, so the blob never looks frozen.</li>
+          <li><strong>Hits:</strong> damage kicks the springs, so the whole body wobbles from the side it was hit.</li>
+          <li><strong>Budget:</strong> at most 64 raymarch steps per pixel, early exit outside a bounding capsule, under 3 ms of GPU time on a mid-range phone.</li>
+        </ul>
+
+        <h3>Enemy pipeline</h3>
+        <ol class="list">
+          <li>Describe the stickman with the same rig format as the hero (capsules and spheres), blend radius 0.06 m.</li>
+          <li>Turn it into a mesh in its rest pose at 64³ resolution, then reduce to about 800 triangles (close) and 300 (far).</li>
+          <li>Weight each vertex to its two nearest bones, smoothed, so joints bend softly instead of pinching.</li>
+          <li>Author run, attack, hit and death animations (procedurally or in Blender) and bake them into a bone-matrix texture.</li>
+          <li>Draw all enemies of a type as one instanced mesh. Each instance carries its animation time, tint, hit-flash amount and scale. 400 stickmen cost one draw call.</li>
+        </ol>
+        <p class="note">An artist-friendly route to the same result: model with metaballs in Blender, convert and remesh, rig, then run the same bake.</p>
+      </section>
+
+      <!-- 11 -->
+      <section id="ui">
+        <div class="sec-head"><span class="sec-num">11</span><h2>Menus and UI</h2></div>
+        <h3>UI kit</h3>
+        <ul class="list">
+          <li><strong>Shapes:</strong> rounded rectangles (20 to 28 dp corners), a darker 6 dp lip under every button, and a soft highlight along the top edge, so buttons look like jelly.</li>
+          <li><strong>Press:</strong> squash to 94% height and 104% width in 90 ms, then spring back with one wobble.</li>
+          <li><strong>Type:</strong> Fredoka 600 to 700 for titles, numbers and buttons. White text on colored buttons gets a 3 dp navy outline.</li>
+          <li><strong>Color roles:</strong> cyan for primary actions, violet secondary, gold for currency, red for danger, navy panels with slate borders.</li>
+          <li><strong>Layout:</strong> portrait 390 × 844 as the reference size, safe areas respected, tap targets at least 48 dp, the main action always in the bottom third where the thumb is.</li>
+        </ul>
+        <h3>Screen flow</h3>
+        <div class="flow">
+          <span>Splash</span><i>→</i><span>Home</span><i>⇄</i><span>Shop · Upgrades · Skins · Chapter map · Settings</span><i>→</i><span>Run: HUD ⇄ Level up · Chest · Pause</span><i>→</i><span>Revive offer</span><i>→</i><span>Results</span><i>→</i><span>Home</span>
+        </div>
+
+        <h3>Key screens</h3>
+        <div class="phones">
+          <figure class="mock">
+            <div class="phone"><div class="screen dark">
+              <div class="g-top"><span class="lvl">12</span><span class="pill"><i class="coin"></i>2,450</span><span class="pill"><i class="gem"></i>35</span><span class="gear"></span></div>
+              <div style="position:absolute; inset:52px 14px auto 14px;" class="panel">
+                <div style="padding:10px 12px; display:grid; gap:2px;">
+                  <span style="font-size:9px; letter-spacing:.12em; color:var(--g-cyan-hi)">CHAPTER 3</span>
+                  <span style="font-size:17px">Slime Sewers</span>
+                  <span style="font:600 9.5px/1.3 var(--font-body); color:rgba(255,255,255,.7)">Best 4:12 · Boss: Hurler</span>
+                </div>
+              </div>
+              <div style="position:absolute; left:50%; top:142px; width:150px; margin-left:-75px;">
+                <svg viewBox="0 0 140 150" width="150" height="160" aria-hidden="true"><use href="#hero"/></svg>
+                <div style="width:120px; height:22px; margin:-14px auto 0; border-radius:50%; background:radial-gradient(ellipse, rgba(62,103,136,.9), rgba(23,52,77,.4) 70%); box-shadow: inset 0 -3px 0 rgba(5,15,25,.6);"></div>
+              </div>
+              <div class="jelly outline" style="position:absolute; inset:auto 26px 92px 26px; height:58px; font-size:24px; color:var(--g-white);">PLAY</div>
+              <div class="nav"><span><i></i>Shop</span><span><i></i>Upgrades</span><span class="on"><i></i>Play</span><span><i></i>Skins</span><span><i></i>Chapters</span></div>
+            </div></div>
+            <figcaption><strong>Home</strong>Top bar: player level, coins, gems, settings. The live 3D hero idles on a pedestal and bounces when tapped. The chapter card shows the name, best time and boss. PLAY sits in the thumb zone above five tabs.</figcaption>
+          </figure>
+
+          <figure class="mock">
+            <div class="phone"><div class="screen">
+              <div class="xpbar"><b></b><span>LV 7</span></div>
+              <div class="hudrow"><span>312 kills</span><span class="timer">2:41</span><span class="pausebtn"></span></div>
+              <div class="slots">
+                <span class="slot f" style="--l:60%"><i class="ico"></i><u></u></span>
+                <span class="slot f" style="--l:40%"><i class="ico v"></i><u></u></span>
+                <span class="slot f" style="--l:20%"><i class="ico v dome"></i><u></u></span>
+                <span class="slot p" style="--l:40%"><i class="ico g"></i><u></u></span>
+                <span class="slot"></span><span class="slot"></span><span class="slot"></span><span class="slot"></span>
+              </div>
+              <svg viewBox="0 0 140 150" width="74" height="80" style="position:absolute; left:50%; top:46%; margin:-40px 0 0 -37px" aria-hidden="true"><use href="#hero"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:18%; top:30%"><use href="#stick"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:30%; top:24%"><use href="#stick"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:74%; top:28%"><use href="#stick"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:82%; top:40%"><use href="#stick"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:12%; top:52%"><use href="#stick"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:20%; top:63%"><use href="#stick"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:78%; top:58%"><use href="#stick"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:66%; top:66%"><use href="#stick"/></svg>
+              <svg class="dot" viewBox="0 0 30 42" style="left:40%; top:70%"><use href="#stick"/></svg>
+              <i class="gemdot" style="left:36%; top:38%"></i><i class="gemdot" style="left:62%; top:36%"></i><i class="gemdot" style="left:58%; top:58%"></i><i class="gemdot" style="left:28%; top:46%"></i>
+              <div class="joy"></div>
+            </div></div>
+            <figcaption><strong>Run HUD</strong>Full-width XP bar with the level; timer centered; kills left; pause right. One row of 8 skill slots with level bars (gold frame = passive). The rest is play space; the stick appears wherever the thumb lands.</figcaption>
+          </figure>
+
+          <figure class="mock">
+            <div class="phone"><div class="screen">
+              <svg viewBox="0 0 140 150" width="74" height="80" style="position:absolute; left:50%; top:46%; margin:-40px 0 0 -37px" aria-hidden="true"><use href="#hero"/></svg>
+              <div class="dim"></div>
+              <div class="center-title"><div class="outline" style="font-size:26px; color:var(--g-cyan-hi)">LEVEL UP!</div><div style="font:600 10px var(--font-body); color:rgba(255,255,255,.75); margin-top:2px">Level 8 · pick one</div></div>
+              <div class="cards">
+                <div class="lvcard sel"><span class="tile"><i class="ico v drop"></i></span><span><small>NEW</small><span class="nm">Blob Missile</span><span class="ds">2 homing missiles every 2.0 s, 18 damage each</span></span></div>
+                <div class="lvcard"><span class="tile"><i class="ico v dome"></i></span><span><small>LV 2 → 3</small><span class="nm">Blob Mine</span><span class="ds">Damage 40 → 60 · up to 6 mines</span></span></div>
+                <div class="lvcard pas"><span class="tile"><i class="ico g"></i></span><span><small>LV 1 → 2</small><span class="nm">Magnet</span><span class="ds">Pickup radius +30%</span></span></div>
+              </div>
+              <div class="jelly violet" style="position:absolute; left:50%; bottom:40px; width:120px; margin-left:-60px; height:38px; font-size:13px">Reroll</div>
+            </div></div>
+            <figcaption><strong>Level up</strong>The game pauses and dims. Three cards stacked for one-thumb reach: 3D icon, name, NEW or current → next level, one line with the changed numbers. Reroll is an optional extra.</figcaption>
+          </figure>
+
+          <figure class="mock">
+            <div class="phone"><div class="screen dark">
+              <div class="center-title" style="top:40px"><div style="font:600 9px var(--font-body); letter-spacing:.14em; color:var(--g-mint)">CHAPTER 3</div><div class="outline" style="font-size:28px; color:var(--g-white)">CLEARED!</div></div>
+              <svg viewBox="0 0 140 150" width="120" height="128" style="position:absolute; left:50%; top:104px; margin-left:-60px" aria-hidden="true"><use href="#hero"/></svg>
+              <div style="position:absolute; inset:250px 14px auto 14px; display:grid; gap:10px">
+                <div class="statgrid"><div><em>5:00</em><small>TIME</small></div><div><em>1,204</em><small>KILLS</small></div><div><em>19</em><small>LEVEL</small></div></div>
+                <div class="panel" style="padding:10px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:20px"><i class="coin" style="width:20px; height:20px"></i>+240</div>
+              </div>
+              <div class="jelly gold" style="position:absolute; inset:auto 22px 104px 22px; height:44px; font-size:15px">×2 coins (video)</div>
+              <div class="jelly outline" style="position:absolute; inset:auto 22px 42px 22px; height:50px; font-size:19px; color:var(--g-white)">CONTINUE</div>
+            </div></div>
+            <figcaption><strong>Results</strong>Chapter result, time, kills, level reached and coins earned. Doubling coins with an optional video mirrors the original; Continue is the main action.</figcaption>
+          </figure>
+
+          <figure class="mock">
+            <div class="phone"><div class="screen dark">
+              <div class="g-top"><span style="font-size:17px">Upgrades</span><span class="pill" style="margin-left:auto"><i class="coin"></i>2,450</span></div>
+              <div style="position:absolute; inset:52px 12px auto 12px; display:grid; gap:9px">
+                <div class="uprow"><span class="tile"><i class="ico" style="background:radial-gradient(circle at 35% 30%, #ffd2c4, var(--g-red) 60%, #a8231a)"></i></span><span><span class="nm">Damage · Lv 14</span><span class="ds">+42% damage</span></span><span class="jelly gold"><i class="coin"></i>520</span></div>
+                <div class="uprow"><span class="tile"><i class="ico" style="background:radial-gradient(circle at 35% 30%, #c4ffe6, var(--g-mint) 60%, #1a9c6a)"></i></span><span><span class="nm">Health · Lv 11</span><span class="ds">+55% max HP</span></span><span class="jelly gold"><i class="coin"></i>430</span></div>
+                <div class="uprow"><span class="tile"><i class="ico g"></i></span><span><span class="nm">Offline · Lv 6</span><span class="ds">60 coins per hour</span></span><span class="jelly gold"><i class="coin"></i>300</span></div>
+                <div class="uprow"><span class="tile"><i class="ico"></i></span><span><span class="nm">Speed · Lv 3</span><span class="ds">+3% move speed</span></span><span class="jelly gold"><i class="coin"></i>230</span></div>
+                <div class="uprow"><span class="tile"><i class="ico v"></i></span><span><span class="nm">Magnet · Lv 9</span><span class="ds">+45% pickup radius</span></span><span class="jelly grey"><i class="coin"></i>5,890</span></div>
+              </div>
+              <div class="nav"><span><i></i>Shop</span><span class="on"><i></i>Upgrades</span><span><i></i>Play</span><span><i></i>Skins</span><span><i></i>Chapters</span></div>
+            </div></div>
+            <figcaption><strong>Upgrades</strong>One card per permanent upgrade with its level, current bonus and cost. The cost button turns grey when you can't afford it.</figcaption>
+          </figure>
+        </div>
+
+        <h3>Other screens</h3>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Screen</th><th>Contents and behavior</th></tr></thead>
+            <tbody>
+              <tr><td>Splash and loading</td><td>The logo blob jiggles while a progress bar fills with goo.</td></tr>
+              <tr><td>Chapter map</td><td>A vertical path of chapter nodes over a scrolling arena backdrop. Boss chapters are bigger nodes showing the boss. Locked chapters show a padlock.</td></tr>
+              <tr><td>Chest</td><td>The chest bounces open and a slot-machine roulette cycles through owned skill icons, landing on 1, 3 or 5 upgrades.</td></tr>
+              <tr><td>Pause</td><td>Owned skills with their levels and current numbers. Resume, Settings, and Quit run (confirmed on the same screen).</td></tr>
+              <tr><td>Revive</td><td>"Keep going?" with a 5 s countdown ring. Revive (an optional video in the original) or No thanks.</td></tr>
+              <tr><td>Offline earnings</td><td>Shown on return: coins earned while away, Collect, and an optional double.</td></tr>
+              <tr><td>Settings</td><td>Music, sound effects, haptics, damage numbers, screen shake, graphics quality, language.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 12 -->
+      <section id="perf">
+        <div class="sec-head"><span class="sec-num">12</span><h2>Performance budget</h2></div>
+        <div class="prose"><p>Target: 60 frames per second (16.6 ms per frame) in a mobile browser on a mid-range 2023 phone.</p></div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Item</th><th class="num">Budget</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>Enemies on screen</td><td class="num">≤ 400</td><td>Extra spawns wait in a queue.</td></tr>
+              <tr><td>Draw calls</td><td class="num">≤ 60</td><td>Instancing for enemies, gems, particles and damage numbers.</td></tr>
+              <tr><td>Triangles</td><td class="num">≤ 400k</td><td>Far enemies switch to the 300-triangle mesh.</td></tr>
+              <tr><td>Hero raymarch pass</td><td class="num">≤ 3 ms GPU</td><td>Bounding box only; 64 steps maximum.</td></tr>
+              <tr><td>Game logic</td><td class="num">≤ 4 ms</td><td>At 400 enemies. Spatial hash grid, no memory allocation inside the frame loop.</td></tr>
+              <tr><td>Particles</td><td class="num">≤ 1,500</td><td>GPU-instanced and pooled.</td></tr>
+              <tr><td>Damage numbers</td><td class="num">≤ 40</td><td>One instanced draw from a font atlas.</td></tr>
+              <tr><td>First download</td><td class="num">≤ 15 MB</td><td>Most of the look comes from shaders, not textures.</td></tr>
+              <tr><td>Quality presets</td><td class="num">2</td><td>High: bloom, full resolution. Low: no bloom, 75% render scale, more enemies on the far mesh.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 13 -->
+      <section id="roadmap">
+        <div class="sec-head"><span class="sec-num">13</span><h2>Build stages</h2></div>
+        <div class="prose"><p>Each stage has a single finish line. The risky technology comes first, so a problem shows up before any content depends on it.</p></div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Stage</th><th>Includes</th><th>Done when</th></tr></thead>
+            <tbody>
+              <tr><td>0 · Tech spikes</td><td>Distance-field hero in Three.js with depth sorting and a floor shadow; 400 instanced, skinned stickmen; floating joystick.</td><td>Both run together at 60 fps on a mid-range phone, and you sign off on how the joystick feels.</td></tr>
+              <tr><td>1 · Vertical slice</td><td>One arena. Blob Ball, Blob Fists, Aura, Blob Mine. Stickman, Sprinter, Brute. Big Stomper boss. Level-up, death, revive, victory.</td><td>A full 5-minute chapter plays start to finish on a phone at 60 fps with final-quality hero rendering.</td></tr>
+              <tr><td>2 · Full skill and enemy set</td><td>The other 9 attack and defense skills, 10 passives, 3 more enemies, 4 more bosses.</td><td>Every skill matches its card in section 5, and a balance simulation finds no skill above twice the median damage at equal level.</td></tr>
+              <tr><td>3 · Menus and meta</td><td>Home, Upgrades, Chapter map, Results, Pause, Revive, Settings, Offline earnings, saving.</td><td>A new player gets from first launch to chapter 3 without a dead end, and progress survives a reload.</td></tr>
+              <tr><td>4 · Chapters and arenas</td><td>6 arenas; the first 30 chapters hand-tuned, then a parameter table to 100+.</td><td>In the balance simulation, the median clear time stays between 5:00 and 5:30 for chapters 1 to 30.</td></tr>
+              <tr><td>5 · Polish</td><td>Effects, UI motion, audio, haptics, accessibility settings.</td><td>Every item in the art direction and feedback specs is in.</td></tr>
+              <tr><td>6 · Ship prep</td><td>Performance pass on low, mid and high phones; original name and store art.</td><td>60 fps on mid-range, 30+ on the low preset, and no asset from the original game.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 14 -->
+      <section id="verify">
+        <div class="sec-head"><span class="sec-num">14</span><h2>Verify in the original</h2></div>
+        <div class="prose">
+          <p>No public source lists the original's numbers, so the reliable way to get them is to measure the game directly:</p>
+        </div>
+        <ol class="list">
+          <li>For every skill, screenshot the level-up card at each level. The card text usually states what changes.</li>
+          <li>Screen-record gameplay at 60 fps and count frames between attacks (cooldowns) and between positions (speeds).</li>
+          <li>Enter the measured values here and drop the matching Proposed numbers.</li>
+        </ol>
+        <h3>Open questions</h3>
+        <ul class="list">
+          <li>The complete skill list and exact names. Are Blob Missile and Blob Mine in the game? Is there a laser?</li>
+          <li>The number of skill slots, and the max skill level.</li>
+          <li>Damage, cooldown, count and area for each skill at each level.</li>
+          <li>Chapter length, when the boss appears, and how many chapters there are.</li>
+          <li>Whether skills evolve or combine at max level.</li>
+          <li>Playable characters or skins. One summary claims three characters.</li>
+          <li>The permanent upgrade list, its costs, and the offline earnings rate.</li>
+          <li>Revive limits, and what the optional videos give.</li>
+        </ul>
+      </section>
+
+      <!-- 15 -->
+      <section id="sources">
+        <div class="sec-head"><span class="sec-num">15</span><h2>Sources</h2></div>
+        <ul class="list">
+          <li><a href="https://play.google.com/store/apps/details?id=com.quok.blobHero&amp;hl=en&amp;gl=US">Blob Hero on Google Play</a>: store description (Blob Balls, Blob Grenades, Blob Magic; skill choice on level-up).</li>
+          <li><a href="https://apps.apple.com/us/app/blob-hero/id1615020509">Blob Hero on the App Store</a>: publisher and platform.</li>
+          <li><a href="https://www.gamezebo.com/walkthroughs/blob-hero-strategy-guide-perks-upgrades-and-more/">Gamezebo: Blob Hero strategy guide</a>: Blade, auras, lightning, worms, pickups, post-run upgrades, optional videos.</li>
+          <li><a href="https://www.malavida.com/en/soft/blob-hero/android/">Malavida: Blob Hero for Android</a>: controls, three choices per level-up, eight skills.</li>
+          <li><a href="https://appgrooves.com/app/blob-hero-by-rollic-games-oyun-yazilim-ve-pazarlama-anonim-sirketi">AppGrooves: Blob Hero by Rollic Games</a>: release date.</li>
+          <li><a href="https://www.youtube.com/watch?v=ZZH-j25C1Rk">YouTube: Blob Hero chapter 105 boss</a>: chapter count reaches at least 105.</li>
+          <li>Search summaries of game listings (<a href="https://game-solver.com/blob-hero/">Game Solver</a>, <a href="https://1hrgames.com/game/blob-hero/">1HR Games</a>, download sites): spinning axes, magic missiles, summoned blobs, three characters. These pages could not be opened to confirm.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function () {
+  const canvas = document.getElementById('gelRender');
+  const note = document.getElementById('renderNote');
+  const btnC = document.getElementById('kConnected');
+  const btnS = document.getElementById('kStacked');
+  const fail = msg => { note.textContent = msg; note.hidden = false; };
+  let gl = null;
+  try { gl = canvas.getContext('webgl', { antialias: false, alpha: false }); } catch (_) { gl = null; }
+  if (!gl) { fail('This browser has WebGL turned off, so the live render cannot run here.'); return; }
+
+  const VERT = 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }';
+  const FRAG = `
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uK;
+
+vec3 hPel, hChe, hChR, hHea, hSh0, hSh1, hEl0, hEl1, hFi0, hFi1, hHi0, hHi1, hKn0, hKn1, hFo0, hFo1;
+float hAr0, hAr1, hFr0, hFr1;
+
+float smin(float a, float b, float k) {
+  k = max(k, 1e-4);
+  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+float sdCapsule(vec3 p, vec3 a, vec3 b, float r) {
+  vec3 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+float sdEllipsoid(vec3 p, vec3 r) {
+  float k0 = length(p / r);
+  float k1 = length(p / (r * r));
+  return k0 * (k0 - 1.0) / k1;
+}
+float punchCurve(float x) {
+  return smoothstep(0.0, 0.18, x) * (1.0 - smoothstep(0.32, 0.9, x));
+}
+
+void setupHero(float t) {
+  float bounce = 0.035 * sin(t * 4.2);
+  float breathe = sin(t * 2.1);
+  float cyc = fract(t / 1.7);
+  float eL = punchCurve(clamp(cyc * 2.0, 0.0, 1.0));
+  float eR = punchCurve(clamp(cyc * 2.0 - 1.0, 0.0, 1.0));
+  float s = 1.0 - bounce * 1.6;
+  hPel = vec3(0.0, 0.70 + bounce, 0.0);
+  hChe = vec3(0.06 * (eR - eL), 1.02 + bounce * 1.25 + 0.012 * breathe, 0.02);
+  hChR = vec3(0.36 / sqrt(s), 0.31 * s, 0.27 / sqrt(s));
+  hHea = vec3(0.03 * sin(t * 1.3) + 0.05 * (eR - eL), 1.41 + bounce * 1.1 - 0.02 * cos(t * 4.2), 0.05);
+  hSh0 = vec3(-0.32, 1.16 + bounce, 0.0);
+  hSh1 = vec3( 0.32, 1.16 + bounce, 0.0);
+  hFi0 = mix(vec3(-0.58, 0.92 + bounce, 0.28), vec3(-1.62, 1.0, 0.18), eL);
+  hFi1 = mix(vec3( 0.58, 0.92 + bounce, 0.28), vec3( 1.62, 1.0, 0.18), eR);
+  hEl0 = mix(hSh0, hFi0, 0.5) + vec3(0.0, -0.14 * (1.0 - eL), 0.06);
+  hEl1 = mix(hSh1, hFi1, 0.5) + vec3(0.0, -0.14 * (1.0 - eR), 0.06);
+  hAr0 = mix(0.115, 0.075, eL);
+  hAr1 = mix(0.115, 0.075, eR);
+  hFr0 = 0.165 + 0.05 * eL;
+  hFr1 = 0.165 + 0.05 * eR;
+  hHi0 = vec3(-0.15, 0.60 + bounce, 0.0);
+  hHi1 = vec3( 0.15, 0.60 + bounce, 0.0);
+  hKn0 = vec3(-0.25, 0.34 + bounce * 0.5, 0.10);
+  hKn1 = vec3( 0.25, 0.34 + bounce * 0.5, 0.10);
+  hFo0 = vec3(-0.31, 0.085, 0.08);
+  hFo1 = vec3( 0.31, 0.085, 0.08);
+}
+
+float heroSDF(vec3 p) {
+  float bnd = length(p - vec3(0.0, 0.9, 0.05)) - 2.05;
+  if (bnd > 0.8) return bnd; // far enough that it can't cast a fake soft shadow
+  float d = length(p - hPel) - 0.29;
+  d = smin(d, sdEllipsoid(p - hChe, hChR), 0.18);
+  d = smin(d, length(p - hHea) - 0.235, 0.17);
+  float a0 = smin(sdCapsule(p, hSh0, hEl0, hAr0), sdCapsule(p, hEl0, hFi0, hAr0 * 0.92), 0.06);
+  a0 = smin(a0, length(p - hFi0) - hFr0, 0.09);
+  float a1 = smin(sdCapsule(p, hSh1, hEl1, hAr1), sdCapsule(p, hEl1, hFi1, hAr1 * 0.92), 0.06);
+  a1 = smin(a1, length(p - hFi1) - hFr1, 0.09);
+  d = smin(d, a0, 0.12);
+  d = smin(d, a1, 0.12);
+  float l0 = smin(sdCapsule(p, hHi0, hKn0, 0.13), sdCapsule(p, hKn0, hFo0, 0.115), 0.06);
+  l0 = smin(l0, sdEllipsoid(p - hFo0, vec3(0.15, 0.085, 0.19)), 0.07);
+  float l1 = smin(sdCapsule(p, hHi1, hKn1, 0.13), sdCapsule(p, hKn1, hFo1, 0.115), 0.06);
+  l1 = smin(l1, sdEllipsoid(p - hFo1, vec3(0.15, 0.085, 0.19)), 0.07);
+  d = smin(d, l0, 0.10);
+  d = smin(d, l1, 0.10);
+  d += 0.008 * sin(p.x * 13.0 + uTime * 3.1) * sin(p.y * 11.0 - uTime * 2.3) * sin(p.z * 12.0 + uTime * 2.7);
+  return d;
+}
+
+float enemySDF(vec3 p, vec3 c, vec3 F, float ofs) {
+  vec3 q = p - c;
+  float bnd = length(q - vec3(0.0, 0.6, 0.0)) - 0.78;
+  if (bnd > 0.8) return bnd; // far enough that it can't cast a fake soft shadow
+  vec3 S = vec3(F.z, 0.0, -F.x);
+  vec3 lp = vec3(dot(q, S), q.y, dot(q, F));
+  float ph = uTime * 9.0 + ofs;
+  float s = sin(ph);
+  float bob = 0.035 * abs(cos(ph));
+  float k = uK;
+  float d = length(lp - vec3(0.0, 1.0 + bob, 0.10)) - 0.165;
+  d = smin(d, sdCapsule(lp, vec3(0.0, 0.50 + bob, 0.0), vec3(0.0, 0.84 + bob, 0.07), 0.095), k);
+  float aL = smin(sdCapsule(lp, vec3(-0.13, 0.80 + bob, 0.05), vec3(-0.19, 0.64 + bob, 0.05 - 0.14 * s), 0.06),
+                  sdCapsule(lp, vec3(-0.19, 0.64 + bob, 0.05 - 0.14 * s), vec3(-0.18, 0.50 + bob, 0.12 - 0.22 * s), 0.058), k * 0.8);
+  float aR = smin(sdCapsule(lp, vec3( 0.13, 0.80 + bob, 0.05), vec3( 0.19, 0.64 + bob, 0.05 + 0.14 * s), 0.06),
+                  sdCapsule(lp, vec3( 0.19, 0.64 + bob, 0.05 + 0.14 * s), vec3( 0.18, 0.50 + bob, 0.12 + 0.22 * s), 0.058), k * 0.8);
+  vec3 kL = vec3(-0.085, 0.29 + 0.04 * max(0.0, s), 0.10 * s + 0.04);
+  vec3 kR = vec3( 0.085, 0.29 + 0.04 * max(0.0, -s), -0.10 * s + 0.04);
+  vec3 fL = vec3(-0.085, 0.07 + 0.07 * max(0.0, s), 0.20 * s);
+  vec3 fR = vec3( 0.085, 0.07 + 0.07 * max(0.0, -s), -0.20 * s);
+  float gL = smin(sdCapsule(lp, vec3(-0.075, 0.50 + bob, 0.0), kL, 0.07), sdCapsule(lp, kL, fL, 0.065), k * 0.8);
+  float gR = smin(sdCapsule(lp, vec3( 0.075, 0.50 + bob, 0.0), kR, 0.07), sdCapsule(lp, kR, fR, 0.065), k * 0.8);
+  d = smin(d, aL, k);
+  d = smin(d, aR, k);
+  d = smin(d, gL, k);
+  d = smin(d, gR, k);
+  return d;
+}
+
+vec2 mapScene(vec3 p) {
+  vec2 r = vec2(heroSDF(p), 1.0);
+  float e = enemySDF(p, vec3(2.3, 0.0, -0.1), normalize(vec3(-1.0, 0.0, 0.05)), 0.0);
+  if (e < r.x) r = vec2(e, 2.0);
+  e = enemySDF(p, vec3(-2.3, 0.0, 0.25), normalize(vec3(1.0, 0.0, -0.1)), 1.9);
+  if (e < r.x) r = vec2(e, 2.0);
+  e = enemySDF(p, vec3(1.45, 0.0, -1.9), normalize(vec3(-0.6, 0.0, 0.8)), 3.3);
+  if (e < r.x) r = vec2(e, 2.0);
+  e = enemySDF(p, vec3(-1.35, 0.0, -2.1), normalize(vec3(0.55, 0.0, 0.83)), 4.6);
+  if (e < r.x) r = vec2(e, 2.0);
+  return r;
+}
+
+vec2 sphHit(vec3 ro, vec3 rd, vec3 ce, float ra) {
+  vec3 oc = ro - ce;
+  float b = dot(oc, rd);
+  float c = dot(oc, oc) - ra * ra;
+  float h = b * b - c;
+  if (h < 0.0) return vec2(-1.0);
+  h = sqrt(h);
+  return vec2(-b - h, -b + h);
+}
+
+vec3 calcNormal(vec3 p) {
+  const vec2 e = vec2(0.0015, -0.0015);
+  return normalize(e.xyy * mapScene(p + e.xyy).x + e.yyx * mapScene(p + e.yyx).x +
+                   e.yxy * mapScene(p + e.yxy).x + e.xxx * mapScene(p + e.xxx).x);
+}
+
+float softShadow(vec3 ro, vec3 rd) {
+  vec2 bs = sphHit(ro, rd, vec3(0.0, 0.7, -0.6), 3.8);
+  if (bs.y < 0.0) return 1.0;
+  float res = 1.0;
+  float t = max(bs.x, 0.03);
+  for (int i = 0; i < 32; i++) {
+    float h = mapScene(ro + rd * t).x;
+    res = min(res, 9.0 * h / t);
+    t += clamp(h, 0.03, 0.3);
+    if (res < 0.01 || t > bs.y) break;
+  }
+  return clamp(res, 0.0, 1.0);
+}
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+vec3 floorColor(vec3 p, vec3 Ld) {
+  vec2 cell = vec2(0.95, 0.68);
+  vec2 uv = p.xz / cell;
+  float row = floor(uv.y);
+  uv.x += mod(row, 2.0) * 0.5;
+  vec2 id = floor(uv);
+  vec2 f = (fract(uv) - 0.5) * cell;
+  float h = hash(id);
+  vec2 half_ = cell * 0.5 - 0.035;
+  vec2 q = abs(f) - half_ + 0.1;
+  float rb = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - 0.1;
+  float tile = 1.0 - smoothstep(-0.012, 0.012, rb);
+  float edge = smoothstep(-0.09, 0.0, rb) * tile;
+  vec3 slate = vec3(0.17, 0.30, 0.41);
+  vec3 slateHi = vec3(0.25, 0.41, 0.54);
+  vec3 grout = vec3(0.05, 0.12, 0.19);
+  vec3 col = mix(grout, mix(slate, slateHi, h * 0.55), tile);
+  vec2 dir = normalize(f + 1e-4);
+  float facing = dot(dir, normalize(vec2(-0.55, 0.45)));
+  col += edge * slateHi * 0.45 * max(facing, 0.0);
+  col -= edge * 0.06 * max(-facing, 0.0);
+  return col;
+}
+
+vec3 shadeHero(vec3 p, vec3 n, vec3 rd, vec3 Ld) {
+  float dv = min(length(p - hFi0), length(p - hFi1));
+  float df = min(length(p - hFo0), length(p - hFo1));
+  float vio = max(1.0 - smoothstep(0.06, 0.42, dv), 0.35 * (1.0 - smoothstep(0.05, 0.3, df)));
+  vec3 base = mix(vec3(0.07, 0.78, 1.0), vec3(0.47, 0.33, 0.96), vio);
+  float ndl = dot(n, Ld);
+  float wrap = clamp((ndl + 0.55) / 1.55, 0.0, 1.0);
+  float thin = clamp(1.0 + heroSDF(p - n * 0.16) / 0.16, 0.0, 1.0);
+  float fres = pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 3.0);
+  vec3 H = normalize(Ld - rd);
+  float nh = max(dot(n, H), 0.0);
+  float spec = pow(nh, 140.0) * 1.3 + pow(nh, 14.0) * 0.16;
+  float sky = 0.5 + 0.5 * n.y;
+  vec3 col = base * (0.30 + 0.78 * wrap) * mix(0.72, 1.05, sky);
+  col += base * vec3(0.45, 0.95, 1.0) * thin * 0.35;
+  col += vec3(0.56, 0.95, 1.0) * fres * 0.55;
+  col += vec3(spec);
+  return col;
+}
+
+vec3 shadeEnemy(vec3 n, vec3 rd, vec3 Ld) {
+  float ndl = dot(n, Ld);
+  vec3 lit = vec3(0.96, 0.54, 0.12);
+  vec3 mid = vec3(0.86, 0.44, 0.09);
+  vec3 dark = vec3(0.62, 0.30, 0.07);
+  vec3 col = mix(dark, mid, smoothstep(-0.25, -0.12, ndl));
+  col = mix(col, lit, smoothstep(0.25, 0.38, ndl));
+  float fres = pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 3.0);
+  col += vec3(1.0, 0.75, 0.5) * fres * 0.12;
+  return col;
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  setupHero(uTime);
+  vec3 ro = vec3(0.0, 4.3, 6.4);
+  vec3 ta = vec3(0.0, 0.7, -0.3);
+  vec3 cf = normalize(ta - ro);
+  vec3 cr = normalize(cross(cf, vec3(0.0, 1.0, 0.0)));
+  vec3 cu = cross(cr, cf);
+  vec3 rd = normalize(uv.x * cr + uv.y * cu + 2.0 * cf);
+  vec3 Ld = normalize(vec3(-0.55, 0.85, 0.45));
+  vec3 night = vec3(0.04, 0.12, 0.2);
+
+  float tF = rd.y < 0.0 ? -ro.y / rd.y : 1e4;
+  float mat = 0.0;
+  float t = 0.0;
+  vec2 bs = sphHit(ro, rd, vec3(0.0, 0.7, -0.6), 3.8);
+  if (bs.y > 0.0) {
+    t = max(bs.x, 0.0);
+    float tEnd = min(bs.y, tF);
+    for (int i = 0; i < 110; i++) {
+      vec2 h = mapScene(ro + rd * t);
+      if (h.x < 0.0012) { mat = h.y; break; }
+      t += h.x * 0.9;
+      if (t > tEnd) break;
+    }
+  }
+
+  vec3 col;
+  vec3 p;
+  if (mat > 0.5) {
+    p = ro + rd * t;
+    vec3 n = calcNormal(p);
+    col = mat < 1.5 ? shadeHero(p, n, rd, Ld) : shadeEnemy(n, rd, Ld);
+    col *= mix(0.55, 1.0, clamp(p.y * 2.2 + 0.35, 0.0, 1.0));
+  } else if (tF < 1e3) {
+    t = tF;
+    p = ro + rd * t;
+    col = floorColor(p, Ld);
+    float sh = softShadow(p + vec3(0.0, 0.002, 0.0), Ld);
+    col = mix(col * vec3(0.42, 0.52, 0.72), col, sh);
+  } else {
+    p = ro + rd * 30.0;
+    col = night;
+  }
+  float r = length(p.xz - vec2(0.0, -0.4));
+  float spot = exp(-r * r * 0.05);
+  col = mix(night, col, clamp(spot * 1.15, 0.0, 1.0));
+  col *= 1.0 - 0.35 * dot(uv, uv);
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+  function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader compile failed');
+    return s;
+  }
+  let prog;
+  try {
+    prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) || 'link failed');
+  } catch (err) {
+    console.error(err);
+    fail('The live render could not start on this device. The rest of the blueprint is unaffected.');
+    return;
+  }
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'a');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const uRes = gl.getUniformLocation(prog, 'uRes');
+  const uTime = gl.getUniformLocation(prog, 'uTime');
+  const uK = gl.getUniformLocation(prog, 'uK');
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let k = 0.075, visible = false, raf = 0, lastT = 0.98;
+
+  function size() {
+    const r = canvas.getBoundingClientRect();
+    const s = Math.min(window.devicePixelRatio || 1, 1.5) * 0.85;
+    canvas.width = Math.max(1, Math.round(r.width * s));
+    canvas.height = Math.max(1, Math.round(r.height * s));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  function draw(t) {
+    lastT = t;
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uTime, t);
+    gl.uniform1f(uK, k);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  function frame(now) {
+    draw(now / 1000);
+    if (visible) raf = requestAnimationFrame(frame);
+  }
+  function start() {
+    cancelAnimationFrame(raf);
+    if (reduce) draw(0.98); else raf = requestAnimationFrame(frame);
+  }
+  size();
+  draw(0.98);
+  new ResizeObserver(() => { size(); draw(lastT); }).observe(canvas);
+  new IntersectionObserver(entries => { visible = entries[0].isIntersecting; if (visible) start(); else cancelAnimationFrame(raf); }).observe(canvas);
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); cancelAnimationFrame(raf); fail('The live render stopped because the browser reclaimed its graphics context. Reload the page to restart it.'); });
+
+  function setK(connected) {
+    k = connected ? 0.075 : 0.0;
+    btnC.setAttribute('aria-pressed', String(connected));
+    btnS.setAttribute('aria-pressed', String(!connected));
+    if (reduce || !visible) draw(lastT);
+  }
+  btnC.addEventListener('click', () => setK(true));
+  btnS.addEventListener('click', () => setK(false));
+})();
+</script>
+</body>
+</html>
