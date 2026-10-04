@@ -6,7 +6,7 @@ const SKILLS = {
   ball: {
     name: 'Blob Ball', intro: 'Fires balls of goo at the closest enemy.', icon: { type: 0, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Balls'], ['pierce', 'Pierce']],
-    levels: [{ dmg: 12, cd: 0.9, count: 1, pierce: 0 }, { dmg: 12, cd: 0.9, count: 2, pierce: 0 }, { dmg: 16, cd: 0.9, count: 2, pierce: 1 }, { dmg: 16, cd: 0.8, count: 3, pierce: 1 }, { dmg: 22, cd: 0.7, count: 3, pierce: 2 }],
+    levels: [{ dmg: 14, cd: 0.9, count: 1, pierce: 0 }, { dmg: 14, cd: 0.9, count: 2, pierce: 0 }, { dmg: 18, cd: 0.9, count: 2, pierce: 1 }, { dmg: 18, cd: 0.8, count: 3, pierce: 1 }, { dmg: 24, cd: 0.7, count: 3, pierce: 2 }],
   },
   fists: {
     name: 'Blob Fists', intro: 'Your arms stretch out and punch nearby enemies, knocking them back.', icon: { type: 17, colw: 1 },
@@ -117,8 +117,8 @@ function chapterInfo(n) {
   const bosses = n % 5 === 0 ? ['conductor', BOSS_ORDER[(Math.floor(n / 5) - 1) % 4]] : [BOSS_ORDER[(n - 1) % 5]];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
-    hpMul: 1 + 0.16 * k + 0.004 * k * k,
-    dmgMul: 1 + 0.06 * k,
+    hpMul: 1 + 0.12 * k + 0.004 * k * k,
+    dmgMul: 1 + 0.08 * k,
     rateMul: Math.min(1.8, 1 + 0.035 * k),
     bossHpMul: Math.pow(1.17, k) * (bosses.length > 1 ? 0.75 : 1),
     reward: Math.round(150 * Math.pow(1.08, k)),

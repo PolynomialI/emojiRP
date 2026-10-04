@@ -316,8 +316,9 @@ const UI = {
     $('chRes').replaceChildren();
     $('btnChest').disabled = true;
     setState('chest');
-    const box = strip.parentElement.getBoundingClientRect();
-    const target = -(land * 90 + 40 - box.width / 2) + rand(-20, 20);
+    // layout sizes, not getBoundingClientRect: the modal is mid scale-in animation at this point
+    const lt = tiles[land], boxW = strip.parentElement.clientWidth;
+    const target = -(lt.offsetLeft + lt.offsetWidth / 2 - boxW / 2) + rand(-0.3, 0.3) * lt.offsetWidth;
     requestAnimationFrame(() => requestAnimationFrame(() => {
       strip.style.transition = 'transform 1.9s cubic-bezier(.12,.8,.2,1)';
       strip.style.transform = `translateX(${target}px)`;

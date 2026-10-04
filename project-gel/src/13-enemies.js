@@ -202,6 +202,9 @@ function updateBoss(e, dt) {
     }
     case 'conductor': {
       e.clip = 'conduct'; e.phase += dt * 0.7;
+      // the stage follows the hero, so the Conductor can't be left behind
+      const ax = h[0] - ai.anchor[0], az = h[2] - ai.anchor[1], ad = Math.hypot(ax, az);
+      if (ad > 5.5) { const st = Math.min(ad - 5.5, 1.4 * dt); ai.anchor[0] += ax / ad * st; ai.anchor[1] += az / ad * st; }
       bossWalk(e, dt, ai.anchor[0] + Math.cos(G.run.t * 0.3) * 1.5, ai.anchor[1] + Math.sin(G.run.t * 0.3) * 1.5, e.speed);
       e.clip = 'conduct';
       bossFace(e, dt, 3);

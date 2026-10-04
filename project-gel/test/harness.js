@@ -32,8 +32,10 @@
     for (const e of run.enemies) {
       if (e.dying) continue;
       const dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 0.01;
-      const r = e.boss ? 5.5 + e.radius : 2.6 + e.radius;
+      const r = e.boss ? 3.2 + e.radius : 2.6 + e.radius;
       if (d < r) { const w = (r - d) / r; const k = (e.boss ? 4 : 1) * w * w / d; fx += dx * k; fz += dz * k; }
+      // stay within skill range of a boss, the way a player would
+      if (e.boss && d > 6.5) { fx -= dx / d * 0.6; fz -= dz / d * 0.6; }
     }
     for (const s of run.eShots) {
       if (s.kind === 'boulder') {

@@ -4325,7 +4325,7 @@ const SKILLS = {
   ball: {
     name: 'Blob Ball', intro: 'Fires balls of goo at the closest enemy.', icon: { type: 0, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Balls'], ['pierce', 'Pierce']],
-    levels: [{ dmg: 12, cd: 0.9, count: 1, pierce: 0 }, { dmg: 12, cd: 0.9, count: 2, pierce: 0 }, { dmg: 16, cd: 0.9, count: 2, pierce: 1 }, { dmg: 16, cd: 0.8, count: 3, pierce: 1 }, { dmg: 22, cd: 0.7, count: 3, pierce: 2 }],
+    levels: [{ dmg: 14, cd: 0.9, count: 1, pierce: 0 }, { dmg: 14, cd: 0.9, count: 2, pierce: 0 }, { dmg: 18, cd: 0.9, count: 2, pierce: 1 }, { dmg: 18, cd: 0.8, count: 3, pierce: 1 }, { dmg: 24, cd: 0.7, count: 3, pierce: 2 }],
   },
   fists: {
     name: 'Blob Fists', intro: 'Your arms stretch out and punch nearby enemies, knocking them back.', icon: { type: 17, colw: 1 },
@@ -4436,8 +4436,8 @@ function chapterInfo(n) {
   const bosses = n % 5 === 0 ? ['conductor', BOSS_ORDER[(Math.floor(n / 5) - 1) % 4]] : [BOSS_ORDER[(n - 1) % 5]];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
-    hpMul: 1 + 0.16 * k + 0.004 * k * k,
-    dmgMul: 1 + 0.06 * k,
+    hpMul: 1 + 0.12 * k + 0.004 * k * k,
+    dmgMul: 1 + 0.08 * k,
     rateMul: Math.min(1.8, 1 + 0.035 * k),
     bossHpMul: Math.pow(1.17, k) * (bosses.length > 1 ? 0.75 : 1),
     reward: Math.round(150 * Math.pow(1.08, k)),
@@ -5933,6 +5933,9 @@ function updateBoss(e, dt) {
     }
     case 'conductor': {
       e.clip = 'conduct'; e.phase += dt * 0.7;
+      // the stage follows the hero, so the Conductor can't be left behind
+      const ax = h[0] - ai.anchor[0], az = h[2] - ai.anchor[1], ad = Math.hypot(ax, az);
+      if (ad > 5.5) { const st = Math.min(ad - 5.5, 1.4 * dt); ai.anchor[0] += ax / ad * st; ai.anchor[1] += az / ad * st; }
       bossWalk(e, dt, ai.anchor[0] + Math.cos(G.run.t * 0.3) * 1.5, ai.anchor[1] + Math.sin(G.run.t * 0.3) * 1.5, e.speed);
       e.clip = 'conduct';
       bossFace(e, dt, 3);
@@ -6440,8 +6443,9 @@ const UI = {
     $('chRes').replaceChildren();
     $('btnChest').disabled = true;
     setState('chest');
-    const box = strip.parentElement.getBoundingClientRect();
-    const target = -(land * 90 + 40 - box.width / 2) + rand(-20, 20);
+    // layout sizes, not getBoundingClientRect: the modal is mid scale-in animation at this point
+    const lt = tiles[land], boxW = strip.parentElement.clientWidth;
+    const target = -(lt.offsetLeft + lt.offsetWidth / 2 - boxW / 2) + rand(-0.3, 0.3) * lt.offsetWidth;
     requestAnimationFrame(() => requestAnimationFrame(() => {
       strip.style.transition = 'transform 1.9s cubic-bezier(.12,.8,.2,1)';
       strip.style.transform = `translateX(${target}px)`;

@@ -67,6 +67,7 @@ if (mode === 'play') {
         return { state: G.state, t: r ? Math.round(r.t) : 0, hp: r ? Math.round(r.hp) : 0, max: r ? Math.round(r.maxHp) : 0, lvl: r ? r.level : 0, en: r ? r.enemies.length : 0, kills: r ? r.kills : 0, gems: r ? r.gems.length : 0, boss: r && r.bosses.length ? r.bosses.map(b => Math.round(b.hp)).join('/') : '' };
       });
       if (stats.length === 0 || st.t - stats[stats.length - 1].t >= 15 || st.state !== 'run') stats.push(st);
+      if (st.t > 900) { console.log('STUCK: run passed 15 minutes', JSON.stringify(st)); await page.evaluate(() => finishRun(false)); continue; }
       for (const s of [...shotAt]) if (st.t >= s) { shotAt.delete(s); await render(2); await shot(`play-c${chapter}-t${s}`); }
       if (st.state === 'levelup') {
         if (!levelShot) { levelShot = true; await render(1); await shot('levelup'); }
@@ -146,6 +147,60 @@ if (mode === 'bosses') {
     await page.click('#btnContinue');
     await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
   }
+}
+if (mode === 'flows') {
+  // chest roulette, melt, revive, victory, results, offline earnings, purchases, low quality
+  // advance the game, taking the first card at level-ups and skipping chests
+  const step = async n => page.evaluate(n => { for (let i = 0; i < n; i++) { if (G.run) G.run.chestQueued = 0; if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } __frames(1); } }, n);
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  await page.evaluate(() => { window.readInput = () => __botInput(); __bot.on = true; for (const id of ['ball', 'missile', 'blade']) for (let i = 0; i < 3; i++) addOrLevel(id); });
+  await step(600);
+  await page.evaluate(() => { G.run.pending = 0; G.run.chestQueued = 1; });
+  await page.evaluate(() => __frames(2));
+  await page.waitForTimeout(700); await render(1); await shot('flow-chest-spin');
+  await page.waitForFunction(() => !document.getElementById('btnChest').disabled, null, { timeout: 10000, polling: 100 });
+  await render(1); await shot('flow-chest-result');
+  await page.click('#btnChest');
+  await page.evaluate(() => { G.run.invuln = 0; hurtHero(9999, G.hero.pos[0] + 1, G.hero.pos[2]); });
+  await step(25); await render(1); await shot('flow-melting');
+  await step(60);
+  await page.waitForFunction(() => G.state === 'revive', null, { timeout: 10000, polling: 100 });
+  await page.click('#btnRevive');
+  await step(20); await render(1); await shot('flow-revived');
+  // jump to a boss kill
+  await page.evaluate(() => { G.run.t = 299; G.run.events = G.run.events.filter(e => e.kind === 'boss'); });
+  await step(160);
+  await page.evaluate(() => { for (const b of G.run.bosses) { b.hp = 1; hurtEnemy(b, 10); } });
+  await step(30); await render(1); await shot('flow-victory');
+  await step(150);
+  await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+  await render(1); await shot('flow-results-won');
+  await page.click('#btnContinue');
+  await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+  // purchases
+  await page.evaluate(() => { G.save.coins = 5000; UI.refreshHome(); });
+  await page.click('.tab[data-tab="upgrades"]');
+  await page.click('#upList .uprow:nth-child(1) button'); await page.click('#upList .uprow:nth-child(1) button');
+  await render(2); await shot('flow-upgrades-bought');
+  await page.click('#upgrades .back');
+  await page.click('.tab[data-tab="skins"]');
+  await page.click('#skinGrid .skin:nth-child(3)'); await render(20); await shot('flow-skin-preview');
+  await page.click('#skinAction'); await render(20); await shot('flow-skin-bought');
+  await page.click('#skins .back');
+  await page.click('.tab[data-tab="chapters"]'); await render(2); await shot('flow-chapters-after');
+  await page.click('#chapters .back');
+  // offline earnings popup on the next visit
+  await page.evaluate(() => { G.save.upgrades.offline = 3; G.save.lastSeen = Date.now() - 3 * 3.6e6; const o = offlineEarnings(); UI.showOffline(o.coins, o.hours); });
+  await render(2); await shot('flow-offline');
+  await page.click('#btnCollect');
+  // low quality preset in a run
+  await page.click('#btnSettings'); await page.click('#qualitySeg button[data-q="low"]'); await page.click('#btnSettingsDone');
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  await page.evaluate(() => { for (const id of ['ball', 'aura', 'blade']) for (let i = 0; i < 3; i++) addOrLevel(id); });
+  await step(500); await render(2); await shot('flow-low-quality');
+  console.log('saved:', await page.evaluate(() => localStorage.getItem('projectGel.save.v1').slice(0, 200)));
 }
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
