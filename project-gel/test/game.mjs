@@ -26,6 +26,7 @@ if (process.env.SAVE) await page.addInitScript(s => { localStorage.setItem('proj
 const t0 = Date.now();
 process.on('unhandledRejection', async e => { console.log('FAILED:', e.message.split('\n')[0]); console.log('ERRORS:\n' + errors.join('\n')); try { console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan))); console.log('state', await page.evaluate(() => G.state)); } catch (_) {} await browser.close(); process.exit(1); });
 await page.goto(url);
+if (mode === 'boot') await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'loading.png') });
 const shot = async name => { await page.waitForTimeout(450); await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + name + '.png') }); };
 const render = async (n = 1) => page.evaluate(n => __frames(n, 1 / 60, true), n);
 await page.waitForFunction(() => G.state === 'home' || !document.getElementById('loadError').hidden, null, { timeout: 120000 });
@@ -230,6 +231,25 @@ if (mode === 'input') {
   await page.waitForTimeout(400);
   await page.keyboard.press('2'); await run(1);
   console.log('key 2 picked ->', await page.evaluate(() => G.state + ' slots=' + G.run.slots.map(s => s.id + s.lvl).join(',')));
+}
+if (mode === 'arenas') {
+  // the first chapter of each arena, 40 seconds into a run with a few skills
+  for (const n of (process.env.ONLY || '1,6,11,16,21,26').split(',').map(Number)) {
+    await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); }, n);
+    await page.click('#btnPlay');
+    await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+    await page.evaluate(() => {
+      window.readInput = () => __botInput(); __bot.on = true;
+      for (const id of ['ball', 'fists', 'grenade', 'aura']) for (let i = 0; i < 3; i++) addOrLevel(id);
+      G.run.t = 100;
+      for (let i = 0; i < 2400; i++) { G.run.invuln = 1; G.run.chestQueued = 0; if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); __frames(1); }
+    });
+    await render(2); await shot(`arena-run-c${n}`);
+    await page.evaluate(() => finishRun(false));
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.click('#btnContinue');
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+  }
 }
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
