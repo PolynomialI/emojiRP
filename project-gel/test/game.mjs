@@ -202,6 +202,35 @@ if (mode === 'flows') {
   await step(500); await render(2); await shot('flow-low-quality');
   console.log('saved:', await page.evaluate(() => localStorage.getItem('projectGel.save.v1').slice(0, 200)));
 }
+if (mode === 'input') {
+  // real input paths: keyboard, drag joystick, Esc to pause, number keys on level-up
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  const pos = () => page.evaluate(() => [G.hero.pos[0], G.hero.pos[2]].map(v => +v.toFixed(2)));
+  const run = n => page.evaluate(n => { for (let i = 0; i < n; i++) { if (G.run) G.run.pending = 0, G.run.chestQueued = 0; __frames(1); } }, n);
+  let a = await pos();
+  await page.keyboard.down('d'); await run(30); await page.keyboard.up('d');
+  let b = await pos(); console.log('keyboard D moved x by', (b[0] - a[0]).toFixed(2), '(want about +2)');
+  await page.keyboard.down('ArrowUp'); await run(30); await page.keyboard.up('ArrowUp');
+  let c = await pos(); console.log('ArrowUp moved z by', (c[1] - b[1]).toFixed(2), '(want about -2)');
+  const vp = page.viewportSize();
+  await page.mouse.move(vp.width / 2, vp.height / 2); await page.mouse.down();
+  await page.mouse.move(vp.width / 2 - 70, vp.height / 2, { steps: 4 });
+  await run(30);
+  await render(1); await shot('input-joystick');
+  await page.mouse.up();
+  let d = await pos(); console.log('drag left moved x by', (d[0] - c[0]).toFixed(2), '(want about -2)');
+  console.log('hint hidden after moving:', await page.evaluate(() => document.getElementById('hint').hidden));
+  await page.keyboard.press('Escape'); await run(1);
+  console.log('Esc ->', await page.evaluate(() => G.state));
+  await page.keyboard.press('Escape'); await run(1);
+  console.log('Esc again ->', await page.evaluate(() => G.state));
+  await page.evaluate(() => { G.run.pending = 1; }); await page.evaluate(() => __frames(1));
+  console.log('level-up opened ->', await page.evaluate(() => G.state));
+  await page.waitForTimeout(400);
+  await page.keyboard.press('2'); await run(1);
+  console.log('key 2 picked ->', await page.evaluate(() => G.state + ' slots=' + G.run.slots.map(s => s.id + s.lvl).join(',')));
+}
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
 await browser.close();
