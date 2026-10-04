@@ -62,12 +62,15 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - Portraits are now drawn only when the chapter map opens. All 17 meshes are ready about 1.7 s after the home screen appears (measured in headless Chromium).
 
 ## Next steps
-1. Optional: balance chapter 10 with upgrades.
-2. Final visual pass:
-   - The hero close up.
-   - Each arena in a real run.
-   - The loading screen.
-3. Deliver: send `dist/project-gel.html` and summarise. Real-phone performance is unmeasured: there's no LOD mesh, and the Auto preset scales resolution.
+The planned work is done. The final visual pass covered:
+- Each arena in a real run (Ice Lab was darkened so the hero stands out).
+- The loading screen.
+- Hero close-ups.
+
+Optional follow-ups:
+1. Balance chapter 10 and later, with upgrades.
+2. A lower-detail stickman mesh, if real phones struggle with big crowds.
+3. Measure performance on a real phone. This hasn't been possible here.
 
 ## Build and test
 - **Build:**
@@ -82,6 +85,7 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   - `bosses`: each boss fight.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.
+  - `arenas` (`ONLY=21` limits it to one chapter): the first chapter of each arena, mid-run.
 - Screenshots go to `test/shots/`, and logs to `test/*.log`; git ignores both. Combine screenshots with `node test/montage.mjs out.png <cols> a.png b.png ...`.
 - **Harness notes (`test/harness.js`):**
   - It replaces `requestAnimationFrame` so `__frames(n, dt, render)` can step the real game loop.
