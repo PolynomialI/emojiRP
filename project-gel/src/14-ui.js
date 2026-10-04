@@ -155,6 +155,8 @@ const UI = {
   // ---------- chapter map ----------
   renderChapters() {
     const sv = G.save, map = $('chMap');
+    // boss portraits need a GPU readback, so they are drawn here, only when the map is opened
+    for (const m in BOSS_OF_MODEL) if (R.enemyDraw[m] && !ICONS.map['boss-' + BOSS_OF_MODEL[m]]) renderBossPortrait(m);
     const top = Math.min(sv.chapter + 4, 300);
     const nodes = [];
     for (let n = top; n >= 1; n--) {

@@ -46,9 +46,10 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 | 3 | none | 3/4 |
 | 3 | level 6 | 3/4 |
 | 5 | none | 1/4 |
+| 5 | level 3 | 3/4 |
 | 5 | level 6 | 3/4 |
 
-- These results come from tests run before the last scaling change. The chapter 5, level-3 test was still running when this file was written.
+- Chapter 5 is the first double-boss chapter and is meant to need some upgrades.
 - Chapter scaling is in `chapterInfo()` in `src/10-data.js`:
   - `hpMul = 1 + 0.12k + 0.004k²`
   - `dmgMul = 1 + 0.08k`
@@ -56,24 +57,17 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - The chapter's extra HP and spawn rate ease in over the first 90 s (HP) and 120 s (spawn rate). See `spawnEnemy` and `updateRun` in `src/11-game.js`.
 - Ch1 runs reach level 21–23 with about 2,000 kills and 50–110 enemies on screen at peak. One win pays about 280–320 coins.
 
-## Open item being investigated
-Mesh build timing in headless Chromium:
-- **Normal enemies:** all ready about 7.8 s after page load (each takes 0.3–0.7 s in a worker).
-- **Boss meshes:** they arrived only after 48–54 s, even though each takes about 1.3 s to build.
-  - Suspected cause: the workers or the message handling are starved while the home screen renders. It may also be specific to SwiftShader.
-- **Why it matters:** if a boss mesh is missing when its fight starts, `ensureMeshNow()` in `src/17-main.js` builds it on the main thread, which causes a hitch.
-- **Next:** check the worker and main-thread timing, and consider building boss meshes earlier or yielding during the home-screen render.
+## Resolved: slow boss meshes
+- Boss meshes used to arrive 48–54 s after load. The cause was each boss portrait being rendered with a GPU readback the moment its mesh arrived, which blocked the main thread.
+- Portraits are now drawn only when the chapter map opens. All 17 meshes are ready about 1.7 s after the home screen appears (measured in headless Chromium).
 
 ## Next steps
-1. Finish the investigation above.
-2. Re-run balance:
-   - Chapter 5 with level-3 upgrades.
-   - Possibly chapter 10 with upgrades.
-3. Final visual pass:
+1. Optional: balance chapter 10 with upgrades.
+2. Final visual pass:
    - The hero close up.
    - Each arena in a real run.
    - The loading screen.
-4. Deliver: send `dist/project-gel.html` and summarise. Real-phone performance is unmeasured: there's no LOD mesh, and the Auto preset scales resolution.
+3. Deliver: send `dist/project-gel.html` and summarise. Real-phone performance is unmeasured: there's no LOD mesh, and the Auto preset scales resolution.
 
 ## Build and test
 - **Build:**

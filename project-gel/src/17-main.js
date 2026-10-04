@@ -46,7 +46,6 @@ function onMeshBuilt(name, mesh) {
   if (MESHJOB.done.has(name)) return;
   MESHJOB.done.add(name);
   R.addEnemyMesh(name, mesh);
-  if (BOSS_OF_MODEL[name]) renderBossPortrait(name);
 }
 function meshFallback() {
   if (MESHJOB.fallback) return;
