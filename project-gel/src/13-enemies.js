@@ -6,13 +6,17 @@ function startBoss() {
   run.bossStarted = true;
   const ids = run.info.bosses;
   for (const id of ids) ensureMeshNow(BOSS_TYPES[id].model);
+  // bosses drop in on screen, part of the way toward the top edge (clear of the HUD)
+  const C = VIEW.corners, topZ = (C[0][2] + C[1][2]) / 2, halfW = Math.abs(C[1][0] - C[0][0]) / 2;
+  const dz = -Math.max(3.4, (h[2] - topZ) * 0.4), spread = Math.min(4, halfW * 0.55);
   ids.forEach((id, i) => {
-    const off = (i - (ids.length - 1) / 2) * 5;
+    const off = ids.length > 1 ? (i - (ids.length - 1) / 2) * spread * 1.3 : 0;
     if (id === 'twins') {
-      const a = spawnBoss('twins', h[0] - 4 + off, h[2] - 7, {});
-      const b = spawnBoss('twins', h[0] + 4 + off, h[2] - 7, { tint: BOSS_TYPES.twins.tint2 });
+      const w = ids.length > 1 ? spread * 0.45 : spread;
+      const a = spawnBoss('twins', h[0] + off - w, h[2] + dz, {});
+      const b = spawnBoss('twins', h[0] + off + w, h[2] + dz, { tint: BOSS_TYPES.twins.tint2 });
       a.ai.partner = b; b.ai.partner = a; a.ai.side = 1; b.ai.side = -1;
-    } else spawnBoss(id, h[0] + off, h[2] - 8, {});
+    } else spawnBoss(id, h[0] + off, h[2] + dz, {});
   });
   run.bossTotalHp = run.bosses.reduce((s, b) => s + b.maxHp, 0);
   const names = [...new Set(ids)].map(id => BOSS_TYPES[id].name);
@@ -33,9 +37,9 @@ function spawnBoss(id, x, z, opts) {
     ai: { state: 'enter', t: 1.2, summonT: 8, throwT: 2.5, jumpCd: 2, attackT: 2.5, charges: 0, anchor: [x, z], orbit: rand(0, TAU), mode: 0 },
   };
   e.contactDmg = e.dmg;
+  e.y = 9;
   run.enemies.push(e); run.bosses.push(e);
-  FX.ring(x, z, 4, [1, 0.5, 0.3], 0.6);
-  FX.burst(x, 0.5, z, 20, ORANGE, 6, 0.15, 0.6, 0);
+  addTele({ kind: 'circle', x, z, r: B.radius * 2.2, dur: 1.2 });
   return e;
 }
 
@@ -59,8 +63,19 @@ function updateBoss(e, dt) {
   e.dizzy = Math.max(0, e.dizzy - dt);
   const dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
   if (ai.state === 'enter') {
+    // falls out of the sky, then lands with a shockwave that shoves everything back
     e.clip = 'idle'; e.phase += dt * 0.8; bossFace(e, dt);
-    if (ai.t <= 0) { ai.state = 'walk'; ai.t = 2.5; }
+    const u = clamp(ai.t / 1.2, 0, 1);
+    e.y = 9 * u * u;
+    if (ai.t <= 0) {
+      e.y = 0; ai.state = 'walk'; ai.t = 2.5; e.squashV -= 5;
+      FX.ring(e.x, e.z, 6, [1, 0.75, 0.5], 0.55); FX.crack(e.x, e.z, 3.4, 1.8);
+      FX.burst(e.x, 0.2, e.z, 24, [0.6, 0.55, 0.5], 6, 0.18, 0.7, 2, 1.4);
+      FX.droplets(e.x, 0.4, e.z, 12, 5, 5, 0.07, ORANGE);
+      G.cam.shake = Math.max(G.cam.shake, 0.22); AUDIO.play('boom');
+      enemiesInRadius(e.x, e.z, 3.5, o => { if (!o.boss) { const ox = o.x - e.x, oz = o.z - e.z, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 9 / o.mass; o.kz += oz / od * 9 / o.mass; } });
+      if (d < 3.2) { run.vel[0] += dx / d * 9; run.vel[2] += dz / d * 9; }
+    }
     return;
   }
   switch (e.type) {
@@ -258,7 +273,7 @@ function emitRunScene() {
     if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;
-    pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? 1 : 0, e.auraTint, e.tint[0], e.tint[1], e.tint[2]);
+    pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? (e.boss ? 0.55 : 0.85) : 0, e.auraTint, e.tint[0], e.tint[1], e.tint[2]);
     const ss = e.scale * (1 - dead * 0.5) * (1 - clamp((e.y || 0) / 6, 0, 0.5));
     pushDecal(e.x + sdx * ss, e.z + sdz * ss, 0.3 * ss, 0.45 * ss, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   }

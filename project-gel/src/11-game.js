@@ -196,7 +196,8 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   dmg *= G.run.stats.dmgMul;
   if (e.boss && e.dizzy > 0) dmg *= 1.5;
   e.hp -= dmg;
-  e.flash = 0.07;
+  // flash white on a hit, but under constant fire strobe instead of staying solid white
+  if (!(e.flashCd > 0)) { e.flash = 0.07; e.flashCd = 0.16; }
   e.squashV -= e.boss ? 0.8 : 2.4;
   if (!e.boss) { e.kx += kx / e.mass; e.kz += kz / e.mass; }
   addNumber(e, dmg, opts.color);
@@ -410,7 +411,7 @@ function updateEnemies(dt) {
   let touching = 0;
   for (const e of run.enemies) {
     if (e.dying) { e.dying += dt / (e.boss ? 0.6 : 0.14); continue; }
-    e.flash = Math.max(0, e.flash - dt);
+    e.flash = Math.max(0, e.flash - dt); e.flashCd = (e.flashCd || 0) - dt;
     e.contactCd -= dt;
     e.slowT -= dt; if (e.slowT <= 0) e.slowMul = 1;
     e.spawnT = Math.max(0, e.spawnT - dt);

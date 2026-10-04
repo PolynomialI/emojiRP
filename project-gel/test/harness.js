@@ -72,7 +72,7 @@
     // circle around a crowd instead of stopping
     if (danger > 0.4) { fx += -fz * 0.5; fz += fx * 0.5; }
     const m = Math.hypot(fx, fz);
-    if (m > 0.05) { G.input.x = fx / m; G.input.z = fz / m; } else { G.input.x = 0; G.input.z = 0; }
+    if (m > 0.05) { G.input.x = fx / m; G.input.z = fz / m; INPUT.moved = true; } else { G.input.x = 0; G.input.z = 0; }
   };
   // weighted level-up choice: favor owned skills, then new skills, then useful passives
   window.__botPick = () => {

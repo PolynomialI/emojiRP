@@ -27,19 +27,25 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   - A detector for NaN values sent to the GPU.
 
 ## In progress
-- **Balance:** bot results with no upgrades:
+- **Balance:** bot results:
 
-  | Chapter | Bot wins |
-  |---|---|
-  | 1 | 8/8 |
-  | 2 | 3/4 |
-  | 3 | 1/4 |
+  | Chapter | Upgrades | Bot wins |
+  |---|---|---|
+  | 1 | none | 8/8 |
+  | 2 | none | 3/4 |
+  | 3 | none | 3/4 |
+  | 3 | level 6 | 3/4 |
 
-  Later chapters' extra enemy HP and spawn rate now ease in over the first 1.5–2 minutes. Chapters 3 and 5 are being re-tested with and without upgrades.
-- **Visual review:** every skill at max level, and every boss attack. This follows a fix for a NaN bug that blew out the bloom.
+  Later chapters' extra enemy HP and spawn rate now ease in over the first 1.5–2 minutes. Chapter 5 (double boss) is being tested.
+- **Visual review:**
+  - All 13 skills have been checked at max level.
+  - All 5 bosses have been checked.
+  - Bosses now drop in on screen with a landing telegraph.
+  - The hit flash strobes instead of staying solid white.
+  - The Aura burn shows as a cyan rim glow.
 
 ## Next steps
-1. Review the skills and bosses screenshots and fix any visual problems.
+1. Finish chapter 5+ balance, with and without upgrades.
 2. Check the in-run HUD at phone size.
 3. Performance with big crowds: possibly add a lower-detail stickman mesh, and check the quality presets.
 4. Polish, then deliver the final HTML.

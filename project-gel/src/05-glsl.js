@@ -897,7 +897,9 @@ void main() {
     vec3 H = normalize(uLightDir + v);
     col += uLightCol * pow(max(dot(n, H), 0.0), 40.0) * 0.35;
   }
-  col = mix(col, col * vec3(0.55, 1.0, 1.25) + vec3(0.0, 0.1, 0.14), vFx.w * 0.6);
+  // standing in the hero's aura: a cyan rim and cyan light from the goo puddle below, keeping the orange body
+  float low = 1.0 - smoothstep(0.0, 0.9, vW.y);
+  col += vec3(0.25, 0.85, 1.0) * vFx.w * (rim * 0.9 + low * (0.5 - 0.5 * n.y) * 0.3);
   col = mix(col, vec3(1.0, 0.97, 0.92), vFx.x);
   col += vec3(1.0, 0.75, 0.2) * vFx.z * 0.12 * rim;
   fragColor = vec4(atmos(col, vW), 1.0);
