@@ -105,9 +105,14 @@ function applyArena(i) {
   f.spotMin = a.spotMin; f.shadowTint = hexToRgb(a.shadowTint);
   f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow;
 }
-function applySkin(id) {
+function applySkin(id, costume) {
   const s = SKINS.find(k => k.id === id) || SKINS[0];
   R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
+  if (G.hero) {
+    const g = G.hero.out.grad;
+    if (s.top) { g.set(hexToRgb(s.top)); g[3] = 1; } else g[3] = 0;
+    G.hero.setCostume(costume ?? (G.save ? G.save.costume : 'none'));
+  }
 }
 
 // ---------- runs ----------

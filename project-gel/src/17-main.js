@@ -3,7 +3,7 @@
 // ============================================================
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
 const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2 };
-const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0 };
+const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
@@ -222,15 +222,17 @@ function homeCamera(dt) {
   const aspect = R.w / R.h, portrait = aspect < 0.9;
   const fov = 0.5, half = Math.tan(fov / 2);
   // on the skins screen the hero sits smaller and higher, above the skin grid
-  const skins = UI.menuTab === 'skins';
-  const wantFrac = skins ? (portrait ? 0.22 : 0.3) : (portrait ? 0.27 : 0.4);
-  const wantLift = skins ? (portrait ? 0.17 : 0.14) : 0;
+  // portrait: smaller and higher above the picker; landscape: on the left of the picker panel
+  const skins = UI.menuTab === 'skins', wide = aspect >= 1.1;
+  const wantFrac = skins ? (portrait ? 0.22 : wide ? 0.42 : 0.3) : (portrait ? 0.27 : 0.4);
+  const wantLift = skins ? (portrait ? 0.17 : wide ? 0.02 : 0.14) : 0;
+  const wantSide = skins && wide ? 0.21 : 0;
   const k = HOME.frac ? 1 - Math.exp(-dt * 6) : 1;
-  HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k;
+  HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
   const viewH = 1.9 / HOME.frac, d = viewH / (2 * half);
-  const tgt = [0, (portrait ? 1.0 : 0.95) - HOME.lift * viewH, 0];
+  const tgt = [HOME.side * viewH * aspect, (portrait ? 1.0 : 0.95) - HOME.lift * viewH, 0];
   const pitch = 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
-  R.setCamera([Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);
+  R.setCamera([tgt[0] + Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);
 }
 
 // ---------- rendering ----------

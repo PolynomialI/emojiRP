@@ -37,6 +37,7 @@ const UI = {
     document.querySelectorAll('#qualitySeg button').forEach(b => b.addEventListener('click', () => { G.save.settings.quality = b.dataset.q; this.syncSettings(); applySettings(); saveGame(); AUDIO.play('click'); }));
     $('heroTap').addEventListener('pointerdown', () => { AUDIO.unlock(); pokeHero(); });
     $('skinAction').addEventListener('click', () => this.skinAction());
+    document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
   },
 
   show(id, on) { const e = $(id); if (e) e.hidden = !on; },
@@ -64,7 +65,7 @@ const UI = {
   },
 
   openTab(tab) {
-    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; }
+    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     if (tab === 'upgrades') this.renderUpgrades();
@@ -120,35 +121,45 @@ const UI = {
 
   // ---------- skins ----------
   renderSkins() {
-    const sv = G.save, grid = $('skinGrid');
+    const sv = G.save, grid = $('skinGrid'), colors = this.blobTab !== 'costumes';
     if (!this.skinPreview) this.skinPreview = sv.skin;
+    if (!this.costumePreview) this.costumePreview = sv.costume;
     document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
-    grid.replaceChildren(...SKINS.map(s => {
+    document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.bt === 'colors') === colors)));
+    const list = colors ? SKINS : COSTUMES, owned = colors ? sv.skins : sv.costumes, worn = colors ? sv.skin : sv.costume;
+    const sel = colors ? this.skinPreview : this.costumePreview;
+    grid.replaceChildren(...list.map(s => {
       const b = document.createElement('button');
-      b.className = 'skin' + (s.id === this.skinPreview ? ' sel' : '');
+      b.className = 'skin' + (s.id === sel ? ' sel' : '');
       b.innerHTML = `<img alt=""><span></span><small></small>`;
-      b.querySelector('img').src = ICONS.get('skin-' + s.id);
+      b.querySelector('img').src = ICONS.get((colors ? 'skin-' : 'costume-') + s.id);
       b.querySelector('span').textContent = s.name;
       const sm = b.querySelector('small');
-      if (sv.skin === s.id) sm.textContent = 'Equipped';
-      else if (sv.skins.includes(s.id)) sm.textContent = 'Owned';
+      if (worn === s.id) sm.textContent = 'Equipped';
+      else if (owned.includes(s.id)) sm.textContent = 'Owned';
       else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); }
-      b.addEventListener('click', () => { this.skinPreview = s.id; applySkin(s.id); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins(); });
+      b.addEventListener('click', () => {
+        if (colors) this.skinPreview = s.id; else this.costumePreview = s.id;
+        applySkin(this.skinPreview, this.costumePreview); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins();
+      });
       return b;
     }));
-    const s = SKINS.find(k => k.id === this.skinPreview), act = $('skinAction');
-    if (sv.skin === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
-    else if (sv.skins.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
+    const s = list.find(k => k.id === sel) || list[0], act = $('skinAction');
+    if (worn === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
+    else if (owned.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   skinAction() {
-    const sv = G.save, s = SKINS.find(k => k.id === this.skinPreview);
+    const sv = G.save, colors = this.blobTab !== 'costumes';
+    const s = colors ? SKINS.find(k => k.id === this.skinPreview) : COSTUMES.find(k => k.id === this.costumePreview);
     if (!s) return;
-    if (!sv.skins.includes(s.id)) {
+    const owned = colors ? sv.skins : sv.costumes;
+    if (!owned.includes(s.id)) {
       if (sv.coins < s.cost) return;
-      sv.coins -= s.cost; sv.skins.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
+      sv.coins -= s.cost; owned.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
     }
-    sv.skin = s.id; saveGame(); AUDIO.play('levelup'); G.hero.impulse(2);
+    if (colors) sv.skin = s.id; else sv.costume = s.id;
+    saveGame(); AUDIO.play('levelup'); G.hero.impulse(2);
     this.renderSkins(); this.refreshHome();
   },
 

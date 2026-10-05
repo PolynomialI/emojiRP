@@ -16,8 +16,8 @@ function iconEnd() {
   const f = R.frame, s = ICONS.saved;
   f.spot = s.spot; f.fogRange = s.fogRange; f.spotMin = s.spotMin; f.time = s.time;
 }
-// Draw the current impostor and enemy streams into the icon target and return a PNG data URL
-function iconCapture(eye, target, fov) {
+// Draw the current impostor and enemy streams (and optionally a hero) into the icon target; returns a PNG data URL
+function iconCapture(eye, target, fov, heroOut) {
   const S = ICONS.size, T = ICONS.target;
   const keepW = R.w, keepH = R.h;
   R.w = S; R.h = S;
@@ -57,6 +57,11 @@ function iconCapture(eye, target, fov) {
     gl.useProgram(p.p); R.setFrame(p);
     gl.bindVertexArray(R.vaos.imp);
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, s.count);
+    gl.disable(gl.BLEND);
+  }
+  if (heroOut) {
+    gl.enable(gl.BLEND);
+    R.drawHero(heroOut);
     gl.disable(gl.BLEND);
   }
   gl.bindVertexArray(null);
@@ -109,16 +114,29 @@ function renderAllIcons() {
   for (const id in PASSIVES) { const ic = PASSIVES[id].icon; renderIcon('passive-' + id, ic.type, ic.colw, pspecial[id] || {}); }
   const mspecial = { damage: { scale: 0.62 }, health: { scale: 0.6, emissive: 0.15 }, offline: { scale: 0.62 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 } };
   for (const id in META_UPGRADES) { const ic = META_UPGRADES[id].icon; renderIcon('meta-' + id, ic.type, ic.colw, mspecial[id] || {}); }
-  const keep = { base: R.goo.base, accent: R.goo.accent, rim: R.goo.rim };
-  for (const s of SKINS) {
-    R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
-    renderIcon('skin-' + s.id, 7, 0, { scale: 0.62, p0: 1 });
-  }
-  R.goo.base = keep.base; R.goo.accent = keep.accent; R.goo.rim = keep.rim;
-  renderIcon('hero', 7, 0, { scale: 0.62, p0: 1 });
   renderIcon('chapters', 20, 0, { scale: 0.62, emissive: 0.1 });
+  renderHeroIcons();
   iconEnd();
   R.resetStreams();
+}
+
+// The real jelly hero, posed at the origin: one icon per body color and per costume
+function renderHeroIcons() {
+  const keep = { base: R.goo.base, accent: R.goo.accent, rim: R.goo.rim };
+  const h = new Hero();
+  h.reset(0, 0); h.setArmCount(2); h.yaw = 0.35;
+  for (let i = 0; i < 45; i++) h.update(1 / 60, [0, 0, 0], true);
+  const shot = key => { h.buildPrims(); R.resetStreams(); ICONS.map[key] = iconCapture([0, 1.6, 3.5], [0, 1.18, 0], 0.55, h.out); };
+  const paint = s => {
+    R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
+    const g = h.out.grad; if (s.top) { g.set(hexToRgb(s.top)); g[3] = 1; } else g[3] = 0;
+  };
+  h.setCostume('none');
+  for (const s of SKINS) { paint(s); shot('skin-' + s.id); }
+  paint(SKINS[0]);
+  for (const c of COSTUMES) { h.setCostume(c.id); shot('costume-' + c.id); }
+  h.setCostume('none'); shot('hero');
+  R.goo.base = keep.base; R.goo.accent = keep.accent; R.goo.rim = keep.rim;
 }
 
 const BOSS_OF_MODEL = { stomper: 'stomper', hurler: 'hurler', charger: 'charger', twin: 'twins', conductor: 'conductor' };

@@ -65,8 +65,9 @@ class Hero {
     this.out = {
       pa: new Float32Array(HERO_MAXP * 4), pb: new Float32Array(HERO_MAXP * 4), pc: new Float32Array(HERO_MAXP * 4), count: 0,
       rotInv: new Float32Array(9), boundC: [0, 0, 0], boundR: 1, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
-      chest: new Float32Array(4),
+      chest: new Float32Array(4), pal: new Float32Array(12), grad: new Float32Array(4), groundY: 0,
     };
+    this.costume = null;
     this.shadow = { data: new Float32Array(14 * 4), count: 0, pos: [0, 0, 0] };
     this._w = [0, 0, 0];
   }
@@ -374,6 +375,23 @@ class Hero {
     sph(J.pelvis.p, 0.27, 0, 0, 0);
     ell(J.chest.p, 0.33, 0.29 * br, 0.26, 0.18, 0, 0);
     sph(J.head.p, 0.225, 0.17, 0, 0);
+    if (this.costume) {
+      const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0];
+      const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1]; out[2] = a[2] + off[2]; return out; };
+      for (const P of this.costume.parts) {
+        const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + col;
+        if (P[0] === 'sph') {
+          at(P[1], P[2], cp);
+          if (P[6]) { cp[0] += Math.sin(t * 2.4) * P[6] - hv[0] * 0.02; cp[2] -= hv[2] * 0.02; }
+          sph(cp, P[3], P[4], cw, 0);
+        } else if (P[0] === 'cap') {
+          at(P[1], P[2], cp); at(P[1], P[3], cq);
+          // tips lag behind the head and bob a little
+          if (P[8]) { cq[0] += Math.sin(t * 2.6 + P[3][0] * 9) * P[8] - hv[0] * 0.03; cq[1] -= Math.abs(hv[1]) * 0.01; cq[2] += Math.cos(t * 2.1) * P[8] * 0.5 - hv[2] * 0.03; }
+          cap(cp, cq, P[4], P[5], P[6], cw, 0);
+        } else ell(at(P[1], P[2], cp), P[3][0], P[3][1], P[3][2], P[4], cw, 0);
+      }
+    }
     for (let i = 0; i < 2; i++) {
       const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA;
       cap(hip.p, knee.p, 0.13, 0.12, 0.1, 0, 0);
@@ -417,6 +435,7 @@ class Hero {
       if (ext > R2) R2 = ext;
     }
     o.boundC[0] = cx; o.boundC[1] = cy; o.boundC[2] = cz; o.boundR = R2 + 0.06;
+    o.groundY = this.pos[1];
     o.flash = this.flash; o.glow = this.glow; o.wobble = 0.007 * this.wobbleMul; o.bubbles = this.bubbles; o.spark = this.spark; o.gloss = this.gloss;
     const ch = this.toWorld(J.chest.p, tmp);
     o.chest[0] = ch[0]; o.chest[1] = ch[1]; o.chest[2] = ch[2] + 0; o.chest[3] = this.chestGlow;
@@ -435,6 +454,12 @@ class Hero {
     }
     this.shadow.count = ns;
     V3.copy(this.shadow.pos, this.pos);
+  }
+
+  setCostume(id) {
+    const c = COSTUMES.find(k => k.id === id);
+    this.costume = c && c.parts.length ? c : null;
+    if (c) c.pal.forEach((hex, i) => { const v = hexToRgb(hex); this.out.pal.set(v, i * 3); });
   }
 
   // world position of a joint or an arm's fist

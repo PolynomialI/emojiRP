@@ -119,14 +119,21 @@ button:focus-visible { outline: 3px solid var(--cyan-hi); outline-offset: 3px; }
 .uprow .ds { display: block; font-size: 13px; font-weight: 500; color: var(--text-dim); }
 .uprow .jelly { min-height: 44px; padding: 6px 12px 10px; font-size: 15px; border-radius: 14px; }
 .uprow .jelly .coin { width: 18px; height: 18px; }
-.skins-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: auto; }
-.skin { display: grid; justify-items: center; gap: 4px; padding: 10px 6px 12px; border-radius: 18px; background: rgba(18,48,74,.92); box-shadow: inset 0 0 0 2px var(--edge); font-size: 14px; }
-.skin img { width: 64px; height: 64px; }
+.blob-pick { margin-top: auto; display: grid; gap: 10px; }
+.blob-tabs { justify-self: center; }
+.blob-tabs button { padding: 8px 18px; font-size: 15px; }
+.skins-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 44vh; overflow-y: auto; padding: 2px; }
+.skin { display: grid; justify-items: center; gap: 2px; padding: 6px 4px 8px; border-radius: 16px; background: rgba(18,48,74,.92); box-shadow: inset 0 0 0 2px var(--edge); font-size: 13px; }
+.skin img { width: 58px; height: 58px; }
 .skin.sel { box-shadow: inset 0 0 0 3px var(--cyan); }
 .skin small { font-size: 12px; color: var(--text-dim); display: inline-flex; align-items: center; gap: 4px; }
 .skin small .coin { width: 14px; height: 14px; }
-.skins-actions { margin-top: 12px; }
-.skins-actions .jelly { width: 100%; }
+.blob-pick > .jelly { width: 100%; }
+/* wide screens: the hero stands on the left, the picker is a panel on the right */
+@media (min-aspect-ratio: 11/10) {
+  #skins .blob-pick { position: absolute; right: max(3vw, 16px); top: 84px; bottom: 18px; width: min(430px, 46vw); margin: 0; align-content: center; }
+  #skins .skins-grid { max-height: none; }
+}
 .map { position: relative; display: grid; gap: 0; justify-items: center; overflow-y: auto; max-height: calc(100% - 64px); margin-top: 8px; padding: 10px 0 40px; }
 .node { position: relative; display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 12px; width: min(100%, 330px); padding: 8px 12px; margin: 6px 0; border-radius: 20px; background: rgba(18,48,74,.9); box-shadow: inset 0 0 0 2px var(--edge); text-align: left; }
 .node:nth-child(odd) { transform: translateX(-26px); }
@@ -272,7 +279,7 @@ button:focus-visible { outline: 3px solid var(--cyan-hi); outline-offset: 3px; }
     <nav class="col tabs" aria-label="Menu">
       <button class="tab" data-tab="upgrades"><img alt="" data-icon="meta-damage">Upgrades</button>
       <button class="tab on" data-tab="home"><img alt="" data-icon="hero">Play</button>
-      <button class="tab" data-tab="skins"><img alt="" data-icon="skin-bubblegum">Skins</button>
+      <button class="tab" data-tab="skins"><img alt="" data-icon="costume-bunny">Blobs</button>
       <button class="tab" data-tab="chapters"><img alt="" data-icon="chapters">Chapters</button>
     </nav>
   </section>
@@ -285,9 +292,12 @@ button:focus-visible { outline: 3px solid var(--cyan-hi); outline-offset: 3px; }
   </section>
 
   <section id="skins" class="screen" hidden>
-    <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Skins</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
-    <div class="col skins-grid" id="skinGrid"></div>
-    <div class="col skins-actions"><button class="jelly" id="skinAction">Equipped</button></div>
+    <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Choose your blob</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
+    <div class="col blob-pick">
+      <div class="seg blob-tabs" id="blobTabs"><button data-bt="colors" aria-pressed="true">Colors</button><button data-bt="costumes" aria-pressed="false">Costumes</button></div>
+      <div class="skins-grid" id="skinGrid"></div>
+      <button class="jelly" id="skinAction">Equipped</button>
+    </div>
   </section>
 
   <section id="chapters" class="screen modal" hidden style="place-items:start center">
@@ -2388,7 +2398,7 @@ void main() {
 // ------------------------------------------------------------
 // Hero: raymarched blended shapes inside a camera-facing quad
 // ------------------------------------------------------------
-const HERO_MAXP = 32;
+const HERO_MAXP = 40;
 const VS_HERO = GLSL_HEAD + GLSL_FRAME + `
 in vec2 aCorner;
 uniform vec3 uBoundC;
@@ -2425,6 +2435,9 @@ uniform float uBubbles;
 uniform float uSpark;
 uniform float uGloss;
 uniform vec4 uChest;
+uniform vec3 uPal[4];   // costume colors, used by color weights 10..13
+uniform vec4 uGrad;     // body gradient: top color, amount
+uniform float uGroundY;
 
 float prim(vec3 p, int i) {
   vec4 A = uPA[i], B = uPB[i], C = uPC[i];
@@ -2447,18 +2460,25 @@ float mapH(vec3 p) {
   }
   return d + wob(p);
 }
-// distance + blended color weight + blended glow
-vec3 mapHC(vec3 p) {
+// color of one shape: goo colors, costume palette, or the body (with its optional gradient)
+vec3 primCol(float w, vec3 p) {
+  if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 3.0))];
+  vec3 c = gooColor(w);
+  if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.35, 1.45, p.y - uGroundY));
+  return c;
+}
+// distance, with the blended color and glow of the shapes that meet here
+float mapHC(vec3 p, out vec3 col, out float g) {
   float d = prim(p, 0);
-  float w = uPC[0].y, g = uPC[0].w;
+  col = primCol(uPC[0].y, p); g = uPC[0].w;
   for (int i = 1; i < MAXP; i++) {
     if (i >= uPCount) break;
     vec2 r = sminW(d, prim(p, i), uPB[i].w);
     d = r.x;
-    w = mix(w, uPC[i].y, 1.0 - r.y);
+    col = mix(col, primCol(uPC[i].y, p), 1.0 - r.y);
     g = mix(g, uPC[i].w, 1.0 - r.y);
   }
-  return vec3(d, w, g);
+  return d;
 }
 vec3 calcN(vec3 p) {
   const vec2 k = vec2(1.0, -1.0);
@@ -2487,17 +2507,23 @@ void main() {
   vec3 p = ro + rd * (hit ? t : bestT);
   vec3 n = calcN(p);
   vec3 v = -rd;
-  vec3 m = mapHC(p);
-  vec3 base = gooColor(m.y);
+  vec3 base; float glowW;
+  mapHC(p, base, glowW);
   // living goo: slow swirls inside the body
   float sw = texture(uNoise, p.xz * 0.8 + vec2(p.y * 0.35, uTime * 0.025)).r + texture(uNoise, p.xy * 1.1 - vec2(uTime * 0.02, 0.0)).g;
   base *= 0.93 + 0.12 * (sw - 1.0) * 1.4;
   float thin = clamp(1.0 + mapH(p - n * 0.13) / 0.13, 0.0, 1.0);
   float occ = (0.05 - mapH(p + n * 0.05)) * 2.2 + (0.13 - mapH(p + n * 0.13)) * 1.1;
   float ao = clamp(1.0 - occ * 2.4, 0.0, 1.0) * mix(0.62, 1.0, smoothstep(0.0, 0.4, p.y - uBoundC.y + 0.9));
-  float emissive = m.z + uGlow * 0.25 + uSpark * (0.6 + 0.4 * sin(uTime * 70.0));
+  float emissive = glowW + uGlow * 0.25 + uSpark * (0.6 + 0.4 * sin(uTime * 70.0));
   emissive += uChest.w * exp(-length(p - uChest.xyz) * 5.0) * 1.6;
-  vec3 col = gooShade(base, p, n, v, thin, ao, emissive, uGloss);
+  vec3 col = gooShade(base, p, n, v, thin, ao, emissive, uGloss * 0.8);
+  // jelly: soft milky translucency, gentle shading and a bright candy rim
+  float ndv0 = clamp(dot(n, v), 0.0, 1.0);
+  float lum = dot(base, vec3(0.3, 0.55, 0.15));
+  col = mix(col, base * (0.62 + 0.38 * ao) + col * 0.35, 0.35);
+  col += mix(base, vec3(1.0), 0.5) * pow(1.0 - ndv0, 2.4) * (0.55 + 0.3 * (1.0 - lum));
+  col += base * thin * 0.2;
   if (uBubbles > 0.0) {
     vec2 bq = vec2(p.x * 3.2 + p.z * 1.7, p.y * 2.4 - uTime * 0.35);
     float cell = texture(uNoise, bq * 0.25).b;
@@ -3718,6 +3744,7 @@ R.drawHero = function (h) {
   gl.uniform1f(u.uFlash, h.flash); gl.uniform1f(u.uGlow, h.glow); gl.uniform1f(u.uWobble, h.wobble);
   gl.uniform1f(u.uBubbles, h.bubbles); gl.uniform1f(u.uSpark, h.spark); gl.uniform1f(u.uGloss, h.gloss);
   gl.uniform4fv(u.uChest, h.chest);
+  gl.uniform3fv(u.uPal, h.pal); gl.uniform4fv(u.uGrad, h.grad); gl.uniform1f(u.uGroundY, h.groundY);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.bindVertexArray(R.vaos.quad);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -3949,8 +3976,9 @@ class Hero {
     this.out = {
       pa: new Float32Array(HERO_MAXP * 4), pb: new Float32Array(HERO_MAXP * 4), pc: new Float32Array(HERO_MAXP * 4), count: 0,
       rotInv: new Float32Array(9), boundC: [0, 0, 0], boundR: 1, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
-      chest: new Float32Array(4),
+      chest: new Float32Array(4), pal: new Float32Array(12), grad: new Float32Array(4), groundY: 0,
     };
+    this.costume = null;
     this.shadow = { data: new Float32Array(14 * 4), count: 0, pos: [0, 0, 0] };
     this._w = [0, 0, 0];
   }
@@ -4258,6 +4286,23 @@ class Hero {
     sph(J.pelvis.p, 0.27, 0, 0, 0);
     ell(J.chest.p, 0.33, 0.29 * br, 0.26, 0.18, 0, 0);
     sph(J.head.p, 0.225, 0.17, 0, 0);
+    if (this.costume) {
+      const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0];
+      const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1]; out[2] = a[2] + off[2]; return out; };
+      for (const P of this.costume.parts) {
+        const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + col;
+        if (P[0] === 'sph') {
+          at(P[1], P[2], cp);
+          if (P[6]) { cp[0] += Math.sin(t * 2.4) * P[6] - hv[0] * 0.02; cp[2] -= hv[2] * 0.02; }
+          sph(cp, P[3], P[4], cw, 0);
+        } else if (P[0] === 'cap') {
+          at(P[1], P[2], cp); at(P[1], P[3], cq);
+          // tips lag behind the head and bob a little
+          if (P[8]) { cq[0] += Math.sin(t * 2.6 + P[3][0] * 9) * P[8] - hv[0] * 0.03; cq[1] -= Math.abs(hv[1]) * 0.01; cq[2] += Math.cos(t * 2.1) * P[8] * 0.5 - hv[2] * 0.03; }
+          cap(cp, cq, P[4], P[5], P[6], cw, 0);
+        } else ell(at(P[1], P[2], cp), P[3][0], P[3][1], P[3][2], P[4], cw, 0);
+      }
+    }
     for (let i = 0; i < 2; i++) {
       const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA;
       cap(hip.p, knee.p, 0.13, 0.12, 0.1, 0, 0);
@@ -4301,6 +4346,7 @@ class Hero {
       if (ext > R2) R2 = ext;
     }
     o.boundC[0] = cx; o.boundC[1] = cy; o.boundC[2] = cz; o.boundR = R2 + 0.06;
+    o.groundY = this.pos[1];
     o.flash = this.flash; o.glow = this.glow; o.wobble = 0.007 * this.wobbleMul; o.bubbles = this.bubbles; o.spark = this.spark; o.gloss = this.gloss;
     const ch = this.toWorld(J.chest.p, tmp);
     o.chest[0] = ch[0]; o.chest[1] = ch[1]; o.chest[2] = ch[2] + 0; o.chest[3] = this.chestGlow;
@@ -4319,6 +4365,12 @@ class Hero {
     }
     this.shadow.count = ns;
     V3.copy(this.shadow.pos, this.pos);
+  }
+
+  setCostume(id) {
+    const c = COSTUMES.find(k => k.id === id);
+    this.costume = c && c.parts.length ? c : null;
+    if (c) c.pal.forEach((hex, i) => { const v = hexToRgb(hex); this.out.pal.set(v, i * 3); });
   }
 
   // world position of a joint or an arm's fist
@@ -4681,13 +4733,79 @@ const META_UPGRADES = {
 };
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
 
+// Body colors. "top" makes a two-tone gradient from the feet up.
 const SKINS = [
   { id: 'classic', name: 'Classic', cost: 0, base: '#18d2ff', accent: '#7b55f5', rim: '#8ef3ff' },
-  { id: 'lime', name: 'Lime Jelly', cost: 600, base: '#7be04a', accent: '#1f9e7a', rim: '#d8ffb0' },
-  { id: 'bubblegum', name: 'Bubblegum', cost: 1200, base: '#ff7ac8', accent: '#9a4dff', rim: '#ffd3f0' },
-  { id: 'grape', name: 'Grape', cost: 2000, base: '#9c6bff', accent: '#ff5fb8', rim: '#e0ccff' },
-  { id: 'mint', name: 'Mint', cost: 3000, base: '#3ef0b8', accent: '#1a8cff', rim: '#c8fff0' },
-  { id: 'galaxy', name: 'Galaxy', cost: 6000, base: '#5b4dff', accent: '#ff5fb8', rim: '#c9c2ff' },
+  { id: 'lime', name: 'Lime', cost: 300, base: '#7be04a', accent: '#1f9e7a', rim: '#d8ffb0' },
+  { id: 'bubblegum', name: 'Bubblegum', cost: 500, base: '#ff7ac8', accent: '#9a4dff', rim: '#ffd3f0' },
+  { id: 'sunny', name: 'Sunny', cost: 700, base: '#ffd23a', accent: '#ff8a1f', rim: '#fff3b0' },
+  { id: 'cherry', name: 'Cherry', cost: 900, base: '#ff4d6d', accent: '#9a2bd6', rim: '#ffc2cc' },
+  { id: 'grape', name: 'Grape', cost: 1200, base: '#9c6bff', accent: '#ff5fb8', rim: '#e0ccff' },
+  { id: 'mint', name: 'Mint', cost: 1500, base: '#3ef0b8', accent: '#1a8cff', rim: '#c8fff0' },
+  { id: 'snow', name: 'Snow', cost: 1800, base: '#eaf4ff', accent: '#7fb8ff', rim: '#ffffff' },
+  { id: 'night', name: 'Night', cost: 2200, base: '#34343f', accent: '#ff5fb8', rim: '#a0a0b8' },
+  { id: 'galaxy', name: 'Galaxy', cost: 3000, base: '#3f7bff', top: '#b45cff', accent: '#ff5fb8', rim: '#d6c8ff' },
+  { id: 'sunset', name: 'Sunset', cost: 3500, base: '#ff6f91', top: '#ffd23a', accent: '#ff8a1f', rim: '#ffe0c0' },
+  { id: 'ocean', name: 'Ocean', cost: 4000, base: '#1a8cff', top: '#3ef0b8', accent: '#7b55f5', rim: '#c8fff8' },
+];
+// Costumes are extra goo shapes on the hero, offsets in hero units from the head (or pelvis).
+// Parts: ['sph', anchor, pos, r, k, col] | ['cap', anchor, a, b, r1, r2, k, col, sway] | ['ell', anchor, pos, radii, k, col]
+// col: 'b' = body color, 0-3 = this costume's palette. sway lets a tip lag and bob with the head.
+const COSTUMES = [
+  { id: 'none', name: 'No costume', cost: 0, pal: [], parts: [] },
+  { id: 'bunny', name: 'Bunny', cost: 400, pal: ['#ffffff'], parts: [
+    ['cap', 'head', [0.09, 0.15, -0.02], [0.15, 0.56, -0.07], 0.078, 0.062, 0.05, 'b', 0.05],
+    ['cap', 'head', [-0.09, 0.15, -0.02], [-0.15, 0.56, -0.07], 0.078, 0.062, 0.05, 'b', 0.05],
+  ] },
+  { id: 'cat', name: 'Cat', cost: 600, pal: ['#1c1a22', '#ff9ac8'], parts: [
+    ['cap', 'head', [0.11, 0.14, 0.0], [0.17, 0.34, 0.02], 0.09, 0.018, 0.04, 'b'],
+    ['cap', 'head', [-0.11, 0.14, 0.0], [-0.17, 0.34, 0.02], 0.09, 0.018, 0.04, 'b'],
+    ['sph', 'head', [0, -0.02, 0.225], 0.03, 0.015, 1],
+  ] },
+  { id: 'bear', name: 'Bear', cost: 800, pal: ['#1c1a22', '#ffe2b8'], parts: [
+    ['sph', 'head', [0.17, 0.16, -0.02], 0.085, 0.04, 'b'],
+    ['sph', 'head', [-0.17, 0.16, -0.02], 0.085, 0.04, 'b'],
+    ['ell', 'head', [0, -0.05, 0.19], [0.1, 0.07, 0.07], 0.03, 1],
+    ['sph', 'head', [0, -0.01, 0.255], 0.035, 0.012, 0],
+  ] },
+  { id: 'chick', name: 'Chick', cost: 1000, pal: ['#16141c', '#ffb020'], parts: [
+    ['cap', 'head', [0, -0.02, 0.19], [0, -0.04, 0.34], 0.065, 0.012, 0.025, 1],
+    ['sph', 'head', [0.085, 0.07, 0.195], 0.042, 0.012, 0],
+    ['sph', 'head', [-0.085, 0.07, 0.195], 0.042, 0.012, 0],
+    ['cap', 'head', [0, 0.19, 0.0], [0.05, 0.33, 0.04], 0.03, 0.01, 0.03, 'b', 0.03],
+    ['cap', 'head', [0, 0.19, 0.0], [-0.04, 0.31, 0.06], 0.03, 0.01, 0.03, 'b', 0.03],
+  ] },
+  { id: 'frog', name: 'Frog', cost: 1200, pal: ['#16141c', '#ffffff'], parts: [
+    ['sph', 'head', [0.1, 0.17, 0.07], 0.08, 0.05, 'b'],
+    ['sph', 'head', [-0.1, 0.17, 0.07], 0.08, 0.05, 'b'],
+    ['sph', 'head', [0.1, 0.19, 0.12], 0.055, 0.012, 1],
+    ['sph', 'head', [-0.1, 0.19, 0.12], 0.055, 0.012, 1],
+    ['sph', 'head', [0.1, 0.2, 0.172], 0.03, 0.008, 0],
+    ['sph', 'head', [-0.1, 0.2, 0.172], 0.03, 0.008, 0],
+  ] },
+  { id: 'panda', name: 'Panda', cost: 1500, pal: ['#16141c', '#f6f6f2'], parts: [
+    ['sph', 'head', [0, 0.005, 0.0], 0.238, 0.02, 1],
+    ['sph', 'head', [0.165, 0.165, -0.02], 0.072, 0.025, 0],
+    ['sph', 'head', [-0.165, 0.165, -0.02], 0.072, 0.025, 0],
+    ['ell', 'head', [0.08, 0.035, 0.19], [0.06, 0.075, 0.05], 0.012, 0],
+    ['ell', 'head', [-0.08, 0.035, 0.19], [0.06, 0.075, 0.05], 0.012, 0],
+    ['sph', 'head', [0, -0.045, 0.235], 0.03, 0.01, 0],
+  ] },
+  { id: 'devil', name: 'Devil', cost: 2000, pal: ['#e8283c'], parts: [
+    ['cap', 'head', [0.1, 0.15, 0.03], [0.16, 0.31, 0.0], 0.05, 0.01, 0.03, 0],
+    ['cap', 'head', [-0.1, 0.15, 0.03], [-0.16, 0.31, 0.0], 0.05, 0.01, 0.03, 0],
+    ['cap', 'pelvis', [0, -0.05, -0.22], [0, -0.2, -0.44], 0.04, 0.03, 0.04, 0, 0.06],
+    ['ell', 'pelvis', [0, -0.12, -0.56], [0.07, 0.07, 0.04], 0.03, 0],
+  ] },
+  { id: 'unicorn', name: 'Unicorn', cost: 2500, pal: ['#ffd040', '#ffffff'], parts: [
+    ['cap', 'head', [0, 0.16, 0.09], [0, 0.44, 0.16], 0.05, 0.008, 0.03, 0],
+    ['cap', 'head', [0.12, 0.14, -0.02], [0.16, 0.27, -0.04], 0.06, 0.02, 0.03, 'b'],
+    ['cap', 'head', [-0.12, 0.14, -0.02], [-0.16, 0.27, -0.04], 0.06, 0.02, 0.03, 'b'],
+  ] },
+  { id: 'party', name: 'Party Hat', cost: 3000, pal: ['#ff4fa8', '#ffd040'], parts: [
+    ['cap', 'head', [0.02, 0.17, 0.0], [0.06, 0.5, -0.03], 0.13, 0.012, 0.02, 0],
+    ['sph', 'head', [0.065, 0.53, -0.035], 0.045, 0.015, 1, 0.03],
+  ] },
 ];
 
 // ---- 11-game.js ----
@@ -4798,9 +4916,14 @@ function applyArena(i) {
   f.spotMin = a.spotMin; f.shadowTint = hexToRgb(a.shadowTint);
   f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow;
 }
-function applySkin(id) {
+function applySkin(id, costume) {
   const s = SKINS.find(k => k.id === id) || SKINS[0];
   R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
+  if (G.hero) {
+    const g = G.hero.out.grad;
+    if (s.top) { g.set(hexToRgb(s.top)); g[3] = 1; } else g[3] = 0;
+    G.hero.setCostume(costume ?? (G.save ? G.save.costume : 'none'));
+  }
 }
 
 // ---------- runs ----------
@@ -6666,6 +6789,7 @@ const UI = {
     document.querySelectorAll('#qualitySeg button').forEach(b => b.addEventListener('click', () => { G.save.settings.quality = b.dataset.q; this.syncSettings(); applySettings(); saveGame(); AUDIO.play('click'); }));
     $('heroTap').addEventListener('pointerdown', () => { AUDIO.unlock(); pokeHero(); });
     $('skinAction').addEventListener('click', () => this.skinAction());
+    document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
   },
 
   show(id, on) { const e = $(id); if (e) e.hidden = !on; },
@@ -6693,7 +6817,7 @@ const UI = {
   },
 
   openTab(tab) {
-    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; }
+    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     if (tab === 'upgrades') this.renderUpgrades();
@@ -6749,35 +6873,45 @@ const UI = {
 
   // ---------- skins ----------
   renderSkins() {
-    const sv = G.save, grid = $('skinGrid');
+    const sv = G.save, grid = $('skinGrid'), colors = this.blobTab !== 'costumes';
     if (!this.skinPreview) this.skinPreview = sv.skin;
+    if (!this.costumePreview) this.costumePreview = sv.costume;
     document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
-    grid.replaceChildren(...SKINS.map(s => {
+    document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.bt === 'colors') === colors)));
+    const list = colors ? SKINS : COSTUMES, owned = colors ? sv.skins : sv.costumes, worn = colors ? sv.skin : sv.costume;
+    const sel = colors ? this.skinPreview : this.costumePreview;
+    grid.replaceChildren(...list.map(s => {
       const b = document.createElement('button');
-      b.className = 'skin' + (s.id === this.skinPreview ? ' sel' : '');
+      b.className = 'skin' + (s.id === sel ? ' sel' : '');
       b.innerHTML = `<img alt=""><span></span><small></small>`;
-      b.querySelector('img').src = ICONS.get('skin-' + s.id);
+      b.querySelector('img').src = ICONS.get((colors ? 'skin-' : 'costume-') + s.id);
       b.querySelector('span').textContent = s.name;
       const sm = b.querySelector('small');
-      if (sv.skin === s.id) sm.textContent = 'Equipped';
-      else if (sv.skins.includes(s.id)) sm.textContent = 'Owned';
+      if (worn === s.id) sm.textContent = 'Equipped';
+      else if (owned.includes(s.id)) sm.textContent = 'Owned';
       else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); }
-      b.addEventListener('click', () => { this.skinPreview = s.id; applySkin(s.id); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins(); });
+      b.addEventListener('click', () => {
+        if (colors) this.skinPreview = s.id; else this.costumePreview = s.id;
+        applySkin(this.skinPreview, this.costumePreview); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins();
+      });
       return b;
     }));
-    const s = SKINS.find(k => k.id === this.skinPreview), act = $('skinAction');
-    if (sv.skin === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
-    else if (sv.skins.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
+    const s = list.find(k => k.id === sel) || list[0], act = $('skinAction');
+    if (worn === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
+    else if (owned.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   skinAction() {
-    const sv = G.save, s = SKINS.find(k => k.id === this.skinPreview);
+    const sv = G.save, colors = this.blobTab !== 'costumes';
+    const s = colors ? SKINS.find(k => k.id === this.skinPreview) : COSTUMES.find(k => k.id === this.costumePreview);
     if (!s) return;
-    if (!sv.skins.includes(s.id)) {
+    const owned = colors ? sv.skins : sv.costumes;
+    if (!owned.includes(s.id)) {
       if (sv.coins < s.cost) return;
-      sv.coins -= s.cost; sv.skins.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
+      sv.coins -= s.cost; owned.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
     }
-    sv.skin = s.id; saveGame(); AUDIO.play('levelup'); G.hero.impulse(2);
+    if (colors) sv.skin = s.id; else sv.costume = s.id;
+    saveGame(); AUDIO.play('levelup'); G.hero.impulse(2);
     this.renderSkins(); this.refreshHome();
   },
 
@@ -7159,7 +7293,7 @@ function defaultSave() {
   return {
     v: 1, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
-    skin: 'classic', skins: ['classic'],
+    skin: 'classic', skins: ['classic'], costume: 'none', costumes: ['none'],
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0 }, tutorial: true,
   };
@@ -7176,6 +7310,7 @@ function loadGame() {
         settings: { ...d.settings, ...(s.settings || {}) },
         stats: { ...d.stats, ...(s.stats || {}) },
         skins: Array.isArray(s.skins) && s.skins.length ? s.skins : d.skins,
+        costumes: Array.isArray(s.costumes) && s.costumes.length ? s.costumes : d.costumes,
         cleared: s.cleared || {}, best: s.best || {},
       };
     }
@@ -7212,8 +7347,8 @@ function iconEnd() {
   const f = R.frame, s = ICONS.saved;
   f.spot = s.spot; f.fogRange = s.fogRange; f.spotMin = s.spotMin; f.time = s.time;
 }
-// Draw the current impostor and enemy streams into the icon target and return a PNG data URL
-function iconCapture(eye, target, fov) {
+// Draw the current impostor and enemy streams (and optionally a hero) into the icon target; returns a PNG data URL
+function iconCapture(eye, target, fov, heroOut) {
   const S = ICONS.size, T = ICONS.target;
   const keepW = R.w, keepH = R.h;
   R.w = S; R.h = S;
@@ -7253,6 +7388,11 @@ function iconCapture(eye, target, fov) {
     gl.useProgram(p.p); R.setFrame(p);
     gl.bindVertexArray(R.vaos.imp);
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, s.count);
+    gl.disable(gl.BLEND);
+  }
+  if (heroOut) {
+    gl.enable(gl.BLEND);
+    R.drawHero(heroOut);
     gl.disable(gl.BLEND);
   }
   gl.bindVertexArray(null);
@@ -7305,16 +7445,29 @@ function renderAllIcons() {
   for (const id in PASSIVES) { const ic = PASSIVES[id].icon; renderIcon('passive-' + id, ic.type, ic.colw, pspecial[id] || {}); }
   const mspecial = { damage: { scale: 0.62 }, health: { scale: 0.6, emissive: 0.15 }, offline: { scale: 0.62 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 } };
   for (const id in META_UPGRADES) { const ic = META_UPGRADES[id].icon; renderIcon('meta-' + id, ic.type, ic.colw, mspecial[id] || {}); }
-  const keep = { base: R.goo.base, accent: R.goo.accent, rim: R.goo.rim };
-  for (const s of SKINS) {
-    R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
-    renderIcon('skin-' + s.id, 7, 0, { scale: 0.62, p0: 1 });
-  }
-  R.goo.base = keep.base; R.goo.accent = keep.accent; R.goo.rim = keep.rim;
-  renderIcon('hero', 7, 0, { scale: 0.62, p0: 1 });
   renderIcon('chapters', 20, 0, { scale: 0.62, emissive: 0.1 });
+  renderHeroIcons();
   iconEnd();
   R.resetStreams();
+}
+
+// The real jelly hero, posed at the origin: one icon per body color and per costume
+function renderHeroIcons() {
+  const keep = { base: R.goo.base, accent: R.goo.accent, rim: R.goo.rim };
+  const h = new Hero();
+  h.reset(0, 0); h.setArmCount(2); h.yaw = 0.35;
+  for (let i = 0; i < 45; i++) h.update(1 / 60, [0, 0, 0], true);
+  const shot = key => { h.buildPrims(); R.resetStreams(); ICONS.map[key] = iconCapture([0, 1.6, 3.5], [0, 1.18, 0], 0.55, h.out); };
+  const paint = s => {
+    R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
+    const g = h.out.grad; if (s.top) { g.set(hexToRgb(s.top)); g[3] = 1; } else g[3] = 0;
+  };
+  h.setCostume('none');
+  for (const s of SKINS) { paint(s); shot('skin-' + s.id); }
+  paint(SKINS[0]);
+  for (const c of COSTUMES) { h.setCostume(c.id); shot('costume-' + c.id); }
+  h.setCostume('none'); shot('hero');
+  R.goo.base = keep.base; R.goo.accent = keep.accent; R.goo.rim = keep.rim;
 }
 
 const BOSS_OF_MODEL = { stomper: 'stomper', hurler: 'hurler', charger: 'charger', twin: 'twins', conductor: 'conductor' };
@@ -7337,7 +7490,7 @@ function renderBossPortrait(model) {
 // ============================================================
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
 const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2 };
-const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0 };
+const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
@@ -7556,15 +7709,17 @@ function homeCamera(dt) {
   const aspect = R.w / R.h, portrait = aspect < 0.9;
   const fov = 0.5, half = Math.tan(fov / 2);
   // on the skins screen the hero sits smaller and higher, above the skin grid
-  const skins = UI.menuTab === 'skins';
-  const wantFrac = skins ? (portrait ? 0.22 : 0.3) : (portrait ? 0.27 : 0.4);
-  const wantLift = skins ? (portrait ? 0.17 : 0.14) : 0;
+  // portrait: smaller and higher above the picker; landscape: on the left of the picker panel
+  const skins = UI.menuTab === 'skins', wide = aspect >= 1.1;
+  const wantFrac = skins ? (portrait ? 0.22 : wide ? 0.42 : 0.3) : (portrait ? 0.27 : 0.4);
+  const wantLift = skins ? (portrait ? 0.17 : wide ? 0.02 : 0.14) : 0;
+  const wantSide = skins && wide ? 0.21 : 0;
   const k = HOME.frac ? 1 - Math.exp(-dt * 6) : 1;
-  HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k;
+  HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
   const viewH = 1.9 / HOME.frac, d = viewH / (2 * half);
-  const tgt = [0, (portrait ? 1.0 : 0.95) - HOME.lift * viewH, 0];
+  const tgt = [HOME.side * viewH * aspect, (portrait ? 1.0 : 0.95) - HOME.lift * viewH, 0];
   const pitch = 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
-  R.setCamera([Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);
+  R.setCamera([tgt[0] + Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);
 }
 
 // ---------- rendering ----------

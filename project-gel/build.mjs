@@ -7,7 +7,7 @@ const root = path.dirname(new URL(import.meta.url).pathname);
 const target = process.argv[2] || 'game';
 const src = path.join(root, 'src');
 const files = fs.readdirSync(src).filter(f => f.endsWith('.js')).sort();
-const engine = files.filter(f => /^0\d-/.test(f));
+const engine = files.filter(f => /^0\d-/.test(f) || f === '10-data.js');
 let js;
 let template;
 let out;

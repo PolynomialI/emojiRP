@@ -250,7 +250,7 @@ void main() {
 // ------------------------------------------------------------
 // Hero: raymarched blended shapes inside a camera-facing quad
 // ------------------------------------------------------------
-const HERO_MAXP = 32;
+const HERO_MAXP = 40;
 const VS_HERO = GLSL_HEAD + GLSL_FRAME + `
 in vec2 aCorner;
 uniform vec3 uBoundC;
@@ -287,6 +287,9 @@ uniform float uBubbles;
 uniform float uSpark;
 uniform float uGloss;
 uniform vec4 uChest;
+uniform vec3 uPal[4];   // costume colors, used by color weights 10..13
+uniform vec4 uGrad;     // body gradient: top color, amount
+uniform float uGroundY;
 
 float prim(vec3 p, int i) {
   vec4 A = uPA[i], B = uPB[i], C = uPC[i];
@@ -309,18 +312,25 @@ float mapH(vec3 p) {
   }
   return d + wob(p);
 }
-// distance + blended color weight + blended glow
-vec3 mapHC(vec3 p) {
+// color of one shape: goo colors, costume palette, or the body (with its optional gradient)
+vec3 primCol(float w, vec3 p) {
+  if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 3.0))];
+  vec3 c = gooColor(w);
+  if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.35, 1.45, p.y - uGroundY));
+  return c;
+}
+// distance, with the blended color and glow of the shapes that meet here
+float mapHC(vec3 p, out vec3 col, out float g) {
   float d = prim(p, 0);
-  float w = uPC[0].y, g = uPC[0].w;
+  col = primCol(uPC[0].y, p); g = uPC[0].w;
   for (int i = 1; i < MAXP; i++) {
     if (i >= uPCount) break;
     vec2 r = sminW(d, prim(p, i), uPB[i].w);
     d = r.x;
-    w = mix(w, uPC[i].y, 1.0 - r.y);
+    col = mix(col, primCol(uPC[i].y, p), 1.0 - r.y);
     g = mix(g, uPC[i].w, 1.0 - r.y);
   }
-  return vec3(d, w, g);
+  return d;
 }
 vec3 calcN(vec3 p) {
   const vec2 k = vec2(1.0, -1.0);
@@ -349,17 +359,23 @@ void main() {
   vec3 p = ro + rd * (hit ? t : bestT);
   vec3 n = calcN(p);
   vec3 v = -rd;
-  vec3 m = mapHC(p);
-  vec3 base = gooColor(m.y);
+  vec3 base; float glowW;
+  mapHC(p, base, glowW);
   // living goo: slow swirls inside the body
   float sw = texture(uNoise, p.xz * 0.8 + vec2(p.y * 0.35, uTime * 0.025)).r + texture(uNoise, p.xy * 1.1 - vec2(uTime * 0.02, 0.0)).g;
   base *= 0.93 + 0.12 * (sw - 1.0) * 1.4;
   float thin = clamp(1.0 + mapH(p - n * 0.13) / 0.13, 0.0, 1.0);
   float occ = (0.05 - mapH(p + n * 0.05)) * 2.2 + (0.13 - mapH(p + n * 0.13)) * 1.1;
   float ao = clamp(1.0 - occ * 2.4, 0.0, 1.0) * mix(0.62, 1.0, smoothstep(0.0, 0.4, p.y - uBoundC.y + 0.9));
-  float emissive = m.z + uGlow * 0.25 + uSpark * (0.6 + 0.4 * sin(uTime * 70.0));
+  float emissive = glowW + uGlow * 0.25 + uSpark * (0.6 + 0.4 * sin(uTime * 70.0));
   emissive += uChest.w * exp(-length(p - uChest.xyz) * 5.0) * 1.6;
-  vec3 col = gooShade(base, p, n, v, thin, ao, emissive, uGloss);
+  vec3 col = gooShade(base, p, n, v, thin, ao, emissive, uGloss * 0.8);
+  // jelly: soft milky translucency, gentle shading and a bright candy rim
+  float ndv0 = clamp(dot(n, v), 0.0, 1.0);
+  float lum = dot(base, vec3(0.3, 0.55, 0.15));
+  col = mix(col, base * (0.62 + 0.38 * ao) + col * 0.35, 0.35);
+  col += mix(base, vec3(1.0), 0.5) * pow(1.0 - ndv0, 2.4) * (0.55 + 0.3 * (1.0 - lum));
+  col += base * thin * 0.2;
   if (uBubbles > 0.0) {
     vec2 bq = vec2(p.x * 3.2 + p.z * 1.7, p.y * 2.4 - uTime * 0.35);
     float cell = texture(uNoise, bq * 0.25).b;

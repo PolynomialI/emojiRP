@@ -6,7 +6,7 @@ function defaultSave() {
   return {
     v: 1, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
-    skin: 'classic', skins: ['classic'],
+    skin: 'classic', skins: ['classic'], costume: 'none', costumes: ['none'],
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0 }, tutorial: true,
   };
@@ -23,6 +23,7 @@ function loadGame() {
         settings: { ...d.settings, ...(s.settings || {}) },
         stats: { ...d.stats, ...(s.stats || {}) },
         skins: Array.isArray(s.skins) && s.skins.length ? s.skins : d.skins,
+        costumes: Array.isArray(s.costumes) && s.costumes.length ? s.costumes : d.costumes,
         cleared: s.cleared || {}, best: s.best || {},
       };
     }
