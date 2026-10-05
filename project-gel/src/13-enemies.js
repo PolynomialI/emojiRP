@@ -331,13 +331,13 @@ function emitRunScene() {
   for (const p of run.proj) {
     if (p.kind === 'ball') {
       pushImp(p.x, p.y, p.z, p.r, p.vx, p.vy, p.vz, 1.35, 0, 0, 0.25, p.ph + p.t, 0, 0, 0, 1);
-      trailRibbon(p.trail, 0.08, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
+      trailRibbon(p.trail, 0.15, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
     } else if (p.kind === 'missile') {
-      pushImp(p.x, p.y, p.z, 0.15, p.vx, p.vy, p.vz, 1.25, 1, 0.8, 0.3, p.ph + p.t, 0, 0, 0, 1);
+      pushImp(p.x, p.y, p.z, 0.28, p.vx, p.vy, p.vz, 1.3, 1, 0.8, 0.3, p.ph + p.t, 0, 0, 0, 1);
       if (p.trail.length > 2) {
         const pts = [];
-        p.trail.forEach((q, i) => { const k = 0.07 * Math.min(1, i / 3); pts.push(q[0] + Math.sin(p.t * 22 - i) * k, q[1] + Math.cos(p.t * 22 - i) * k, q[2]); });
-        R.ribStrip(pts, p.trail.length, 0.07, [0.7, 0.55, 1.0, u => (1 - u) * 0.8], 0, 0, 1, u => 1 - u);
+        p.trail.forEach((q, i) => { const k = 0.1 * Math.min(1, i / 3); pts.push(q[0] + Math.sin(p.t * 22 - i) * k, q[1] + Math.cos(p.t * 22 - i) * k, q[2]); });
+        R.ribStrip(pts, p.trail.length, 0.14, [0.7, 0.55, 1.0, u => (1 - u) * 0.8], 0, 0, 1, u => 1 - u);
       }
     }
   }
@@ -345,25 +345,25 @@ function emitRunScene() {
   for (const b of run.bombs) {
     const u = b.t / b.fuse, grow = clamp(b.t / 0.2, 0, 1);
     const blink = Math.sin(b.t * (8 + u * 30)) > 0 ? 0.8 : 0.2;
-    pushImp(b.x, 0.26 * grow, b.z, 0.26 * easeOutBack(grow) * (1 + 0.12 * u * Math.sin(b.t * 40)), 0, 1, 0.15, 1, 6, 1, blink, b.ph + b.t * 2, 0, 0, 0, 1);
+    pushImp(b.x, 0.34 * grow, b.z, 0.34 * easeOutBack(grow) * (1 + 0.12 * u * Math.sin(b.t * 40)), 0, 1, 0.15, 1, 6, 1, blink, b.ph + b.t * 2, 0, 0, 0, 1);
     pushDecal(b.x, b.z, b.radius, b.radius, 0, 4, 0, u, 0.75, 0.45, 1.0, 0.5 * grow);
   }
   for (const m of run.mines) {
     const armed = m.t > 0.5, grow = clamp(m.t / 0.2, 0, 1), blink = armed && Math.sin(m.t * 10) > 0;
     const fade = clamp(m.life / 0.4, 0, 1);
-    pushImp(m.x, 0.0, m.z, 0.28 * easeOutBack(grow) * fade, 0, 0, 1, 1, 2, armed ? 1.6 + (blink ? 0.4 : 0) : 0.3, armed ? (blink ? 0.7 : 0.3) : 0.1, m.t, 0, 0, 0, 1);
+    pushImp(m.x, 0.0, m.z, 0.38 * easeOutBack(grow) * fade, 0, 0, 1, 1, 2, armed ? 1.6 + (blink ? 0.4 : 0) : 0.3, armed ? (blink ? 0.7 : 0.3) : 0.1, m.t, 0, 0, 0, 1);
   }
   for (const w of run.worms) {
-    if (w.state === 'burrow' || w.E < 0.05) pushDecal(w.x, w.z, 0.5, 0.5, 0, 7, 0, 0, 0.35, 0.95, 0.75, 0.75);
-    if (w.E > 0.02) pushImp(w.x, 0, w.z, 0.42, Math.sin(w.yaw), 0, Math.cos(w.yaw), 1, 5, 3, 0.12, w.ph, w.E, w.bite, 0, 1);
+    if (w.state === 'burrow' || w.E < 0.05) pushDecal(w.x, w.z, 0.85, 0.85, 0, 7, 0, 0, 0.35, 0.95, 0.75, 0.75);
+    if (w.E > 0.02) pushImp(w.x, 0, w.z, 0.8, Math.sin(w.yaw), 0, Math.cos(w.yaw), 1, 5, 3, 0.12, w.ph, w.E, w.bite, 0, 1);
   }
   for (const b of run.buddies) {
-    pushImp(b.x, b.y + 0.19, b.z, 0.32, Math.sin(b.yaw), 0, Math.cos(b.yaw), 1, 7, 0, 0.04, b.ph, b.sq, 0, 0, 1);
-    pushDecal(b.x + 0.06, b.z + 0.05, 0.26, 0.2, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+    pushImp(b.x, b.y + 0.27, b.z, 0.45, Math.sin(b.yaw), 0, Math.cos(b.yaw), 1, 7, 0, 0.04, b.ph, b.sq, 0, 0, 1);
+    pushDecal(b.x + 0.08, b.z + 0.07, 0.36, 0.28, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   }
   for (const a of run.axes) {
-    pushImp(a.x, a.y, a.z, 0.34 * areaMul(), a.dx, 0, a.dz, 1, 4, 0.5, 0.15, a.t * 12.6, 0, 0, 0, 1);
-    trailRibbon(a.trail, 0.1, [0.7, 0.85, 1.0], 0.45);
+    pushImp(a.x, a.y, a.z, 0.5 * areaMul(), a.dx, 0, a.dz, 1, 4, 0.5, 0.15, a.t * 12.6, 0, 0, 0, 1);
+    trailRibbon(a.trail, 0.16, [0.7, 0.85, 1.0], 0.45);
   }
   // gems and pickups
   for (const g of run.gems) {
@@ -403,9 +403,19 @@ function emitRunScene() {
 }
 
 function emitArena() {
-  for (const o of ARENA.pools) if (onScreen(o.x, o.z, o.r + 1)) pushDecal(o.x, o.z, o.r, o.r, 0, 1, 0, 0, 0.05, 0.3, 0.25, 0.85);
-  for (const o of ARENA.rocks) if (onScreen(o.x, o.z, o.r + 1)) pushImp(o.x, o.r * 0.55, o.z, o.r, Math.sin(o.yaw), 0.4, Math.cos(o.yaw), 1, 13, 0, 0, 0, 0, 0, 0, 1);
-  for (const o of ARENA.wall) if (onScreen(o.x, o.z, o.r + 1)) pushImp(o.x, o.r * 0.55, o.z, o.r, Math.sin(o.yaw), 0.4, Math.cos(o.yaw), 1, 13, 0, 0, 0, 0, 0, 0, 1);
+  const f = R.frame, rc = f.rockCol, L = f.lightDir;
+  const sdx = -L[0] * 0.55, sdz = -L[2] * 0.55;
+  SCENE.pools = ARENA.pools.filter(o => onScreen(o.x, o.z, o.r + 1.5));
+  const rock = (o, size) => {
+    if (!onScreen(o.x, o.z, size + 1.5)) return;
+    const m = 'rock' + o.v;
+    if (!R.enemyDraw[m]) return;
+    const sc = size / 0.45, shade = 0.86 + 0.14 * ((o.v * 0.37 + o.yaw) % 1);
+    pushEnemy(m, false, o.x, 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, rc[0] * shade, rc[1] * shade, rc[2] * shade);
+    pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
+  };
+  for (const o of ARENA.rocks) rock(o, o.r);
+  for (const o of ARENA.wall) rock(o, o.r);
 }
 
 function trailRibbon(trail, w, col, alpha) {

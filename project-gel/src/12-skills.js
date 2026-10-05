@@ -70,12 +70,12 @@ SKILL_HOOKS.ball = {
       const base = Math.atan2(tgt.x - from[0], tgt.z - from[2]);
       for (let i = 0; i < count; i++) {
         const a = base + (i - (count - 1) / 2) * 0.15;
-        spawnProj('ball', from, [Math.sin(a) * 12, -0.3, Math.cos(a) * 12], { dmg: L.dmg, pierce: L.pierce, life: 0.85, r: 0.11 * areaMul(), hitR: 0.32 * areaMul() });
+        spawnProj('ball', from, [Math.sin(a) * 12, -0.3, Math.cos(a) * 12], { dmg: L.dmg, pierce: L.pierce, life: 0.85, r: 0.18 * areaMul(), hitR: 0.34 * areaMul() });
       }
       AUDIO.play('pop');
     };
     const arm = hero.freeArm(tw);
-    if (arm >= 0) hero.thrust(arm, tw, 0.11 * areaMul(), 0, wp => fire(wp));
+    if (arm >= 0) hero.thrust(arm, tw, 0.16 * areaMul(), 0, wp => fire(wp));
     else fire(hero.jointWorld('chest'));
   },
 };
@@ -218,7 +218,7 @@ SKILL_HOOKS.grenade = {
     const n = L.count + extraShots();
     for (let i = 0; i < n; i++) {
       hero.addBud({
-        joint: i % 2 ? 'footA' : 'footB', off: [0, 0.05, -0.13], r: 0.12, grow: 0.2 + i * 0.12, colw: 1, glow: 0.3,
+        joint: i % 2 ? 'footA' : 'footB', off: [0, 0.05, -0.14], r: 0.15, grow: 0.2 + i * 0.12, colw: 1, glow: 0.3,
         onRelease: wp => {
           const a = rand(0, TAU), r = i ? rand(0.7, 1.3) : 0;
           run.bombs.push({ x: wp[0] + Math.cos(a) * r, z: wp[2] + Math.sin(a) * r, t: 0, fuse: L.fuse + i * 0.15, dmg: L.dmg, radius: L.radius * areaMul(), ph: rand(0, 10) });
@@ -250,9 +250,9 @@ SKILL_HOOKS.missile = {
     for (let i = 0; i < n; i++) {
       const col = i % 3, row = Math.floor(i / 3);
       hero.addBud({
-        joint: 'chest', off: [(col - 1) * 0.14 + (row ? 0.07 : 0), 0.06 + row * 0.12, -0.22], r: 0.075, grow: 0.22 + i * 0.035, colw: 0.8, glow: 0.3,
+        joint: 'chest', off: [(col - 1) * 0.17 + (row ? 0.085 : 0), 0.06 + row * 0.15, -0.24], r: 0.11, grow: 0.22 + i * 0.035, colw: 0.8, glow: 0.3,
         onRelease: wp => {
-          spawnProj('missile', wp, [rand(-1.8, 1.8), 6.8, rand(-1.8, 1.8) - 0.8], { dmg: L.dmg, splash: L.splash * areaMul(), life: 3.2, target: null, hitR: 0.38 });
+          spawnProj('missile', wp, [rand(-1.8, 1.8), 6.8, rand(-1.8, 1.8) - 0.8], { dmg: L.dmg, splash: L.splash * areaMul(), life: 3.2, target: null, hitR: 0.42 });
           AUDIO.play('pop', 0.8);
         },
       });
@@ -297,7 +297,7 @@ SKILL_HOOKS.blade = {
     for (let i = 0; i < L.count; i++) {
       const a = st.ang + (i / L.count) * TAU;
       const bx = h[0] + Math.cos(a) * R2, bz = h[2] + Math.sin(a) * R2;
-      enemiesInRadius(bx, bz, 0.42 * areaMul(), e => {
+      enemiesInRadius(bx, bz, 0.5 * areaMul(), e => {
         if (run.t - e.bladeT < 0.5) return;
         e.bladeT = run.t;
         hurtEnemy(e, L.dmg, -Math.sin(a) * 4, Math.cos(a) * 4);
@@ -311,10 +311,10 @@ SKILL_HOOKS.blade = {
     for (let i = 0; i < L.count; i++) {
       const a = (st.ang || 0) + (i / L.count) * TAU;
       const bx = h[0] + Math.cos(a) * R2, bz = h[2] + Math.sin(a) * R2;
-      pushImp(bx, 0.62, bz, 0.3 * areaMul(), -Math.sin(a), 0, Math.cos(a), 1, 3, 0.3, 0.12, G.run.t, 0, 0, 0, 1);
+      pushImp(bx, 0.7, bz, 0.44 * areaMul(), -Math.sin(a), 0, Math.cos(a), 1, 3, 0.3, 0.12, G.run.t, 0, 0, 0, 1);
       const pts = [];
-      for (let k = 0; k < 14; k++) { const b = a - k * 0.06; pts.push(h[0] + Math.cos(b) * R2, 0.62, h[2] + Math.sin(b) * R2); }
-      R.ribStrip(pts, 14, 0.12 * areaMul(), [0.7, 0.92, 1.0, u => (1 - u) * 0.55], 0, 0, 1, u => 1 - u);
+      for (let k = 0; k < 14; k++) { const b = a - k * 0.06; pts.push(h[0] + Math.cos(b) * R2, 0.7, h[2] + Math.sin(b) * R2); }
+      R.ribStrip(pts, 14, 0.2 * areaMul(), [0.7, 0.92, 1.0, u => (1 - u) * 0.55], 0, 0, 1, u => 1 - u);
       pushDecal(bx + 0.12, bz + 0.08, 0.28, 0.2, 0, 1, 0, 0, 0.02, 0.04, 0.08, 0.35);
     }
   },
@@ -347,7 +347,7 @@ SKILL_HOOKS.lightning = {
 function strike(e, L, chainLeft, mul) {
   const x = e.x, z = e.z, top = 3.6;
   if (mul === 1) {
-    addBolt(x + rand(-0.2, 0.2), top, z + rand(-0.2, 0.2), x, 0.5 * e.scale, z, 0.075, [0.75, 0.95, 1.0]);
+    addBolt(x + rand(-0.2, 0.2), top, z + rand(-0.2, 0.2), x, 0.5 * e.scale, z, 0.13, [0.75, 0.95, 1.0]);
     FX.smoke(x, top, z, 0.55, [0.85, 0.95, 1.0], 0.45, 0.05);
     FX.smoke(x + 0.3, top + 0.1, z, 0.45, [0.85, 0.95, 1.0], 0.45, 0.05);
     FX.glow(x, top, z, 0.9, [0.7, 0.9, 1.0], 0.2);
@@ -360,7 +360,7 @@ function strike(e, L, chainLeft, mul) {
   if (chainLeft > 0) {
     const nx = nearestEnemy(x, z, 2.5, new Set([e]));
     if (nx) {
-      addBolt(x, 0.6, z, nx.x, 0.6 * nx.scale, nx.z, 0.045, [0.75, 0.95, 1.0]);
+      addBolt(x, 0.6, z, nx.x, 0.6 * nx.scale, nx.z, 0.08, [0.75, 0.95, 1.0]);
       strike(nx, L, chainLeft - 1, 0.6);
     }
   }
@@ -395,7 +395,7 @@ SKILL_HOOKS.worms = {
     if (!nearestEnemy(h[0], h[2], 11)) return;
     st.t = L.cd * cdMul();
     for (let i = 0; i < L.count; i++) {
-      hero.addBud({ joint: 'pelvis', off: [rand(-0.12, 0.12), -0.45, 0.12], r: 0.08, grow: 0.18 + i * 0.1, colw: 3, glow: 0.15, onRelease: wp => spawnWorm(wp, L) });
+      hero.addBud({ joint: 'pelvis', off: [rand(-0.12, 0.12), -0.45, 0.12], r: 0.12, grow: 0.18 + i * 0.1, colw: 3, glow: 0.15, onRelease: wp => spawnWorm(wp, L) });
     }
   },
 };
@@ -422,7 +422,7 @@ function updateWorms(dt) {
       const step = Math.min(d, 6 * dt);
       w.x += dx / d * step; w.z += dz / d * step;
       w.ripT -= dt;
-      if (w.ripT <= 0) { w.ripT = 0.14; FX.decal(w.x, w.z, 0.55, 3, [0.5, 1, 0.85], 0.4, { add: true, a: 0.35, rot: 0 }); }
+      if (w.ripT <= 0) { w.ripT = 0.12; FX.decal(w.x, w.z, 0.95, 3, [0.5, 1, 0.85], 0.45, { add: true, a: 0.4, rot: 0 }); }
       if (d < 0.75 + w.target.radius) {
         w.state = 'surface';
         FX.burst(w.x, 0.1, w.z, 6, [0.5, 0.45, 0.4], 3, 0.1, 0.4, 2);
@@ -460,7 +460,7 @@ SKILL_HOOKS.buddies = {
     st.t = L.cd * cdMul();
     for (let i = 0; i < L.count; i++) {
       const side = i % 2 ? -1 : 1;
-      hero.addBud({ joint: 'chest', off: [side * 0.34, -0.12 + Math.floor(i / 2) * 0.15, 0.04], r: 0.21, grow: 0.36 + i * 0.12, colw: 0, glow: 0.04, onRelease: wp => spawnBuddy(wp, L, side) });
+      hero.addBud({ joint: 'chest', off: [side * 0.36, -0.12 + Math.floor(i / 2) * 0.17, 0.04], r: 0.26, grow: 0.36 + i * 0.12, colw: 0, glow: 0.04, onRelease: wp => spawnBuddy(wp, L, side) });
     }
     AUDIO.play('split');
   },
@@ -545,7 +545,7 @@ function updateAxes(dt) {
       a.x += dx / d * sp; a.z += dz / d * sp;
       if (d < 0.6) { a.dead = true; G.hero.impulse(0.3); continue; }
     }
-    enemiesInRadius(a.x, a.z, 0.6 * areaMul(), e => {
+    enemiesInRadius(a.x, a.z, 0.7 * areaMul(), e => {
       const last = a.hits.get(e.id);
       if (last !== undefined && a.t - last < 0.35) return;
       if (shieldBlocks(e, a.x, a.z) && a.state === 'out') { blockedFx(a.x, 0.7, a.z); a.state = 'back'; return; }
@@ -575,7 +575,7 @@ SKILL_HOOKS.laser = {
       st.tick -= dt;
       if (st.tick <= 0) {
         st.tick = 0.1;
-        const len = 7 * areaMul(), w = 0.2 * areaMul();
+        const len = 7 * areaMul(), w = 0.3 * areaMul();
         for (let b = 0; b < L.beams; b++) {
           const a = st.ang + b * Math.PI, dx = Math.sin(a), dz = Math.cos(a);
           const seen = new Set();
@@ -606,7 +606,7 @@ SKILL_HOOKS.laser = {
     const st = s.st;
     if (!(st.active > 0)) return;
     const hero = G.hero, ch = hero.jointWorld('chest'), t = G.run.t;
-    const len = 7 * areaMul(), w = 0.2 * areaMul();
+    const len = 7 * areaMul(), w = 0.3 * areaMul();
     const fade = Math.min(1, st.active / 0.15) * Math.min(1, (L.dur - st.active) / 0.08 + 0.2);
     for (let b = 0; b < L.beams; b++) {
       const a = st.ang + b * Math.PI, dx = Math.sin(a), dz = Math.cos(a);

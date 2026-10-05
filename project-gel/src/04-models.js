@@ -116,6 +116,16 @@ function modelDefs() {
     m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.17, hd[2]], r: 0.118, hh: 0.025, rd: 0.004, col: COL.hatBand, bone: 2, k: 0 });
     m.parts.push({ s: 'cap', a: [ha[0], ha[1], ha[2]], b: [ha[0] - 0.02, ha[1] - 0.06, ha[2] + 0.34], r: 0.016, r2: 0.01, col: COL.baton, bone: 6, k: 0 });
   });
+  // Boulders: lumpy rocks on one rigid bone, about 0.45 in radius, tinted per arena
+  const rock = (name, parts) => {
+    const m = makeHumanoid(STICK);
+    m.parts = parts.map(p => ({ s: 'rock', bone: 0, k: 0.09, ...p }));
+    m.bmin = [-0.8, -0.3, -0.8]; m.bmax = [0.8, 0.9, 0.8]; m.top = 0.7; m.aoScale = 2.2; m.name = name;
+    defs[name] = m;
+  };
+  rock('rock0', [{ c: [0, 0.16, 0], r: 0.42, bump: 0.13 }, { c: [0.3, 0.06, 0.14], r: 0.22, bump: 0.16 }]);
+  rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
+  rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
   return defs;
 }
 
@@ -179,6 +189,9 @@ const CLIPS = {
     return { root: [0.02 * s, -0.03, 0.02 * c], rot: [[0, 0, 0.06 * s], [0.12, 0, 0.12 * s], [0.18 * c, 0.3 * s, 0.25 * c],
       [0.2, 0, 0.5 + 0.2 * c], [-0.2, 0, 0], [0.2, 0, -0.5 - 0.2 * c], [-0.2, 0, 0], [-0.1, 0, 0.1], [0.2, 0, 0], [-0.1, 0, -0.1], [0.2, 0, 0]] };
   } },
+  still: { frames: 1, fn() {
+    return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, () => [0, 0, 0]) };
+  } },
   conduct: { frames: 32, fn(t) {
     const s = Math.sin(t * TAU), c = Math.cos(t * TAU), s2 = Math.sin(2 * t * TAU);
     return { root: [0, 0.01 * s2, 0], rot: [[0, 0.1 * s, 0], [0.02, 0.15 * s, 0.04 * s2], [-0.05, 0.2 * s, 0.08 * s2],
@@ -226,14 +239,16 @@ function bakeAnimations(defs) {
 const MODEL_CLIPS = {
   stickman: ['run', 'idle'], sprinter: ['run'], brute: ['run'], archer: ['run', 'aim'], splitter: ['run'], shield: ['run'],
   stomper: ['run', 'slam', 'idle'], hurler: ['run', 'throw', 'idle'], charger: ['run', 'dizzy', 'idle'], twin: ['run', 'idle'], conductor: ['conduct', 'run', 'idle'],
+  rock0: ['still'], rock1: ['still'], rock2: ['still'],
 };
 const MESH_CELLS = {
   stickman: 0.032, sprinter: 0.029, brute: 0.034, archer: 0.03, splitter: 0.032, shield: 0.03,
   stomper: 0.024, hurler: 0.023, charger: 0.024, twin: 0.024, conductor: 0.022,
+  rock0: 0.045, rock1: 0.045, rock2: 0.045,
 };
 const CROWN_CELL = 0.02;
 // Build order: what chapter 1 needs first, bosses last
-const MESH_ORDER = ['stickman', 'sprinter', 'brute', 'stickman_crown', 'brute_crown', 'archer', 'splitter', 'shield', 'sprinter_crown', 'archer_crown', 'splitter_crown', 'shield_crown', 'stomper', 'hurler', 'charger', 'twin', 'conductor'];
+const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'brute', 'stickman_crown', 'brute_crown', 'archer', 'splitter', 'shield', 'sprinter_crown', 'archer_crown', 'splitter_crown', 'shield_crown', 'stomper', 'hurler', 'charger', 'twin', 'conductor'];
 
 function prepareModelDefs() {
   const defs = modelDefs();

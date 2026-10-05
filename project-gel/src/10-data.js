@@ -115,12 +115,12 @@ const BOSS_TYPES = {
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 
 const ARENAS = [
-  { name: 'Stone Plaza', stoneA: '#2b4c68', stoneB: '#3e6788', grout: '#0c1c2a', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.42, shadowTint: '#0a1f3a' },
-  { name: 'Slime Sewers', stoneA: '#35554f', stoneB: '#4a6e66', grout: '#0b1a17', accent: '#62ff7a', fog: '#071a16', sky: '#7cc4b0', ground: '#12302a', light: '#f2fff4', spotMin: 0.4, shadowTint: '#06281f' },
-  { name: 'Toy Factory', stoneA: '#6f6698', stoneB: '#8a82b4', grout: '#2a2440', accent: '#ff9bd1', fog: '#16122a', sky: '#c9bcf2', ground: '#2e2550', light: '#fff4ec', spotMin: 0.46, shadowTint: '#1c1238' },
-  { name: 'Night Market', stoneA: '#6b4a32', stoneB: '#8a6444', grout: '#22140c', accent: '#ffb35c', fog: '#170e14', sky: '#c9a07a', ground: '#2d1d18', light: '#ffe7c4', spotMin: 0.36, shadowTint: '#2a1020' },
-  { name: 'Ice Lab', stoneA: '#46708f', stoneB: '#5d88a8', grout: '#1a3550', accent: '#bff3ff', fog: '#0b1f33', sky: '#a6cce8', ground: '#22445f', light: '#e8f4ff', spotMin: 0.42, shadowTint: '#0a2440' },
-  { name: 'Lava Foundry', stoneA: '#2e2a2c', stoneB: '#453e3d', grout: '#120a08', accent: '#ff6a1a', fog: '#1a0c08', sky: '#a06a50', ground: '#2a1410', light: '#ffe2c8', spotMin: 0.4, shadowTint: '#2a0a04' },
+  { name: 'Stone Plaza', stoneA: '#34536e', stoneB: '#3c5e7b', grout: '#08121c', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.5, shadowTint: '#0a1f3a', rock: '#8592a0', pool: '#1f7a9c', poolGlow: 0.05 },
+  { name: 'Slime Sewers', stoneA: '#2f4d47', stoneB: '#365750', grout: '#061210', accent: '#62ff7a', fog: '#071a16', sky: '#7cc4b0', ground: '#12302a', light: '#f2fff4', spotMin: 0.48, shadowTint: '#06281f', rock: '#74857c', pool: '#4ccf48', poolGlow: 0.35 },
+  { name: 'Toy Factory', stoneA: '#4e4772', stoneB: '#58507f', grout: '#120d22', accent: '#ff9bd1', fog: '#16122a', sky: '#c9bcf2', ground: '#2e2550', light: '#fff4ec', spotMin: 0.52, shadowTint: '#1c1238', rock: '#a297c8', pool: '#ff6fb8', poolGlow: 0.2 },
+  { name: 'Night Market', stoneA: '#58432f', stoneB: '#624b36', grout: '#160c08', accent: '#ffb35c', fog: '#170e14', sky: '#c9a07a', ground: '#2d1d18', light: '#ffe7c4', spotMin: 0.46, shadowTint: '#2a1020', rock: '#8f7f6a', pool: '#4a3322', poolGlow: 0.0 },
+  { name: 'Ice Lab', stoneA: '#46708f', stoneB: '#4f7a98', grout: '#0a1a28', accent: '#bff3ff', fog: '#0b1f33', sky: '#a6cce8', ground: '#22445f', light: '#e8f4ff', spotMin: 0.48, shadowTint: '#0a2440', rock: '#bcd8ea', pool: '#5fc8ff', poolGlow: 0.15 },
+  { name: 'Lava Foundry', stoneA: '#3a3131', stoneB: '#433838', grout: '#0b0605', accent: '#ff6a1a', fog: '#1a0c08', sky: '#a06a50', ground: '#2a1410', light: '#ffe2c8', spotMin: 0.46, shadowTint: '#2a0a04', rock: '#6e625e', pool: '#ff6a1a', poolGlow: 0.95 },
 ];
 
 function chapterInfo(n) {

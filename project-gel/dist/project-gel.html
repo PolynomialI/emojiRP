@@ -874,6 +874,16 @@ function modelDefs() {
     m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.17, hd[2]], r: 0.118, hh: 0.025, rd: 0.004, col: COL.hatBand, bone: 2, k: 0 });
     m.parts.push({ s: 'cap', a: [ha[0], ha[1], ha[2]], b: [ha[0] - 0.02, ha[1] - 0.06, ha[2] + 0.34], r: 0.016, r2: 0.01, col: COL.baton, bone: 6, k: 0 });
   });
+  // Boulders: lumpy rocks on one rigid bone, about 0.45 in radius, tinted per arena
+  const rock = (name, parts) => {
+    const m = makeHumanoid(STICK);
+    m.parts = parts.map(p => ({ s: 'rock', bone: 0, k: 0.09, ...p }));
+    m.bmin = [-0.8, -0.3, -0.8]; m.bmax = [0.8, 0.9, 0.8]; m.top = 0.7; m.aoScale = 2.2; m.name = name;
+    defs[name] = m;
+  };
+  rock('rock0', [{ c: [0, 0.16, 0], r: 0.42, bump: 0.13 }, { c: [0.3, 0.06, 0.14], r: 0.22, bump: 0.16 }]);
+  rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
+  rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
   return defs;
 }
 
@@ -937,6 +947,9 @@ const CLIPS = {
     return { root: [0.02 * s, -0.03, 0.02 * c], rot: [[0, 0, 0.06 * s], [0.12, 0, 0.12 * s], [0.18 * c, 0.3 * s, 0.25 * c],
       [0.2, 0, 0.5 + 0.2 * c], [-0.2, 0, 0], [0.2, 0, -0.5 - 0.2 * c], [-0.2, 0, 0], [-0.1, 0, 0.1], [0.2, 0, 0], [-0.1, 0, -0.1], [0.2, 0, 0]] };
   } },
+  still: { frames: 1, fn() {
+    return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, () => [0, 0, 0]) };
+  } },
   conduct: { frames: 32, fn(t) {
     const s = Math.sin(t * TAU), c = Math.cos(t * TAU), s2 = Math.sin(2 * t * TAU);
     return { root: [0, 0.01 * s2, 0], rot: [[0, 0.1 * s, 0], [0.02, 0.15 * s, 0.04 * s2], [-0.05, 0.2 * s, 0.08 * s2],
@@ -984,14 +997,16 @@ function bakeAnimations(defs) {
 const MODEL_CLIPS = {
   stickman: ['run', 'idle'], sprinter: ['run'], brute: ['run'], archer: ['run', 'aim'], splitter: ['run'], shield: ['run'],
   stomper: ['run', 'slam', 'idle'], hurler: ['run', 'throw', 'idle'], charger: ['run', 'dizzy', 'idle'], twin: ['run', 'idle'], conductor: ['conduct', 'run', 'idle'],
+  rock0: ['still'], rock1: ['still'], rock2: ['still'],
 };
 const MESH_CELLS = {
   stickman: 0.032, sprinter: 0.029, brute: 0.034, archer: 0.03, splitter: 0.032, shield: 0.03,
   stomper: 0.024, hurler: 0.023, charger: 0.024, twin: 0.024, conductor: 0.022,
+  rock0: 0.045, rock1: 0.045, rock2: 0.045,
 };
 const CROWN_CELL = 0.02;
 // Build order: what chapter 1 needs first, bosses last
-const MESH_ORDER = ['stickman', 'sprinter', 'brute', 'stickman_crown', 'brute_crown', 'archer', 'splitter', 'shield', 'sprinter_crown', 'archer_crown', 'splitter_crown', 'shield_crown', 'stomper', 'hurler', 'charger', 'twin', 'conductor'];
+const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'brute', 'stickman_crown', 'brute_crown', 'archer', 'splitter', 'shield', 'sprinter_crown', 'archer_crown', 'splitter_crown', 'shield_crown', 'stomper', 'hurler', 'charger', 'twin', 'conductor'];
 
 function prepareModelDefs() {
   const defs = modelDefs();
@@ -1737,6 +1752,16 @@ function modelDefs() {
     m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.17, hd[2]], r: 0.118, hh: 0.025, rd: 0.004, col: COL.hatBand, bone: 2, k: 0 });
     m.parts.push({ s: 'cap', a: [ha[0], ha[1], ha[2]], b: [ha[0] - 0.02, ha[1] - 0.06, ha[2] + 0.34], r: 0.016, r2: 0.01, col: COL.baton, bone: 6, k: 0 });
   });
+  // Boulders: lumpy rocks on one rigid bone, about 0.45 in radius, tinted per arena
+  const rock = (name, parts) => {
+    const m = makeHumanoid(STICK);
+    m.parts = parts.map(p => ({ s: 'rock', bone: 0, k: 0.09, ...p }));
+    m.bmin = [-0.8, -0.3, -0.8]; m.bmax = [0.8, 0.9, 0.8]; m.top = 0.7; m.aoScale = 2.2; m.name = name;
+    defs[name] = m;
+  };
+  rock('rock0', [{ c: [0, 0.16, 0], r: 0.42, bump: 0.13 }, { c: [0.3, 0.06, 0.14], r: 0.22, bump: 0.16 }]);
+  rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
+  rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
   return defs;
 }
 
@@ -1800,6 +1825,9 @@ const CLIPS = {
     return { root: [0.02 * s, -0.03, 0.02 * c], rot: [[0, 0, 0.06 * s], [0.12, 0, 0.12 * s], [0.18 * c, 0.3 * s, 0.25 * c],
       [0.2, 0, 0.5 + 0.2 * c], [-0.2, 0, 0], [0.2, 0, -0.5 - 0.2 * c], [-0.2, 0, 0], [-0.1, 0, 0.1], [0.2, 0, 0], [-0.1, 0, -0.1], [0.2, 0, 0]] };
   } },
+  still: { frames: 1, fn() {
+    return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, () => [0, 0, 0]) };
+  } },
   conduct: { frames: 32, fn(t) {
     const s = Math.sin(t * TAU), c = Math.cos(t * TAU), s2 = Math.sin(2 * t * TAU);
     return { root: [0, 0.01 * s2, 0], rot: [[0, 0.1 * s, 0], [0.02, 0.15 * s, 0.04 * s2], [-0.05, 0.2 * s, 0.08 * s2],
@@ -1847,14 +1875,16 @@ function bakeAnimations(defs) {
 const MODEL_CLIPS = {
   stickman: ['run', 'idle'], sprinter: ['run'], brute: ['run'], archer: ['run', 'aim'], splitter: ['run'], shield: ['run'],
   stomper: ['run', 'slam', 'idle'], hurler: ['run', 'throw', 'idle'], charger: ['run', 'dizzy', 'idle'], twin: ['run', 'idle'], conductor: ['conduct', 'run', 'idle'],
+  rock0: ['still'], rock1: ['still'], rock2: ['still'],
 };
 const MESH_CELLS = {
   stickman: 0.032, sprinter: 0.029, brute: 0.034, archer: 0.03, splitter: 0.032, shield: 0.03,
   stomper: 0.024, hurler: 0.023, charger: 0.024, twin: 0.024, conductor: 0.022,
+  rock0: 0.045, rock1: 0.045, rock2: 0.045,
 };
 const CROWN_CELL = 0.02;
 // Build order: what chapter 1 needs first, bosses last
-const MESH_ORDER = ['stickman', 'sprinter', 'brute', 'stickman_crown', 'brute_crown', 'archer', 'splitter', 'shield', 'sprinter_crown', 'archer_crown', 'splitter_crown', 'shield_crown', 'stomper', 'hurler', 'charger', 'twin', 'conductor'];
+const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'brute', 'stickman_crown', 'brute_crown', 'archer', 'splitter', 'shield', 'sprinter_crown', 'archer_crown', 'splitter_crown', 'shield_crown', 'stomper', 'hurler', 'charger', 'twin', 'conductor'];
 
 function prepareModelDefs() {
   const defs = modelDefs();
@@ -1999,7 +2029,8 @@ vec3 gooShade(vec3 base, vec3 p, vec3 n, vec3 v, float thin, float ao, float emi
 `;
 
 // ------------------------------------------------------------
-// Floor: six procedural arenas
+// Floor: calm, low-contrast large bricks in each arena's colors,
+// with a dark border outside the arena walls
 // ------------------------------------------------------------
 const VS_FLOOR = GLSL_HEAD + GLSL_FRAME + `
 in vec2 aPos;
@@ -2015,74 +2046,25 @@ void main() {
 const FS_FLOOR = GLSL_HEAD + GLSL_FRAME + GLSL_COMMON + `
 in vec3 vW;
 out vec4 fragColor;
-uniform int uArena;
 uniform vec3 uStoneA;
 uniform vec3 uStoneB;
 uniform vec3 uGrout;
-uniform vec3 uAccent;
 uniform vec4 uShSph[14];
 uniform int uShCount;
 uniform vec3 uHeroPos;
+uniform vec3 uArenaBox; // half width, half depth, corner radius (0 = no walls)
 
 float sdRoundRect(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
-float sdHex(vec2 p, float r) {
-  const vec3 k = vec3(-0.866025404, 0.5, 0.577350269);
-  p = abs(p);
-  p -= 2.0 * min(dot(k.xy, p), 0.0) * k.xy;
-  p -= vec2(clamp(p.x, -k.z * r, k.z * r), r);
-  return length(p) * sign(p.y);
-}
-vec4 hexGrid(vec2 p) {
-  const vec2 s = vec2(1.0, 1.7320508);
-  vec4 hC = floor(vec4(p, p - vec2(0.5, 1.0)) / s.xyxy) + 0.5;
-  vec4 h = vec4(p - hC.xy * s, p - (hC.zw + 0.5) * s);
-  return dot(h.xy, h.xy) < dot(h.zw, h.zw) ? vec4(h.xy, hC.xy) : vec4(h.zw, hC.zw + 0.5);
-}
-mat2 rot2(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 
-// x: signed distance to the tile edge (negative inside), y: tile id hash, z: aux
-vec3 pattern(vec2 p) {
-  if (uArena == 0) {
-    const vec2 S = vec2(1.05, 0.72);
-    float row = floor(p.y / S.y);
-    float off = hash11(row * 1.37 + 3.1) * S.x;
-    float col = floor((p.x + off) / S.x);
-    float h = hash12(vec2(col, row));
-    vec2 c = vec2((col + 0.5) * S.x - off, (row + 0.5) * S.y);
-    vec2 q = rot2((h - 0.5) * 0.06) * (p - c);
-    vec2 hs = S * 0.5 - vec2(0.03 + 0.025 * h, 0.028 + 0.02 * fract(h * 7.3));
-    return vec3(sdRoundRect(q, hs, 0.07 + 0.08 * fract(h * 13.1)), h, 0.0);
-  }
-  if (uArena == 1) {
-    const float S = 0.82;
-    vec2 id = floor(p / S);
-    vec2 q = p - (id + 0.5) * S;
-    float h = hash12(id);
-    if (mod(id.y, 7.0) == 0.0) return vec3(abs(q.y) - S * 0.36, h, 1.0);
-    return vec3(sdRoundRect(q, vec2(S * 0.5 - 0.03), 0.06), h, 0.0);
-  }
-  if (uArena == 2) {
-    const float S = 0.92;
-    vec2 id = floor(p / S);
-    vec2 q = p - (id + 0.5) * S;
-    float h = hash12(id);
-    return vec3(sdRoundRect(q, vec2(S * 0.5 - 0.045), 0.17), h, floor(h * 4.0));
-  }
-  if (uArena == 3) {
-    const float W = 0.3;
-    float row = floor(p.y / W);
-    float len = 1.6 + hash11(row * 2.3) * 1.2;
-    float off = hash11(row * 5.7 + 1.0) * len;
-    float col = floor((p.x + off) / len);
-    float h = hash12(vec2(col, row));
-    vec2 c = vec2((col + 0.5) * len - off, (row + 0.5) * W);
-    return vec3(sdRoundRect(p - c, vec2(len * 0.5 - 0.012, W * 0.5 - 0.012), 0.025), h, 0.0);
-  }
-  float size = uArena == 4 ? 0.58 : 0.66;
-  vec4 hg = hexGrid(p / size);
-  float h = hash12(hg.zw);
-  float gap = uArena == 4 ? 0.035 : 0.06;
-  return vec3((sdHex(hg.yx, 0.5 - gap) - 0.04) * size, h, 0.0);
+// Large running-bond bricks: x = distance to the brick edge (negative inside), y = brick hash
+vec2 bricks(vec2 p) {
+  const vec2 S = vec2(2.3, 1.15);
+  float row = floor(p.y / S.y);
+  float off = mod(row, 2.0) * 0.5 * S.x + hash11(row * 1.7) * 0.4;
+  float col = floor((p.x + off) / S.x);
+  vec2 c = vec2((col + 0.5) * S.x - off, (row + 0.5) * S.y);
+  float h = hash12(vec2(col, row));
+  return vec2(sdRoundRect(p - c, S * 0.5 - 0.035, 0.12), h);
 }
 
 float sphSoftShadow(vec3 ro, vec3 rd, vec4 sph, float k) {
@@ -2106,81 +2088,30 @@ float heroShadow(vec3 wp) {
 
 void main() {
   vec2 p = vW.xz;
-  vec3 pt = pattern(p);
-  const float e = 0.012;
-  float bevel = uArena == 3 ? 0.03 : (uArena == 2 ? 0.11 : 0.075);
-  float hgt = smoothstep(0.0, bevel, -pt.x);
-  float hx = smoothstep(0.0, bevel, -pattern(p + vec2(e, 0.0)).x);
-  float hz = smoothstep(0.0, bevel, -pattern(p + vec2(0.0, e)).x);
-  float depth = uArena == 2 ? 0.07 : 0.05;
-  vec3 N = normalize(vec3(-(hx - hgt) / e * depth, 1.0, -(hz - hgt) / e * depth));
+  vec2 bk = bricks(p);
+  // a very gentle bevel so bricks read without busy highlights
+  const float e = 0.02;
+  float hgt = smoothstep(0.0, 0.1, -bk.x);
+  float hx = smoothstep(0.0, 0.1, -bricks(p + vec2(e, 0.0)).x);
+  float hz = smoothstep(0.0, 0.1, -bricks(p + vec2(0.0, e)).x);
+  vec3 N = normalize(vec3(-(hx - hgt) / e * 0.025, 1.0, -(hz - hgt) / e * 0.025));
 
-  float nLow = texture(uNoise, p * 0.09).r;
-  float nMid = texture(uNoise, p * 0.37 + pt.y * 3.0).g;
-  float nHi = texture(uNoise, p * 1.3).g;
-  float inside = step(pt.x, 0.0);
-  vec3 alb;
-  float specAmt = 0.12, specPow = 26.0, emiss = 0.0;
-  vec3 emissCol = vec3(0.0);
-  float ao = mix(0.5, 1.0, smoothstep(0.0, 0.06, -pt.x));
+  float mott = texture(uNoise, p * 0.045).r;
+  float fine = texture(uNoise, p * 0.6 + bk.y * 5.0).g;
+  vec3 alb = mix(uStoneA, uStoneB, bk.y * 0.7 + (mott - 0.5) * 0.5);
+  alb *= 0.94 + 0.08 * mott + 0.04 * fine;
+  // seams: only slightly darker than the bricks
+  float seam = 1.0 - smoothstep(0.0, 0.035, -bk.x);
+  alb = mix(alb, alb * 0.8, seam);
+  float ao = mix(0.86, 1.0, smoothstep(0.0, 0.08, -bk.x));
 
-  if (uArena == 0) {
-    alb = mix(uStoneA, uStoneB, pt.y * 0.8 + (nLow - 0.5) * 0.6);
-    alb *= 0.88 + 0.22 * nMid;
-    alb *= 0.94 + 0.1 * nHi;
-    float crack = texture(uNoise, p * 0.31 + pt.y * 7.0).b;
-    alb *= mix(1.0, 0.72, smoothstep(0.08, 0.02, crack) * step(pt.y, 0.3) * hgt);
-    alb += vec3(0.05, 0.07, 0.09) * smoothstep(0.0, 0.025, -pt.x) * (1.0 - smoothstep(0.025, 0.07, -pt.x));
-  } else if (uArena == 1) {
-    if (pt.z > 0.5) {
-      float flow = texture(uNoise, vec2(p.x * 0.18 - uTime * 0.05, p.y * 0.5)).r;
-      float flow2 = texture(uNoise, vec2(p.x * 0.4 + uTime * 0.03, p.y * 0.9 + 0.3)).g;
-      float caus = smoothstep(0.75, 0.95, texture(uNoise, p * 0.45 + vec2(uTime * 0.04, 0.0)).b);
-      float edgeG = smoothstep(0.0, 0.08, -pt.x);
-      alb = mix(uGrout, uAccent * 0.55, edgeG);
-      emiss = (0.55 + 0.6 * flow + 0.3 * flow2) * edgeG;
-      emissCol = uAccent * (0.7 + 0.5 * caus);
-      N = normalize(vec3((flow - 0.5) * 0.2, 1.0, (flow2 - 0.5) * 0.2));
-      specAmt = 0.5; specPow = 60.0;
-      inside = 1.0; ao = mix(0.6, 1.0, edgeG);
-    } else {
-      alb = mix(uStoneA, uStoneB, pt.y) * (0.85 + 0.25 * nMid);
-      float moss = smoothstep(0.55, 0.75, nLow + (1.0 - hgt) * 0.3);
-      alb = mix(alb, uAccent * 0.35, moss * 0.45);
-    }
-  } else if (uArena == 2) {
-    vec3 c0 = vec3(0.78, 0.62, 0.95), c1 = vec3(0.52, 0.88, 0.76), c2 = vec3(1.0, 0.72, 0.6), c3 = vec3(0.56, 0.74, 1.0);
-    alb = pt.z < 0.5 ? c0 : pt.z < 1.5 ? c1 : pt.z < 2.5 ? c2 : c3;
-    alb = mix(alb, uStoneA, 0.25) * (0.92 + 0.12 * nMid);
-    specAmt = 0.35; specPow = 50.0;
-  } else if (uArena == 3) {
-    float grain = texture(uNoise, vec2(p.x * 0.12 + pt.y * 4.0, p.y * 2.6)).g;
-    float rings = sin((p.x * 0.7 + grain * 6.0 + pt.y * 20.0)) * 0.5 + 0.5;
-    alb = mix(uStoneA, uStoneB, pt.y * 0.7 + grain * 0.4) * (0.82 + 0.25 * rings * grain);
-    specAmt = 0.16; specPow = 30.0;
-    vec2 cell = floor(p / 7.0);
-    vec2 lp = (cell + 0.25 + 0.5 * vec2(hash12(cell), hash12(cell + 9.1))) * 7.0;
-    float pool = exp(-dot(p - lp, p - lp) / 3.2);
-    emiss = pool * 0.55 * (0.9 + 0.1 * sin(uTime * 3.0 + cell.x));
-    emissCol = uAccent * alb * 2.2;
-  } else if (uArena == 4) {
-    float frost = texture(uNoise, p * 0.55).b;
-    alb = mix(uStoneA, uStoneB, pt.y * 0.6 + nLow * 0.5) * (0.9 + 0.15 * nMid);
-    alb += vec3(0.1, 0.14, 0.18) * smoothstep(0.1, 0.0, frost) * 0.6;
-    specAmt = 0.75; specPow = 90.0;
-  } else {
-    alb = mix(uStoneA, uStoneB, pt.y * 0.7 + nMid * 0.3) * (0.85 + 0.2 * nHi);
-    float lava = 1.0 - smoothstep(0.0, 0.035, -pt.x);
-    float flow = texture(uNoise, p * 0.25 + vec2(uTime * 0.02, -uTime * 0.015)).r;
-    emiss = lava * (1.1 + 0.6 * flow + 0.25 * sin(uTime * 2.0 + pt.y * 30.0));
-    emissCol = uAccent;
-    alb += uAccent * 0.18 * smoothstep(0.06, 0.0, -pt.x) * inside;
-    specAmt = 0.1;
-  }
-
-  if (pt.x > 0.0 && !(uArena == 1 && pt.z > 0.5)) {
-    alb = uGrout * (0.8 + 0.3 * nHi);
-    ao *= 0.75;
+  // the arena: dark outside, soft contact shading just inside the wall
+  float outside = 0.0;
+  if (uArenaBox.x > 0.0) {
+    float sd = sdRoundRect(p, uArenaBox.xy, uArenaBox.z);
+    ao *= mix(1.0, 0.62, smoothstep(-1.6, 0.0, sd));
+    outside = smoothstep(-0.1, 1.2, sd);
+    alb = mix(alb, uGrout * (0.8 + 0.3 * mott), outside);
   }
 
   vec3 V = normalize(uCamPos - vW);
@@ -2191,15 +2122,47 @@ void main() {
   vec3 hemi = mix(uGroundCol, uSkyCol, N.y * 0.5 + 0.5);
   vec3 col = alb * (hemi * 0.55 + uLightCol * ndl * 0.75 * sh) * ao * contact;
   vec3 H = normalize(uLightDir + V);
-  col += uLightCol * pow(max(dot(N, H), 0.0), specPow) * specAmt * sh * ao;
-  if (uArena == 4) {
-    float F = 0.04 + 0.96 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
-    col += envColor(reflect(-V, N)) * (0.12 + F * 0.5) * ao;
-    float glint = step(0.985, texture(uNoise, p * 2.1 + V.xz * 0.3).a) * hgt;
-    col += vec3(0.8, 0.95, 1.0) * glint * 0.5;
-  }
-  col += emissCol * emiss;
+  col += uLightCol * pow(max(dot(N, H), 0.0), 24.0) * 0.06 * sh * ao * (1.0 - outside);
   fragColor = vec4(atmos(col, vW), 1.0);
+}`;
+
+// ------------------------------------------------------------
+// Goo pools: wobbly liquid puddles that block movement
+// ------------------------------------------------------------
+const FS_POOL = GLSL_HEAD + GLSL_FRAME + GLSL_COMMON + `
+in vec3 vW;
+in vec2 vUV;
+uniform vec3 uPoolCol;
+uniform float uPoolGlow;
+uniform float uSeed;
+out vec4 fragColor;
+void main() {
+  float r = length(vUV);
+  float ang = atan(vUV.y, vUV.x);
+  float edge = 0.86 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 7.0 - uSeed * 2.0 + uTime * 0.6) + 0.03 * (texture(uNoise, vec2(ang * 0.25 + uSeed, uTime * 0.02)).r - 0.5);
+  float m = 1.0 - smoothstep(edge - 0.02, edge + 0.01, r);
+  float lip = smoothstep(edge - 0.1, edge - 0.01, r) * m;
+  float wet = (1.0 - smoothstep(edge, edge + 0.1, r)) * (1.0 - m);
+  if (m + wet < 0.003) discard;
+  vec2 q = vW.xz;
+  float w1 = texture(uNoise, q * 0.35 + vec2(uTime * 0.03, uSeed)).r;
+  float w2 = texture(uNoise, q * 0.5 - vec2(uSeed, uTime * 0.025)).g;
+  vec3 n = normalize(vec3((w1 - 0.5) * 0.5, 1.0, (w2 - 0.5) * 0.5));
+  vec3 v = normalize(uCamPos - vW);
+  float depth = smoothstep(edge, 0.0, r);
+  vec3 col = mix(uPoolCol * 1.25, uPoolCol * 0.55, depth);
+  float F = 0.03 + 0.97 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+  col += envColor(reflect(-v, n)) * (0.08 + F * 0.4);
+  vec3 H = normalize(uLightDir + v);
+  col += uLightCol * pow(max(dot(n, H), 0.0), 90.0) * 0.9;
+  float caus = smoothstep(0.8, 0.96, texture(uNoise, q * 0.28 + vec2(uTime * 0.02, -uTime * 0.03) + uSeed).b);
+  col += mix(uPoolCol, vec3(1.0), 0.5) * caus * 0.12;
+  col += uPoolCol * uPoolGlow * (0.8 + 0.4 * w1);
+  col = mix(col, mix(uPoolCol, vec3(1.0), 0.45), lip * 0.6);
+  // a darker wet stain around the pool
+  vec4 outc = vec4(col, m);
+  if (m < 0.5) outc = vec4(uPoolCol * 0.25, wet * 0.45);
+  fragColor = vec4(atmos(outc.rgb, vW), outc.a);
 }`;
 
 // ------------------------------------------------------------
@@ -3181,7 +3144,7 @@ const R = {
   cam: { pos: [0, 10, 10], target: [0, 0, 0], fovY: 0.55, view: M4.create(), proj: M4.create(), viewProj: M4.create(), invViewProj: M4.create(), right: [1, 0, 0], up: [0, 1, 0], pixAng: 0.001 },
   frame: {
     time: 0, lightDir: [-0.45, 0.82, 0.36], lightCol: [1, 0.97, 0.92], skyCol: [0.46, 0.62, 0.8], groundCol: [0.1, 0.16, 0.24], fogCol: [0.04, 0.11, 0.19],
-    spot: [0, 0, 0, 13], fogRange: [10, 26], spotMin: 0.42, arena: 0,
+    spot: [0, 0, 0, 13], fogRange: [10, 26], spotMin: 0.42, arena: 0, poolCol: [0.1, 0.4, 0.5], poolGlow: 0, rockCol: [0.5, 0.5, 0.55],
     stoneA: [0.17, 0.3, 0.41], stoneB: [0.25, 0.4, 0.53], grout: [0.05, 0.11, 0.17], accent: [0.3, 1, 0.5], shadowTint: [0.05, 0.12, 0.25],
     bloom: 0.48, hurt: 0, lowHp: 0, flashW: 0,
   },
@@ -3202,6 +3165,7 @@ R.init = function (canvas) {
   P(VS_RIB, FS_RIB, 'rib', ['aPos', 'aUV', 'aCol']);
   P(VS_QUADW, FS_AURA, 'aura', ['aCorner']);
   P(VS_QUADW, FS_BUBBLE, 'bubble', ['aCorner']);
+  P(VS_QUADW, FS_POOL, 'pool', ['aCorner']);
   P(VS_FULL, FS_DOWN, 'down', ['aPos']);
   P(VS_FULL, FS_UP, 'up', ['aPos']);
   P(VS_FULL, FS_COMPOSITE, 'composite', ['aPos']);
@@ -3243,7 +3207,7 @@ R.init = function (canvas) {
 
 // Upload an enemy mesh as it arrives; creates normal + elite instance streams. Crowns attach to their base model.
 R.crowns = {};
-const ENEMY_CAPS = { stickman: 700, sprinter: 300, brute: 160, archer: 160, splitter: 160, shield: 160, stomper: 4, hurler: 4, charger: 4, twin: 4, conductor: 4 };
+const ENEMY_CAPS = { rock0: 160, rock1: 160, rock2: 160, stickman: 700, sprinter: 300, brute: 160, archer: 160, splitter: 160, shield: 160, stomper: 4, hurler: 4, charger: 4, twin: 4, conductor: 4 };
 R._meshVao = function (vbuf, ibuf, stream) {
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
@@ -3372,6 +3336,8 @@ const SCENE = {
   heroShadow: null,    // { data: Float32Array(56), count }
   aura: null,          // { x, z, r, level }
   bubble: null,        // { x, y, z, r, hit: [x,y,z,t], fade }
+  arenaBox: null,      // [half width, half depth, corner radius] or null for no walls
+  pools: [],           // [{ x, z, r, ph }]
 };
 
 R.drawScene = function () {
@@ -3395,8 +3361,8 @@ R.drawScene = function () {
     const t = R.cam.target;
     gl.uniform2f(u.uCenter, Math.round(t[0] / 4) * 4, Math.round(t[2] / 4) * 4);
     gl.uniform1f(u.uHalf, 80);
-    gl.uniform1i(u.uArena, f.arena);
-    gl.uniform3fv(u.uStoneA, f.stoneA); gl.uniform3fv(u.uStoneB, f.stoneB); gl.uniform3fv(u.uGrout, f.grout); gl.uniform3fv(u.uAccent, f.accent);
+    gl.uniform3fv(u.uStoneA, f.stoneA); gl.uniform3fv(u.uStoneB, f.stoneB); gl.uniform3fv(u.uGrout, f.grout);
+    gl.uniform3fv(u.uArenaBox, SCENE.arenaBox || [0, 0, 0]);
     const hs = SCENE.heroShadow;
     gl.uniform1i(u.uShCount, hs ? hs.count : 0);
     if (hs && hs.count) { gl.uniform4fv(u.uShSph, hs.data); gl.uniform3fv(u.uHeroPos, hs.pos); }
@@ -3404,9 +3370,20 @@ R.drawScene = function () {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
-  // decals
+  // pools, then decals
   gl.depthMask(false);
   gl.enable(gl.BLEND);
+  if (SCENE.pools.length) {
+    const p = R.progs.pool;
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(p.p); R.setFrame(p);
+    gl.uniform3fv(p.u.uPoolCol, f.poolCol); gl.uniform1f(p.u.uPoolGlow, f.poolGlow); gl.uniform1i(p.u.uBillboard, 0);
+    gl.bindVertexArray(R.vaos.quad);
+    for (const o of SCENE.pools) {
+      gl.uniform3f(p.u.uC, o.x, 0, o.z); gl.uniform1f(p.u.uR, o.r * 1.18); gl.uniform1f(p.u.uSeed, o.ph);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+  }
   const S = R.streams;
   const drawInst = (prog, vao, stream, verts) => {
     if (!stream.count) return;
@@ -4434,12 +4411,12 @@ const BOSS_TYPES = {
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 
 const ARENAS = [
-  { name: 'Stone Plaza', stoneA: '#2b4c68', stoneB: '#3e6788', grout: '#0c1c2a', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.42, shadowTint: '#0a1f3a' },
-  { name: 'Slime Sewers', stoneA: '#35554f', stoneB: '#4a6e66', grout: '#0b1a17', accent: '#62ff7a', fog: '#071a16', sky: '#7cc4b0', ground: '#12302a', light: '#f2fff4', spotMin: 0.4, shadowTint: '#06281f' },
-  { name: 'Toy Factory', stoneA: '#6f6698', stoneB: '#8a82b4', grout: '#2a2440', accent: '#ff9bd1', fog: '#16122a', sky: '#c9bcf2', ground: '#2e2550', light: '#fff4ec', spotMin: 0.46, shadowTint: '#1c1238' },
-  { name: 'Night Market', stoneA: '#6b4a32', stoneB: '#8a6444', grout: '#22140c', accent: '#ffb35c', fog: '#170e14', sky: '#c9a07a', ground: '#2d1d18', light: '#ffe7c4', spotMin: 0.36, shadowTint: '#2a1020' },
-  { name: 'Ice Lab', stoneA: '#46708f', stoneB: '#5d88a8', grout: '#1a3550', accent: '#bff3ff', fog: '#0b1f33', sky: '#a6cce8', ground: '#22445f', light: '#e8f4ff', spotMin: 0.42, shadowTint: '#0a2440' },
-  { name: 'Lava Foundry', stoneA: '#2e2a2c', stoneB: '#453e3d', grout: '#120a08', accent: '#ff6a1a', fog: '#1a0c08', sky: '#a06a50', ground: '#2a1410', light: '#ffe2c8', spotMin: 0.4, shadowTint: '#2a0a04' },
+  { name: 'Stone Plaza', stoneA: '#34536e', stoneB: '#3c5e7b', grout: '#08121c', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.5, shadowTint: '#0a1f3a', rock: '#8592a0', pool: '#1f7a9c', poolGlow: 0.05 },
+  { name: 'Slime Sewers', stoneA: '#2f4d47', stoneB: '#365750', grout: '#061210', accent: '#62ff7a', fog: '#071a16', sky: '#7cc4b0', ground: '#12302a', light: '#f2fff4', spotMin: 0.48, shadowTint: '#06281f', rock: '#74857c', pool: '#4ccf48', poolGlow: 0.35 },
+  { name: 'Toy Factory', stoneA: '#4e4772', stoneB: '#58507f', grout: '#120d22', accent: '#ff9bd1', fog: '#16122a', sky: '#c9bcf2', ground: '#2e2550', light: '#fff4ec', spotMin: 0.52, shadowTint: '#1c1238', rock: '#a297c8', pool: '#ff6fb8', poolGlow: 0.2 },
+  { name: 'Night Market', stoneA: '#58432f', stoneB: '#624b36', grout: '#160c08', accent: '#ffb35c', fog: '#170e14', sky: '#c9a07a', ground: '#2d1d18', light: '#ffe7c4', spotMin: 0.46, shadowTint: '#2a1020', rock: '#8f7f6a', pool: '#4a3322', poolGlow: 0.0 },
+  { name: 'Ice Lab', stoneA: '#46708f', stoneB: '#4f7a98', grout: '#0a1a28', accent: '#bff3ff', fog: '#0b1f33', sky: '#a6cce8', ground: '#22445f', light: '#e8f4ff', spotMin: 0.48, shadowTint: '#0a2440', rock: '#bcd8ea', pool: '#5fc8ff', poolGlow: 0.15 },
+  { name: 'Lava Foundry', stoneA: '#3a3131', stoneB: '#433838', grout: '#0b0605', accent: '#ff6a1a', fog: '#1a0c08', sky: '#a06a50', ground: '#2a1410', light: '#ffe2c8', spotMin: 0.46, shadowTint: '#2a0a04', rock: '#6e625e', pool: '#ff6a1a', poolGlow: 0.95 },
 ];
 
 function chapterInfo(n) {
@@ -4584,6 +4561,7 @@ function applyArena(i) {
   f.arena = i; f.stoneA = hexToRgb(a.stoneA); f.stoneB = hexToRgb(a.stoneB); f.grout = hexToRgb(a.grout); f.accent = hexToRgb(a.accent);
   f.fogCol = hexToRgb(a.fog); f.skyCol = hexToRgb(a.sky); f.groundCol = hexToRgb(a.ground); f.lightCol = hexToRgb(a.light);
   f.spotMin = a.spotMin; f.shadowTint = hexToRgb(a.shadowTint);
+  f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow;
 }
 function applySkin(id) {
   const s = SKINS.find(k => k.id === id) || SKINS[0];
@@ -5291,12 +5269,12 @@ SKILL_HOOKS.ball = {
       const base = Math.atan2(tgt.x - from[0], tgt.z - from[2]);
       for (let i = 0; i < count; i++) {
         const a = base + (i - (count - 1) / 2) * 0.15;
-        spawnProj('ball', from, [Math.sin(a) * 12, -0.3, Math.cos(a) * 12], { dmg: L.dmg, pierce: L.pierce, life: 0.85, r: 0.11 * areaMul(), hitR: 0.32 * areaMul() });
+        spawnProj('ball', from, [Math.sin(a) * 12, -0.3, Math.cos(a) * 12], { dmg: L.dmg, pierce: L.pierce, life: 0.85, r: 0.18 * areaMul(), hitR: 0.34 * areaMul() });
       }
       AUDIO.play('pop');
     };
     const arm = hero.freeArm(tw);
-    if (arm >= 0) hero.thrust(arm, tw, 0.11 * areaMul(), 0, wp => fire(wp));
+    if (arm >= 0) hero.thrust(arm, tw, 0.16 * areaMul(), 0, wp => fire(wp));
     else fire(hero.jointWorld('chest'));
   },
 };
@@ -5439,7 +5417,7 @@ SKILL_HOOKS.grenade = {
     const n = L.count + extraShots();
     for (let i = 0; i < n; i++) {
       hero.addBud({
-        joint: i % 2 ? 'footA' : 'footB', off: [0, 0.05, -0.13], r: 0.12, grow: 0.2 + i * 0.12, colw: 1, glow: 0.3,
+        joint: i % 2 ? 'footA' : 'footB', off: [0, 0.05, -0.14], r: 0.15, grow: 0.2 + i * 0.12, colw: 1, glow: 0.3,
         onRelease: wp => {
           const a = rand(0, TAU), r = i ? rand(0.7, 1.3) : 0;
           run.bombs.push({ x: wp[0] + Math.cos(a) * r, z: wp[2] + Math.sin(a) * r, t: 0, fuse: L.fuse + i * 0.15, dmg: L.dmg, radius: L.radius * areaMul(), ph: rand(0, 10) });
@@ -5471,9 +5449,9 @@ SKILL_HOOKS.missile = {
     for (let i = 0; i < n; i++) {
       const col = i % 3, row = Math.floor(i / 3);
       hero.addBud({
-        joint: 'chest', off: [(col - 1) * 0.14 + (row ? 0.07 : 0), 0.06 + row * 0.12, -0.22], r: 0.075, grow: 0.22 + i * 0.035, colw: 0.8, glow: 0.3,
+        joint: 'chest', off: [(col - 1) * 0.17 + (row ? 0.085 : 0), 0.06 + row * 0.15, -0.24], r: 0.11, grow: 0.22 + i * 0.035, colw: 0.8, glow: 0.3,
         onRelease: wp => {
-          spawnProj('missile', wp, [rand(-1.8, 1.8), 6.8, rand(-1.8, 1.8) - 0.8], { dmg: L.dmg, splash: L.splash * areaMul(), life: 3.2, target: null, hitR: 0.38 });
+          spawnProj('missile', wp, [rand(-1.8, 1.8), 6.8, rand(-1.8, 1.8) - 0.8], { dmg: L.dmg, splash: L.splash * areaMul(), life: 3.2, target: null, hitR: 0.42 });
           AUDIO.play('pop', 0.8);
         },
       });
@@ -5518,7 +5496,7 @@ SKILL_HOOKS.blade = {
     for (let i = 0; i < L.count; i++) {
       const a = st.ang + (i / L.count) * TAU;
       const bx = h[0] + Math.cos(a) * R2, bz = h[2] + Math.sin(a) * R2;
-      enemiesInRadius(bx, bz, 0.42 * areaMul(), e => {
+      enemiesInRadius(bx, bz, 0.5 * areaMul(), e => {
         if (run.t - e.bladeT < 0.5) return;
         e.bladeT = run.t;
         hurtEnemy(e, L.dmg, -Math.sin(a) * 4, Math.cos(a) * 4);
@@ -5532,10 +5510,10 @@ SKILL_HOOKS.blade = {
     for (let i = 0; i < L.count; i++) {
       const a = (st.ang || 0) + (i / L.count) * TAU;
       const bx = h[0] + Math.cos(a) * R2, bz = h[2] + Math.sin(a) * R2;
-      pushImp(bx, 0.62, bz, 0.3 * areaMul(), -Math.sin(a), 0, Math.cos(a), 1, 3, 0.3, 0.12, G.run.t, 0, 0, 0, 1);
+      pushImp(bx, 0.7, bz, 0.44 * areaMul(), -Math.sin(a), 0, Math.cos(a), 1, 3, 0.3, 0.12, G.run.t, 0, 0, 0, 1);
       const pts = [];
-      for (let k = 0; k < 14; k++) { const b = a - k * 0.06; pts.push(h[0] + Math.cos(b) * R2, 0.62, h[2] + Math.sin(b) * R2); }
-      R.ribStrip(pts, 14, 0.12 * areaMul(), [0.7, 0.92, 1.0, u => (1 - u) * 0.55], 0, 0, 1, u => 1 - u);
+      for (let k = 0; k < 14; k++) { const b = a - k * 0.06; pts.push(h[0] + Math.cos(b) * R2, 0.7, h[2] + Math.sin(b) * R2); }
+      R.ribStrip(pts, 14, 0.2 * areaMul(), [0.7, 0.92, 1.0, u => (1 - u) * 0.55], 0, 0, 1, u => 1 - u);
       pushDecal(bx + 0.12, bz + 0.08, 0.28, 0.2, 0, 1, 0, 0, 0.02, 0.04, 0.08, 0.35);
     }
   },
@@ -5568,7 +5546,7 @@ SKILL_HOOKS.lightning = {
 function strike(e, L, chainLeft, mul) {
   const x = e.x, z = e.z, top = 3.6;
   if (mul === 1) {
-    addBolt(x + rand(-0.2, 0.2), top, z + rand(-0.2, 0.2), x, 0.5 * e.scale, z, 0.075, [0.75, 0.95, 1.0]);
+    addBolt(x + rand(-0.2, 0.2), top, z + rand(-0.2, 0.2), x, 0.5 * e.scale, z, 0.13, [0.75, 0.95, 1.0]);
     FX.smoke(x, top, z, 0.55, [0.85, 0.95, 1.0], 0.45, 0.05);
     FX.smoke(x + 0.3, top + 0.1, z, 0.45, [0.85, 0.95, 1.0], 0.45, 0.05);
     FX.glow(x, top, z, 0.9, [0.7, 0.9, 1.0], 0.2);
@@ -5581,7 +5559,7 @@ function strike(e, L, chainLeft, mul) {
   if (chainLeft > 0) {
     const nx = nearestEnemy(x, z, 2.5, new Set([e]));
     if (nx) {
-      addBolt(x, 0.6, z, nx.x, 0.6 * nx.scale, nx.z, 0.045, [0.75, 0.95, 1.0]);
+      addBolt(x, 0.6, z, nx.x, 0.6 * nx.scale, nx.z, 0.08, [0.75, 0.95, 1.0]);
       strike(nx, L, chainLeft - 1, 0.6);
     }
   }
@@ -5616,7 +5594,7 @@ SKILL_HOOKS.worms = {
     if (!nearestEnemy(h[0], h[2], 11)) return;
     st.t = L.cd * cdMul();
     for (let i = 0; i < L.count; i++) {
-      hero.addBud({ joint: 'pelvis', off: [rand(-0.12, 0.12), -0.45, 0.12], r: 0.08, grow: 0.18 + i * 0.1, colw: 3, glow: 0.15, onRelease: wp => spawnWorm(wp, L) });
+      hero.addBud({ joint: 'pelvis', off: [rand(-0.12, 0.12), -0.45, 0.12], r: 0.12, grow: 0.18 + i * 0.1, colw: 3, glow: 0.15, onRelease: wp => spawnWorm(wp, L) });
     }
   },
 };
@@ -5643,7 +5621,7 @@ function updateWorms(dt) {
       const step = Math.min(d, 6 * dt);
       w.x += dx / d * step; w.z += dz / d * step;
       w.ripT -= dt;
-      if (w.ripT <= 0) { w.ripT = 0.14; FX.decal(w.x, w.z, 0.55, 3, [0.5, 1, 0.85], 0.4, { add: true, a: 0.35, rot: 0 }); }
+      if (w.ripT <= 0) { w.ripT = 0.12; FX.decal(w.x, w.z, 0.95, 3, [0.5, 1, 0.85], 0.45, { add: true, a: 0.4, rot: 0 }); }
       if (d < 0.75 + w.target.radius) {
         w.state = 'surface';
         FX.burst(w.x, 0.1, w.z, 6, [0.5, 0.45, 0.4], 3, 0.1, 0.4, 2);
@@ -5681,7 +5659,7 @@ SKILL_HOOKS.buddies = {
     st.t = L.cd * cdMul();
     for (let i = 0; i < L.count; i++) {
       const side = i % 2 ? -1 : 1;
-      hero.addBud({ joint: 'chest', off: [side * 0.34, -0.12 + Math.floor(i / 2) * 0.15, 0.04], r: 0.21, grow: 0.36 + i * 0.12, colw: 0, glow: 0.04, onRelease: wp => spawnBuddy(wp, L, side) });
+      hero.addBud({ joint: 'chest', off: [side * 0.36, -0.12 + Math.floor(i / 2) * 0.17, 0.04], r: 0.26, grow: 0.36 + i * 0.12, colw: 0, glow: 0.04, onRelease: wp => spawnBuddy(wp, L, side) });
     }
     AUDIO.play('split');
   },
@@ -5766,7 +5744,7 @@ function updateAxes(dt) {
       a.x += dx / d * sp; a.z += dz / d * sp;
       if (d < 0.6) { a.dead = true; G.hero.impulse(0.3); continue; }
     }
-    enemiesInRadius(a.x, a.z, 0.6 * areaMul(), e => {
+    enemiesInRadius(a.x, a.z, 0.7 * areaMul(), e => {
       const last = a.hits.get(e.id);
       if (last !== undefined && a.t - last < 0.35) return;
       if (shieldBlocks(e, a.x, a.z) && a.state === 'out') { blockedFx(a.x, 0.7, a.z); a.state = 'back'; return; }
@@ -5796,7 +5774,7 @@ SKILL_HOOKS.laser = {
       st.tick -= dt;
       if (st.tick <= 0) {
         st.tick = 0.1;
-        const len = 7 * areaMul(), w = 0.2 * areaMul();
+        const len = 7 * areaMul(), w = 0.3 * areaMul();
         for (let b = 0; b < L.beams; b++) {
           const a = st.ang + b * Math.PI, dx = Math.sin(a), dz = Math.cos(a);
           const seen = new Set();
@@ -5827,7 +5805,7 @@ SKILL_HOOKS.laser = {
     const st = s.st;
     if (!(st.active > 0)) return;
     const hero = G.hero, ch = hero.jointWorld('chest'), t = G.run.t;
-    const len = 7 * areaMul(), w = 0.2 * areaMul();
+    const len = 7 * areaMul(), w = 0.3 * areaMul();
     const fade = Math.min(1, st.active / 0.15) * Math.min(1, (L.dur - st.active) / 0.08 + 0.2);
     for (let b = 0; b < L.beams; b++) {
       const a = st.ang + b * Math.PI, dx = Math.sin(a), dz = Math.cos(a);
@@ -6218,13 +6196,13 @@ function emitRunScene() {
   for (const p of run.proj) {
     if (p.kind === 'ball') {
       pushImp(p.x, p.y, p.z, p.r, p.vx, p.vy, p.vz, 1.35, 0, 0, 0.25, p.ph + p.t, 0, 0, 0, 1);
-      trailRibbon(p.trail, 0.08, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
+      trailRibbon(p.trail, 0.15, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
     } else if (p.kind === 'missile') {
-      pushImp(p.x, p.y, p.z, 0.15, p.vx, p.vy, p.vz, 1.25, 1, 0.8, 0.3, p.ph + p.t, 0, 0, 0, 1);
+      pushImp(p.x, p.y, p.z, 0.28, p.vx, p.vy, p.vz, 1.3, 1, 0.8, 0.3, p.ph + p.t, 0, 0, 0, 1);
       if (p.trail.length > 2) {
         const pts = [];
-        p.trail.forEach((q, i) => { const k = 0.07 * Math.min(1, i / 3); pts.push(q[0] + Math.sin(p.t * 22 - i) * k, q[1] + Math.cos(p.t * 22 - i) * k, q[2]); });
-        R.ribStrip(pts, p.trail.length, 0.07, [0.7, 0.55, 1.0, u => (1 - u) * 0.8], 0, 0, 1, u => 1 - u);
+        p.trail.forEach((q, i) => { const k = 0.1 * Math.min(1, i / 3); pts.push(q[0] + Math.sin(p.t * 22 - i) * k, q[1] + Math.cos(p.t * 22 - i) * k, q[2]); });
+        R.ribStrip(pts, p.trail.length, 0.14, [0.7, 0.55, 1.0, u => (1 - u) * 0.8], 0, 0, 1, u => 1 - u);
       }
     }
   }
@@ -6232,25 +6210,25 @@ function emitRunScene() {
   for (const b of run.bombs) {
     const u = b.t / b.fuse, grow = clamp(b.t / 0.2, 0, 1);
     const blink = Math.sin(b.t * (8 + u * 30)) > 0 ? 0.8 : 0.2;
-    pushImp(b.x, 0.26 * grow, b.z, 0.26 * easeOutBack(grow) * (1 + 0.12 * u * Math.sin(b.t * 40)), 0, 1, 0.15, 1, 6, 1, blink, b.ph + b.t * 2, 0, 0, 0, 1);
+    pushImp(b.x, 0.34 * grow, b.z, 0.34 * easeOutBack(grow) * (1 + 0.12 * u * Math.sin(b.t * 40)), 0, 1, 0.15, 1, 6, 1, blink, b.ph + b.t * 2, 0, 0, 0, 1);
     pushDecal(b.x, b.z, b.radius, b.radius, 0, 4, 0, u, 0.75, 0.45, 1.0, 0.5 * grow);
   }
   for (const m of run.mines) {
     const armed = m.t > 0.5, grow = clamp(m.t / 0.2, 0, 1), blink = armed && Math.sin(m.t * 10) > 0;
     const fade = clamp(m.life / 0.4, 0, 1);
-    pushImp(m.x, 0.0, m.z, 0.28 * easeOutBack(grow) * fade, 0, 0, 1, 1, 2, armed ? 1.6 + (blink ? 0.4 : 0) : 0.3, armed ? (blink ? 0.7 : 0.3) : 0.1, m.t, 0, 0, 0, 1);
+    pushImp(m.x, 0.0, m.z, 0.38 * easeOutBack(grow) * fade, 0, 0, 1, 1, 2, armed ? 1.6 + (blink ? 0.4 : 0) : 0.3, armed ? (blink ? 0.7 : 0.3) : 0.1, m.t, 0, 0, 0, 1);
   }
   for (const w of run.worms) {
-    if (w.state === 'burrow' || w.E < 0.05) pushDecal(w.x, w.z, 0.5, 0.5, 0, 7, 0, 0, 0.35, 0.95, 0.75, 0.75);
-    if (w.E > 0.02) pushImp(w.x, 0, w.z, 0.42, Math.sin(w.yaw), 0, Math.cos(w.yaw), 1, 5, 3, 0.12, w.ph, w.E, w.bite, 0, 1);
+    if (w.state === 'burrow' || w.E < 0.05) pushDecal(w.x, w.z, 0.85, 0.85, 0, 7, 0, 0, 0.35, 0.95, 0.75, 0.75);
+    if (w.E > 0.02) pushImp(w.x, 0, w.z, 0.8, Math.sin(w.yaw), 0, Math.cos(w.yaw), 1, 5, 3, 0.12, w.ph, w.E, w.bite, 0, 1);
   }
   for (const b of run.buddies) {
-    pushImp(b.x, b.y + 0.19, b.z, 0.32, Math.sin(b.yaw), 0, Math.cos(b.yaw), 1, 7, 0, 0.04, b.ph, b.sq, 0, 0, 1);
-    pushDecal(b.x + 0.06, b.z + 0.05, 0.26, 0.2, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+    pushImp(b.x, b.y + 0.27, b.z, 0.45, Math.sin(b.yaw), 0, Math.cos(b.yaw), 1, 7, 0, 0.04, b.ph, b.sq, 0, 0, 1);
+    pushDecal(b.x + 0.08, b.z + 0.07, 0.36, 0.28, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   }
   for (const a of run.axes) {
-    pushImp(a.x, a.y, a.z, 0.34 * areaMul(), a.dx, 0, a.dz, 1, 4, 0.5, 0.15, a.t * 12.6, 0, 0, 0, 1);
-    trailRibbon(a.trail, 0.1, [0.7, 0.85, 1.0], 0.45);
+    pushImp(a.x, a.y, a.z, 0.5 * areaMul(), a.dx, 0, a.dz, 1, 4, 0.5, 0.15, a.t * 12.6, 0, 0, 0, 1);
+    trailRibbon(a.trail, 0.16, [0.7, 0.85, 1.0], 0.45);
   }
   // gems and pickups
   for (const g of run.gems) {
@@ -6290,9 +6268,19 @@ function emitRunScene() {
 }
 
 function emitArena() {
-  for (const o of ARENA.pools) if (onScreen(o.x, o.z, o.r + 1)) pushDecal(o.x, o.z, o.r, o.r, 0, 1, 0, 0, 0.05, 0.3, 0.25, 0.85);
-  for (const o of ARENA.rocks) if (onScreen(o.x, o.z, o.r + 1)) pushImp(o.x, o.r * 0.55, o.z, o.r, Math.sin(o.yaw), 0.4, Math.cos(o.yaw), 1, 13, 0, 0, 0, 0, 0, 0, 1);
-  for (const o of ARENA.wall) if (onScreen(o.x, o.z, o.r + 1)) pushImp(o.x, o.r * 0.55, o.z, o.r, Math.sin(o.yaw), 0.4, Math.cos(o.yaw), 1, 13, 0, 0, 0, 0, 0, 0, 1);
+  const f = R.frame, rc = f.rockCol, L = f.lightDir;
+  const sdx = -L[0] * 0.55, sdz = -L[2] * 0.55;
+  SCENE.pools = ARENA.pools.filter(o => onScreen(o.x, o.z, o.r + 1.5));
+  const rock = (o, size) => {
+    if (!onScreen(o.x, o.z, size + 1.5)) return;
+    const m = 'rock' + o.v;
+    if (!R.enemyDraw[m]) return;
+    const sc = size / 0.45, shade = 0.86 + 0.14 * ((o.v * 0.37 + o.yaw) % 1);
+    pushEnemy(m, false, o.x, 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, rc[0] * shade, rc[1] * shade, rc[2] * shade);
+    pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
+  };
+  for (const o of ARENA.rocks) rock(o, o.r);
+  for (const o of ARENA.wall) rock(o, o.r);
 }
 
 function trailRibbon(trail, w, col, alpha) {
@@ -7156,7 +7144,7 @@ function adaptQuality(dt) {
 
 // ---------- game flow ----------
 function requiredMeshes(n) {
-  const has = chapterInfo(n).has, req = ['stickman', 'sprinter'];
+  const has = chapterInfo(n).has, req = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2'];
   for (const k of ['brute', 'archer', 'splitter', 'shield']) if (has[k]) req.push(k);
   return req;
 }
@@ -7247,7 +7235,8 @@ function homeCamera(dt) {
 function renderFrame() {
   const f = R.frame, hero = G.hero, h = hero.pos;
   R.resetStreams();
-  SCENE.floor = true; SCENE.aura = null; SCENE.bubble = null;
+  SCENE.floor = true; SCENE.aura = null; SCENE.bubble = null; SCENE.pools = [];
+  SCENE.arenaBox = G.run && G.state !== 'home' ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
   SCENE.hero = hero.out; SCENE.heroShadow = hero.shadow;
   if (G.run && G.state !== 'home') {
     f.spot = [h[0], 0, h[2], 13]; f.fogRange = [10, 26];

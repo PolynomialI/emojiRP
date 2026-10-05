@@ -103,6 +103,7 @@ function applyArena(i) {
   f.arena = i; f.stoneA = hexToRgb(a.stoneA); f.stoneB = hexToRgb(a.stoneB); f.grout = hexToRgb(a.grout); f.accent = hexToRgb(a.accent);
   f.fogCol = hexToRgb(a.fog); f.skyCol = hexToRgb(a.sky); f.groundCol = hexToRgb(a.ground); f.lightCol = hexToRgb(a.light);
   f.spotMin = a.spotMin; f.shadowTint = hexToRgb(a.shadowTint);
+  f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow;
 }
 function applySkin(id) {
   const s = SKINS.find(k => k.id === id) || SKINS[0];

@@ -146,7 +146,7 @@ function adaptQuality(dt) {
 
 // ---------- game flow ----------
 function requiredMeshes(n) {
-  const has = chapterInfo(n).has, req = ['stickman', 'sprinter'];
+  const has = chapterInfo(n).has, req = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2'];
   for (const k of ['brute', 'archer', 'splitter', 'shield']) if (has[k]) req.push(k);
   return req;
 }
@@ -237,7 +237,8 @@ function homeCamera(dt) {
 function renderFrame() {
   const f = R.frame, hero = G.hero, h = hero.pos;
   R.resetStreams();
-  SCENE.floor = true; SCENE.aura = null; SCENE.bubble = null;
+  SCENE.floor = true; SCENE.aura = null; SCENE.bubble = null; SCENE.pools = [];
+  SCENE.arenaBox = G.run && G.state !== 'home' ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
   SCENE.hero = hero.out; SCENE.heroShadow = hero.shadow;
   if (G.run && G.state !== 'home') {
     f.spot = [h[0], 0, h[2], 13]; f.fogRange = [10, 26];

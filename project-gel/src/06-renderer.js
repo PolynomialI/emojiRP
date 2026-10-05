@@ -7,7 +7,7 @@ const R = {
   cam: { pos: [0, 10, 10], target: [0, 0, 0], fovY: 0.55, view: M4.create(), proj: M4.create(), viewProj: M4.create(), invViewProj: M4.create(), right: [1, 0, 0], up: [0, 1, 0], pixAng: 0.001 },
   frame: {
     time: 0, lightDir: [-0.45, 0.82, 0.36], lightCol: [1, 0.97, 0.92], skyCol: [0.46, 0.62, 0.8], groundCol: [0.1, 0.16, 0.24], fogCol: [0.04, 0.11, 0.19],
-    spot: [0, 0, 0, 13], fogRange: [10, 26], spotMin: 0.42, arena: 0,
+    spot: [0, 0, 0, 13], fogRange: [10, 26], spotMin: 0.42, arena: 0, poolCol: [0.1, 0.4, 0.5], poolGlow: 0, rockCol: [0.5, 0.5, 0.55],
     stoneA: [0.17, 0.3, 0.41], stoneB: [0.25, 0.4, 0.53], grout: [0.05, 0.11, 0.17], accent: [0.3, 1, 0.5], shadowTint: [0.05, 0.12, 0.25],
     bloom: 0.48, hurt: 0, lowHp: 0, flashW: 0,
   },
@@ -28,6 +28,7 @@ R.init = function (canvas) {
   P(VS_RIB, FS_RIB, 'rib', ['aPos', 'aUV', 'aCol']);
   P(VS_QUADW, FS_AURA, 'aura', ['aCorner']);
   P(VS_QUADW, FS_BUBBLE, 'bubble', ['aCorner']);
+  P(VS_QUADW, FS_POOL, 'pool', ['aCorner']);
   P(VS_FULL, FS_DOWN, 'down', ['aPos']);
   P(VS_FULL, FS_UP, 'up', ['aPos']);
   P(VS_FULL, FS_COMPOSITE, 'composite', ['aPos']);
@@ -69,7 +70,7 @@ R.init = function (canvas) {
 
 // Upload an enemy mesh as it arrives; creates normal + elite instance streams. Crowns attach to their base model.
 R.crowns = {};
-const ENEMY_CAPS = { stickman: 700, sprinter: 300, brute: 160, archer: 160, splitter: 160, shield: 160, stomper: 4, hurler: 4, charger: 4, twin: 4, conductor: 4 };
+const ENEMY_CAPS = { rock0: 160, rock1: 160, rock2: 160, stickman: 700, sprinter: 300, brute: 160, archer: 160, splitter: 160, shield: 160, stomper: 4, hurler: 4, charger: 4, twin: 4, conductor: 4 };
 R._meshVao = function (vbuf, ibuf, stream) {
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
@@ -198,6 +199,8 @@ const SCENE = {
   heroShadow: null,    // { data: Float32Array(56), count }
   aura: null,          // { x, z, r, level }
   bubble: null,        // { x, y, z, r, hit: [x,y,z,t], fade }
+  arenaBox: null,      // [half width, half depth, corner radius] or null for no walls
+  pools: [],           // [{ x, z, r, ph }]
 };
 
 R.drawScene = function () {
@@ -221,8 +224,8 @@ R.drawScene = function () {
     const t = R.cam.target;
     gl.uniform2f(u.uCenter, Math.round(t[0] / 4) * 4, Math.round(t[2] / 4) * 4);
     gl.uniform1f(u.uHalf, 80);
-    gl.uniform1i(u.uArena, f.arena);
-    gl.uniform3fv(u.uStoneA, f.stoneA); gl.uniform3fv(u.uStoneB, f.stoneB); gl.uniform3fv(u.uGrout, f.grout); gl.uniform3fv(u.uAccent, f.accent);
+    gl.uniform3fv(u.uStoneA, f.stoneA); gl.uniform3fv(u.uStoneB, f.stoneB); gl.uniform3fv(u.uGrout, f.grout);
+    gl.uniform3fv(u.uArenaBox, SCENE.arenaBox || [0, 0, 0]);
     const hs = SCENE.heroShadow;
     gl.uniform1i(u.uShCount, hs ? hs.count : 0);
     if (hs && hs.count) { gl.uniform4fv(u.uShSph, hs.data); gl.uniform3fv(u.uHeroPos, hs.pos); }
@@ -230,9 +233,20 @@ R.drawScene = function () {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
-  // decals
+  // pools, then decals
   gl.depthMask(false);
   gl.enable(gl.BLEND);
+  if (SCENE.pools.length) {
+    const p = R.progs.pool;
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(p.p); R.setFrame(p);
+    gl.uniform3fv(p.u.uPoolCol, f.poolCol); gl.uniform1f(p.u.uPoolGlow, f.poolGlow); gl.uniform1i(p.u.uBillboard, 0);
+    gl.bindVertexArray(R.vaos.quad);
+    for (const o of SCENE.pools) {
+      gl.uniform3f(p.u.uC, o.x, 0, o.z); gl.uniform1f(p.u.uR, o.r * 1.18); gl.uniform1f(p.u.uSeed, o.ph);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+  }
   const S = R.streams;
   const drawInst = (prog, vao, stream, verts) => {
     if (!stream.count) return;
