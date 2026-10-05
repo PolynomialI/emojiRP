@@ -5,18 +5,26 @@ function startBoss() {
   const run = G.run, h = G.hero.pos;
   run.bossStarted = true;
   const ids = run.info.bosses;
-  for (const id of ids) ensureMeshNow(BOSS_TYPES[id].model);
-  // bosses drop in on screen, part of the way toward the top edge (clear of the HUD)
-  const C = VIEW.corners, topZ = (C[0][2] + C[1][2]) / 2, halfW = Math.abs(C[1][0] - C[0][0]) / 2;
-  const dz = -Math.max(3.4, (h[2] - topZ) * 0.4), spread = Math.min(4, halfW * 0.55);
-  ids.forEach((id, i) => {
-    const off = ids.length > 1 ? (i - (ids.length - 1) / 2) * spread * 1.3 : 0;
-    if (id === 'twins') {
-      const w = ids.length > 1 ? spread * 0.45 : spread;
-      const a = spawnBoss('twins', h[0] + off - w, h[2] + dz, {});
-      const b = spawnBoss('twins', h[0] + off + w, h[2] + dz, { tint: BOSS_TYPES.twins.tint2 });
-      a.ai.partner = b; b.ai.partner = a; a.ai.side = 1; b.ai.side = -1;
-    } else spawnBoss(id, h[0] + off, h[2] + dz, {});
+  for (const id of ids) { ensureMeshNow(BOSS_TYPES[id].model); if (!ICONS.map['boss-' + id]) renderBossPortrait(BOSS_TYPES[id].model); }
+  // bosses drop in on screen, clear of the HUD: beside the hero on wide screens, below it on tall ones
+  const W = R.cssW, H = R.cssH, wide = W > H;
+  const spots = wide ? [[0.76, 0.6], [0.24, 0.6]] : [[0.5, 0.76], [0.28, 0.74], [0.72, 0.74]];
+  const bodies = ids.flatMap(id => (id === 'twins' ? ['twins', 'twins2'] : [id]));
+  const order = bodies.length === 1 ? [spots[0]] : wide ? spots : [spots[1], spots[2]];
+  const where = [];
+  bodies.forEach((b, i) => {
+    const sp = order[i % order.length], q = [0, 0, 0];
+    if (!R.unprojectGround(sp[0] * W, sp[1] * H, q)) { q[0] = h[0] + (i ? -5 : 5); q[2] = h[2] + 1; }
+    where.push([q[0] + (i >= order.length ? 2 : 0), q[2]]);
+  });
+  let twinA = null;
+  bodies.forEach((b, i) => {
+    const [x, z] = where[i];
+    if (b === 'twins') twinA = spawnBoss('twins', x, z, {});
+    else if (b === 'twins2') {
+      const t2 = spawnBoss('twins', x, z, { tint: BOSS_TYPES.twins.tint2 });
+      twinA.ai.partner = t2; t2.ai.partner = twinA; twinA.ai.side = 1; t2.ai.side = -1;
+    } else spawnBoss(b, x, z, {});
   });
   run.bossTotalHp = run.bosses.reduce((s, b) => s + b.maxHp, 0);
   const names = [...new Set(ids)].map(id => BOSS_TYPES[id].name);

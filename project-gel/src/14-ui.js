@@ -216,9 +216,7 @@ const UI = {
     const L = this.lastHud;
     const xpPct = (clamp(run.xp / run.xpNext, 0, 1) * 100).toFixed(1) + '%';
     if (L.xp !== xpPct) { L.xp = xpPct; $('xpFill').style.width = `calc(${xpPct} - 4px)`; }
-    this.setText('lv', $('xpText'), 'LV ' + run.level);
-    this.setText('kills', $('hudKills'), fmtNum(run.kills));
-    this.setText('timer', $('hudTimer'), fmtTime(run.t));
+    this.setText('lv', $('xpText'), 'LEVEL ' + run.level);
     this.setText('coins', $('hudCoinsVal'), fmtNum(run.coins));
     const sig = run.slots.map(s => s.id + s.lvl).join(',');
     if (sig !== this.slotSig) {
@@ -228,22 +226,28 @@ const UI = {
         const s = run.slots[i], d = document.createElement('div');
         if (s) {
           d.className = 'slot ' + s.kind;
-          const max = maxLevel(s.id);
-          d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / max) * 100}%"></i></u>`;
+          d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / maxLevel(s.id)) * 100}%"></i></u>`;
           d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
         } else d.className = 'slot';
         cells.push(d);
       }
       $('slots').replaceChildren(...cells);
     }
+    // the chapter bar fills toward the boss, then shows the boss's health
     const bossOn = run.bossStarted && run.bosses.some(b => !b.dying);
-    if (L.boss !== bossOn) { L.boss = bossOn; $('bossbar').hidden = !bossOn; }
+    if (L.boss !== bossOn) { L.boss = bossOn; $('chapBar').classList.toggle('boss', bossOn); }
+    let pct, label;
     if (bossOn) {
       const hp = run.bosses.reduce((s, b) => s + Math.max(0, b.dying ? 0 : b.hp), 0);
-      const pct = (clamp(hp / run.bossTotalHp, 0, 1) * 100).toFixed(1) + '%';
-      if (L.bossPct !== pct) { L.bossPct = pct; $('bossFill').style.width = pct; }
-      this.setText('bossName', $('bossName'), [...new Set(run.bosses.map(b => b.def.name))].join(' + '));
+      pct = clamp(hp / run.bossTotalHp, 0, 1);
+      label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
+    } else {
+      pct = run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      label = 'CHAPTER ' + run.chapter;
     }
+    const pctS = (pct * 100).toFixed(1) + '%';
+    if (L.chap !== pctS) { L.chap = pctS; $('chapFill').style.width = pctS; }
+    this.setText('chapText', $('chapText'), label);
   },
   banner(text, boss = false) {
     const b = $('banner');
@@ -448,16 +452,25 @@ const UI = {
       ctx.fillStyle = col; roundRect(ctx, x, y, Math.max(4, bw * f), bh, 4.5); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.35)'; roundRect(ctx, x + 2, y + 1, Math.max(0, bw * f - 4), 3, 2); ctx.fill();
     }
-    // arrows toward off-screen bosses
+    // arrows toward off-screen bosses: a red pointer at the screen edge with the boss's face
     for (const b of run.bosses) {
       if (b.dying || onScreen(b.x, b.z, -0.5)) continue;
       if (!R.project(b.x, 1, b.z, p)) continue;
       const cx = w / 2, cy = h / 2, dx = p[0] - cx, dy = p[1] - cy;
-      const k = Math.min((w / 2 - 34) / Math.abs(dx || 1e-3), (h / 2 - 34) / Math.abs(dy || 1e-3));
+      const pad = 58, top = 150;
+      const k = Math.min((w / 2 - pad) / Math.abs(dx || 1e-3), ((dy < 0 ? cy - top : h - cy - pad)) / Math.abs(dy || 1e-3));
       const ax = cx + dx * k, ay = cy + dy * k, ang = Math.atan2(dy, dx);
-      ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang);
-      ctx.fillStyle = '#ff6a3a'; ctx.strokeStyle = '#0a1f33'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-10, -13); ctx.lineTo(-4, 0); ctx.lineTo(-10, 13); ctx.closePath(); ctx.stroke(); ctx.fill();
+      const bob = Math.sin(performance.now() / 160) * 3;
+      ctx.save(); ctx.translate(ax + Math.cos(ang) * bob, ay + Math.sin(ang) * bob);
+      ctx.rotate(ang);
+      ctx.fillStyle = '#ff4d5a'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(48, 0); ctx.lineTo(26, -16); ctx.lineTo(26, 16); ctx.closePath(); ctx.stroke(); ctx.fill();
+      ctx.restore();
+      const img = this.bossImage(b.type);
+      ctx.save(); ctx.translate(ax, ay);
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 27, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#ff4d5a'; ctx.beginPath(); ctx.arc(0, 0, 23, 0, TAU); ctx.fill();
+      if (img && img.complete && img.naturalWidth) { ctx.beginPath(); ctx.arc(0, 0, 22, 0, TAU); ctx.clip(); ctx.drawImage(img, -30, -26, 60, 60); }
       ctx.restore();
     }
     // joystick
@@ -473,6 +486,15 @@ const UI = {
       ctx.globalAlpha = 1;
     }
   },
+};
+
+UI.bossImg = {};
+UI.bossImage = function (id) {
+  const src = ICONS.map['boss-' + id];
+  if (!src) return null;
+  let im = this.bossImg[id];
+  if (!im || im.src !== src) { im = new Image(); im.src = src; this.bossImg[id] = im; }
+  return im;
 };
 
 function roundRect(ctx, x, y, w, h, r) {

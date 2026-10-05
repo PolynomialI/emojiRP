@@ -1162,6 +1162,26 @@ in vec2 aPos;
 out vec2 vUV;
 void main() { vUV = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
+// Menu backdrop: bright sky-blue gradient with a soft glow behind the hero
+const FS_BACKDROP = GLSL_HEAD + `
+in vec2 vUV;
+uniform float uTimeB;
+uniform float uAspectB;
+uniform vec2 uGlowAt;
+uniform sampler2D uNoise;
+out vec4 fragColor;
+void main() {
+  vec2 p = (vUV - uGlowAt) * vec2(uAspectB, 1.0);
+  float r = length(p);
+  vec3 edge = vec3(0.07, 0.42, 0.93), mid = vec3(0.26, 0.64, 1.0), glow = vec3(0.72, 0.9, 1.0);
+  vec3 col = mix(mid, edge, smoothstep(0.15, 1.05, r));
+  col = mix(col, glow, exp(-r * r * 7.0) * 0.6);
+  vec2 q = vUV * vec2(uAspectB, 1.0);
+  float sw = texture(uNoise, q * 0.35 + vec2(uTimeB * 0.008, -uTimeB * 0.005)).r + texture(uNoise, q * 0.6 - vec2(uTimeB * 0.006, 0.0)).g;
+  col += (sw - 1.0) * 0.045;
+  fragColor = vec4(col, 1.0);
+}`;
+
 const FS_DOWN = GLSL_HEAD + `
 in vec2 vUV;
 uniform sampler2D uSrc;

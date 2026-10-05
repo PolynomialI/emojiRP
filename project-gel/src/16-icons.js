@@ -8,13 +8,15 @@ const ICONS = {
 
 function iconBegin() {
   if (!ICONS.target) ICONS.target = GLX.target(ICONS.size, ICONS.size, { hdr: false, depth: true });
-  const f = R.frame;
-  ICONS.saved = { spot: f.spot.slice(), fogRange: f.fogRange.slice(), spotMin: f.spotMin, time: f.time };
+  const f = R.frame, c = R.cam;
+  ICONS.saved = { spot: f.spot.slice(), fogRange: f.fogRange.slice(), spotMin: f.spotMin, time: f.time, eye: c.pos.slice(), target: c.target.slice(), fov: c.fovY };
   f.spot = [0, 0, 0, 1000]; f.fogRange = [500, 1000]; f.spotMin = 1;
 }
 function iconEnd() {
   const f = R.frame, s = ICONS.saved;
   f.spot = s.spot; f.fogRange = s.fogRange; f.spotMin = s.spotMin; f.time = s.time;
+  // icons point the shared camera elsewhere; put the game's camera back
+  if (s.fov) R.setCamera(s.eye, s.target, s.fov);
 }
 // Draw the current impostor and enemy streams (and optionally a hero) into the icon target; returns a PNG data URL
 function iconCapture(eye, target, fov, heroOut) {

@@ -29,6 +29,7 @@ R.init = function (canvas) {
   P(VS_QUADW, FS_AURA, 'aura', ['aCorner']);
   P(VS_QUADW, FS_BUBBLE, 'bubble', ['aCorner']);
   P(VS_QUADW, FS_POOL, 'pool', ['aCorner']);
+  P(VS_FULL, FS_BACKDROP, 'backdrop', ['aPos']);
   P(VS_FULL, FS_DOWN, 'down', ['aPos']);
   P(VS_FULL, FS_UP, 'up', ['aPos']);
   P(VS_FULL, FS_COMPOSITE, 'composite', ['aPos']);
@@ -200,6 +201,7 @@ const SCENE = {
   aura: null,          // { x, z, r, level }
   bubble: null,        // { x, y, z, r, hit: [x,y,z,t], fade }
   arenaBox: null,      // [half width, half depth, corner radius] or null for no walls
+  backdrop: null,      // [glow x, glow y] in screen UV for the menu sky, or null
   pools: [],           // [{ x, z, r, ph }]
 };
 
@@ -216,6 +218,18 @@ R.drawScene = function () {
   gl.depthFunc(gl.LEQUAL);
   gl.disable(gl.BLEND);
   gl.disable(gl.CULL_FACE);
+
+  // menu sky
+  if (SCENE.backdrop) {
+    const p = R.progs.backdrop;
+    gl.useProgram(p.p);
+    gl.uniform1f(p.u.uTimeB, f.time); gl.uniform1f(p.u.uAspectB, R.w / R.h); gl.uniform2fv(p.u.uGlowAt, SCENE.backdrop);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, TEX.noise); gl.uniform1i(p.u.uNoise, 0);
+    gl.depthMask(false);
+    gl.bindVertexArray(R.vaos.tri);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.depthMask(true);
+  }
 
   // floor
   if (SCENE.floor) {

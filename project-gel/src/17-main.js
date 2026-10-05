@@ -4,6 +4,7 @@
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
 const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2 };
 const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0 };
+const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
@@ -176,7 +177,7 @@ function pauseGame() { if (G.state !== 'run') return; UI.openPause(); setState('
 function resumeGame() { if (G.state !== 'pause') return; setState('run'); AUDIO.play('click'); }
 function resetHeroForHome() {
   const h = G.hero;
-  h.reset(0, 0); h.pos[1] = 0.228; h.scale = 1; h.setArmCount(2); h.auraLevel = 0;
+  h.reset(0, 0); h.pos[1] = 0; h.scale = 1; h.setArmCount(2); h.auraLevel = 0;
   h.bubbles = 0; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.stretchMul = 1; h.topSpeed = 4.5;
   h.arms.forEach((a, i) => { a.grow = a.growTarget = i < 2 ? 1 : 0; });
 }
@@ -194,7 +195,7 @@ function goHome() {
 function updateHome(dt) {
   HOME.t += dt;
   const hero = G.hero;
-  hero.pos[0] = 0; hero.pos[1] = 0.228; hero.pos[2] = 0;
+  hero.pos[0] = 0; hero.pos[1] = 0; hero.pos[2] = 0;
   hero.yaw = angleLerp(hero.yaw, Math.sin(HOME.t * 0.4) * 0.3, Math.min(1, dt * 2));
   HOME.actT -= dt;
   if (HOME.actT <= 0) { HOME.actT = rand(3.5, 6.5); homeAction(false); }
@@ -239,7 +240,7 @@ function homeCamera(dt) {
 function renderFrame() {
   const f = R.frame, hero = G.hero, h = hero.pos;
   R.resetStreams();
-  SCENE.floor = true; SCENE.aura = null; SCENE.bubble = null; SCENE.pools = [];
+  SCENE.floor = true; SCENE.backdrop = null; SCENE.aura = null; SCENE.bubble = null; SCENE.pools = [];
   SCENE.arenaBox = G.run && G.state !== 'home' ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
   SCENE.hero = hero.out; SCENE.heroShadow = hero.shadow;
   if (G.run && G.state !== 'home') {
@@ -247,9 +248,13 @@ function renderFrame() {
     emitRunScene();
     f.hurt = G.run.hurtFlash;
   } else {
-    f.spot = [0, 0, 0, 5.5]; f.fogRange = [6, 16]; f.hurt = 0; f.lowHp = 0;
-    pushImp(0, 0, 0, 0.95, 0, 0, 1, 1, 16, 0, 0, 0, 0, 0, 0, 1);
-    pushDecal(0.35, -0.2, 1.05, 0.85, 0.6, 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
+    // menus: the hero stands on a bright sky backdrop with a soft shadow
+    SCENE.floor = false;
+    const q = [0, 0];
+    SCENE.backdrop = R.project(h[0], 1.0, h[2], q) ? [q[0] / R.cssW, 1 - q[1] / R.cssH] : [0.5, 0.55];
+    Object.assign(f, HOME_LIGHT);
+    f.spot = [0, 0, 0, 50]; f.fogRange = [200, 400]; f.hurt = 0; f.lowHp = 0;
+    pushDecal(h[0] + 0.08, h[2] + 0.04, 0.95, 0.6, 0, 1, 0, 0, 0.02, 0.2, 0.55, 0.42);
   }
   FX.emit();
   R.drawScene();
