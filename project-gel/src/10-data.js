@@ -121,11 +121,11 @@ const ENEMY_MIX = {
 const ELITE_TYPES = ['stickman', 'helmet', 'spear', 'axe', 'archer', 'brute', 'shield', 'javelin'];
 
 const BOSS_TYPES = {
-  stomper: { name: 'Big Stomper', model: 'stomper', hp: 2500, speed: 1.6, dmg: 14, scale: 3.0, radius: 1.15, tint: '#f07a22', mass: 60 },
-  hurler: { name: 'Hurler', model: 'hurler', hp: 2200, speed: 2.4, dmg: 12, scale: 2.6, radius: 0.9, tint: '#f5891f', mass: 60 },
-  charger: { name: 'Charger', model: 'charger', hp: 2600, speed: 1.9, dmg: 14, scale: 2.8, radius: 1.1, tint: '#e8582a', mass: 60 },
-  twins: { name: 'Twins', model: 'twin', hp: 1400, speed: 2.4, dmg: 12, scale: 2.4, radius: 0.85, tint: '#ff9a2e', tint2: '#f06a1e', mass: 60 },
-  conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 3.0, radius: 0.9, tint: '#f5891f', mass: 60 },
+  stomper: { name: 'Big Stomper', model: 'stomper', hp: 2500, speed: 1.6, dmg: 14, scale: 2.8, radius: 1.15, tint: '#ff6f8f', mass: 60 },
+  hurler: { name: 'Hurler', model: 'hurler', hp: 2200, speed: 2.4, dmg: 12, scale: 2.6, radius: 0.95, tint: '#9a7bff', mass: 60 },
+  charger: { name: 'Charger', model: 'charger', hp: 2600, speed: 1.9, dmg: 14, scale: 2.7, radius: 1.1, tint: '#e2504f', mass: 60 },
+  twins: { name: 'Twins', model: 'twin', hp: 1400, speed: 2.4, dmg: 12, scale: 2.3, radius: 0.9, tint: '#ff70b0', tint2: '#9a6bff', mass: 60 },
+  conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 

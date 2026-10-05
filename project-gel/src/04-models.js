@@ -53,7 +53,41 @@ const COL = {
   hat: hexToRgb('#2b2340'), hatBand: hexToRgb('#d2465f'), baton: hexToRgb('#fff6e0'), gold: hexToRgb('#ffc93a'), band: hexToRgb('#fff0b0'),
   wood: hexToRgb('#8a5a33'), woodDark: hexToRgb('#5e3a20'), tip: hexToRgb('#dfe7ef'), bomb: hexToRgb('#2a2e38'), fuse: hexToRgb('#ffb347'),
   helm: hexToRgb('#8fa3b8'), helmDark: hexToRgb('#5d7186'),
+  eyeY: hexToRgb('#ffd84a'), eyeW: hexToRgb('#fff6e6'), pupil: hexToRgb('#16101a'), brow: hexToRgb('#2a1520'), mouth: hexToRgb('#3d0d1c'),
+  tooth: hexToRgb('#fff8ea'), horn: hexToRgb('#2b2233'), collar: hexToRgb('#d8283a'), snout: hexToRgb('#e88a8a'),
 };
+// Cartoon faces for bosses, on the head bone. The camera looks down from above, so features sit a little
+// high on the front of the head to stay readable.
+function face(m, o) {
+  const hd = m.J.head, hr = m.parts.find(p => p.s === 'sph' && p.c === hd).r;
+  const at = (x, y, z, k = 1) => { const l = Math.hypot(x, y, z); return [hd[0] + x / l * hr * k, hd[1] + y / l * hr * k, hd[2] + z / l * hr * k]; };
+  const ey = o.eyeY ?? 0.3;
+  const eyes = o.cyclops ? [0] : [-1, 1];
+  for (const sx of eyes) {
+    const ex = o.cyclops ? 0 : sx * 0.4, er = o.cyclops ? 1.35 : 1;
+    m.parts.push({ s: 'ell', c: at(ex, ey, 0.9, 0.84), rr: [hr * 0.3 * er, hr * (o.almond ? 0.18 : 0.25) * er, hr * 0.18 * er], col: o.eyeCol, bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: at(ex * 0.9, ey - 0.04, 0.95, 1.0 + 0.04 * er), r: hr * 0.12 * er, col: COL.pupil, bone: 2, k: 0 });
+    if (o.brows !== false) {
+      const bx = o.cyclops ? 0.38 : 0.66;
+      m.parts.push({ s: 'cap', a: at(o.cyclops ? -bx : sx * bx, ey + 0.4, 0.78, 1.0), b: at(o.cyclops ? bx : sx * 0.14, ey + (o.cyclops ? 0.4 : 0.22), 0.95, 1.0), r: hr * 0.09, col: COL.brow, bone: 2, k: 0 });
+    }
+  }
+  const mouthY = ey - 0.5;
+  if (o.mouth === 'fangs' || o.mouth === 'grin' || o.mouth === 'underbite') {
+    const w = o.mouth === 'grin' ? 0.5 : 0.4;
+    m.parts.push({ s: 'ell', c: at(0, mouthY, 0.95, 0.88), rr: [hr * w, hr * 0.14, hr * 0.15], col: COL.mouth, bone: 2, k: 0 });
+    if (o.mouth === 'fangs') for (const sx of [-1, 1]) m.parts.push({ s: 'cap', a: at(sx * 0.16, mouthY + 0.08, 0.98, 0.98), b: at(sx * 0.15, mouthY - 0.16, 0.98, 1.0), r: hr * 0.07, r2: hr * 0.015, col: COL.tooth, bone: 2, k: 0 });
+    if (o.mouth === 'underbite') for (const sx of [-1, 1]) m.parts.push({ s: 'cap', a: at(sx * 0.24, mouthY - 0.1, 0.98, 0.97), b: at(sx * 0.27, mouthY + 0.16, 0.98, 1.0), r: hr * 0.08, r2: hr * 0.018, col: COL.tooth, bone: 2, k: 0 });
+    if (o.mouth === 'grin') m.parts.push({ s: 'ell', c: at(0, mouthY + 0.04, 0.97, 0.93), rr: [hr * 0.44, hr * 0.06, hr * 0.12], col: COL.tooth, bone: 2, k: 0 });
+  }
+}
+// A curved, tapering horn: base point, then two bends (offsets) on the head bone
+function horn(m, base, d1, d2, r, col) {
+  const mid = [base[0] + d1[0], base[1] + d1[1], base[2] + d1[2]], tip = [mid[0] + d2[0], mid[1] + d2[1], mid[2] + d2[2]];
+  m.parts.push({ s: 'cap', a: base, b: mid, r, r2: r * 0.6, col, bone: 2, k: 0.02 });
+  m.parts.push({ s: 'cap', a: mid, b: tip, r: r * 0.6, r2: r * 0.12, col, bone: 2, k: 0.02 });
+}
+
 // Weapons and armor, attached to a humanoid's bones. Arms hang straight down in the rest pose, so a
 // weapon modeled along +z from the hand tilts up and forward once the run pose bends the elbow.
 const GEAR = {
@@ -140,37 +174,52 @@ function modelDefs() {
     GEAR.helmet(m, 1.03); GEAR.shield(m); GEAR.sword(m);
     for (const s of ['shL', 'shR']) { const p = m.J[s]; m.parts.push({ s: 'ell', c: [p[0] * 1.15, p[1] + 0.02, p[2]], rr: [0.08, 0.055, 0.075], col: COL.helm, bone: 1, k: 0 }); }
   });
-  // Bosses
-  add('stomper', { ...STICK, hipY: 0.46, shY: 0.82, headY: 1.0, headR: 0.15, headZ: 0.04, shW: 0.22, hipW: 0.12, elOut: 0.06, upperLen: 0.18, foreLen: 0.17,
-    pelvisR: 0.17, torso: 'ell', torsoRR: [0.23, 0.26, 0.19], neckR: 0.095, armR: 0.09, handR: 0.11, legR: 0.105, k: 0.06 }, m => {
-    const hd = m.J.head;
-    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.045, hd[2]], rr: [0.185, 0.15, 0.19], col: COL.steel, bone: 2, k: 0 });
-    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.0, hd[2]], R: 0.175, r: 0.03, a0: -Math.PI, a1: Math.PI, col: COL.steelDark, bone: 2, k: 0 });
-    m.parts.push({ s: 'cap', a: [hd[0], hd[1] + 0.2, hd[2] - 0.08], b: [hd[0], hd[1] + 0.21, hd[2] + 0.1], r: 0.03, col: COL.steelDark, bone: 2, k: 0 });
+  // Bosses: chunky cartoon characters with big heads and real faces
+  const BOSS = { ...STICK, hipY: 0.44, shY: 0.78, headY: 1.0, headR: 0.25, headZ: 0.03, shW: 0.2, hipW: 0.11, elOut: 0.06, upperLen: 0.16, foreLen: 0.15,
+    pelvisR: 0.17, torso: 'ell', torsoRR: [0.24, 0.27, 0.2], neckR: 0.13, armR: 0.085, handR: 0.1, legR: 0.1, k: 0.07 };
+  add('stomper', { ...BOSS, torsoRR: [0.27, 0.28, 0.22], pelvisR: 0.19, armR: 0.095, handR: 0.115, legR: 0.11 }, m => {
+    const hd = m.J.head, hr = 0.25;
+    face(m, { eyeCol: COL.eyeY, mouth: 'underbite', eyeY: 0.12, brows: false });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + hr * 0.62, hd[2] - 0.02], rr: [hr * 0.98, hr * 0.6, hr * 0.98], col: COL.helm, bone: 2, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + hr * 0.46, hd[2]], R: hr * 0.9, r: 0.03, a0: -Math.PI, a1: Math.PI, col: COL.helmDark, bone: 2, k: 0 });
+    for (const sx of [1, -1]) horn(m, [hd[0] + sx * hr * 0.8, hd[1] + hr * 0.7, hd[2]], [sx * 0.16, 0.1, 0.02], [sx * 0.04, 0.17, 0.03], 0.055, COL.bone);
   });
-  add('hurler', { ...STICK, armR: 0.068, legR: 0.075, torsoR: 0.11, torsoR2: 0.12, pelvisR: 0.11, handR: 0.075 }, m => {
-    m.parts.push({ s: 'rock', c: [0, 0.74, -0.25], r: 0.25, bump: 0.12, col: COL.stone, bone: 1, k: 0 });
-    m.parts.push({ s: 'cap', a: [0.09, 0.79, 0.07], b: [0.11, 0.55, 0.08], r: 0.018, col: COL.bow, bone: 1, k: 0 });
-    m.parts.push({ s: 'cap', a: [-0.09, 0.79, 0.07], b: [-0.11, 0.55, 0.08], r: 0.018, col: COL.bow, bone: 1, k: 0 });
+  add('hurler', { ...BOSS, headR: 0.26, torsoRR: [0.22, 0.26, 0.19] }, m => {
+    face(m, { cyclops: true, eyeCol: COL.eyeW, mouth: 'grin' });
+    m.parts.push({ s: 'rock', c: [0, 0.74, -0.3], r: 0.27, bump: 0.12, col: COL.stone, bone: 1, k: 0 });
+    m.parts.push({ s: 'cap', a: [0.12, 0.84, 0.12], b: [0.15, 0.55, 0.15], r: 0.022, col: COL.bow, bone: 1, k: 0 });
+    m.parts.push({ s: 'cap', a: [-0.12, 0.84, 0.12], b: [-0.15, 0.55, 0.15], r: 0.022, col: COL.bow, bone: 1, k: 0 });
   });
-  add('charger', { ...STICK, hipY: 0.47, shY: 0.8, headY: 0.96, headR: 0.15, headZ: 0.07, shW: 0.19, hipW: 0.1, pelvisR: 0.15, torso: 'ell', torsoRR: [0.2, 0.23, 0.18],
-    neckR: 0.09, armR: 0.08, handR: 0.095, legR: 0.095, k: 0.06 }, m => {
-    const hd = m.J.head;
+  add('charger', { ...BOSS, headR: 0.24, headZ: 0.08, torsoRR: [0.25, 0.25, 0.22] }, m => {
+    const hd = m.J.head, hr = 0.24;
+    face(m, { eyeCol: COL.eyeY, mouth: 'none', eyeY: 0.36 });
+    // snout with nostrils and a gold ring
+    const sn = [hd[0], hd[1] - hr * 0.22, hd[2] + hr * 0.82];
+    m.parts.push({ s: 'ell', c: sn, rr: [hr * 0.5, hr * 0.32, hr * 0.32], col: COL.snout, bone: 2, k: 0.02 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'sph', c: [sn[0] + sx * hr * 0.2, sn[1] + hr * 0.04, sn[2] + hr * 0.28], r: hr * 0.08, col: COL.mouth, bone: 2, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'z', c: [sn[0], sn[1] - hr * 0.25, sn[2] + hr * 0.27], R: hr * 0.17, r: 0.016, a0: -Math.PI, a1: Math.PI, col: COL.gold, bone: 2, k: 0 });
+    for (const sx of [1, -1]) horn(m, [hd[0] + sx * hr * 0.75, hd[1] + hr * 0.5, hd[2]], [sx * 0.2, 0.05, 0.02], [sx * 0.02, 0.07, 0.15], 0.06, COL.bone);
+  });
+  add('twin', { ...BOSS, headR: 0.24, torsoRR: [0.21, 0.24, 0.18], armR: 0.075, handR: 0.09, legR: 0.09 }, m => {
+    const hd = m.J.head, hr = 0.24;
+    face(m, { eyeCol: COL.eyeW, mouth: 'grin', brows: false });
     for (const sx of [1, -1]) {
-      m.parts.push({ s: 'cap', a: [hd[0] + sx * 0.1, hd[1] + 0.06, hd[2]], b: [hd[0] + sx * 0.2, hd[1] + 0.16, hd[2] + 0.08], r: 0.045, r2: 0.03, col: COL.bone, bone: 2, k: 0.02 });
-      m.parts.push({ s: 'cap', a: [hd[0] + sx * 0.2, hd[1] + 0.16, hd[2] + 0.08], b: [hd[0] + sx * 0.19, hd[1] + 0.2, hd[2] + 0.2], r: 0.03, r2: 0.012, col: COL.bone, bone: 2, k: 0.02 });
+      m.parts.push({ s: 'cap', a: [hd[0] + sx * hr * 0.8, hd[1] + hr * 0.1, hd[2] - 0.02], b: [hd[0] + sx * hr * 1.55, hd[1] + hr * 0.45, hd[2] - 0.06], r: hr * 0.22, r2: hr * 0.03, bone: 2, k: 0.03 });
+      horn(m, [hd[0] + sx * hr * 0.4, hd[1] + hr * 0.82, hd[2]], [sx * 0.05, 0.11, 0.0], [sx * 0.03, 0.06, -0.04], 0.04, COL.horn);
     }
   });
-  add('twin', { ...STICK, armR: 0.072, legR: 0.08, torsoR: 0.11, torsoR2: 0.12, pelvisR: 0.11, handR: 0.08, headR: 0.16 }, m => {
-    const hd = m.J.head;
-    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.04, hd[2]], R: 0.16, r: 0.026, a0: -Math.PI, a1: Math.PI, col: COL.band, bone: 2, k: 0 });
-  });
-  add('conductor', { ...STICK, hipY: 0.56, shY: 0.86, headY: 1.04, headR: 0.15, legR: 0.062, armR: 0.056 }, m => {
-    const hd = m.J.head, ha = m.J.haR;
-    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.25, hd[2]], r: 0.115, hh: 0.12, rd: 0.012, col: COL.hat, bone: 2, k: 0 });
-    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.135, hd[2]], r: 0.19, hh: 0.014, rd: 0.01, col: COL.hat, bone: 2, k: 0 });
-    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.17, hd[2]], r: 0.118, hh: 0.025, rd: 0.004, col: COL.hatBand, bone: 2, k: 0 });
-    m.parts.push({ s: 'cap', a: [ha[0], ha[1], ha[2]], b: [ha[0] - 0.02, ha[1] - 0.06, ha[2] + 0.34], r: 0.016, r2: 0.01, col: COL.baton, bone: 6, k: 0 });
+  add('conductor', { ...BOSS, hipY: 0.48, shY: 0.8, headY: 1.02 }, m => {
+    const hd = m.J.head, hr = 0.25, ha = m.J.haR;
+    face(m, { eyeCol: COL.eyeY, mouth: 'fangs', almond: true });
+    for (const sx of [1, -1]) horn(m, [hd[0] + sx * hr * 0.5, hd[1] + hr * 0.75, hd[2] - 0.02], [sx * 0.1, 0.12, -0.02], [sx * 0.02, 0.1, -0.06], 0.05, COL.horn);
+    // a high red collar fanned around the back of the neck
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 6 - 0.5) * 2.6, cx = Math.sin(a), cz = -Math.cos(a);
+      const base = [cx * 0.2, 0.8, cz * 0.16 + 0.02], tip = [cx * 0.34, 1.02 + 0.04 * Math.cos(a), cz * 0.27];
+      m.parts.push({ s: 'cap', a: base, b: tip, r: 0.06, r2: 0.03, col: COL.collar, bone: 1, k: 0.03 });
+    }
+    m.parts.push({ s: 'cap', a: [ha[0], ha[1], ha[2]], b: [ha[0] - 0.02, ha[1] - 0.06, ha[2] + 0.36], r: 0.018, r2: 0.01, col: COL.baton, bone: 6, k: 0 });
+    m.parts.push({ s: 'sph', c: [ha[0] - 0.02, ha[1] - 0.06, ha[2] + 0.37], r: 0.03, col: COL.gold, bone: 6, k: 0 });
   });
   // Boulders: lumpy rocks on one rigid bone, about 0.45 in radius, tinted per arena
   const rock = (name, parts) => {
@@ -301,7 +350,7 @@ const MODEL_CLIPS = {
 const MESH_CELLS = {
   stickman: 0.032, sprinter: 0.029, brute: 0.034, archer: 0.03, splitter: 0.032, shield: 0.03,
   helmet: 0.03, spear: 0.029, axe: 0.029, javelin: 0.029, bomber: 0.03, knight: 0.029,
-  stomper: 0.024, hurler: 0.023, charger: 0.024, twin: 0.024, conductor: 0.022,
+  stomper: 0.015, hurler: 0.015, charger: 0.015, twin: 0.015, conductor: 0.015,
   rock0: 0.045, rock1: 0.045, rock2: 0.045,
 };
 const CROWN_CELL = 0.02;

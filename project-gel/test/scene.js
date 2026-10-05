@@ -33,7 +33,7 @@ applyArena(0);
 
 const names = ['stickman', 'sprinter', 'brute', 'archer', 'splitter', 'shield'];
 const bosses = ['stomper', 'hurler', 'charger', 'twin', 'conductor'];
-const TINTS = { stickman: '#f5891f', sprinter: '#ffa62b', brute: '#e8642a', archer: '#f5891f', splitter: '#f39a2e', shield: '#f5891f', stomper: '#f07a22', hurler: '#f5891f', charger: '#e8582a', twin: '#ff9a2e', conductor: '#f5891f' };
+const TINTS = { stickman: '#f5891f', sprinter: '#ffa62b', brute: '#e8642a', archer: '#f5891f', splitter: '#f39a2e', shield: '#f5891f', stomper: '#ff6f8f', hurler: '#9a7bff', charger: '#e2504f', twin: '#ff70b0', conductor: '#ff79aa' };
 
 function step(dt) {
   TEST.t += dt;
