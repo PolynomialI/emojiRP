@@ -38,8 +38,9 @@ function spawnBoss(id, x, z, opts) {
   };
   e.contactDmg = e.dmg;
   e.y = 9;
+  resolveCircle(e, B.radius * 1.4);
   run.enemies.push(e); run.bosses.push(e);
-  addTele({ kind: 'circle', x, z, r: B.radius * 2.2, dur: 1.2 });
+  addTele({ kind: 'circle', x: e.x, z: e.z, r: B.radius * 2.2, dur: 1.2 });
   return e;
 }
 
@@ -89,7 +90,8 @@ function updateBoss(e, dt) {
       if (ai.state === 'walk') {
         bossWalk(e, dt, h[0], h[2], e.speed); bossFace(e, dt);
         if (ai.t <= 0) {
-          ai.state = 'leap'; ai.t = 1.25; ai.sx = e.x; ai.sz = e.z; ai.tx = h[0]; ai.tz = h[2];
+          const tp = { x: h[0], z: h[2] }; resolveCircle(tp, e.radius);
+          ai.state = 'leap'; ai.t = 1.25; ai.sx = e.x; ai.sz = e.z; ai.tx = tp.x; ai.tz = tp.z;
           ai.tele = addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 3, dur: 1.25 });
         }
       } else if (ai.state === 'leap') {
@@ -122,7 +124,8 @@ function updateBoss(e, dt) {
         bossWalk(e, dt, tx, tz, e.speed); bossFace(e, dt);
         if (d < 3 && ai.jumpCd <= 0) {
           ai.state = 'hop'; ai.t = 0.6; ai.jumpCd = 4; ai.sx = e.x; ai.sz = e.z;
-          ai.tx = e.x - dx / d * 7; ai.tz = e.z - dz / d * 7;
+          const tp = { x: e.x - dx / d * 7, z: e.z - dz / d * 7 }; resolveCircle(tp, e.radius);
+          ai.tx = tp.x; ai.tz = tp.z;
         } else if (ai.throwT <= 0) { ai.state = 'throw'; ai.t = 0.7; ai.thrown = false; }
       } else if (ai.state === 'hop') {
         const u = 1 - ai.t / 0.6;
@@ -186,7 +189,7 @@ function updateBoss(e, dt) {
         const a = ai.orbit + (ai.side > 0 ? 0 : Math.PI);
         bossWalk(e, dt, h[0] + Math.cos(a) * 3.2, h[2] + Math.sin(a) * 3.2, sp);
       } else {
-        if (!ai.enraged) { ai.enraged = true; e.tint = [1, 0.35, 0.2]; AUDIO.play('boss'); UI.banner('The other twin is enraged!'); }
+        if (!ai.enraged) { ai.enraged = true; e.tint = [1, 0.35, 0.2]; AUDIO.play('boss'); }
         bossWalk(e, dt, h[0], h[2], sp);
       }
       bossFace(e, dt);
@@ -205,6 +208,7 @@ function updateBoss(e, dt) {
       // the stage follows the hero, so the Conductor can't be left behind
       const ax = h[0] - ai.anchor[0], az = h[2] - ai.anchor[1], ad = Math.hypot(ax, az);
       if (ad > 5.5) { const st = Math.min(ad - 5.5, 1.4 * dt); ai.anchor[0] += ax / ad * st; ai.anchor[1] += az / ad * st; }
+      const ap = { x: ai.anchor[0], z: ai.anchor[1] }; resolveCircle(ap, e.radius + 1.5); ai.anchor[0] = ap.x; ai.anchor[1] = ap.z;
       bossWalk(e, dt, ai.anchor[0] + Math.cos(G.run.t * 0.3) * 1.5, ai.anchor[1] + Math.sin(G.run.t * 0.3) * 1.5, e.speed);
       e.clip = 'conduct';
       bossFace(e, dt, 3);
@@ -220,7 +224,6 @@ function updateBoss(e, dt) {
             m.spawnT = 0.4;
             FX.burst(m.x, 0.3, m.z, 4, ORANGE, 3, 0.1, 0.4, 0);
           }
-          UI.banner('The Conductor calls a wave');
         } else {
           const n = 18, gap = randInt(0, n - 1);
           for (let i = 0; i < n; i++) {
@@ -235,6 +238,15 @@ function updateBoss(e, dt) {
       break;
     }
   }
+}
+
+// The Charger rams a boulder or the wall: its charge ends and it is stunned
+function bossBonk(e, hit) {
+  const ai = e.ai;
+  ai.state = 'dizzy'; ai.t = 2.5; e.dizzy = 2.5; ai.charges = 0; ai.tele = null;
+  G.cam.shake = Math.max(G.cam.shake, 0.18); AUDIO.play('boom');
+  FX.burst(e.x, 0.6, e.z, 14, [0.65, 0.6, 0.55], 5, 0.14, 0.6, 2);
+  FX.ring(e.x, e.z, 2.5, [1, 0.85, 0.6], 0.35);
 }
 
 function onBossKilled(e) {
@@ -272,6 +284,7 @@ function enemyRow(e) {
 function emitRunScene() {
   const run = G.run, h = G.hero.pos, L = R.frame.lightDir;
   const sdx = -L[0] * 0.5, sdz = -L[2] * 0.5;
+  emitArena();
   for (const e of run.enemies) {
     if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
@@ -326,11 +339,14 @@ function emitRunScene() {
         p.trail.forEach((q, i) => { const k = 0.07 * Math.min(1, i / 3); pts.push(q[0] + Math.sin(p.t * 22 - i) * k, q[1] + Math.cos(p.t * 22 - i) * k, q[2]); });
         R.ribStrip(pts, p.trail.length, 0.07, [0.7, 0.55, 1.0, u => (1 - u) * 0.8], 0, 0, 1, u => 1 - u);
       }
-    } else if (p.kind === 'grenade') {
-      const blink = Math.sin(p.t * (12 + p.t * 30)) > 0 ? 0.7 : 0.15;
-      pushImp(p.x, p.y, p.z, 0.17, 0, 1, 0.2, 1, 6, 1, blink, p.ph + p.t * 2, 0, 0, 0, 1);
-      pushDecal(p.x + 0.1, p.z + 0.08, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4 * (1 - clamp(p.y / 4, 0, 0.8)));
     }
+  }
+  // fused grenades: blink faster as the fuse runs out, with a warning ring showing the blast
+  for (const b of run.bombs) {
+    const u = b.t / b.fuse, grow = clamp(b.t / 0.2, 0, 1);
+    const blink = Math.sin(b.t * (8 + u * 30)) > 0 ? 0.8 : 0.2;
+    pushImp(b.x, 0.26 * grow, b.z, 0.26 * easeOutBack(grow) * (1 + 0.12 * u * Math.sin(b.t * 40)), 0, 1, 0.15, 1, 6, 1, blink, b.ph + b.t * 2, 0, 0, 0, 1);
+    pushDecal(b.x, b.z, b.radius, b.radius, 0, 4, 0, u, 0.75, 0.45, 1.0, 0.5 * grow);
   }
   for (const m of run.mines) {
     const armed = m.t > 0.5, grow = clamp(m.t / 0.2, 0, 1), blink = armed && Math.sin(m.t * 10) > 0;
@@ -384,6 +400,12 @@ function emitRunScene() {
     R.ribStrip(pts, n, b.w * 3, [0.4, 0.7, 1.0, a * 0.35], 0);
   }
   emitSkills();
+}
+
+function emitArena() {
+  for (const o of ARENA.pools) if (onScreen(o.x, o.z, o.r + 1)) pushDecal(o.x, o.z, o.r, o.r, 0, 1, 0, 0, 0.05, 0.3, 0.25, 0.85);
+  for (const o of ARENA.rocks) if (onScreen(o.x, o.z, o.r + 1)) pushImp(o.x, o.r * 0.55, o.z, o.r, Math.sin(o.yaw), 0.4, Math.cos(o.yaw), 1, 13, 0, 0, 0, 0, 0, 0, 1);
+  for (const o of ARENA.wall) if (onScreen(o.x, o.z, o.r + 1)) pushImp(o.x, o.r * 0.55, o.z, o.r, Math.sin(o.yaw), 0.4, Math.cos(o.yaw), 1, 13, 0, 0, 0, 0, 0, 0, 1);
 }
 
 function trailRibbon(trail, w, col, alpha) {

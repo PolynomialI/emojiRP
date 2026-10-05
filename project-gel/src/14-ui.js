@@ -217,7 +217,7 @@ const UI = {
         const s = run.slots[i], d = document.createElement('div');
         if (s) {
           d.className = 'slot ' + s.kind;
-          const max = s.kind === 'skill' ? 5 : PASSIVES[s.id].max;
+          const max = maxLevel(s.id);
           d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / max) * 100}%"></i></u>`;
           d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
         } else d.className = 'slot';
@@ -297,7 +297,7 @@ const UI = {
     const r = Math.random(), n = r < 0.7 ? 1 : r < 0.95 ? 3 : 5;
     const results = [];
     for (let k = 0; k < n; k++) {
-      const up = run.slots.filter(s => s.lvl < (s.kind === 'skill' ? 5 : PASSIVES[s.id].max) - results.filter(x => x === s.id).length);
+      const up = run.slots.filter(s => s.lvl < maxLevel(s.id) - results.filter(x => x === s.id).length);
       if (!up.length) break;
       const skills = up.filter(s => s.kind === 'skill');
       results.push(pick(skills.length && Math.random() < 0.75 ? skills : up).id);
@@ -364,7 +364,7 @@ const UI = {
     const run = G.run;
     $('pauseSub').textContent = `Chapter ${run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
     $('pauseList').replaceChildren(...run.slots.map(s => {
-      const d = document.createElement('div'), max = s.kind === 'skill' ? 5 : PASSIVES[s.id].max;
+      const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
       d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
       d.querySelector('span:nth-child(2)').textContent = (SKILLS[s.id] || PASSIVES[s.id]).name;
@@ -473,7 +473,7 @@ function rollChoices() {
   const run = G.run, owned = run.slots, many = owned.length >= 4, full = owned.length >= 8;
   const pool = [];
   for (const s of owned) {
-    const max = s.kind === 'skill' ? 5 : PASSIVES[s.id].max;
+    const max = maxLevel(s.id);
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
   if (!full) {

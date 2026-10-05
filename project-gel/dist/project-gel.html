@@ -4321,95 +4321,107 @@ const AUDIO = {
 // Game data: skills, passives, enemies, bosses, arenas, chapters, upgrades, skins
 // ============================================================
 // icon: impostor type + color weight used for the 3D card icons
+// Every skill has 10 levels; tables list each field per level (a single number means it never changes)
+function L10(spec) {
+  return Array.from({ length: 10 }, (_, i) => {
+    const o = {};
+    for (const k in spec) o[k] = Array.isArray(spec[k]) ? spec[k][i] : spec[k];
+    return o;
+  });
+}
+const SKILL_MAX = 10;
 const SKILLS = {
   ball: {
     name: 'Blob Ball', intro: 'Fires balls of goo at the closest enemy.', icon: { type: 0, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Balls'], ['pierce', 'Pierce']],
-    levels: [{ dmg: 14, cd: 0.9, count: 1, pierce: 0 }, { dmg: 14, cd: 0.9, count: 2, pierce: 0 }, { dmg: 18, cd: 0.9, count: 2, pierce: 1 }, { dmg: 18, cd: 0.8, count: 3, pierce: 1 }, { dmg: 24, cd: 0.7, count: 3, pierce: 2 }],
+    levels: L10({ dmg: [7, 8, 9, 9, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
   },
   fists: {
     name: 'Blob Fists', intro: 'Your arms stretch out and punch nearby enemies, knocking them back.', icon: { type: 17, colw: 1 },
     fields: [['dmg', 'Damage'], ['cd', 'Punch every', 's'], ['fists', 'Fists'], ['reach', 'Reach', 'm'], ['shock', 'Shockwave', 'm']],
-    levels: [{ dmg: 20, cd: 2.0, fists: 2, reach: 2.4, shock: 0 }, { dmg: 26, cd: 1.8, fists: 2, reach: 2.4, shock: 0 }, { dmg: 26, cd: 1.6, fists: 3, reach: 2.8, shock: 0 }, { dmg: 34, cd: 1.6, fists: 3, reach: 2.8, shock: 0 }, { dmg: 44, cd: 1.2, fists: 4, reach: 3.2, shock: 1.0 }],
+    levels: L10({ dmg: [10, 12, 13, 15, 16, 18, 20, 22, 24, 28], cd: [2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5], fists: [2, 2, 2, 2, 3, 3, 3, 3, 4, 4], reach: [2.4, 2.4, 2.5, 2.5, 2.6, 2.6, 2.8, 2.8, 3.0, 3.2], shock: [0, 0, 0, 0, 0, 0, 0, 0, 0.8, 1.0] }),
   },
   grenade: {
-    name: 'Blob Grenade', intro: 'Lobs a heavy goo bomb onto the biggest group of enemies.', icon: { type: 6, colw: 1 },
+    name: 'Blob Grenade', intro: 'Drops a fused goo grenade at your feet. It bursts a moment later in a big splash.', icon: { type: 6, colw: 1 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Grenades'], ['radius', 'Blast radius', 'm']],
-    levels: [{ dmg: 30, cd: 3.0, count: 1, radius: 1.8 }, { dmg: 30, cd: 3.0, count: 2, radius: 1.8 }, { dmg: 42, cd: 2.6, count: 2, radius: 2.2 }, { dmg: 42, cd: 2.6, count: 3, radius: 2.2 }, { dmg: 55, cd: 2.2, count: 3, radius: 2.6 }],
+    levels: L10({ dmg: [14, 15, 17, 19, 21, 23, 26, 29, 32, 36], cd: [4.0, 3.9, 3.8, 3.6, 3.5, 3.4, 3.2, 3.0, 2.8, 2.6], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.5, 1.55, 1.6, 1.65, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], fuse: 1.4 }),
   },
   missile: {
     name: 'Blob Missile', intro: 'Homing goo missiles burst out of your back and dive at enemies.', icon: { type: 1, colw: 0.8 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Missiles'], ['splash', 'Splash', 'm']],
-    levels: [{ dmg: 18, cd: 2.0, count: 2, splash: 0 }, { dmg: 18, cd: 2.0, count: 3, splash: 0 }, { dmg: 24, cd: 2.0, count: 3, splash: 0 }, { dmg: 24, cd: 1.8, count: 4, splash: 0.8 }, { dmg: 30, cd: 1.6, count: 6, splash: 0.8 }],
+    levels: L10({ dmg: [8, 9, 10, 11, 12, 13, 14, 15, 16, 18], cd: [2.6, 2.6, 2.5, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0, 0.7, 0.7, 0.8, 0.8, 0.9, 1.0] }),
   },
   mine: {
     name: 'Blob Mine', intro: 'Drops sticky mines behind you that burst when enemies step close.', icon: { type: 2, colw: 1.6 },
     fields: [['dmg', 'Damage'], ['cd', 'Drop every', 's'], ['max', 'Max mines'], ['radius', 'Blast radius', 'm']],
-    levels: [{ dmg: 40, cd: 2.5, max: 4, radius: 2.0 }, { dmg: 40, cd: 2.5, max: 4, radius: 2.5 }, { dmg: 60, cd: 2.5, max: 6, radius: 2.5 }, { dmg: 60, cd: 2.0, max: 6, radius: 2.5 }, { dmg: 80, cd: 1.6, max: 8, radius: 3.0 }],
+    levels: L10({ dmg: [12, 13, 14, 16, 18, 20, 22, 24, 27, 30], cd: [3.0, 3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.2, 2.0], max: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], radius: [1.4, 1.45, 1.5, 1.55, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1] }),
   },
   blade: {
     name: 'Blade', intro: 'Crescent blades of hardened goo orbit you and cut what they touch.', icon: { type: 3, colw: 0.3 },
     fields: [['dmg', 'Damage'], ['count', 'Blades'], ['radius', 'Orbit', 'm'], ['spin', 'Spin', '°/s']],
-    levels: [{ dmg: 10, count: 2, radius: 1.6, spin: 180 }, { dmg: 10, count: 3, radius: 1.6, spin: 180 }, { dmg: 14, count: 3, radius: 1.9, spin: 180 }, { dmg: 14, count: 4, radius: 1.9, spin: 210 }, { dmg: 18, count: 5, radius: 2.2, spin: 240 }],
+    levels: L10({ dmg: [5, 6, 6, 7, 7, 8, 9, 10, 11, 12], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], radius: [1.7, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 2.1, 2.2], spin: [150, 150, 160, 160, 170, 180, 190, 200, 210, 220] }),
   },
   lightning: {
     name: 'Lightning', intro: 'Lightning strikes random enemies on screen.', icon: { type: 18, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['strikes', 'Strikes'], ['radius', 'Impact', 'm'], ['chain', 'Jumps']],
-    levels: [{ dmg: 25, cd: 2.2, strikes: 2, radius: 0.6, chain: 0 }, { dmg: 25, cd: 2.2, strikes: 3, radius: 0.6, chain: 0 }, { dmg: 35, cd: 2.0, strikes: 3, radius: 0.9, chain: 0 }, { dmg: 35, cd: 2.0, strikes: 4, radius: 0.9, chain: 1 }, { dmg: 45, cd: 1.6, strikes: 6, radius: 1.2, chain: 2 }],
+    levels: L10({ dmg: [12, 13, 14, 15, 17, 19, 21, 23, 25, 28], cd: [3.0, 3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.2, 2.0], strikes: [1, 1, 1, 2, 2, 2, 3, 3, 3, 4], radius: [0.6, 0.6, 0.65, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 1.0], chain: [0, 0, 0, 0, 0, 0, 1, 1, 1, 2] }),
   },
   aura: {
     name: 'Aura', intro: 'A goo puddle around you burns everything standing in it.', icon: { type: 19, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['radius', 'Radius', 'm'], ['slow', 'Slow', '%']],
-    levels: [{ dmg: 5, radius: 1.8, slow: 0 }, { dmg: 5, radius: 2.1, slow: 0 }, { dmg: 7, radius: 2.1, slow: 15 }, { dmg: 7, radius: 2.5, slow: 15 }, { dmg: 10, radius: 2.8, slow: 25 }],
+    levels: L10({ dmg: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], radius: [1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.6], slow: [0, 0, 0, 0, 10, 10, 15, 15, 20, 25] }),
   },
   worms: {
     name: 'Worms', intro: 'Goo worms tunnel under the floor and bite enemies.', icon: { type: 5, colw: 3 },
     fields: [['count', 'Worms'], ['dmg', 'Bite damage'], ['life', 'Lifetime', 's'], ['burst', 'Surfacing burst']],
-    levels: [{ count: 1, dmg: 15, life: 6, burst: 0, cd: 6 }, { count: 2, dmg: 15, life: 6, burst: 0, cd: 6 }, { count: 2, dmg: 20, life: 8, burst: 0, cd: 6 }, { count: 3, dmg: 20, life: 8, burst: 0, cd: 6 }, { count: 3, dmg: 25, life: 10, burst: 40, cd: 6 }],
+    levels: L10({ count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], dmg: [6, 7, 7, 8, 9, 10, 11, 12, 13, 15], life: [5, 5, 6, 6, 6, 7, 7, 8, 8, 9], burst: [0, 0, 0, 0, 0, 0, 0, 0, 15, 25], cd: [7, 7, 7, 6.8, 6.6, 6.4, 6.2, 6, 5.8, 5.5] }),
   },
   buddies: {
     name: 'Blob Buddies', intro: 'You split off small copies of yourself that hop at enemies and headbutt them.', icon: { type: 7, colw: 0 },
     fields: [['count', 'Buddies'], ['dmg', 'Headbutt damage'], ['life', 'Lifetime', 's']],
-    levels: [{ count: 1, dmg: 8, life: 10, cd: 12 }, { count: 2, dmg: 8, life: 10, cd: 12 }, { count: 2, dmg: 12, life: 10, cd: 12 }, { count: 3, dmg: 12, life: 15, cd: 12 }, { count: 4, dmg: 16, life: 15, cd: 12 }],
+    levels: L10({ count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], dmg: [4, 5, 5, 6, 6, 7, 8, 9, 10, 11], life: [8, 8, 9, 9, 10, 10, 11, 11, 12, 12], cd: [14, 14, 13.5, 13.5, 13, 13, 12.5, 12.5, 12, 12] }),
   },
   axe: {
     name: 'Goo Axe', intro: 'Throws spinning axes that cut through everything and fly back to you.', icon: { type: 4, colw: 0.5 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Axes'], ['range', 'Range', 'm']],
-    levels: [{ dmg: 22, cd: 1.8, count: 1, range: 5 }, { dmg: 22, cd: 1.8, count: 2, range: 5 }, { dmg: 30, cd: 1.6, count: 2, range: 5 }, { dmg: 30, cd: 1.6, count: 3, range: 5.5 }, { dmg: 38, cd: 1.4, count: 3, range: 6.5 }],
+    levels: L10({ dmg: [9, 10, 11, 12, 13, 14, 16, 18, 20, 22], cd: [2.4, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], range: [4, 4, 4.2, 4.2, 4.4, 4.6, 4.8, 5, 5.3, 5.6] }),
   },
   laser: {
     name: 'Blob Laser', intro: 'A pressurized goo jet sprays from your chest and sweeps toward enemies.', icon: { type: 28, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['dur', 'Duration', 's'], ['cd', 'Cooldown', 's'], ['beams', 'Jets']],
-    levels: [{ dmg: 6, dur: 1.2, cd: 4.0, beams: 1 }, { dmg: 6, dur: 1.5, cd: 4.0, beams: 1 }, { dmg: 8, dur: 1.5, cd: 3.5, beams: 1 }, { dmg: 8, dur: 1.8, cd: 3.5, beams: 2 }, { dmg: 10, dur: 1.8, cd: 3.0, beams: 2 }],
+    levels: L10({ dmg: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], dur: [1.0, 1.1, 1.2, 1.2, 1.3, 1.4, 1.5, 1.5, 1.6, 1.8], cd: [5, 5, 4.8, 4.6, 4.5, 4.4, 4.2, 4, 3.8, 3.5], beams: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2] }),
   },
   shield: {
     name: 'Bubble Shield', intro: 'A goo bubble absorbs hits, then grows back.', icon: { type: 27, colw: 0 },
     fields: [['hits', 'Hits absorbed'], ['recharge', 'Regrows in', 's'], ['pop', 'Pop damage'], ['push', 'Pop knockback', 'm']],
-    levels: [{ hits: 1, recharge: 10, pop: 0, push: 0 }, { hits: 1, recharge: 8, pop: 0, push: 0 }, { hits: 1, recharge: 8, pop: 20, push: 2 }, { hits: 2, recharge: 8, pop: 20, push: 2 }, { hits: 2, recharge: 5, pop: 40, push: 3 }],
+    levels: L10({ hits: [1, 1, 1, 1, 1, 2, 2, 2, 2, 3], recharge: [12, 11.5, 11, 10.5, 10, 9.5, 9, 8.5, 8, 7], pop: [0, 0, 0, 0, 8, 8, 12, 12, 16, 20], push: [0, 0, 0, 0, 1.5, 1.5, 2, 2, 2.5, 3] }),
   },
 };
 
+// Passives: 10 levels each (Multishot adds a whole projectile per level, so it stays at 2)
 const PASSIVES = {
-  thick: { name: 'Thick Goo', desc: '+20% max health, and heals that amount.', max: 5, icon: { type: 25, colw: 0 } },
-  regen: { name: 'Regen', desc: 'Heal 0.4% of max health every second.', max: 5, icon: { type: 10, colw: 4 } },
-  speed: { name: 'Speed', desc: '+8% move speed.', max: 5, icon: { type: 1, colw: 0 } },
-  magnet: { name: 'Magnet', desc: '+30% gem pickup radius.', max: 5, icon: { type: 11, colw: 4 } },
-  power: { name: 'Power', desc: '+10% damage.', max: 5, icon: { type: 20, colw: 0 } },
-  armor: { name: 'Armor', desc: 'Take 6% less damage.', max: 5, icon: { type: 21, colw: 0 } },
-  haste: { name: 'Haste', desc: 'Skills recharge 6% faster.', max: 5, icon: { type: 22, colw: 0 } },
-  reach: { name: 'Reach', desc: '+10% skill area.', max: 5, icon: { type: 23, colw: 0 } },
+  thick: { name: 'Thick Goo', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
+  regen: { name: 'Regen', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
+  speed: { name: 'Speed', desc: '+4% move speed.', max: 10, icon: { type: 1, colw: 0 } },
+  magnet: { name: 'Magnet', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
+  power: { name: 'Power', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
+  armor: { name: 'Armor', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
+  haste: { name: 'Haste', desc: 'Skills recharge 3% faster.', max: 10, icon: { type: 22, colw: 0 } },
+  reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
   multishot: { name: 'Multishot', desc: '+1 ball, grenade, missile or axe, and +1 lightning strike.', max: 2, icon: { type: 24, colw: 0.4 } },
-  growth: { name: 'Growth', desc: '+8% XP from gems.', max: 5, icon: { type: 8, colw: 0 } },
+  growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
+const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 
+// Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1)
 const ENEMY_TYPES = {
-  stickman: { model: 'stickman', hp: 10, speed: 2.2, dmg: 5, xp: 1, radius: 0.3, scale: 1, tint: '#f5891f', mass: 1 },
-  sprinter: { model: 'sprinter', hp: 6, speed: 3.6, dmg: 4, xp: 1, radius: 0.27, scale: 1, tint: '#ffad2e', mass: 0.8 },
-  brute: { model: 'brute', hp: 60, speed: 1.6, dmg: 12, xp: 5, radius: 0.55, scale: 1.6, tint: '#e8642a', mass: 4 },
-  archer: { model: 'archer', hp: 14, speed: 2.0, dmg: 5, shot: 8, xp: 2, radius: 0.3, scale: 1, tint: '#f28a2a', mass: 1, ranged: true },
-  splitter: { model: 'splitter', hp: 24, speed: 2.0, dmg: 6, xp: 2, radius: 0.36, scale: 1.1, tint: '#f6a03a', mass: 1.5, splits: true },
-  mini: { model: 'stickman', hp: 6, speed: 2.6, dmg: 3, xp: 1, radius: 0.2, scale: 0.6, tint: '#ffb85a', mass: 0.5 },
-  shield: { model: 'shield', hp: 40, speed: 1.8, dmg: 8, xp: 3, radius: 0.34, scale: 1.05, tint: '#f5891f', mass: 1.6, shield: true },
+  stickman: { model: 'stickman', hp: 12, speed: 2.2, dmg: 5, xp: 1, radius: 0.4, scale: 1.35, tint: '#f5891f', mass: 1 },
+  sprinter: { model: 'sprinter', hp: 8, speed: 3.5, dmg: 4, xp: 1, radius: 0.36, scale: 1.3, tint: '#ffad2e', mass: 0.8 },
+  brute: { model: 'brute', hp: 70, speed: 1.6, dmg: 12, xp: 5, radius: 0.7, scale: 2.0, tint: '#e8642a', mass: 4 },
+  archer: { model: 'archer', hp: 16, speed: 2.0, dmg: 5, shot: 8, xp: 2, radius: 0.4, scale: 1.35, tint: '#f28a2a', mass: 1, ranged: true },
+  splitter: { model: 'splitter', hp: 28, speed: 2.0, dmg: 6, xp: 2, radius: 0.46, scale: 1.45, tint: '#f6a03a', mass: 1.5, splits: true },
+  mini: { model: 'stickman', hp: 7, speed: 2.6, dmg: 3, xp: 1, radius: 0.28, scale: 0.85, tint: '#ffb85a', mass: 0.5 },
+  shield: { model: 'shield', hp: 45, speed: 1.8, dmg: 8, xp: 3, radius: 0.44, scale: 1.4, tint: '#f5891f', mass: 1.6, shield: true },
 };
 
 const BOSS_TYPES = {
@@ -4446,7 +4458,7 @@ function chapterInfo(n) {
 }
 
 // XP needed to go from level L to L+1
-const xpFor = L => Math.round(6 + 5 * L + 0.3 * L * L);
+const xpFor = L => Math.round(4 + 1.6 * L + 0.03 * L * L);
 
 const META_UPGRADES = {
   damage: { name: 'Damage', per: 3, unit: '% damage', base: 50, growth: 1.18, max: 100, icon: { type: 17, colw: 4 } },
@@ -4481,6 +4493,7 @@ const G = {
 };
 const ORANGE = [0.95, 0.53, 0.13];
 const HERO_R = 0.42;
+const HERO_PT = { x: 0, z: 0 };
 
 // ---------- spatial hash over enemies ----------
 const GRID = { cell: 2, map: new Map() };
@@ -4540,6 +4553,20 @@ function onScreen(x, z, margin = 0) {
   return true;
 }
 function spawnPoint(margin = 1.8) {
+  for (let tries = 0; tries < 10; tries++) {
+    const p = screenEdgePoint(margin);
+    if (!blockedAt(p[0], p[1], 0.8)) return p;
+  }
+  // the hero is near a wall: anywhere in the arena that is off screen
+  for (let tries = 0; tries < 40; tries++) {
+    const x = rand(-ARENA.hw, ARENA.hw), z = rand(-ARENA.hd, ARENA.hd);
+    if (!blockedAt(x, z, 0.8) && !onScreen(x, z, 1)) return [x, z];
+  }
+  const p = screenEdgePoint(margin), o = { x: p[0], z: p[1] };
+  resolveCircle(o, 0.8);
+  return [o.x, o.z];
+}
+function screenEdgePoint(margin) {
   const C = VIEW.corners;
   const lens = [0, 1, 2, 3].map(i => Math.hypot(C[(i + 1) % 4][0] - C[i][0], C[(i + 1) % 4][2] - C[i][2]));
   let r = Math.random() * lens.reduce((a, b) => a + b, 0), i = 0;
@@ -4567,7 +4594,7 @@ function applySkin(id) {
 function makeEvents() {
   return [{ t: 90, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 40 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
 }
-const RATE_KEYS = [[0, 1.0], [60, 1.5], [120, 2.2], [180, 3.0], [240, 3.6], [270, 4.6], [300, 4.6]];
+const RATE_KEYS = [[0, 0.35], [30, 0.55], [60, 0.8], [120, 1.3], [180, 1.8], [240, 2.3], [270, 3.0], [300, 3.0]];
 function spawnRate(t) {
   for (let i = 1; i < RATE_KEYS.length; i++) {
     const [t1, r1] = RATE_KEYS[i], [t0, r0] = RATE_KEYS[i - 1];
@@ -4582,11 +4609,12 @@ function startRun(chapter) {
     chapter, info, t: 0, kills: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
-    enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], worms: [], buddies: [], axes: [], beams: [],
+    enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
     nextId: 1, spawnAcc: 0, events: makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
     vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
   };
   applyArena(info.arena);
+  buildArena(chapter);
   G.hero.reset(0, 0);
   G.hero.scale = 1;
   FX.clear(); G.numbers.length = 0; G.bolts.length = 0;
@@ -4615,25 +4643,25 @@ function recomputeStats() {
   const run = G.run, meta = G.save.upgrades, lv = lvlOf;
   const oldMax = run.maxHp;
   run.stats = {
-    dmgMul: (1 + 0.1 * lv('power')) * (1 + 0.03 * meta.damage),
-    speedMul: (1 + 0.08 * lv('speed')) * (1 + 0.01 * meta.speed),
-    magnet: 1.6 * (1 + 0.3 * lv('magnet')) * (1 + 0.05 * meta.magnet),
-    armorMul: Math.pow(0.94, lv('armor')),
-    cdMul: Math.pow(0.94, lv('haste')),
-    areaMul: 1 + 0.1 * lv('reach'),
+    dmgMul: (1 + 0.05 * lv('power')) * (1 + 0.03 * meta.damage),
+    speedMul: (1 + 0.04 * lv('speed')) * (1 + 0.01 * meta.speed),
+    magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + 0.05 * meta.magnet),
+    armorMul: Math.pow(0.97, lv('armor')),
+    cdMul: Math.pow(0.97, lv('haste')),
+    areaMul: 1 + 0.05 * lv('reach'),
     extra: lv('multishot'),
-    xpMul: 1 + 0.08 * lv('growth'),
-    regen: 0.004 * lv('regen'),
+    xpMul: 1 + 0.04 * lv('growth'),
+    regen: 0.002 * lv('regen'),
   };
-  run.maxHp = 100 * (1 + 0.2 * lv('thick')) * (1 + 0.05 * meta.health);
+  run.maxHp = 100 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health);
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
-  h.scale = 1 + 0.02 * lv('thick');
-  h.bubbles = lv('regen') ? 0.35 + 0.12 * lv('regen') : 0;
-  h.stretchMul = 1 + 0.12 * lv('speed');
-  h.glow = 0.05 * lv('power');
-  h.gloss = 1 + 0.12 * lv('armor');
-  h.wobbleMul = (1 + 0.25 * lv('haste')) * (1 - 0.1 * lv('armor'));
+  h.scale = 1 + 0.01 * lv('thick');
+  h.bubbles = lv('regen') ? 0.35 + 0.06 * lv('regen') : 0;
+  h.stretchMul = 1 + 0.06 * lv('speed');
+  h.glow = 0.025 * lv('power');
+  h.gloss = 1 + 0.06 * lv('armor');
+  h.wobbleMul = (1 + 0.125 * lv('haste')) * (1 - 0.05 * lv('armor'));
   h.topSpeed = 4.5 * run.stats.speedMul;
   h.setArmCount(lv('fists') ? SKILLS.fists.levels[lv('fists') - 1].fists : 2);
   return oldMax;
@@ -4810,6 +4838,8 @@ function updateRun(dt) {
   run.vel[0] += (G.input.x * top - run.vel[0]) * k;
   run.vel[2] += (G.input.z * top - run.vel[2]) * k;
   h[0] += run.vel[0] * dt; h[2] += run.vel[2] * dt;
+  HERO_PT.x = h[0]; HERO_PT.z = h[2];
+  if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
   hero.update(dt, run.vel, true);
 
   gridBuild(run.enemies);
@@ -4837,17 +4867,14 @@ function runEvent(ev) {
   const run = G.run;
   if (ev.kind === 'swarm') {
     const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU);
-    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU; spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }
-    UI.banner('They are closing in!');
+    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
   } else if (ev.kind === 'elite') {
     const has = run.info.has;
     const types = ['stickman'].concat(has.brute ? ['brute'] : [], has.archer ? ['archer'] : [], has.shield ? ['shield'] : []);
     const [x, z] = spawnPoint(2);
     spawnEnemy(pick(types), x, z, { elite: true });
-    UI.banner('An elite has appeared');
   } else if (ev.kind === 'surge') {
     for (let i = 0; i < 30; i++) spawnFromMix();
-    UI.banner('Final surge!');
   } else if (ev.kind === 'boss') {
     startBoss();
   }
@@ -4870,8 +4897,8 @@ function spawnFromMix() {
     for (let i = 0; i < n; i++) spawnEnemy('sprinter', x - dx / d * i * 0.65, z - dz / d * i * 0.65);
   } else if (type === 'stickman') {
     // stickmen arrive in small clumps
-    const n = randInt(1, 3);
-    for (let i = 0; i < n; i++) spawnEnemy('stickman', x + rand(-0.7, 0.7), z + rand(-0.7, 0.7));
+    const n = t < 60 ? randInt(1, 2) : randInt(1, 3);
+    for (let i = 0; i < n; i++) spawnEnemy('stickman', x + rand(-0.9, 0.9), z + rand(-0.9, 0.9));
   } else spawnEnemy(type, x, z);
 }
 
@@ -4916,9 +4943,15 @@ function updateEnemies(dt) {
       o.x += ex * (e.mass / tot) * 2; o.z += ez * (e.mass / tot) * 2;
     });
   }
+  for (const e of run.enemies) {
+    if (e.dying || (e.y || 0) > 0.6) continue;
+    const hit = resolveCircle(e, e.radius);
+    if (hit && e.boss && e.ai.state === 'charge') bossBonk(e, hit);
+  }
   run.enemies = run.enemies.filter(e => !(e.dying >= 1));
 }
 
+const STEER = [0, 0];
 function updateEnemyAI(e, dt) {
   const h = G.hero.pos;
   let dx = h[0] - e.x, dz = h[2] - e.z;
@@ -4928,6 +4961,7 @@ function updateEnemyAI(e, dt) {
   if (d > VIEW.radius * 1.7 && !e.elite) {
     const [x, z] = spawnPoint(); e.x = x; e.z = z; return;
   }
+  steerAround(e.x, e.z, e.radius, dx, dz, d, STEER); dx = STEER[0]; dz = STEER[1];
   let want = e.speed * e.slowMul;
   if (e.def.ranged) {
     if (e.aim > 0) {
@@ -4974,6 +5008,7 @@ function updateEnemyShots(dt) {
       continue;
     }
     s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+    if (inRock(s.x, s.z) || arenaSd(s.x, s.z) > 0.5) { s.life = 0; FX.burst(s.x, s.y, s.z, 4, [0.8, 0.7, 0.6], 2.5, 0.07, 0.3, 1); continue; }
     if (Math.hypot(s.x - h[0], s.z - h[2]) < s.r + HERO_R && s.y < 2) { s.life = 0; hurtHero(s.dmg, s.x, s.z); FX.burst(s.x, s.y, s.z, 4, [1, 0.6, 0.2], 3, 0.08, 0.3, 1); }
   }
   run.eShots = run.eShots.filter(s => s.life > 0);
@@ -4986,7 +5021,7 @@ function updatePickups(dt) {
   for (const g of run.gems) {
     if (g.vy !== 0 || g.y > 0.25) {
       g.vy -= 14 * dt; g.y += g.vy * dt; g.x += g.vx * dt; g.z += g.vz * dt;
-      if (g.y <= 0.25) { g.y = 0.25; g.vy = 0; g.vx = 0; g.vz = 0; }
+      if (g.y <= 0.25) { g.y = 0.25; g.vy = 0; g.vx = 0; g.vz = 0; resolveCircle(g, 0.2); }
     }
     const dx = h[0] - g.x, dz = h[2] - g.z, d = Math.hypot(dx, dz);
     if (!g.pull && d < mag) g.pull = true;
@@ -5006,7 +5041,7 @@ function updatePickups(dt) {
     p.t += dt;
     if (p.vy !== 0 || p.y > 0.3) {
       p.vy -= 14 * dt; p.y += p.vy * dt; p.x += p.vx * dt; p.z += p.vz * dt;
-      if (p.y <= 0.3) { p.y = 0.3; p.vy = 0; p.vx = 0; p.vz = 0; }
+      if (p.y <= 0.3) { p.y = 0.3; p.vy = 0; p.vx = 0; p.vz = 0; resolveCircle(p, 0.3); }
     }
     const dx = h[0] - p.x, dz = h[2] - p.z, d = Math.hypot(dx, dz);
     if (p.kind === 'coin' && !p.pull && d < mag) p.pull = true;
@@ -5036,12 +5071,32 @@ function updateCamera(dt, snap, noShake) {
   const sx = (Math.random() * 2 - 1) * sh, sz = (Math.random() * 2 - 1) * sh;
   const aspect = R.w / R.h, fov = 0.55, pitch = 52 * Math.PI / 180;
   const half = Math.tan(fov / 2);
-  const dist = aspect < 1 ? 9.0 / (2 * half * aspect) : 10.0 / (2 * half);
+  const dist = aspect < 1 ? 10.5 / (2 * half * aspect) : 11.5 / (2 * half);
   c.dist = dist;
-  c.target = [c.x + sx, 0.4, c.z + sz];
-  c.eye = [c.target[0], c.target[1] + Math.sin(pitch) * dist, c.target[2] + Math.cos(pitch) * dist];
-  R.setCamera(c.eye, c.target, fov);
+  const place = () => {
+    c.target = [c.x + sx, 0.4, c.z + sz];
+    c.eye = [c.target[0], c.target[1] + Math.sin(pitch) * dist, c.target[2] + Math.cos(pitch) * dist];
+    R.setCamera(c.eye, c.target, fov);
+  };
+  place();
+  // keep the view from drifting far past the arena walls
+  if (run) {
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    const W = R.cssW, H = R.cssH, q = CAM_Q;
+    for (const [px, py] of [[0, 0], [W, 0], [W, H], [0, H]]) {
+      if (!R.unprojectGround(px, py, q)) continue;
+      x0 = Math.min(x0, q[0] - c.target[0]); x1 = Math.max(x1, q[0] - c.target[0]);
+      z0 = Math.min(z0, q[2] - c.target[2]); z1 = Math.max(z1, q[2] - c.target[2]);
+    }
+    if (x0 < x1) {
+      const pad = 2.5, ex = ARENA.hw + pad, ez = ARENA.hd + pad;
+      const lx = -ex - x0, hx = ex - x1, lz = -ez - z0, hz = ez - z1;
+      const cx = lx > hx ? 0 : clamp(c.x, lx, hx), cz = lz > hz ? (lz + hz) / 2 : clamp(c.z, lz, hz);
+      if (cx !== c.x || cz !== c.z) { c.x = cx; c.z = cz; place(); }
+    }
+  }
 }
+const CAM_Q = [0, 0, 0];
 
 // ---------- victory / results ----------
 function finishRun(won) {
@@ -5063,6 +5118,106 @@ function finishRun(won) {
   setState('results');
 }
 
+// ---- 11a-arena.js ----
+// ============================================================
+// The arena: a walled rounded square with boulders and goo pools.
+// Boulders and pools both block movement; boulders also stop shots.
+// ============================================================
+const ARENA = { hw: 20, hd: 20, cr: 5, rocks: [], pools: [], wall: [], obstacles: [] };
+
+// Signed distance to the arena edge (negative inside)
+function arenaSd(x, z) {
+  const qx = Math.abs(x) - (ARENA.hw - ARENA.cr), qz = Math.abs(z) - (ARENA.hd - ARENA.cr);
+  return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - ARENA.cr;
+}
+// Outward normal of the arena edge nearest to (x, z)
+function arenaNormal(x, z, out) {
+  const qx = Math.abs(x) - (ARENA.hw - ARENA.cr), qz = Math.abs(z) - (ARENA.hd - ARENA.cr);
+  if (qx > 0 && qz > 0) { const l = Math.hypot(qx, qz); out[0] = Math.sign(x) * qx / l; out[1] = Math.sign(z) * qz / l; }
+  else if (qx > qz) { out[0] = Math.sign(x) || 1; out[1] = 0; }
+  else { out[0] = 0; out[1] = Math.sign(z) || 1; }
+  return out;
+}
+
+function buildArena(chapter) {
+  const rnd = mulberry32(chapter * 7919 + 17);
+  const placed = [];
+  ARENA.rocks = []; ARENA.pools = []; ARENA.wall = [];
+  const free = (x, z, r) => Math.hypot(x, z) > 7 + r && arenaSd(x, z) < -(r + 2.5)
+    && placed.every(o => Math.hypot(o.x - x, o.z - z) > o.r + r + 2.4);
+  const place = (kind, n, rmin, rmax) => {
+    for (let i = 0, tries = 0; i < n && tries < 500; tries++) {
+      const r = rmin + rnd() * (rmax - rmin);
+      const x = (rnd() * 2 - 1) * ARENA.hw, z = (rnd() * 2 - 1) * ARENA.hd;
+      if (!free(x, z, r)) continue;
+      const o = { kind, x, z, r, yaw: rnd() * TAU, v: Math.floor(rnd() * 3), ph: rnd() * 10 };
+      placed.push(o);
+      (kind === 'rock' ? ARENA.rocks : ARENA.pools).push(o);
+      i++;
+    }
+  };
+  place('pool', 4, 1.7, 2.5);
+  place('rock', 11, 0.8, 1.35);
+  ARENA.obstacles = placed;
+  // a ring of boulders just outside the edge (movement is held in by the edge itself)
+  const { hw, hd, cr } = ARENA, out = 0.9, pts = [];
+  const sx = hw - cr, sz = hd - cr, step = 1.7;
+  for (let x = -sx; x <= sx; x += step) { pts.push([x, -hd - out]); pts.push([x, hd + out]); }
+  for (let z = -sz; z <= sz; z += step) { pts.push([-hw - out, z]); pts.push([hw + out, z]); }
+  for (const [cx, cz, a0] of [[sx, sz, 0], [-sx, sz, Math.PI / 2], [-sx, -sz, Math.PI], [sx, -sz, Math.PI * 1.5]]) {
+    const n = Math.ceil((cr + out) * Math.PI / 2 / step);
+    for (let i = 1; i < n; i++) { const a = a0 + (i / n) * Math.PI / 2; pts.push([cx + Math.cos(a) * (cr + out), cz + Math.sin(a) * (cr + out)]); }
+  }
+  for (const [x, z] of pts) ARENA.wall.push({ x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: 1.0 + rnd() * 0.45, yaw: rnd() * TAU, v: Math.floor(rnd() * 3) });
+}
+
+// Push a circle (o.x, o.z, radius r) out of obstacles and back inside the arena.
+// Returns the obstacle it touched, 'wall', or null.
+const _n2 = [0, 0];
+function resolveCircle(o, r) {
+  let hit = null;
+  for (const ob of ARENA.obstacles) {
+    const dx = o.x - ob.x, dz = o.z - ob.z, min = ob.r + r, d2 = dx * dx + dz * dz;
+    if (d2 >= min * min) continue;
+    const d = Math.sqrt(d2) || 1e-4;
+    o.x = ob.x + dx / d * min; o.z = ob.z + dz / d * min;
+    hit = ob;
+  }
+  const sd = arenaSd(o.x, o.z);
+  if (sd > -r) {
+    arenaNormal(o.x, o.z, _n2);
+    o.x -= _n2[0] * (sd + r); o.z -= _n2[1] * (sd + r);
+    hit = hit || 'wall';
+  }
+  return hit;
+}
+function inRock(x, z, pad = 0) {
+  for (const ob of ARENA.rocks) if (Math.hypot(x - ob.x, z - ob.z) < ob.r + pad) return true;
+  return false;
+}
+function blockedAt(x, z, r) {
+  if (arenaSd(x, z) > -r) return true;
+  for (const ob of ARENA.obstacles) if (Math.hypot(x - ob.x, z - ob.z) < ob.r + r) return true;
+  return false;
+}
+// Bend a chase direction (dx, dz, unit) around obstacles between the walker and its goal
+function steerAround(x, z, r, dx, dz, goalDist, out) {
+  for (const ob of ARENA.obstacles) {
+    const ox = ob.x - x, oz = ob.z - z, od = Math.hypot(ox, oz) || 1e-4;
+    const clear = ob.r + r + 0.6;
+    if (od > clear + 1.6 || od - ob.r > goalDist) continue;
+    const ahead = (ox * dx + oz * dz) / od;
+    if (ahead < 0.2) continue;
+    let tx = -oz / od, tz = ox / od;
+    if (tx * dx + tz * dz < 0) { tx = -tx; tz = -tz; }
+    const w = clamp((clear + 1.6 - od) / 1.6, 0, 1) * ahead;
+    dx = dx * (1 - w) + tx * w; dz = dz * (1 - w) + tz * w;
+    const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+  }
+  out[0] = dx; out[1] = dz;
+  return out;
+}
+
 // ---- 12-skills.js ----
 // ============================================================
 // Skills: behaviors, hero body actions, projectiles and visuals
@@ -5080,7 +5235,7 @@ function updateSkills(dt) {
     const L = SKILLS[s.id].levels[s.lvl - 1];
     SKILL_HOOKS[s.id].update(s, L, dt);
   }
-  updateMines(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt);
+  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt);
   for (const b of G.bolts) b.life -= dt;
   G.bolts = G.bolts.filter(b => b.life > 0);
 }
@@ -5158,6 +5313,7 @@ function updateProjectiles(dt) {
     p.t += dt; p.life -= dt;
     if (p.kind === 'ball') {
       p.x += p.vx * dt; p.y = Math.max(0.35, p.y + p.vy * dt); p.z += p.vz * dt;
+      if (inRock(p.x, p.z) || arenaSd(p.x, p.z) > 0) p.dead = true;
       enemiesInRadius(p.x, p.z, p.hitR, e => {
         if (p.dead || p.hit.has(e)) return;
         if (shieldBlocks(e, p.x, p.z)) { p.dead = true; blockedFx(p.x, p.y, p.z); return; }
@@ -5202,11 +5358,6 @@ function updateProjectiles(dt) {
         FX.glow(p.x, Math.max(0.2, p.y), p.z, 0.6 + p.splash, COLORS.violetHi, 0.15);
         if (p.splash > 0) FX.ring(p.x, p.z, p.splash * 1.2, COLORS.violetHi, 0.3);
       }
-    } else if (p.kind === 'grenade') {
-      const u = clamp(p.t / p.dur, 0, 1);
-      p.x = lerp(p.sx, p.tx, u); p.z = lerp(p.sz, p.tz, u);
-      p.y = lerp(p.sy, 0.2, u) + Math.sin(u * Math.PI) * 2.5;
-      if (u >= 1) { p.dead = true; explode(p.tx, p.tz, p.radius, p.dmg, 1, R.goo.accent); }
     }
     if (!p.dead) { p.trail.unshift([p.x, p.y, p.z]); if (p.trail.length > (p.kind === 'missile' ? 12 : 7)) p.trail.pop(); }
   }
@@ -5277,30 +5428,35 @@ function fistImpact(imp, L) {
   AUDIO.play('punch');
 }
 
-// ---------- Blob Grenade ----------
+// ---------- Blob Grenade: a fused bomb dropped at your feet ----------
 SKILL_HOOKS.grenade = {
   update(s, L, dt) {
-    const st = s.st;
-    st.t = (st.t ?? 1.2) - dt;
+    const st = s.st, run = G.run, hero = G.hero, h = hero.pos;
+    st.t = (st.t ?? 1.5) - dt;
     if (st.t > 0) return;
-    const hero = G.hero, h = hero.pos;
-    const c = clusterTarget(h[0], h[2], 7);
-    if (!c) return;
+    if (!nearestEnemy(h[0], h[2], 7)) { st.t = 0.3; return; }
     st.t = L.cd * cdMul();
     const n = L.count + extraShots();
-    const launch = from => {
-      for (let i = 0; i < n; i++) {
-        const tx = c[0] + (i ? rand(-1.3, 1.3) : 0), tz = c[1] + (i ? rand(-1.3, 1.3) : 0);
-        spawnProj('grenade', from, [0, 0, 0], { sx: from[0], sy: from[1], sz: from[2], tx, tz, dur: 0.7 + i * 0.06, dmg: L.dmg, radius: L.radius * areaMul(), life: 3 });
-      }
-      AUDIO.play('throw');
-    };
-    const tw = [c[0], 0.5, c[1]];
-    const arm = hero.freeArm(tw);
-    if (arm >= 0) hero.throwAt(arm, tw, 0.15, 1, launch);
-    else launch(hero.jointWorld('head'));
+    for (let i = 0; i < n; i++) {
+      hero.addBud({
+        joint: i % 2 ? 'footA' : 'footB', off: [0, 0.05, -0.13], r: 0.12, grow: 0.2 + i * 0.12, colw: 1, glow: 0.3,
+        onRelease: wp => {
+          const a = rand(0, TAU), r = i ? rand(0.7, 1.3) : 0;
+          run.bombs.push({ x: wp[0] + Math.cos(a) * r, z: wp[2] + Math.sin(a) * r, t: 0, fuse: L.fuse + i * 0.15, dmg: L.dmg, radius: L.radius * areaMul(), ph: rand(0, 10) });
+          AUDIO.play('drip');
+        },
+      });
+    }
   },
 };
+function updateBombs(dt) {
+  const run = G.run;
+  for (const b of run.bombs) {
+    b.t += dt;
+    if (b.t >= b.fuse) { b.dead = true; explode(b.x, b.z, b.radius, b.dmg, 1, R.goo.accent); }
+  }
+  run.bombs = run.bombs.filter(b => !b.dead);
+}
 
 // ---------- Blob Missile ----------
 SKILL_HOOKS.missile = {
@@ -5769,8 +5925,9 @@ function spawnBoss(id, x, z, opts) {
   };
   e.contactDmg = e.dmg;
   e.y = 9;
+  resolveCircle(e, B.radius * 1.4);
   run.enemies.push(e); run.bosses.push(e);
-  addTele({ kind: 'circle', x, z, r: B.radius * 2.2, dur: 1.2 });
+  addTele({ kind: 'circle', x: e.x, z: e.z, r: B.radius * 2.2, dur: 1.2 });
   return e;
 }
 
@@ -5820,7 +5977,8 @@ function updateBoss(e, dt) {
       if (ai.state === 'walk') {
         bossWalk(e, dt, h[0], h[2], e.speed); bossFace(e, dt);
         if (ai.t <= 0) {
-          ai.state = 'leap'; ai.t = 1.25; ai.sx = e.x; ai.sz = e.z; ai.tx = h[0]; ai.tz = h[2];
+          const tp = { x: h[0], z: h[2] }; resolveCircle(tp, e.radius);
+          ai.state = 'leap'; ai.t = 1.25; ai.sx = e.x; ai.sz = e.z; ai.tx = tp.x; ai.tz = tp.z;
           ai.tele = addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 3, dur: 1.25 });
         }
       } else if (ai.state === 'leap') {
@@ -5853,7 +6011,8 @@ function updateBoss(e, dt) {
         bossWalk(e, dt, tx, tz, e.speed); bossFace(e, dt);
         if (d < 3 && ai.jumpCd <= 0) {
           ai.state = 'hop'; ai.t = 0.6; ai.jumpCd = 4; ai.sx = e.x; ai.sz = e.z;
-          ai.tx = e.x - dx / d * 7; ai.tz = e.z - dz / d * 7;
+          const tp = { x: e.x - dx / d * 7, z: e.z - dz / d * 7 }; resolveCircle(tp, e.radius);
+          ai.tx = tp.x; ai.tz = tp.z;
         } else if (ai.throwT <= 0) { ai.state = 'throw'; ai.t = 0.7; ai.thrown = false; }
       } else if (ai.state === 'hop') {
         const u = 1 - ai.t / 0.6;
@@ -5917,7 +6076,7 @@ function updateBoss(e, dt) {
         const a = ai.orbit + (ai.side > 0 ? 0 : Math.PI);
         bossWalk(e, dt, h[0] + Math.cos(a) * 3.2, h[2] + Math.sin(a) * 3.2, sp);
       } else {
-        if (!ai.enraged) { ai.enraged = true; e.tint = [1, 0.35, 0.2]; AUDIO.play('boss'); UI.banner('The other twin is enraged!'); }
+        if (!ai.enraged) { ai.enraged = true; e.tint = [1, 0.35, 0.2]; AUDIO.play('boss'); }
         bossWalk(e, dt, h[0], h[2], sp);
       }
       bossFace(e, dt);
@@ -5936,6 +6095,7 @@ function updateBoss(e, dt) {
       // the stage follows the hero, so the Conductor can't be left behind
       const ax = h[0] - ai.anchor[0], az = h[2] - ai.anchor[1], ad = Math.hypot(ax, az);
       if (ad > 5.5) { const st = Math.min(ad - 5.5, 1.4 * dt); ai.anchor[0] += ax / ad * st; ai.anchor[1] += az / ad * st; }
+      const ap = { x: ai.anchor[0], z: ai.anchor[1] }; resolveCircle(ap, e.radius + 1.5); ai.anchor[0] = ap.x; ai.anchor[1] = ap.z;
       bossWalk(e, dt, ai.anchor[0] + Math.cos(G.run.t * 0.3) * 1.5, ai.anchor[1] + Math.sin(G.run.t * 0.3) * 1.5, e.speed);
       e.clip = 'conduct';
       bossFace(e, dt, 3);
@@ -5951,7 +6111,6 @@ function updateBoss(e, dt) {
             m.spawnT = 0.4;
             FX.burst(m.x, 0.3, m.z, 4, ORANGE, 3, 0.1, 0.4, 0);
           }
-          UI.banner('The Conductor calls a wave');
         } else {
           const n = 18, gap = randInt(0, n - 1);
           for (let i = 0; i < n; i++) {
@@ -5966,6 +6125,15 @@ function updateBoss(e, dt) {
       break;
     }
   }
+}
+
+// The Charger rams a boulder or the wall: its charge ends and it is stunned
+function bossBonk(e, hit) {
+  const ai = e.ai;
+  ai.state = 'dizzy'; ai.t = 2.5; e.dizzy = 2.5; ai.charges = 0; ai.tele = null;
+  G.cam.shake = Math.max(G.cam.shake, 0.18); AUDIO.play('boom');
+  FX.burst(e.x, 0.6, e.z, 14, [0.65, 0.6, 0.55], 5, 0.14, 0.6, 2);
+  FX.ring(e.x, e.z, 2.5, [1, 0.85, 0.6], 0.35);
 }
 
 function onBossKilled(e) {
@@ -6003,6 +6171,7 @@ function enemyRow(e) {
 function emitRunScene() {
   const run = G.run, h = G.hero.pos, L = R.frame.lightDir;
   const sdx = -L[0] * 0.5, sdz = -L[2] * 0.5;
+  emitArena();
   for (const e of run.enemies) {
     if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
@@ -6057,11 +6226,14 @@ function emitRunScene() {
         p.trail.forEach((q, i) => { const k = 0.07 * Math.min(1, i / 3); pts.push(q[0] + Math.sin(p.t * 22 - i) * k, q[1] + Math.cos(p.t * 22 - i) * k, q[2]); });
         R.ribStrip(pts, p.trail.length, 0.07, [0.7, 0.55, 1.0, u => (1 - u) * 0.8], 0, 0, 1, u => 1 - u);
       }
-    } else if (p.kind === 'grenade') {
-      const blink = Math.sin(p.t * (12 + p.t * 30)) > 0 ? 0.7 : 0.15;
-      pushImp(p.x, p.y, p.z, 0.17, 0, 1, 0.2, 1, 6, 1, blink, p.ph + p.t * 2, 0, 0, 0, 1);
-      pushDecal(p.x + 0.1, p.z + 0.08, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4 * (1 - clamp(p.y / 4, 0, 0.8)));
     }
+  }
+  // fused grenades: blink faster as the fuse runs out, with a warning ring showing the blast
+  for (const b of run.bombs) {
+    const u = b.t / b.fuse, grow = clamp(b.t / 0.2, 0, 1);
+    const blink = Math.sin(b.t * (8 + u * 30)) > 0 ? 0.8 : 0.2;
+    pushImp(b.x, 0.26 * grow, b.z, 0.26 * easeOutBack(grow) * (1 + 0.12 * u * Math.sin(b.t * 40)), 0, 1, 0.15, 1, 6, 1, blink, b.ph + b.t * 2, 0, 0, 0, 1);
+    pushDecal(b.x, b.z, b.radius, b.radius, 0, 4, 0, u, 0.75, 0.45, 1.0, 0.5 * grow);
   }
   for (const m of run.mines) {
     const armed = m.t > 0.5, grow = clamp(m.t / 0.2, 0, 1), blink = armed && Math.sin(m.t * 10) > 0;
@@ -6115,6 +6287,12 @@ function emitRunScene() {
     R.ribStrip(pts, n, b.w * 3, [0.4, 0.7, 1.0, a * 0.35], 0);
   }
   emitSkills();
+}
+
+function emitArena() {
+  for (const o of ARENA.pools) if (onScreen(o.x, o.z, o.r + 1)) pushDecal(o.x, o.z, o.r, o.r, 0, 1, 0, 0, 0.05, 0.3, 0.25, 0.85);
+  for (const o of ARENA.rocks) if (onScreen(o.x, o.z, o.r + 1)) pushImp(o.x, o.r * 0.55, o.z, o.r, Math.sin(o.yaw), 0.4, Math.cos(o.yaw), 1, 13, 0, 0, 0, 0, 0, 0, 1);
+  for (const o of ARENA.wall) if (onScreen(o.x, o.z, o.r + 1)) pushImp(o.x, o.r * 0.55, o.z, o.r, Math.sin(o.yaw), 0.4, Math.cos(o.yaw), 1, 13, 0, 0, 0, 0, 0, 0, 1);
 }
 
 function trailRibbon(trail, w, col, alpha) {
@@ -6344,7 +6522,7 @@ const UI = {
         const s = run.slots[i], d = document.createElement('div');
         if (s) {
           d.className = 'slot ' + s.kind;
-          const max = s.kind === 'skill' ? 5 : PASSIVES[s.id].max;
+          const max = maxLevel(s.id);
           d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / max) * 100}%"></i></u>`;
           d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
         } else d.className = 'slot';
@@ -6424,7 +6602,7 @@ const UI = {
     const r = Math.random(), n = r < 0.7 ? 1 : r < 0.95 ? 3 : 5;
     const results = [];
     for (let k = 0; k < n; k++) {
-      const up = run.slots.filter(s => s.lvl < (s.kind === 'skill' ? 5 : PASSIVES[s.id].max) - results.filter(x => x === s.id).length);
+      const up = run.slots.filter(s => s.lvl < maxLevel(s.id) - results.filter(x => x === s.id).length);
       if (!up.length) break;
       const skills = up.filter(s => s.kind === 'skill');
       results.push(pick(skills.length && Math.random() < 0.75 ? skills : up).id);
@@ -6491,7 +6669,7 @@ const UI = {
     const run = G.run;
     $('pauseSub').textContent = `Chapter ${run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
     $('pauseList').replaceChildren(...run.slots.map(s => {
-      const d = document.createElement('div'), max = s.kind === 'skill' ? 5 : PASSIVES[s.id].max;
+      const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
       d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
       d.querySelector('span:nth-child(2)').textContent = (SKILLS[s.id] || PASSIVES[s.id]).name;
@@ -6600,7 +6778,7 @@ function rollChoices() {
   const run = G.run, owned = run.slots, many = owned.length >= 4, full = owned.length >= 8;
   const pool = [];
   for (const s of owned) {
-    const max = s.kind === 'skill' ? 5 : PASSIVES[s.id].max;
+    const max = maxLevel(s.id);
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
   if (!full) {

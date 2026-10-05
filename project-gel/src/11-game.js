@@ -12,6 +12,7 @@ const G = {
 };
 const ORANGE = [0.95, 0.53, 0.13];
 const HERO_R = 0.42;
+const HERO_PT = { x: 0, z: 0 };
 
 // ---------- spatial hash over enemies ----------
 const GRID = { cell: 2, map: new Map() };
@@ -71,6 +72,20 @@ function onScreen(x, z, margin = 0) {
   return true;
 }
 function spawnPoint(margin = 1.8) {
+  for (let tries = 0; tries < 10; tries++) {
+    const p = screenEdgePoint(margin);
+    if (!blockedAt(p[0], p[1], 0.8)) return p;
+  }
+  // the hero is near a wall: anywhere in the arena that is off screen
+  for (let tries = 0; tries < 40; tries++) {
+    const x = rand(-ARENA.hw, ARENA.hw), z = rand(-ARENA.hd, ARENA.hd);
+    if (!blockedAt(x, z, 0.8) && !onScreen(x, z, 1)) return [x, z];
+  }
+  const p = screenEdgePoint(margin), o = { x: p[0], z: p[1] };
+  resolveCircle(o, 0.8);
+  return [o.x, o.z];
+}
+function screenEdgePoint(margin) {
   const C = VIEW.corners;
   const lens = [0, 1, 2, 3].map(i => Math.hypot(C[(i + 1) % 4][0] - C[i][0], C[(i + 1) % 4][2] - C[i][2]));
   let r = Math.random() * lens.reduce((a, b) => a + b, 0), i = 0;
@@ -98,7 +113,7 @@ function applySkin(id) {
 function makeEvents() {
   return [{ t: 90, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 40 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
 }
-const RATE_KEYS = [[0, 1.0], [60, 1.5], [120, 2.2], [180, 3.0], [240, 3.6], [270, 4.6], [300, 4.6]];
+const RATE_KEYS = [[0, 0.35], [30, 0.55], [60, 0.8], [120, 1.3], [180, 1.8], [240, 2.3], [270, 3.0], [300, 3.0]];
 function spawnRate(t) {
   for (let i = 1; i < RATE_KEYS.length; i++) {
     const [t1, r1] = RATE_KEYS[i], [t0, r0] = RATE_KEYS[i - 1];
@@ -113,11 +128,12 @@ function startRun(chapter) {
     chapter, info, t: 0, kills: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
-    enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], worms: [], buddies: [], axes: [], beams: [],
+    enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
     nextId: 1, spawnAcc: 0, events: makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
     vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
   };
   applyArena(info.arena);
+  buildArena(chapter);
   G.hero.reset(0, 0);
   G.hero.scale = 1;
   FX.clear(); G.numbers.length = 0; G.bolts.length = 0;
@@ -146,25 +162,25 @@ function recomputeStats() {
   const run = G.run, meta = G.save.upgrades, lv = lvlOf;
   const oldMax = run.maxHp;
   run.stats = {
-    dmgMul: (1 + 0.1 * lv('power')) * (1 + 0.03 * meta.damage),
-    speedMul: (1 + 0.08 * lv('speed')) * (1 + 0.01 * meta.speed),
-    magnet: 1.6 * (1 + 0.3 * lv('magnet')) * (1 + 0.05 * meta.magnet),
-    armorMul: Math.pow(0.94, lv('armor')),
-    cdMul: Math.pow(0.94, lv('haste')),
-    areaMul: 1 + 0.1 * lv('reach'),
+    dmgMul: (1 + 0.05 * lv('power')) * (1 + 0.03 * meta.damage),
+    speedMul: (1 + 0.04 * lv('speed')) * (1 + 0.01 * meta.speed),
+    magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + 0.05 * meta.magnet),
+    armorMul: Math.pow(0.97, lv('armor')),
+    cdMul: Math.pow(0.97, lv('haste')),
+    areaMul: 1 + 0.05 * lv('reach'),
     extra: lv('multishot'),
-    xpMul: 1 + 0.08 * lv('growth'),
-    regen: 0.004 * lv('regen'),
+    xpMul: 1 + 0.04 * lv('growth'),
+    regen: 0.002 * lv('regen'),
   };
-  run.maxHp = 100 * (1 + 0.2 * lv('thick')) * (1 + 0.05 * meta.health);
+  run.maxHp = 100 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health);
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
-  h.scale = 1 + 0.02 * lv('thick');
-  h.bubbles = lv('regen') ? 0.35 + 0.12 * lv('regen') : 0;
-  h.stretchMul = 1 + 0.12 * lv('speed');
-  h.glow = 0.05 * lv('power');
-  h.gloss = 1 + 0.12 * lv('armor');
-  h.wobbleMul = (1 + 0.25 * lv('haste')) * (1 - 0.1 * lv('armor'));
+  h.scale = 1 + 0.01 * lv('thick');
+  h.bubbles = lv('regen') ? 0.35 + 0.06 * lv('regen') : 0;
+  h.stretchMul = 1 + 0.06 * lv('speed');
+  h.glow = 0.025 * lv('power');
+  h.gloss = 1 + 0.06 * lv('armor');
+  h.wobbleMul = (1 + 0.125 * lv('haste')) * (1 - 0.05 * lv('armor'));
   h.topSpeed = 4.5 * run.stats.speedMul;
   h.setArmCount(lv('fists') ? SKILLS.fists.levels[lv('fists') - 1].fists : 2);
   return oldMax;
@@ -341,6 +357,8 @@ function updateRun(dt) {
   run.vel[0] += (G.input.x * top - run.vel[0]) * k;
   run.vel[2] += (G.input.z * top - run.vel[2]) * k;
   h[0] += run.vel[0] * dt; h[2] += run.vel[2] * dt;
+  HERO_PT.x = h[0]; HERO_PT.z = h[2];
+  if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
   hero.update(dt, run.vel, true);
 
   gridBuild(run.enemies);
@@ -368,17 +386,14 @@ function runEvent(ev) {
   const run = G.run;
   if (ev.kind === 'swarm') {
     const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU);
-    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU; spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }
-    UI.banner('They are closing in!');
+    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
   } else if (ev.kind === 'elite') {
     const has = run.info.has;
     const types = ['stickman'].concat(has.brute ? ['brute'] : [], has.archer ? ['archer'] : [], has.shield ? ['shield'] : []);
     const [x, z] = spawnPoint(2);
     spawnEnemy(pick(types), x, z, { elite: true });
-    UI.banner('An elite has appeared');
   } else if (ev.kind === 'surge') {
     for (let i = 0; i < 30; i++) spawnFromMix();
-    UI.banner('Final surge!');
   } else if (ev.kind === 'boss') {
     startBoss();
   }
@@ -401,8 +416,8 @@ function spawnFromMix() {
     for (let i = 0; i < n; i++) spawnEnemy('sprinter', x - dx / d * i * 0.65, z - dz / d * i * 0.65);
   } else if (type === 'stickman') {
     // stickmen arrive in small clumps
-    const n = randInt(1, 3);
-    for (let i = 0; i < n; i++) spawnEnemy('stickman', x + rand(-0.7, 0.7), z + rand(-0.7, 0.7));
+    const n = t < 60 ? randInt(1, 2) : randInt(1, 3);
+    for (let i = 0; i < n; i++) spawnEnemy('stickman', x + rand(-0.9, 0.9), z + rand(-0.9, 0.9));
   } else spawnEnemy(type, x, z);
 }
 
@@ -447,9 +462,15 @@ function updateEnemies(dt) {
       o.x += ex * (e.mass / tot) * 2; o.z += ez * (e.mass / tot) * 2;
     });
   }
+  for (const e of run.enemies) {
+    if (e.dying || (e.y || 0) > 0.6) continue;
+    const hit = resolveCircle(e, e.radius);
+    if (hit && e.boss && e.ai.state === 'charge') bossBonk(e, hit);
+  }
   run.enemies = run.enemies.filter(e => !(e.dying >= 1));
 }
 
+const STEER = [0, 0];
 function updateEnemyAI(e, dt) {
   const h = G.hero.pos;
   let dx = h[0] - e.x, dz = h[2] - e.z;
@@ -459,6 +480,7 @@ function updateEnemyAI(e, dt) {
   if (d > VIEW.radius * 1.7 && !e.elite) {
     const [x, z] = spawnPoint(); e.x = x; e.z = z; return;
   }
+  steerAround(e.x, e.z, e.radius, dx, dz, d, STEER); dx = STEER[0]; dz = STEER[1];
   let want = e.speed * e.slowMul;
   if (e.def.ranged) {
     if (e.aim > 0) {
@@ -505,6 +527,7 @@ function updateEnemyShots(dt) {
       continue;
     }
     s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+    if (inRock(s.x, s.z) || arenaSd(s.x, s.z) > 0.5) { s.life = 0; FX.burst(s.x, s.y, s.z, 4, [0.8, 0.7, 0.6], 2.5, 0.07, 0.3, 1); continue; }
     if (Math.hypot(s.x - h[0], s.z - h[2]) < s.r + HERO_R && s.y < 2) { s.life = 0; hurtHero(s.dmg, s.x, s.z); FX.burst(s.x, s.y, s.z, 4, [1, 0.6, 0.2], 3, 0.08, 0.3, 1); }
   }
   run.eShots = run.eShots.filter(s => s.life > 0);
@@ -517,7 +540,7 @@ function updatePickups(dt) {
   for (const g of run.gems) {
     if (g.vy !== 0 || g.y > 0.25) {
       g.vy -= 14 * dt; g.y += g.vy * dt; g.x += g.vx * dt; g.z += g.vz * dt;
-      if (g.y <= 0.25) { g.y = 0.25; g.vy = 0; g.vx = 0; g.vz = 0; }
+      if (g.y <= 0.25) { g.y = 0.25; g.vy = 0; g.vx = 0; g.vz = 0; resolveCircle(g, 0.2); }
     }
     const dx = h[0] - g.x, dz = h[2] - g.z, d = Math.hypot(dx, dz);
     if (!g.pull && d < mag) g.pull = true;
@@ -537,7 +560,7 @@ function updatePickups(dt) {
     p.t += dt;
     if (p.vy !== 0 || p.y > 0.3) {
       p.vy -= 14 * dt; p.y += p.vy * dt; p.x += p.vx * dt; p.z += p.vz * dt;
-      if (p.y <= 0.3) { p.y = 0.3; p.vy = 0; p.vx = 0; p.vz = 0; }
+      if (p.y <= 0.3) { p.y = 0.3; p.vy = 0; p.vx = 0; p.vz = 0; resolveCircle(p, 0.3); }
     }
     const dx = h[0] - p.x, dz = h[2] - p.z, d = Math.hypot(dx, dz);
     if (p.kind === 'coin' && !p.pull && d < mag) p.pull = true;
@@ -567,12 +590,32 @@ function updateCamera(dt, snap, noShake) {
   const sx = (Math.random() * 2 - 1) * sh, sz = (Math.random() * 2 - 1) * sh;
   const aspect = R.w / R.h, fov = 0.55, pitch = 52 * Math.PI / 180;
   const half = Math.tan(fov / 2);
-  const dist = aspect < 1 ? 9.0 / (2 * half * aspect) : 10.0 / (2 * half);
+  const dist = aspect < 1 ? 10.5 / (2 * half * aspect) : 11.5 / (2 * half);
   c.dist = dist;
-  c.target = [c.x + sx, 0.4, c.z + sz];
-  c.eye = [c.target[0], c.target[1] + Math.sin(pitch) * dist, c.target[2] + Math.cos(pitch) * dist];
-  R.setCamera(c.eye, c.target, fov);
+  const place = () => {
+    c.target = [c.x + sx, 0.4, c.z + sz];
+    c.eye = [c.target[0], c.target[1] + Math.sin(pitch) * dist, c.target[2] + Math.cos(pitch) * dist];
+    R.setCamera(c.eye, c.target, fov);
+  };
+  place();
+  // keep the view from drifting far past the arena walls
+  if (run) {
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    const W = R.cssW, H = R.cssH, q = CAM_Q;
+    for (const [px, py] of [[0, 0], [W, 0], [W, H], [0, H]]) {
+      if (!R.unprojectGround(px, py, q)) continue;
+      x0 = Math.min(x0, q[0] - c.target[0]); x1 = Math.max(x1, q[0] - c.target[0]);
+      z0 = Math.min(z0, q[2] - c.target[2]); z1 = Math.max(z1, q[2] - c.target[2]);
+    }
+    if (x0 < x1) {
+      const pad = 2.5, ex = ARENA.hw + pad, ez = ARENA.hd + pad;
+      const lx = -ex - x0, hx = ex - x1, lz = -ez - z0, hz = ez - z1;
+      const cx = lx > hx ? 0 : clamp(c.x, lx, hx), cz = lz > hz ? (lz + hz) / 2 : clamp(c.z, lz, hz);
+      if (cx !== c.x || cz !== c.z) { c.x = cx; c.z = cz; place(); }
+    }
+  }
 }
+const CAM_Q = [0, 0, 0];
 
 // ---------- victory / results ----------
 function finishRun(won) {

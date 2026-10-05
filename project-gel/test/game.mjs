@@ -111,7 +111,7 @@ if (mode === 'skills') {
       window.readInput = () => __botInput(); __bot.on = true;
       const run = G.run;
       run.slots.length = 0;
-      for (const id of ids) { const max = SKILLS[id] ? 5 : PASSIVES[id].max; for (let i = 0; i < max; i++) addOrLevel(id); }
+      for (const id of ids) { const max = maxLevel(id); for (let i = 0; i < max; i++) addOrLevel(id); }
       run.t = 150; run.events = run.events.filter(e => e.t > 150);
       const h = G.hero.pos;
       for (let i = 0; i < 50; i++) { const a = i / 50 * TAU, r = 3.5 + (i % 3) * 1.2; spawnEnemy(i % 7 ? 'stickman' : 'brute', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }

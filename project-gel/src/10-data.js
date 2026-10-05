@@ -2,95 +2,107 @@
 // Game data: skills, passives, enemies, bosses, arenas, chapters, upgrades, skins
 // ============================================================
 // icon: impostor type + color weight used for the 3D card icons
+// Every skill has 10 levels; tables list each field per level (a single number means it never changes)
+function L10(spec) {
+  return Array.from({ length: 10 }, (_, i) => {
+    const o = {};
+    for (const k in spec) o[k] = Array.isArray(spec[k]) ? spec[k][i] : spec[k];
+    return o;
+  });
+}
+const SKILL_MAX = 10;
 const SKILLS = {
   ball: {
     name: 'Blob Ball', intro: 'Fires balls of goo at the closest enemy.', icon: { type: 0, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Balls'], ['pierce', 'Pierce']],
-    levels: [{ dmg: 14, cd: 0.9, count: 1, pierce: 0 }, { dmg: 14, cd: 0.9, count: 2, pierce: 0 }, { dmg: 18, cd: 0.9, count: 2, pierce: 1 }, { dmg: 18, cd: 0.8, count: 3, pierce: 1 }, { dmg: 24, cd: 0.7, count: 3, pierce: 2 }],
+    levels: L10({ dmg: [7, 8, 9, 9, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
   },
   fists: {
     name: 'Blob Fists', intro: 'Your arms stretch out and punch nearby enemies, knocking them back.', icon: { type: 17, colw: 1 },
     fields: [['dmg', 'Damage'], ['cd', 'Punch every', 's'], ['fists', 'Fists'], ['reach', 'Reach', 'm'], ['shock', 'Shockwave', 'm']],
-    levels: [{ dmg: 20, cd: 2.0, fists: 2, reach: 2.4, shock: 0 }, { dmg: 26, cd: 1.8, fists: 2, reach: 2.4, shock: 0 }, { dmg: 26, cd: 1.6, fists: 3, reach: 2.8, shock: 0 }, { dmg: 34, cd: 1.6, fists: 3, reach: 2.8, shock: 0 }, { dmg: 44, cd: 1.2, fists: 4, reach: 3.2, shock: 1.0 }],
+    levels: L10({ dmg: [10, 12, 13, 15, 16, 18, 20, 22, 24, 28], cd: [2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5], fists: [2, 2, 2, 2, 3, 3, 3, 3, 4, 4], reach: [2.4, 2.4, 2.5, 2.5, 2.6, 2.6, 2.8, 2.8, 3.0, 3.2], shock: [0, 0, 0, 0, 0, 0, 0, 0, 0.8, 1.0] }),
   },
   grenade: {
-    name: 'Blob Grenade', intro: 'Lobs a heavy goo bomb onto the biggest group of enemies.', icon: { type: 6, colw: 1 },
+    name: 'Blob Grenade', intro: 'Drops a fused goo grenade at your feet. It bursts a moment later in a big splash.', icon: { type: 6, colw: 1 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Grenades'], ['radius', 'Blast radius', 'm']],
-    levels: [{ dmg: 30, cd: 3.0, count: 1, radius: 1.8 }, { dmg: 30, cd: 3.0, count: 2, radius: 1.8 }, { dmg: 42, cd: 2.6, count: 2, radius: 2.2 }, { dmg: 42, cd: 2.6, count: 3, radius: 2.2 }, { dmg: 55, cd: 2.2, count: 3, radius: 2.6 }],
+    levels: L10({ dmg: [14, 15, 17, 19, 21, 23, 26, 29, 32, 36], cd: [4.0, 3.9, 3.8, 3.6, 3.5, 3.4, 3.2, 3.0, 2.8, 2.6], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.5, 1.55, 1.6, 1.65, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], fuse: 1.4 }),
   },
   missile: {
     name: 'Blob Missile', intro: 'Homing goo missiles burst out of your back and dive at enemies.', icon: { type: 1, colw: 0.8 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Missiles'], ['splash', 'Splash', 'm']],
-    levels: [{ dmg: 18, cd: 2.0, count: 2, splash: 0 }, { dmg: 18, cd: 2.0, count: 3, splash: 0 }, { dmg: 24, cd: 2.0, count: 3, splash: 0 }, { dmg: 24, cd: 1.8, count: 4, splash: 0.8 }, { dmg: 30, cd: 1.6, count: 6, splash: 0.8 }],
+    levels: L10({ dmg: [8, 9, 10, 11, 12, 13, 14, 15, 16, 18], cd: [2.6, 2.6, 2.5, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0, 0.7, 0.7, 0.8, 0.8, 0.9, 1.0] }),
   },
   mine: {
     name: 'Blob Mine', intro: 'Drops sticky mines behind you that burst when enemies step close.', icon: { type: 2, colw: 1.6 },
     fields: [['dmg', 'Damage'], ['cd', 'Drop every', 's'], ['max', 'Max mines'], ['radius', 'Blast radius', 'm']],
-    levels: [{ dmg: 40, cd: 2.5, max: 4, radius: 2.0 }, { dmg: 40, cd: 2.5, max: 4, radius: 2.5 }, { dmg: 60, cd: 2.5, max: 6, radius: 2.5 }, { dmg: 60, cd: 2.0, max: 6, radius: 2.5 }, { dmg: 80, cd: 1.6, max: 8, radius: 3.0 }],
+    levels: L10({ dmg: [12, 13, 14, 16, 18, 20, 22, 24, 27, 30], cd: [3.0, 3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.2, 2.0], max: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], radius: [1.4, 1.45, 1.5, 1.55, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1] }),
   },
   blade: {
     name: 'Blade', intro: 'Crescent blades of hardened goo orbit you and cut what they touch.', icon: { type: 3, colw: 0.3 },
     fields: [['dmg', 'Damage'], ['count', 'Blades'], ['radius', 'Orbit', 'm'], ['spin', 'Spin', '°/s']],
-    levels: [{ dmg: 10, count: 2, radius: 1.6, spin: 180 }, { dmg: 10, count: 3, radius: 1.6, spin: 180 }, { dmg: 14, count: 3, radius: 1.9, spin: 180 }, { dmg: 14, count: 4, radius: 1.9, spin: 210 }, { dmg: 18, count: 5, radius: 2.2, spin: 240 }],
+    levels: L10({ dmg: [5, 6, 6, 7, 7, 8, 9, 10, 11, 12], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], radius: [1.7, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 2.1, 2.2], spin: [150, 150, 160, 160, 170, 180, 190, 200, 210, 220] }),
   },
   lightning: {
     name: 'Lightning', intro: 'Lightning strikes random enemies on screen.', icon: { type: 18, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['strikes', 'Strikes'], ['radius', 'Impact', 'm'], ['chain', 'Jumps']],
-    levels: [{ dmg: 25, cd: 2.2, strikes: 2, radius: 0.6, chain: 0 }, { dmg: 25, cd: 2.2, strikes: 3, radius: 0.6, chain: 0 }, { dmg: 35, cd: 2.0, strikes: 3, radius: 0.9, chain: 0 }, { dmg: 35, cd: 2.0, strikes: 4, radius: 0.9, chain: 1 }, { dmg: 45, cd: 1.6, strikes: 6, radius: 1.2, chain: 2 }],
+    levels: L10({ dmg: [12, 13, 14, 15, 17, 19, 21, 23, 25, 28], cd: [3.0, 3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.2, 2.0], strikes: [1, 1, 1, 2, 2, 2, 3, 3, 3, 4], radius: [0.6, 0.6, 0.65, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 1.0], chain: [0, 0, 0, 0, 0, 0, 1, 1, 1, 2] }),
   },
   aura: {
     name: 'Aura', intro: 'A goo puddle around you burns everything standing in it.', icon: { type: 19, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['radius', 'Radius', 'm'], ['slow', 'Slow', '%']],
-    levels: [{ dmg: 5, radius: 1.8, slow: 0 }, { dmg: 5, radius: 2.1, slow: 0 }, { dmg: 7, radius: 2.1, slow: 15 }, { dmg: 7, radius: 2.5, slow: 15 }, { dmg: 10, radius: 2.8, slow: 25 }],
+    levels: L10({ dmg: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], radius: [1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.6], slow: [0, 0, 0, 0, 10, 10, 15, 15, 20, 25] }),
   },
   worms: {
     name: 'Worms', intro: 'Goo worms tunnel under the floor and bite enemies.', icon: { type: 5, colw: 3 },
     fields: [['count', 'Worms'], ['dmg', 'Bite damage'], ['life', 'Lifetime', 's'], ['burst', 'Surfacing burst']],
-    levels: [{ count: 1, dmg: 15, life: 6, burst: 0, cd: 6 }, { count: 2, dmg: 15, life: 6, burst: 0, cd: 6 }, { count: 2, dmg: 20, life: 8, burst: 0, cd: 6 }, { count: 3, dmg: 20, life: 8, burst: 0, cd: 6 }, { count: 3, dmg: 25, life: 10, burst: 40, cd: 6 }],
+    levels: L10({ count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], dmg: [6, 7, 7, 8, 9, 10, 11, 12, 13, 15], life: [5, 5, 6, 6, 6, 7, 7, 8, 8, 9], burst: [0, 0, 0, 0, 0, 0, 0, 0, 15, 25], cd: [7, 7, 7, 6.8, 6.6, 6.4, 6.2, 6, 5.8, 5.5] }),
   },
   buddies: {
     name: 'Blob Buddies', intro: 'You split off small copies of yourself that hop at enemies and headbutt them.', icon: { type: 7, colw: 0 },
     fields: [['count', 'Buddies'], ['dmg', 'Headbutt damage'], ['life', 'Lifetime', 's']],
-    levels: [{ count: 1, dmg: 8, life: 10, cd: 12 }, { count: 2, dmg: 8, life: 10, cd: 12 }, { count: 2, dmg: 12, life: 10, cd: 12 }, { count: 3, dmg: 12, life: 15, cd: 12 }, { count: 4, dmg: 16, life: 15, cd: 12 }],
+    levels: L10({ count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], dmg: [4, 5, 5, 6, 6, 7, 8, 9, 10, 11], life: [8, 8, 9, 9, 10, 10, 11, 11, 12, 12], cd: [14, 14, 13.5, 13.5, 13, 13, 12.5, 12.5, 12, 12] }),
   },
   axe: {
     name: 'Goo Axe', intro: 'Throws spinning axes that cut through everything and fly back to you.', icon: { type: 4, colw: 0.5 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Axes'], ['range', 'Range', 'm']],
-    levels: [{ dmg: 22, cd: 1.8, count: 1, range: 5 }, { dmg: 22, cd: 1.8, count: 2, range: 5 }, { dmg: 30, cd: 1.6, count: 2, range: 5 }, { dmg: 30, cd: 1.6, count: 3, range: 5.5 }, { dmg: 38, cd: 1.4, count: 3, range: 6.5 }],
+    levels: L10({ dmg: [9, 10, 11, 12, 13, 14, 16, 18, 20, 22], cd: [2.4, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], range: [4, 4, 4.2, 4.2, 4.4, 4.6, 4.8, 5, 5.3, 5.6] }),
   },
   laser: {
     name: 'Blob Laser', intro: 'A pressurized goo jet sprays from your chest and sweeps toward enemies.', icon: { type: 28, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['dur', 'Duration', 's'], ['cd', 'Cooldown', 's'], ['beams', 'Jets']],
-    levels: [{ dmg: 6, dur: 1.2, cd: 4.0, beams: 1 }, { dmg: 6, dur: 1.5, cd: 4.0, beams: 1 }, { dmg: 8, dur: 1.5, cd: 3.5, beams: 1 }, { dmg: 8, dur: 1.8, cd: 3.5, beams: 2 }, { dmg: 10, dur: 1.8, cd: 3.0, beams: 2 }],
+    levels: L10({ dmg: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], dur: [1.0, 1.1, 1.2, 1.2, 1.3, 1.4, 1.5, 1.5, 1.6, 1.8], cd: [5, 5, 4.8, 4.6, 4.5, 4.4, 4.2, 4, 3.8, 3.5], beams: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2] }),
   },
   shield: {
     name: 'Bubble Shield', intro: 'A goo bubble absorbs hits, then grows back.', icon: { type: 27, colw: 0 },
     fields: [['hits', 'Hits absorbed'], ['recharge', 'Regrows in', 's'], ['pop', 'Pop damage'], ['push', 'Pop knockback', 'm']],
-    levels: [{ hits: 1, recharge: 10, pop: 0, push: 0 }, { hits: 1, recharge: 8, pop: 0, push: 0 }, { hits: 1, recharge: 8, pop: 20, push: 2 }, { hits: 2, recharge: 8, pop: 20, push: 2 }, { hits: 2, recharge: 5, pop: 40, push: 3 }],
+    levels: L10({ hits: [1, 1, 1, 1, 1, 2, 2, 2, 2, 3], recharge: [12, 11.5, 11, 10.5, 10, 9.5, 9, 8.5, 8, 7], pop: [0, 0, 0, 0, 8, 8, 12, 12, 16, 20], push: [0, 0, 0, 0, 1.5, 1.5, 2, 2, 2.5, 3] }),
   },
 };
 
+// Passives: 10 levels each (Multishot adds a whole projectile per level, so it stays at 2)
 const PASSIVES = {
-  thick: { name: 'Thick Goo', desc: '+20% max health, and heals that amount.', max: 5, icon: { type: 25, colw: 0 } },
-  regen: { name: 'Regen', desc: 'Heal 0.4% of max health every second.', max: 5, icon: { type: 10, colw: 4 } },
-  speed: { name: 'Speed', desc: '+8% move speed.', max: 5, icon: { type: 1, colw: 0 } },
-  magnet: { name: 'Magnet', desc: '+30% gem pickup radius.', max: 5, icon: { type: 11, colw: 4 } },
-  power: { name: 'Power', desc: '+10% damage.', max: 5, icon: { type: 20, colw: 0 } },
-  armor: { name: 'Armor', desc: 'Take 6% less damage.', max: 5, icon: { type: 21, colw: 0 } },
-  haste: { name: 'Haste', desc: 'Skills recharge 6% faster.', max: 5, icon: { type: 22, colw: 0 } },
-  reach: { name: 'Reach', desc: '+10% skill area.', max: 5, icon: { type: 23, colw: 0 } },
+  thick: { name: 'Thick Goo', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
+  regen: { name: 'Regen', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
+  speed: { name: 'Speed', desc: '+4% move speed.', max: 10, icon: { type: 1, colw: 0 } },
+  magnet: { name: 'Magnet', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
+  power: { name: 'Power', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
+  armor: { name: 'Armor', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
+  haste: { name: 'Haste', desc: 'Skills recharge 3% faster.', max: 10, icon: { type: 22, colw: 0 } },
+  reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
   multishot: { name: 'Multishot', desc: '+1 ball, grenade, missile or axe, and +1 lightning strike.', max: 2, icon: { type: 24, colw: 0.4 } },
-  growth: { name: 'Growth', desc: '+8% XP from gems.', max: 5, icon: { type: 8, colw: 0 } },
+  growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
+const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 
+// Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1)
 const ENEMY_TYPES = {
-  stickman: { model: 'stickman', hp: 10, speed: 2.2, dmg: 5, xp: 1, radius: 0.3, scale: 1, tint: '#f5891f', mass: 1 },
-  sprinter: { model: 'sprinter', hp: 6, speed: 3.6, dmg: 4, xp: 1, radius: 0.27, scale: 1, tint: '#ffad2e', mass: 0.8 },
-  brute: { model: 'brute', hp: 60, speed: 1.6, dmg: 12, xp: 5, radius: 0.55, scale: 1.6, tint: '#e8642a', mass: 4 },
-  archer: { model: 'archer', hp: 14, speed: 2.0, dmg: 5, shot: 8, xp: 2, radius: 0.3, scale: 1, tint: '#f28a2a', mass: 1, ranged: true },
-  splitter: { model: 'splitter', hp: 24, speed: 2.0, dmg: 6, xp: 2, radius: 0.36, scale: 1.1, tint: '#f6a03a', mass: 1.5, splits: true },
-  mini: { model: 'stickman', hp: 6, speed: 2.6, dmg: 3, xp: 1, radius: 0.2, scale: 0.6, tint: '#ffb85a', mass: 0.5 },
-  shield: { model: 'shield', hp: 40, speed: 1.8, dmg: 8, xp: 3, radius: 0.34, scale: 1.05, tint: '#f5891f', mass: 1.6, shield: true },
+  stickman: { model: 'stickman', hp: 12, speed: 2.2, dmg: 5, xp: 1, radius: 0.4, scale: 1.35, tint: '#f5891f', mass: 1 },
+  sprinter: { model: 'sprinter', hp: 8, speed: 3.5, dmg: 4, xp: 1, radius: 0.36, scale: 1.3, tint: '#ffad2e', mass: 0.8 },
+  brute: { model: 'brute', hp: 70, speed: 1.6, dmg: 12, xp: 5, radius: 0.7, scale: 2.0, tint: '#e8642a', mass: 4 },
+  archer: { model: 'archer', hp: 16, speed: 2.0, dmg: 5, shot: 8, xp: 2, radius: 0.4, scale: 1.35, tint: '#f28a2a', mass: 1, ranged: true },
+  splitter: { model: 'splitter', hp: 28, speed: 2.0, dmg: 6, xp: 2, radius: 0.46, scale: 1.45, tint: '#f6a03a', mass: 1.5, splits: true },
+  mini: { model: 'stickman', hp: 7, speed: 2.6, dmg: 3, xp: 1, radius: 0.28, scale: 0.85, tint: '#ffb85a', mass: 0.5 },
+  shield: { model: 'shield', hp: 45, speed: 1.8, dmg: 8, xp: 3, radius: 0.44, scale: 1.4, tint: '#f5891f', mass: 1.6, shield: true },
 };
 
 const BOSS_TYPES = {
@@ -127,7 +139,7 @@ function chapterInfo(n) {
 }
 
 // XP needed to go from level L to L+1
-const xpFor = L => Math.round(6 + 5 * L + 0.3 * L * L);
+const xpFor = L => Math.round(4 + 1.6 * L + 0.03 * L * L);
 
 const META_UPGRADES = {
   damage: { name: 'Damage', per: 3, unit: '% damage', base: 50, growth: 1.18, max: 100, icon: { type: 17, colw: 4 } },

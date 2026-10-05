@@ -14,7 +14,7 @@ function updateSkills(dt) {
     const L = SKILLS[s.id].levels[s.lvl - 1];
     SKILL_HOOKS[s.id].update(s, L, dt);
   }
-  updateMines(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt);
+  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt);
   for (const b of G.bolts) b.life -= dt;
   G.bolts = G.bolts.filter(b => b.life > 0);
 }
@@ -92,6 +92,7 @@ function updateProjectiles(dt) {
     p.t += dt; p.life -= dt;
     if (p.kind === 'ball') {
       p.x += p.vx * dt; p.y = Math.max(0.35, p.y + p.vy * dt); p.z += p.vz * dt;
+      if (inRock(p.x, p.z) || arenaSd(p.x, p.z) > 0) p.dead = true;
       enemiesInRadius(p.x, p.z, p.hitR, e => {
         if (p.dead || p.hit.has(e)) return;
         if (shieldBlocks(e, p.x, p.z)) { p.dead = true; blockedFx(p.x, p.y, p.z); return; }
@@ -136,11 +137,6 @@ function updateProjectiles(dt) {
         FX.glow(p.x, Math.max(0.2, p.y), p.z, 0.6 + p.splash, COLORS.violetHi, 0.15);
         if (p.splash > 0) FX.ring(p.x, p.z, p.splash * 1.2, COLORS.violetHi, 0.3);
       }
-    } else if (p.kind === 'grenade') {
-      const u = clamp(p.t / p.dur, 0, 1);
-      p.x = lerp(p.sx, p.tx, u); p.z = lerp(p.sz, p.tz, u);
-      p.y = lerp(p.sy, 0.2, u) + Math.sin(u * Math.PI) * 2.5;
-      if (u >= 1) { p.dead = true; explode(p.tx, p.tz, p.radius, p.dmg, 1, R.goo.accent); }
     }
     if (!p.dead) { p.trail.unshift([p.x, p.y, p.z]); if (p.trail.length > (p.kind === 'missile' ? 12 : 7)) p.trail.pop(); }
   }
@@ -211,30 +207,35 @@ function fistImpact(imp, L) {
   AUDIO.play('punch');
 }
 
-// ---------- Blob Grenade ----------
+// ---------- Blob Grenade: a fused bomb dropped at your feet ----------
 SKILL_HOOKS.grenade = {
   update(s, L, dt) {
-    const st = s.st;
-    st.t = (st.t ?? 1.2) - dt;
+    const st = s.st, run = G.run, hero = G.hero, h = hero.pos;
+    st.t = (st.t ?? 1.5) - dt;
     if (st.t > 0) return;
-    const hero = G.hero, h = hero.pos;
-    const c = clusterTarget(h[0], h[2], 7);
-    if (!c) return;
+    if (!nearestEnemy(h[0], h[2], 7)) { st.t = 0.3; return; }
     st.t = L.cd * cdMul();
     const n = L.count + extraShots();
-    const launch = from => {
-      for (let i = 0; i < n; i++) {
-        const tx = c[0] + (i ? rand(-1.3, 1.3) : 0), tz = c[1] + (i ? rand(-1.3, 1.3) : 0);
-        spawnProj('grenade', from, [0, 0, 0], { sx: from[0], sy: from[1], sz: from[2], tx, tz, dur: 0.7 + i * 0.06, dmg: L.dmg, radius: L.radius * areaMul(), life: 3 });
-      }
-      AUDIO.play('throw');
-    };
-    const tw = [c[0], 0.5, c[1]];
-    const arm = hero.freeArm(tw);
-    if (arm >= 0) hero.throwAt(arm, tw, 0.15, 1, launch);
-    else launch(hero.jointWorld('head'));
+    for (let i = 0; i < n; i++) {
+      hero.addBud({
+        joint: i % 2 ? 'footA' : 'footB', off: [0, 0.05, -0.13], r: 0.12, grow: 0.2 + i * 0.12, colw: 1, glow: 0.3,
+        onRelease: wp => {
+          const a = rand(0, TAU), r = i ? rand(0.7, 1.3) : 0;
+          run.bombs.push({ x: wp[0] + Math.cos(a) * r, z: wp[2] + Math.sin(a) * r, t: 0, fuse: L.fuse + i * 0.15, dmg: L.dmg, radius: L.radius * areaMul(), ph: rand(0, 10) });
+          AUDIO.play('drip');
+        },
+      });
+    }
   },
 };
+function updateBombs(dt) {
+  const run = G.run;
+  for (const b of run.bombs) {
+    b.t += dt;
+    if (b.t >= b.fuse) { b.dead = true; explode(b.x, b.z, b.radius, b.dmg, 1, R.goo.accent); }
+  }
+  run.bombs = run.bombs.filter(b => !b.dead);
+}
 
 // ---------- Blob Missile ----------
 SKILL_HOOKS.missile = {
