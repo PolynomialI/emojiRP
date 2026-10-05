@@ -94,16 +94,31 @@ const PASSIVES = {
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 
-// Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1)
+// Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1).
+// ai: how the enemy attacks besides walking into you. lunge = spear thrust, chop = overhead swing,
+// toss = arcing javelin, bomb = runs up and explodes, ranged = bow.
 const ENEMY_TYPES = {
-  stickman: { model: 'stickman', hp: 12, speed: 2.2, dmg: 5, xp: 1, radius: 0.4, scale: 1.35, tint: '#f5891f', mass: 1 },
-  sprinter: { model: 'sprinter', hp: 8, speed: 3.5, dmg: 4, xp: 1, radius: 0.36, scale: 1.3, tint: '#ffad2e', mass: 0.8 },
-  brute: { model: 'brute', hp: 70, speed: 1.6, dmg: 12, xp: 5, radius: 0.7, scale: 2.0, tint: '#e8642a', mass: 4 },
+  stickman: { model: 'stickman', hp: 12, speed: 2.2, dmg: 4, xp: 1, radius: 0.4, scale: 1.35, tint: '#f5891f', mass: 1 },
+  sprinter: { model: 'sprinter', hp: 8, speed: 3.5, dmg: 3, xp: 1, radius: 0.36, scale: 1.3, tint: '#ffad2e', mass: 0.8 },
+  helmet: { model: 'helmet', hp: 26, speed: 1.9, dmg: 5, xp: 2, radius: 0.42, scale: 1.4, tint: '#f28a2a', mass: 1.4 },
+  spear: { model: 'spear', hp: 18, speed: 2.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#f5931f', mass: 1.1, ai: 'lunge', hit: 12 },
+  axe: { model: 'axe', hp: 32, speed: 1.8, dmg: 7, xp: 3, radius: 0.44, scale: 1.45, tint: '#ee7420', mass: 1.5, ai: 'chop', hit: 16, wind: 0.6 },
+  brute: { model: 'brute', hp: 70, speed: 1.6, dmg: 10, xp: 5, radius: 0.7, scale: 2.0, tint: '#e8642a', mass: 4, ai: 'chop', hit: 20, wind: 0.75, reach: 1.5 },
   archer: { model: 'archer', hp: 16, speed: 2.0, dmg: 5, shot: 8, xp: 2, radius: 0.4, scale: 1.35, tint: '#f28a2a', mass: 1, ranged: true },
+  javelin: { model: 'javelin', hp: 16, speed: 2.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#f69a2c', mass: 1, ai: 'toss', hit: 11 },
   splitter: { model: 'splitter', hp: 28, speed: 2.0, dmg: 6, xp: 2, radius: 0.46, scale: 1.45, tint: '#f6a03a', mass: 1.5, splits: true },
   mini: { model: 'stickman', hp: 7, speed: 2.6, dmg: 3, xp: 1, radius: 0.28, scale: 0.85, tint: '#ffb85a', mass: 0.5 },
   shield: { model: 'shield', hp: 45, speed: 1.8, dmg: 8, xp: 3, radius: 0.44, scale: 1.4, tint: '#f5891f', mass: 1.6, shield: true },
+  bomber: { model: 'bomber', hp: 10, speed: 3.0, dmg: 4, xp: 2, radius: 0.4, scale: 1.35, tint: '#ffb02e', mass: 0.9, ai: 'bomb', hit: 18 },
+  knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
 };
+// When each type starts showing up: [first chapter, seconds into the run, spawn weight]
+const ENEMY_MIX = {
+  sprinter: [1, 40, 0.18], helmet: [1, 60, 0.16], spear: [1, 90, 0.14], splitter: [4, 60, 0.1],
+  axe: [2, 100, 0.12], archer: [2, 90, 0.1], shield: [3, 120, 0.1], brute: [3, 150, 0.07],
+  javelin: [3, 120, 0.08], bomber: [4, 100, 0.08], knight: [5, 150, 0.06],
+};
+const ELITE_TYPES = ['stickman', 'helmet', 'spear', 'axe', 'archer', 'brute', 'shield', 'javelin'];
 
 const BOSS_TYPES = {
   stomper: { name: 'Big Stomper', model: 'stomper', hp: 2500, speed: 1.6, dmg: 14, scale: 3.0, radius: 1.15, tint: '#f07a22', mass: 60 },
@@ -131,10 +146,10 @@ function chapterInfo(n) {
     n, arena, arenaName: ARENAS[arena].name, bosses,
     hpMul: 1 + 0.12 * k + 0.004 * k * k,
     dmgMul: 1 + 0.08 * k,
-    rateMul: Math.min(1.8, 1 + 0.035 * k),
+    rateMul: Math.min(1.8, 0.85 + 0.05 * k),
     bossHpMul: Math.pow(1.17, k) * (bosses.length > 1 ? 0.75 : 1),
     reward: Math.round(150 * Math.pow(1.08, k)),
-    has: { sprinter: true, brute: n >= 2, archer: n >= 4, splitter: n >= 6, shield: n >= 8 },
+    has: Object.fromEntries(Object.entries(ENEMY_MIX).map(([k, v]) => [k, n >= v[0]])),
   };
 }
 

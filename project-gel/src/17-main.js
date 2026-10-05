@@ -147,7 +147,7 @@ function adaptQuality(dt) {
 // ---------- game flow ----------
 function requiredMeshes(n) {
   const has = chapterInfo(n).has, req = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2'];
-  for (const k of ['brute', 'archer', 'splitter', 'shield']) if (has[k]) req.push(k);
+  for (const k in has) if (has[k] && !req.includes(ENEMY_TYPES[k].model)) req.push(ENEMY_TYPES[k].model);
   return req;
 }
 function beginChapter(n) {
@@ -257,7 +257,7 @@ function renderFrame() {
 // ---------- main loop ----------
 let lastT = 0;
 function loop(now) {
-  const dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 1 / 60;
+  const dt = lastT ? clamp((now - lastT) / 1000, 0, 0.05) : 1 / 60;
   lastT = now;
   R.frame.time += dt;
   readInput();

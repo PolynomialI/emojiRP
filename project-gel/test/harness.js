@@ -64,6 +64,13 @@
       const dx = h[0] - cx, dz = h[2] - cz, d = Math.hypot(dx, dz) || 0.01;
       if (d < 2) { fx += dx / d * 5; fz += dz / d * 5; }
     }
+    // stay off walls, boulders and pools, as a player would
+    for (const ob of ARENA.obstacles) {
+      const dx = h[0] - ob.x, dz = h[2] - ob.z, d = Math.hypot(dx, dz) || 0.01, r = ob.r + 1.6;
+      if (d < r) { const w = (r - d) / 1.6; fx += dx / d * w * 1.5; fz += dz / d * w * 1.5; }
+    }
+    const sd = arenaSd(h[0], h[2]);
+    if (sd > -4) { const n = arenaNormal(h[0], h[2], [0, 0]), w = (sd + 4) / 4; fx -= n[0] * w * 2.5; fz -= n[1] * w * 2.5; }
     // gems and pickups when it is calm
     const danger = Math.hypot(fx, fz);
     let best = null, bd = 1e9;

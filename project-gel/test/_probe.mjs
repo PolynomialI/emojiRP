@@ -1,0 +1,22 @@
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
+p.on('pageerror', e => console.log('PAGEERROR', e.message));
+p.on('console', m => console.log('console', m.type(), m.text()));
+await p.addInitScript({ path: 'test/harness.js' });
+await p.goto('file:///home/user/emojiRP/project-gel/dist/project-gel.html');
+await p.waitForFunction(() => { try { return MESHJOB.done.size === MESH_ORDER.length; } catch (_) { return false; } }, null, { timeout: 120000, polling: 200 });
+await p.evaluate(() => { __manual(); G.save.chapter = 9; G.save.selected = 9; UI.refreshHome(); beginChapter(9); });
+await p.evaluate(() => {
+  const run = G.run; run.events = []; run.spawnAcc = -1e9; run.enemies.length = 0; run.invuln = 1e9;
+  const types = ['stickman', 'helmet', 'spear', 'axe', 'knight'];
+  types.forEach((k, i) => { const e = spawnEnemy(k, (i - 2) * 1.3, 1.5, {}); e.speed = 0; e.spawnT = 0; e.yaw = 0.35; e.def = { ...e.def, ai: null }; });
+  window.readInput = () => { G.input.x = 0; G.input.z = 0; };
+  G.hero.pos[2] = 4;
+  for (let i = 0; i < 5; i++) __frames(1);
+  __frames(1, 1 / 60, true);
+});
+await p.waitForTimeout(300);
+await p.screenshot({ path: 'test/shots/probe.png' });
+console.log(await p.evaluate(() => JSON.stringify(G.run.enemies.map(e => [e.type, +e.x.toFixed(2), +e.z.toFixed(2), e.scale, e.flash, e.dying]))));
+await b.close();

@@ -251,6 +251,25 @@ if (mode === 'arenas') {
     await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
   }
 }
+if (mode === 'roster') {
+  // every enemy type standing in a row, then the same with elite crowns
+  await page.evaluate(() => { G.save.chapter = 9; G.save.selected = 9; UI.refreshHome(); });
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  for (const elite of [false, true]) {
+    await page.evaluate(elite => {
+      const run = G.run; run.events = []; run.spawnAcc = -1e9; run.enemies.length = 0; run.invuln = 1e9;
+      ARENA.obstacles = []; ARENA.rocks = []; ARENA.pools = [];
+      const types = Object.keys(ENEMY_TYPES).filter(k => k !== 'mini');
+      types.forEach((k, i) => { const e = spawnEnemy(k, (i - (types.length - 1) / 2) * 1.35, -1.5 + (i % 2) * 1.2, { elite }); e.speed = 0; e.spawnT = 0; e.yaw = 0.35; e.phase = i * 0.13; e.def = { ...e.def, ai: null, ranged: false }; });
+      G.hero.pos[0] = 0; G.hero.pos[2] = 3.2; G.run.vel = [0, 0, 0];
+      window.readInput = () => { G.input.x = 0; G.input.z = 0; };
+      for (let i = 0; i < 10; i++) __frames(1);
+    }, elite);
+    console.log(await page.evaluate(() => JSON.stringify({ st: G.state, melt: G.hero.melt, hp: G.run.hp, n: G.run.enemies.length, e0: G.run.enemies.slice(0, 3).map(e => [e.type, e.scale, e.dying, e.flash]) })));
+    await render(2); await shot(elite ? 'roster-elite' : 'roster');
+  }
+}
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
 await browser.close();

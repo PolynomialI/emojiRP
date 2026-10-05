@@ -51,7 +51,47 @@ const COL = {
   bow: hexToRgb('#7a4a2a'), string: hexToRgb('#efe3c4'), shield: hexToRgb('#d06a1c'), shieldRim: hexToRgb('#ffbf63'),
   steel: hexToRgb('#7891a8'), steelDark: hexToRgb('#4f647a'), stone: hexToRgb('#8a8174'), bone: hexToRgb('#f1e7d3'),
   hat: hexToRgb('#2b2340'), hatBand: hexToRgb('#d2465f'), baton: hexToRgb('#fff6e0'), gold: hexToRgb('#ffc93a'), band: hexToRgb('#fff0b0'),
+  wood: hexToRgb('#8a5a33'), woodDark: hexToRgb('#5e3a20'), tip: hexToRgb('#dfe7ef'), bomb: hexToRgb('#2a2e38'), fuse: hexToRgb('#ffb347'),
+  helm: hexToRgb('#8fa3b8'), helmDark: hexToRgb('#5d7186'),
 };
+// Weapons and armor, attached to a humanoid's bones. Arms hang straight down in the rest pose, so a
+// weapon modeled along +z from the hand tilts up and forward once the run pose bends the elbow.
+const GEAR = {
+  helmet(m, extra = 1) {
+    const hd = m.J.head;
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.06, hd[2] - 0.005], rr: [0.172 * extra, 0.135, 0.178 * extra], col: COL.helm, bone: 2, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] - 0.005, hd[2]], R: 0.168 * extra, r: 0.02, a0: -Math.PI, a1: Math.PI, col: COL.helmDark, bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + 0.2, hd[2] - 0.01], r: 0.032, col: COL.helmDark, bone: 2, k: 0.01 });
+  },
+  spear(m, len = 1) {
+    const h = m.J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.02, h[2] - 0.3], b: [h[0], h[1] + 0.02, h[2] + 0.62 * len], r: 0.02, col: COL.wood, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] + 0.02, h[2] + 0.6 * len], b: [h[0], h[1] + 0.03, h[2] + 0.84 * len], r: 0.055, r2: 0.005, col: COL.tip, bone: 6, k: 0 });
+  },
+  axe(m) {
+    const h = m.J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.03, h[2] - 0.08], b: [h[0], h[1] + 0.04, h[2] + 0.44], r: 0.022, col: COL.wood, bone: 6, k: 0 });
+    m.parts.push({ s: 'ell', c: [h[0], h[1] + 0.13, h[2] + 0.4], rr: [0.02, 0.13, 0.1], col: COL.tip, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] + 0.03, h[2] + 0.4], b: [h[0], h[1] + 0.05, h[2] + 0.4], r: 0.03, col: COL.helmDark, bone: 6, k: 0 });
+  },
+  sword(m) {
+    const h = m.J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1], h[2] - 0.06], b: [h[0], h[1], h[2] + 0.04], r: 0.02, col: COL.woodDark, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0] - 0.07, h[1], h[2] + 0.05], b: [h[0] + 0.07, h[1], h[2] + 0.05], r: 0.018, col: COL.gold, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1], h[2] + 0.07], b: [h[0], h[1] + 0.01, h[2] + 0.52], r: 0.034, r2: 0.01, col: COL.tip, bone: 6, k: 0 });
+  },
+  shield(m) {
+    const h = m.J.haL;
+    m.parts.push({ s: 'cyl', ax: 'z', c: [h[0] + 0.03, h[1] + 0.09, h[2] + 0.1], r: 0.22, hh: 0.028, rd: 0.02, col: COL.shield, bone: 4, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'z', c: [h[0] + 0.03, h[1] + 0.09, h[2] + 0.13], R: 0.2, r: 0.024, a0: -Math.PI, a1: Math.PI, col: COL.shieldRim, bone: 4, k: 0 });
+    m.parts.push({ s: 'sph', c: [h[0] + 0.03, h[1] + 0.09, h[2] + 0.14], r: 0.05, col: COL.shieldRim, bone: 4, k: 0 });
+  },
+  club(m) {
+    const h = m.J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.02, h[2] - 0.05], b: [h[0], h[1] + 0.06, h[2] + 0.5], r: 0.035, r2: 0.085, col: COL.wood, bone: 6, k: 0.02 });
+  },
+};
+
 
 const STICK = { hipY: 0.5, shY: 0.79, headY: 0.975, headR: 0.155, shW: 0.115, hipW: 0.07, elOut: 0.055, upperLen: 0.165, foreLen: 0.16,
   pelvisR: 0.095, torsoR: 0.092, torsoR2: 0.1, neckR: 0.062, armR: 0.058, handR: 0.06, legR: 0.068 };
@@ -67,7 +107,7 @@ function modelDefs() {
   add('stickman', STICK);
   add('sprinter', { ...STICK, hipY: 0.54, shY: 0.82, headY: 0.995, headR: 0.14, armR: 0.048, handR: 0.05, legR: 0.056, torsoR: 0.078, torsoR2: 0.084, pelvisR: 0.08 });
   add('brute', { ...STICK, hipY: 0.46, shY: 0.82, headY: 0.99, headR: 0.14, headZ: 0.05, shW: 0.21, hipW: 0.11, elOut: 0.05, upperLen: 0.17, foreLen: 0.16,
-    pelvisR: 0.16, torso: 'ell', torsoRR: [0.22, 0.25, 0.18], neckR: 0.09, armR: 0.085, handR: 0.1, legR: 0.1, k: 0.06 });
+    pelvisR: 0.16, torso: 'ell', torsoRR: [0.22, 0.25, 0.18], neckR: 0.09, armR: 0.085, handR: 0.1, legR: 0.1, k: 0.06 }, m => GEAR.club(m));
   add('archer', STICK, m => {
     const h = m.J.haL, R = 0.2;
     m.parts.push({ s: 'tor', ax: 'x', c: [h[0] + 0.01, h[1] + R, h[2]], R, r: 0.016, a0: -Math.PI / 2 - 1.0, a1: -Math.PI / 2 + 1.0, col: COL.bow, bone: 4, k: 0 });
@@ -78,11 +118,27 @@ function modelDefs() {
   add('splitter', { ...STICK, torso: 'ell', torsoRR: [0.16, 0.2, 0.14], pelvisR: 0.12, headR: 0.15, k: 0.055 }, m => {
     m.parts.push({ s: 'box', c: [0, 0.7, 0], hs: [0.007, 0.35, 0.3], rd: 0.0, sub: true, k: 0.02 });
   });
-  add('shield', STICK, m => {
-    const h = m.J.haL;
-    m.parts.push({ s: 'cyl', ax: 'z', c: [h[0] + 0.03, h[1] + 0.09, h[2] + 0.1], r: 0.22, hh: 0.028, rd: 0.02, col: COL.shield, bone: 4, k: 0 });
-    m.parts.push({ s: 'tor', ax: 'z', c: [h[0] + 0.03, h[1] + 0.09, h[2] + 0.13], R: 0.2, r: 0.024, a0: -Math.PI, a1: Math.PI, col: COL.shieldRim, bone: 4, k: 0 });
-    m.parts.push({ s: 'sph', c: [h[0] + 0.03, h[1] + 0.09, h[2] + 0.14], r: 0.05, col: COL.shieldRim, bone: 4, k: 0 });
+  add('shield', STICK, m => GEAR.shield(m));
+  add('helmet', { ...STICK, torsoR: 0.098, torsoR2: 0.108, armR: 0.062, legR: 0.072 }, m => { GEAR.helmet(m); m.crownLift = 0.085; });
+  add('spear', STICK, m => GEAR.spear(m));
+  add('axe', { ...STICK, torsoR: 0.102, torsoR2: 0.112, pelvisR: 0.1, armR: 0.064, handR: 0.066 }, m => GEAR.axe(m));
+  add('javelin', STICK, m => {
+    GEAR.spear(m, 0.85);
+    m.parts.push({ s: 'cyl', ax: 'y', c: [0.05, 0.72, -0.14], r: 0.055, hh: 0.13, rd: 0.02, col: COL.woodDark, bone: 1, k: 0 });
+    for (const [dx, dz] of [[0.02, -0.02], [0.07, 0.01], [0.06, -0.04]]) {
+      m.parts.push({ s: 'cap', a: [0.05 + dx - 0.04, 0.75, -0.14 + dz], b: [0.05 + dx - 0.04, 1.02, -0.16 + dz], r: 0.011, col: COL.wood, bone: 1, k: 0 });
+      m.parts.push({ s: 'cap', a: [0.05 + dx - 0.04, 1.0, -0.16 + dz], b: [0.05 + dx - 0.04, 1.08, -0.165 + dz], r: 0.026, r2: 0.003, col: COL.tip, bone: 1, k: 0 });
+    }
+  });
+  add('bomber', { ...STICK, hipY: 0.52, shY: 0.81, headY: 0.99, headR: 0.15, armR: 0.052, legR: 0.062 }, m => {
+    m.parts.push({ s: 'sph', c: [0, 0.66, 0.15], r: 0.13, col: COL.bomb, bone: 1, k: 0 });
+    m.parts.push({ s: 'cap', a: [0, 0.78, 0.17], b: [0.03, 0.87, 0.2], r: 0.014, col: COL.fuse, bone: 1, k: 0 });
+    m.parts.push({ s: 'sph', c: [0.03, 0.885, 0.205], r: 0.03, col: COL.gold, bone: 1, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, m.J.head[1] + 0.03, m.J.head[2]], R: 0.152, r: 0.022, a0: -Math.PI, a1: Math.PI, col: COL.hatBand, bone: 2, k: 0 });
+  });
+  add('knight', { ...STICK, torsoR: 0.105, torsoR2: 0.115, pelvisR: 0.1, armR: 0.066, handR: 0.066, legR: 0.075 }, m => {
+    GEAR.helmet(m, 1.03); GEAR.shield(m); GEAR.sword(m);
+    for (const s of ['shL', 'shR']) { const p = m.J[s]; m.parts.push({ s: 'ell', c: [p[0] * 1.15, p[1] + 0.02, p[2]], rr: [0.08, 0.055, 0.075], col: COL.helm, bone: 1, k: 0 }); }
   });
   // Bosses
   add('stomper', { ...STICK, hipY: 0.46, shY: 0.82, headY: 1.0, headR: 0.15, headZ: 0.04, shW: 0.22, hipW: 0.12, elOut: 0.06, upperLen: 0.18, foreLen: 0.17,
@@ -132,7 +188,7 @@ function modelDefs() {
 // Elite crown, sized for each base type's head
 function crownModel(base) {
   const hd = base.J.head, r = base.parts.find(p => p.s === 'sph' && p.c === hd)?.r || 0.15;
-  const y = hd[1] + r * 0.82;
+  const y = hd[1] + r * 0.82 + (base.crownLift || 0);
   const parts = [{ s: 'tor', ax: 'y', c: [hd[0], y, hd[2]], R: r * 0.62, r: 0.022, a0: -Math.PI, a1: Math.PI, col: COL.gold, bone: 2, k: 0 }];
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * TAU;
@@ -237,24 +293,29 @@ function bakeAnimations(defs) {
 }
 
 const MODEL_CLIPS = {
-  stickman: ['run', 'idle'], sprinter: ['run'], brute: ['run'], archer: ['run', 'aim'], splitter: ['run'], shield: ['run'],
+  stickman: ['run', 'idle'], sprinter: ['run'], brute: ['run', 'slam'], archer: ['run', 'aim'], splitter: ['run'], shield: ['run'],
+  helmet: ['run'], spear: ['run', 'throw'], axe: ['run', 'slam'], javelin: ['run', 'throw'], bomber: ['run', 'idle'], knight: ['run', 'slam'],
   stomper: ['run', 'slam', 'idle'], hurler: ['run', 'throw', 'idle'], charger: ['run', 'dizzy', 'idle'], twin: ['run', 'idle'], conductor: ['conduct', 'run', 'idle'],
   rock0: ['still'], rock1: ['still'], rock2: ['still'],
 };
 const MESH_CELLS = {
   stickman: 0.032, sprinter: 0.029, brute: 0.034, archer: 0.03, splitter: 0.032, shield: 0.03,
+  helmet: 0.03, spear: 0.029, axe: 0.029, javelin: 0.029, bomber: 0.03, knight: 0.029,
   stomper: 0.024, hurler: 0.023, charger: 0.024, twin: 0.024, conductor: 0.022,
   rock0: 0.045, rock1: 0.045, rock2: 0.045,
 };
 const CROWN_CELL = 0.02;
 // Build order: what chapter 1 needs first, bosses last
-const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'brute', 'stickman_crown', 'brute_crown', 'archer', 'splitter', 'shield', 'sprinter_crown', 'archer_crown', 'splitter_crown', 'shield_crown', 'stomper', 'hurler', 'charger', 'twin', 'conductor'];
+const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'helmet', 'spear', 'stickman_crown', 'spear_crown', 'helmet_crown',
+  'axe', 'archer', 'brute', 'axe_crown', 'archer_crown', 'brute_crown', 'shield', 'javelin', 'bomber', 'splitter', 'knight', 'shield_crown', 'javelin_crown',
+  'stomper', 'hurler', 'charger', 'twin', 'conductor'];
 
 function prepareModelDefs() {
   const defs = modelDefs();
   for (const name in defs) defs[name].clipNames = MODEL_CLIPS[name];
   defs.brute.runAmp = 0.8; defs.sprinter.lean = 0.3; defs.sprinter.runAmp = 1.15;
   defs.shield.shieldArm = true; defs.stomper.runAmp = 0.75; defs.charger.lean = 0.35; defs.charger.headDown = 0.25;
+  defs.knight.shieldArm = true; defs.knight.runAmp = 0.85; defs.helmet.runAmp = 0.9; defs.bomber.lean = 0.28; defs.bomber.runAmp = 1.1;
   return defs;
 }
 // Skeletons and baked animation clips (fast; meshes are built separately)

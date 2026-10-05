@@ -70,7 +70,7 @@ R.init = function (canvas) {
 
 // Upload an enemy mesh as it arrives; creates normal + elite instance streams. Crowns attach to their base model.
 R.crowns = {};
-const ENEMY_CAPS = { rock0: 160, rock1: 160, rock2: 160, stickman: 700, sprinter: 300, brute: 160, archer: 160, splitter: 160, shield: 160, stomper: 4, hurler: 4, charger: 4, twin: 4, conductor: 4 };
+const ENEMY_CAPS = { rock0: 160, rock1: 160, rock2: 160, helmet: 220, spear: 220, axe: 180, javelin: 140, bomber: 140, knight: 120, stickman: 700, sprinter: 300, brute: 160, archer: 160, splitter: 160, shield: 160, stomper: 4, hurler: 4, charger: 4, twin: 4, conductor: 4 };
 R._meshVao = function (vbuf, ibuf, stream) {
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);

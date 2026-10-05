@@ -193,7 +193,7 @@ function spawnEnemy(type, x, z, opts = {}) {
   const elite = !!opts.elite;
   // the chapter's extra toughness eases in over the first 90 seconds, while the hero has few skills
   const chapterHp = 1 + (info.hpMul - 1) * clamp(0.5 + run.t / 180, 0.5, 1);
-  const hpMul = chapterHp * (1 + 0.12 * run.t / 60) * (elite ? (d.hp >= 40 ? 15 : 25) : 1);
+  const hpMul = chapterHp * (1 + 0.12 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
   const e = {
     id: run.nextId++, type, def: d, model: d.model, boss: false, elite,
     x, z, vx: 0, vz: 0, kx: 0, kz: 0, yaw: Math.atan2(G.hero.pos[0] - x, G.hero.pos[2] - z),
@@ -240,8 +240,8 @@ function killEnemy(e) {
   } else {
     const r = Math.random();
     if (r < 0.02) spawnPickup('coin', e.x, e.z, randInt(1, 3));
-    else if (r < 0.03) spawnPickup('heart', e.x, e.z);
-    else if (r < 0.035) spawnPickup('magnet', e.x, e.z);
+    else if (r < 0.04) spawnPickup('heart', e.x, e.z);
+    else if (r < 0.045) spawnPickup('magnet', e.x, e.z);
   }
   if (e.def.splits) {
     for (const sx of [-1, 1]) {
@@ -389,8 +389,7 @@ function runEvent(ev) {
     const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU);
     for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
   } else if (ev.kind === 'elite') {
-    const has = run.info.has;
-    const types = ['stickman'].concat(has.brute ? ['brute'] : [], has.archer ? ['archer'] : [], has.shield ? ['shield'] : []);
+    const types = ELITE_TYPES.filter(k => k === 'stickman' || run.info.has[k]);
     const [x, z] = spawnPoint(2);
     spawnEnemy(pick(types), x, z, { elite: true });
   } else if (ev.kind === 'surge') {
@@ -401,20 +400,17 @@ function runEvent(ev) {
 }
 
 function spawnFromMix() {
-  const run = G.run, t = run.t, has = run.info.has;
+  const run = G.run, t = run.t, ch = run.chapter;
   const w = { stickman: 1 };
-  if (t > 45) w.sprinter = 0.22;
-  if (has.brute && t > (run.chapter >= 3 ? 120 : 180)) w.brute = 0.1;
-  if (has.archer && t > 90) w.archer = 0.1;
-  if (has.splitter && t > 60) w.splitter = 0.12;
-  if (has.shield && t > 150) w.shield = 0.1;
+  // each type joins after its unlock time; in later chapters it shows up sooner
+  for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.6 : 1)) w[k] = wt; }
   let total = 0; for (const k in w) total += w[k];
   let r = Math.random() * total, type = 'stickman';
   for (const k in w) { r -= w[k]; if (r <= 0) { type = k; break; } }
   const [x, z] = spawnPoint();
   if (type === 'sprinter') {
     const n = randInt(3, 5), h = G.hero.pos, dx = h[0] - x, dz = h[2] - z, d = Math.hypot(dx, dz) || 1;
-    for (let i = 0; i < n; i++) spawnEnemy('sprinter', x - dx / d * i * 0.65, z - dz / d * i * 0.65);
+    for (let i = 0; i < n; i++) spawnEnemy('sprinter', x - dx / d * i * 0.8, z - dz / d * i * 0.8);
   } else if (type === 'stickman') {
     // stickmen arrive in small clumps
     const n = t < 60 ? randInt(1, 2) : randInt(1, 3);
@@ -482,7 +478,11 @@ function updateEnemyAI(e, dt) {
     const [x, z] = spawnPoint(); e.x = x; e.z = z; return;
   }
   steerAround(e.x, e.z, e.radius, dx, dz, d, STEER); dx = STEER[0]; dz = STEER[1];
+  e.cool = (e.cool || 0) - dt;
+  if (e.act) { enemyAct(e, dt, d, dx, dz); return; }
+  if (e.def.ai && e.cool <= 0 && e.spawnT <= 0 && startEnemyAct(e, d, dx, dz)) return;
   let want = e.speed * e.slowMul;
+  if (e.def.ai === 'toss' && d < 4.5) want = -e.speed * 0.6;
   if (e.def.ranged) {
     if (e.aim > 0) {
       want = 0;
@@ -502,6 +502,88 @@ function updateEnemyAI(e, dt) {
   e.phase += dt * Math.hypot(e.vx, e.vz) / (0.85 * e.scale);
 }
 
+// ---------- weapon attacks: a short wind-up over a floor warning, then the hit ----------
+function startEnemyAct(e, d, dx, dz) {
+  const D = e.def, reach = D.reach || 1.0;
+  let a = null;
+  if (D.ai === 'lunge' && d < 2.8 && onScreen(e.x, e.z, -0.3)) {
+    a = { kind: 'lunge', clip: 'throw', dir: [dx, dz] };
+    addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.32, len: 2.8, rot: Math.atan2(dx, dz), dur: 0.45 });
+  } else if (D.ai === 'chop' && d < reach + e.radius + HERO_R + 0.35) {
+    const off = reach * 0.75 + e.radius * 0.4;
+    a = { kind: 'chop', clip: 'slam', cx: e.x + dx * off, cz: e.z + dz * off, r: reach * 0.8 + 0.25 };
+    addTele({ kind: 'circle', x: a.cx, z: a.cz, r: a.r, dur: D.wind || 0.55 });
+  } else if (D.ai === 'toss' && d > 3.5 && d < 8.5 && onScreen(e.x, e.z, -0.5)) {
+    a = { kind: 'toss', clip: 'throw' };
+  } else if (D.ai === 'bomb' && d < 1.6) {
+    a = { kind: 'bomb', clip: 'idle' };
+    addTele({ kind: 'circle', x: e.x, z: e.z, r: 1.8, dur: 0.75 });
+    AUDIO.play('drip');
+  }
+  if (!a) return false;
+  a.t = 0; a.u = 0;
+  e.act = a; e.vx = e.vz = 0;
+  return true;
+}
+function enemyAct(e, dt, d, dx, dz) {
+  const a = e.act, run = G.run, h = G.hero.pos, D = e.def, mul = run.info.dmgMul * (e.elite ? 1.5 : 1);
+  a.t += dt;
+  e.vx *= 0.8; e.vz *= 0.8;
+  if (a.kind === 'lunge') {
+    e.yaw = angleLerp(e.yaw, Math.atan2(a.dir[0], a.dir[1]), Math.min(1, dt * 14));
+    if (a.t < 0.45) a.u = a.t / 0.45 * 0.55;
+    else if (a.t < 0.65) {
+      a.u = 0.55 + (a.t - 0.45) / 0.2 * 0.2;
+      e.x += a.dir[0] * 11 * dt; e.z += a.dir[1] * 11 * dt;
+      const reach = 0.95 * e.scale, tx = e.x + a.dir[0] * reach, tz = e.z + a.dir[1] * reach;
+      if (!a.hit && (Math.hypot(h[0] - tx, h[2] - tz) < HERO_R + 0.45 || d < e.radius + HERO_R + 0.2)) { a.hit = true; hurtHero(D.hit * mul, e.x, e.z); }
+    } else if (a.t < 1.0) a.u = 0.75 + (a.t - 0.65) / 0.35 * 0.24;
+    else { e.act = null; e.cool = 2.8; }
+  } else if (a.kind === 'chop') {
+    const W = D.wind || 0.55;
+    e.yaw = angleLerp(e.yaw, Math.atan2(a.cx - e.x, a.cz - e.z), Math.min(1, dt * 10));
+    if (a.t < W) a.u = a.t / W * 0.55;
+    else if (!a.done) {
+      a.done = true; a.u = 0.6;
+      if (Math.hypot(h[0] - a.cx, h[2] - a.cz) < a.r + HERO_R * 0.5) hurtHero(D.hit * mul, a.cx, a.cz);
+      FX.ring(a.cx, a.cz, a.r * 1.3, [1, 0.85, 0.6], 0.3); FX.crack(a.cx, a.cz, a.r * 1.1);
+      FX.burst(a.cx, 0.2, a.cz, 8, [0.6, 0.55, 0.5], 3.5, 0.1, 0.4, 2);
+      G.cam.shake = Math.max(G.cam.shake, 0.04); AUDIO.play('punch');
+    } else if (a.t < W + 0.45) a.u = 0.6 + (a.t - W) / 0.45 * 0.39;
+    else { e.act = null; e.cool = 2.2; }
+  } else if (a.kind === 'toss') {
+    e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
+    if (a.t < 0.5) a.u = a.t / 0.5 * 0.6;
+    else if (!a.done) { a.done = true; a.u = 0.62; throwJavelin(e, D.hit * mul); }
+    else if (a.t < 0.85) a.u = 0.62 + (a.t - 0.5) / 0.35 * 0.37;
+    else { e.act = null; e.cool = 3.2; }
+  } else if (a.kind === 'bomb') {
+    e.flash = Math.sin(a.t * 32) > 0 ? 0.05 : 0;
+    a.u = (a.t * 2) % 1;
+    e.squashV += Math.sin(a.t * 40) * 0.6;
+    if (a.t >= 0.75) {
+      if (Math.hypot(h[0] - e.x, h[2] - e.z) < 1.8 + HERO_R * 0.5) hurtHero(D.hit * mul, e.x, e.z);
+      enemiesInRadius(e.x, e.z, 1.8, o => { if (o !== e && !o.boss) hurtEnemy(o, 20, (o.x - e.x) * 3, (o.z - e.z) * 3, { sound: false }); });
+      FX.ring(e.x, e.z, 2.6, [1, 0.7, 0.3], 0.4); FX.scorch(e.x, e.z, 2.0);
+      FX.burst(e.x, 0.6, e.z, 22, [1, 0.6, 0.2], 6, 0.14, 0.5, 0);
+      FX.glow(e.x, 0.6, e.z, 2.4, [1, 0.6, 0.25], 0.25);
+      for (let i = 0; i < 4; i++) FX.smoke(e.x + rand(-0.6, 0.6), 0.5, e.z + rand(-0.6, 0.6), 0.9, [0.3, 0.28, 0.3], 0.8, 0.9);
+      G.cam.shake = Math.max(G.cam.shake, 0.09); AUDIO.play('boom');
+      e.act = null; e.hp = 0; killEnemy(e);
+    }
+  }
+}
+function throwJavelin(e, dmg) {
+  const run = G.run, h = G.hero.pos, v = run.vel;
+  const o = { x: h[0] + v[0] * 0.55, z: h[2] + v[2] * 0.55 };
+  resolveCircle(o, 0.3);
+  const dist = Math.hypot(o.x - e.x, o.z - e.z);
+  const dur = Math.max(0.55, dist / 10);
+  addTele({ kind: 'circle', x: o.x, z: o.z, r: 0.6, dur });
+  run.eShots.push({ kind: 'javelin', sx: e.x, sy: 1.3, sz: e.z, tx: o.x, tz: o.z, x: e.x, y: 1.3, z: e.z, t: 0, dur, radius: 0.6, dmg, life: dur + 0.5, peak: 2.2 });
+  AUDIO.play('throw');
+}
+
 function fireArrow(e) {
   const h = G.hero.pos, dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
   G.run.eShots.push({ kind: 'arrow', x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * 10, vy: 0, vz: dz / d * 10, dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
@@ -511,6 +593,18 @@ function updateEnemyShots(dt) {
   const run = G.run, h = G.hero.pos;
   for (const s of run.eShots) {
     s.life -= dt;
+    if (s.kind === 'javelin') {
+      s.t += dt;
+      const u = clamp(s.t / s.dur, 0, 1);
+      s.x = lerp(s.sx, s.tx, u); s.z = lerp(s.sz, s.tz, u); s.y = lerp(s.sy, 0.3, u) + Math.sin(u * Math.PI) * s.peak;
+      if (u >= 1) {
+        s.life = 0;
+        if (Math.hypot(h[0] - s.tx, h[2] - s.tz) < s.radius + HERO_R * 0.6) hurtHero(s.dmg, s.tx, s.tz);
+        FX.burst(s.tx, 0.2, s.tz, 6, [0.6, 0.55, 0.5], 3, 0.08, 0.35, 2);
+        FX.crack(s.tx, s.tz, 0.6);
+      }
+      continue;
+    }
     if (s.kind === 'boulder') {
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1);

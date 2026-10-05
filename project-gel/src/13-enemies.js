@@ -276,6 +276,7 @@ function enemyRow(e) {
     const u = loop ? e.phase - Math.floor(e.phase) : clamp(e.clipU, 0, 0.999);
     return c.row + Math.floor(u * c.frames);
   }
+  if (e.act && m.clips[e.act.clip]) { const c = m.clips[e.act.clip]; return c.row + Math.floor(clamp(e.act.u, 0, 0.999) * c.frames); }
   if (e.aim > 0 && m.clips.aim) { const c = m.clips.aim; return c.row + Math.floor(clamp(e.aim / 0.45, 0, 0.999) * c.frames); }
   const c = m.clips.run;
   return c.row + Math.floor((e.phase - Math.floor(e.phase)) * c.frames);
@@ -319,6 +320,12 @@ function emitRunScene() {
   for (const s of run.eShots) {
     if (s.kind === 'arrow') { const sp = Math.hypot(s.vx, s.vz) || 1; pushImp(s.x, s.y, s.z, 0.32, s.vx / sp, 0, s.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }
+    else if (s.kind === 'javelin') {
+      const u = clamp(s.t / s.dur, 0, 1), vy = (0.3 - s.sy) + Math.cos(u * Math.PI) * Math.PI * s.peak;
+      const vx = s.tx - s.sx, vz = s.tz - s.sz, l = Math.hypot(vx, vy, vz) || 1;
+      pushImp(s.x, s.y, s.z, 0.55, vx / l, vy / l, vz / l, 1, 14, 0, 0, 0, 0, 0, 0, 1);
+      pushDecal(s.x + 0.1, s.z + 0.08, 0.35, 0.18, -Math.atan2(vx, vz), 1, 0, 0, 0.01, 0.02, 0.05, 0.35);
+    }
     else if (s.kind === 'boulder') { pushImp(s.x, s.y, s.z, 0.6, Math.sin(s.spin), Math.cos(s.spin), 0.3, 1, 13, 0, 0, 0, 0, 0, 0, 1); pushDecal(s.x + 0.2, s.z + 0.15, 0.6, 0.45, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.45); }
   }
   // archers' aim lines
