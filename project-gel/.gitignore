@@ -4,3 +4,4 @@ test/visual.html
 test/_main.js
 test/_worker.js
 test/*.log
+test/_*.mjs

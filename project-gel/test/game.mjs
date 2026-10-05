@@ -270,6 +270,15 @@ if (mode === 'roster') {
     await render(2); await shot(elite ? 'roster-elite' : 'roster');
   }
 }
+if (mode === 'blob') {
+  // Choose your blob: colors tab, then a gradient color with a costume previewed
+  await page.evaluate(() => { G.save.coins = 9000; UI.refreshHome(); });
+  await page.click('.tab[data-tab="skins"]'); await render(40); await shot('blob-colors');
+  await page.click('#skinGrid .skin:nth-child(10)'); await page.click('#blobTabs button[data-bt="costumes"]'); await page.click('#skinGrid .skin:nth-child(7)');
+  await render(40); await shot('blob-costumes');
+  await page.click('#skinAction'); await render(2);
+  console.log('costume after buying:', await page.evaluate(() => G.save.costume + ' owned=' + G.save.costumes.join(',')));
+}
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
 await browser.close();
