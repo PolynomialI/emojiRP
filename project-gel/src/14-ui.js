@@ -38,6 +38,7 @@ const UI = {
     $('heroTap').addEventListener('pointerdown', () => { AUDIO.unlock(); pokeHero(); });
     $('skinAction').addEventListener('click', () => this.skinAction());
     document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
+    this.initGear();
   },
 
   show(id, on) { const e = $(id); if (e) e.hidden = !on; },
@@ -48,6 +49,8 @@ const UI = {
     this.show('home', menu && this.menuTab === 'home');
     this.show('upgrades', menu && this.menuTab === 'upgrades');
     this.show('skins', menu && this.menuTab === 'skins');
+    this.show('gear', menu && this.menuTab === 'gear');
+    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); }
     this.show('chapters', menu && this.menuTab === 'chapters');
     const inRun = ['run', 'levelup', 'chest', 'pause', 'dying', 'revive', 'victory'].includes(s);
     this.show('hud', inRun);
@@ -70,6 +73,7 @@ const UI = {
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     if (tab === 'upgrades') this.renderUpgrades();
     if (tab === 'skins') this.renderSkins();
+    if (tab === 'gear') this.renderGear();
     if (tab === 'chapters') this.renderChapters();
     this.onState(G.state);
   },
@@ -131,9 +135,10 @@ const UI = {
     grid.replaceChildren(...list.map(s => {
       const b = document.createElement('button');
       b.className = 'skin' + (s.id === sel ? ' sel' : '');
-      b.innerHTML = `<img alt=""><span></span><small></small>`;
+      b.innerHTML = `<img alt=""><span></span><em class="boost"></em><small></small>`;
       b.querySelector('img').src = ICONS.get((colors ? 'skin-' : 'costume-') + s.id);
       b.querySelector('span').textContent = s.name;
+      b.querySelector('.boost').textContent = s.boost ? fmtBoost(s.boost) : 'No bonus';
       const sm = b.querySelector('small');
       if (worn === s.id) sm.textContent = 'Equipped';
       else if (owned.includes(s.id)) sm.textContent = 'Owned';

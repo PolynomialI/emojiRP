@@ -7,6 +7,7 @@ function defaultSave() {
     v: 1, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', costumes: ['none'],
+    scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null } }, devUnlocked: false,
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0 }, tutorial: true,
   };
@@ -25,6 +26,7 @@ function loadGame() {
         skins: Array.isArray(s.skins) && s.skins.length ? s.skins : d.skins,
         costumes: Array.isArray(s.costumes) && s.costumes.length ? s.costumes : d.costumes,
         cleared: s.cleared || {}, best: s.best || {},
+        gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) } },
       };
     }
   } catch (_) { /* storage unavailable: play without saving */ }

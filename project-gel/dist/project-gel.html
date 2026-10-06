@@ -93,7 +93,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 #loadError { max-width: 360px; text-align: center; color: #fff; font-weight: 500; }
 
 /* home */
-#home, #skins { display: flex; flex-direction: column; }
+#home, #skins, #gear { display: flex; flex-direction: column; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .home-title { text-align: center; margin-top: 8px; font-size: clamp(38px, 10vw, 54px); line-height: 0.95; color: var(--sky); -webkit-text-stroke: 8px #fff; }
 .chapter-card { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; padding: 12px; margin-top: 14px; }
@@ -111,9 +111,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   background-size: 260px 28px; }
 .play-wrap { display: grid; gap: 10px; }
 #btnPlay { width: 100%; }
-.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
 .tab { display: grid; justify-items: center; gap: 2px; padding: 6px 2px 8px; border-radius: 16px; font-size: 13px; color: var(--ink); background: var(--card-2); box-shadow: inset 0 -4px 0 var(--card-edge); }
-.tab img { width: 40px; height: 40px; }
+.tab img { width: 40px; height: 40px; object-fit: contain; }
 .tab.on { color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); background: linear-gradient(180deg, #6fcbff, var(--sky)); box-shadow: inset 0 -4px 0 var(--sky-deep), 0 3px 0 var(--sky-shadow); }
 
 /* sub screens */
@@ -132,8 +132,8 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .blob-pick { margin-top: auto; display: grid; gap: 10px; }
 .blob-tabs { justify-self: center; }
 .blob-tabs button { padding: 8px 20px; font-size: 15px; }
-.skins-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 44vh; overflow-y: auto; padding: 2px 2px 6px; }
-.skin { display: grid; justify-items: center; gap: 1px; padding: 6px 4px 8px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; font-size: 13px; }
+.skins-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-height: 44vh; overflow-y: auto; padding: 2px 2px 6px; }
+.skin { display: grid; justify-items: center; gap: 1px; padding: 6px 2px 8px; min-width: 0; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; font-size: 13px; }
 .skin img { width: 58px; height: 58px; }
 .skin.sel { box-shadow: inset 0 0 0 3px var(--sky), 0 4px 0 var(--sky-deep); }
 .skin small { font-size: 12px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; }
@@ -158,6 +158,77 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .node .ds { display: block; font-size: 12px; font-weight: 500; color: var(--ink-dim); }
 .node.big .num { width: 72px; height: 72px; }
 
+/* gear: a ribbon title, the hero between four equip slots, then totals, buttons and the artifact grid */
+.subhead h2.ribbon, .ribbon { justify-self: center; margin: 0; text-align: center; padding: 6px 34px 9px; font-size: 24px; line-height: 1.1; letter-spacing: 0.06em; color: #fff; -webkit-text-stroke: 5px #b86a06; paint-order: stroke fill;
+  background: linear-gradient(180deg, #ffe680, #ffc21f 55%, #ffab12); box-shadow: inset 0 -5px 0 #e08e0b, inset 0 2px 0 rgba(255,255,255,.6);
+  clip-path: polygon(0 0, 100% 0, 93% 50%, 100% 100%, 0 100%, 7% 50%); filter: drop-shadow(0 4px 0 rgba(150, 80, 0, 0.5)); }
+.pill .ico { width: 26px; height: 26px; }
+.gear-stage { flex: 1; min-height: 190px; display: grid; grid-template-columns: 70px 1fr 70px; grid-template-rows: 1fr 1fr; align-items: center; gap: 8px 0; margin-block: 8px; }
+.gear-stage .eq { width: 70px; height: 70px; border-radius: 18px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.28); box-shadow: inset 0 0 0 3px rgba(255,255,255,.7); }
+.gear-stage .eq img { width: 80%; height: 80%; }
+.gear-stage .eq img.ghost { width: 46%; height: 46%; opacity: 0.85; }
+.gear-stage [data-slot="armor"], .gear-stage [data-slot="necklace"] { grid-column: 3; }
+.gear-stage [data-slot="ring"], .gear-stage [data-slot="necklace"] { grid-row: 2; }
+.gear-panel { display: grid; gap: 10px; padding: 12px; }
+.gear-stats { display: flex; justify-content: center; gap: 22px; font-size: 22px; font-variant-numeric: tabular-nums; }
+.gear-stats span { display: inline-flex; align-items: center; gap: 6px; }
+.gear-stats img { width: 30px; height: 30px; }
+.gear-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gear-btns .jelly { min-height: 42px; padding: 6px 6px 10px; font-size: 14px; border-radius: 14px; gap: 5px; }
+.gear-btns .jelly img { width: 22px; height: 22px; }
+.jelly.glow { animation: glow 1.4s ease-in-out infinite; }
+@keyframes glow { 50% { filter: brightness(1.15) drop-shadow(0 0 8px rgba(255, 220, 90, 0.9)); } }
+.gear-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; max-height: 34vh; overflow-y: auto; padding: 2px 2px 6px; align-content: start; }
+.gear-empty { grid-column: 1 / -1; margin: 6px; text-align: center; font-size: 14px; font-weight: 500; color: var(--ink-dim); }
+.art { position: relative; aspect-ratio: 1; border-radius: 14px; display: grid; place-items: center; }
+.art > img { width: 76%; height: 76%; filter: drop-shadow(0 2px 0 rgba(0,0,0,.18)); }
+.art.r0 { background: linear-gradient(180deg, #d5dbe3, #9ba6b4); box-shadow: inset 0 -4px 0 #7b8696, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #5f6a7a; }
+.art.r1 { background: linear-gradient(180deg, #a9f08c, #4fbf45); box-shadow: inset 0 -4px 0 #3a9a33, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #2d7a28; }
+.art.r2 { background: linear-gradient(180deg, #98d6ff, #3d8ff0); box-shadow: inset 0 -4px 0 #2a6fcf, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #1f55a3; }
+.art.r3 { background: linear-gradient(180deg, #dcbcff, #9a5cf0); box-shadow: inset 0 -4px 0 #7b3fd6, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #5a2ba3; }
+.art.r4 { background: linear-gradient(180deg, #fff0a0, #ffb52a); box-shadow: inset 0 -4px 0 #e08e0b, inset 0 2px 0 rgba(255,255,255,.7), 0 3px 0 #a86006, 0 0 12px rgba(255, 190, 40, 0.7); }
+.art .badge { position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: #23305a; box-shadow: 0 1px 0 rgba(255,255,255,.4); }
+.art .badge img { width: 14px; height: 14px; }
+.art b { position: absolute; right: 5px; bottom: 2px; font-size: 15px; color: #fff; -webkit-text-stroke: 3.5px #23305a; paint-order: stroke fill; }
+.art.worn { outline: 3px solid #fff; outline-offset: -3px; }
+.art.worn::after { content: ''; position: absolute; right: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #3fe0a0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.6 2.6L12 5.5' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100%; box-shadow: 0 0 0 2px #23305a; }
+.art.fusable { animation: fusable 1.6s ease-in-out infinite; }
+@keyframes fusable { 50% { transform: translateY(-2px); filter: brightness(1.12); } }
+.rar.r0 { color: #6d7887; } .rar.r1 { color: #2f9a2a; } .rar.r2 { color: #2a6fcf; } .rar.r3 { color: #7b3fd6; } .rar.r4 { color: #d08300; }
+.art-big { width: 120px; height: 120px; border-radius: 26px; margin: 0 auto; }
+.art-info { display: grid; gap: 6px; padding: 18px 16px; text-align: center; }
+.art-info h2 { margin: 0; font-size: 26px; color: var(--ink); }
+.art-info .art-stat { margin: 0; font-size: 18px; color: var(--ink); }
+.art-info .dim { margin: 0; font-size: 14px; font-weight: 500; }
+.chest-stage { position: relative; height: 280px; display: grid; place-items: center; }
+.chest-stage .rays { position: absolute; width: 300px; height: 300px; border-radius: 50%; opacity: 0; transition: opacity .3s;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.55) 0deg 10deg, rgba(255,255,255,0) 10deg 24deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%); }
+.chest-stage.open .rays { opacity: 1; animation: spin 7s linear infinite; }
+.chest-stage.open.r1 .rays { background-color: rgba(80, 200, 70, .35); } .chest-stage.open.r2 .rays { background-color: rgba(60, 140, 240, .4); }
+.chest-stage.open.r3 .rays { background-color: rgba(160, 90, 240, .45); } .chest-stage.open.r4 .rays { background-color: rgba(255, 190, 40, .55); }
+@keyframes spin { to { transform: rotate(360deg); } }
+#chestArt { position: relative; width: 190px; transition: transform .3s, opacity .3s; }
+#chestArt svg { width: 100%; display: block; overflow: visible; }
+#chestArt .ch-lid { transform-origin: 10% 50%; transform-box: fill-box; transition: transform .35s cubic-bezier(.3,1.6,.5,1); }
+.chest-stage.shake #chestArt { animation: shake .9s ease-in-out; }
+@keyframes shake { 10%, 50%, 90% { transform: rotate(-5deg) scale(1.03); } 30%, 70% { transform: rotate(5deg) scale(1.05); } }
+.chest-stage.open #chestArt { transform: translateY(78px) scale(.72); }
+.chest-stage.open #chestArt .ch-lid { transform: translate(-6px, -34px) rotate(-24deg); }
+.chest-reveal { position: absolute; top: 0; display: grid; justify-items: center; gap: 2px; animation: rise .55s cubic-bezier(.3,1.6,.5,1); }
+.chest-reveal .art { width: 104px; height: 104px; border-radius: 24px; }
+.chest-reveal small { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; -webkit-text-stroke: 4px #fff; paint-order: stroke fill; }
+.chest-reveal b { font-size: 22px; color: #fff; -webkit-text-stroke: 5px var(--sky-deep); paint-order: stroke fill; }
+.chest-reveal .dim { font-size: 15px; color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); }
+@keyframes rise { from { transform: translateY(70px) scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
+#scOpen img { width: 26px; height: 26px; }
+.skin .boost { font-style: normal; font-size: 10px; color: #13a56f; white-space: nowrap; max-width: 100%; overflow: hidden; letter-spacing: -0.01em; }
+.skin > span { max-width: 100%; font-size: 12.5px; line-height: 1.15; text-align: center; }
+/* wide screens: the hero and slots on the left, the panel on the right */
+@media (min-aspect-ratio: 11/10) {
+  #gear .gear-panel { position: absolute; right: max(3vw, 16px); top: 84px; bottom: 18px; width: min(470px, 48vw); margin: 0; align-content: start; grid-template-rows: auto auto minmax(0, 1fr); }
+  #gear .gear-grid { max-height: none; }
+  #gear .gear-stage { position: absolute; left: max(3vw, 16px); right: calc(min(470px, 48vw) + max(3vw, 16px) + 2vw); top: 84px; bottom: 18px; width: auto; margin: 0; grid-template-columns: 76px 1fr 76px; }
+}
 /* HUD: pause, skill tiles and coins; then the chapter bar and the XP bar with its level badge */
 #hud { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
 #hud > * { pointer-events: none; }
@@ -285,6 +356,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
     <nav class="col tabs" aria-label="Menu">
       <button class="tab" data-tab="upgrades"><img alt="" data-icon="meta-damage">Upgrades</button>
+      <button class="tab" data-tab="gear"><img alt="" data-icon="gear">Gear</button>
       <button class="tab on" data-tab="home"><img alt="" data-icon="hero">Play</button>
       <button class="tab" data-tab="skins"><img alt="" data-icon="costume-bunny">Blobs</button>
       <button class="tab" data-tab="chapters"><img alt="" data-icon="chapters">Chapters</button>
@@ -305,6 +377,41 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <div class="seg blob-tabs" id="blobTabs"><button data-bt="colors" aria-pressed="true">Colors</button><button data-bt="costumes" aria-pressed="false">Costumes</button></div>
       <div class="skins-grid" id="skinGrid"></div>
       <button class="jelly" id="skinAction">Equipped</button>
+    </div>
+  </section>
+
+  <section id="gear" class="screen" hidden>
+    <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="ribbon">INVENTORY</h2><div class="pill" title="Scrolls"><img class="ico" alt="Scrolls" data-icon="scroll"><span id="gScrolls">0</span></div></div>
+    <div class="col gear-stage" id="gearStage">
+      <button class="eq" data-slot="weapon"></button><button class="eq" data-slot="armor"></button>
+      <button class="eq" data-slot="ring"></button><button class="eq" data-slot="necklace"></button>
+    </div>
+    <div class="col panel gear-panel">
+      <div class="gear-stats"><span><img alt="Attack" data-icon="g-atk"><b id="gAtk">100</b></span><span><img alt="Health" data-icon="g-heart"><b id="gHp">140</b></span></div>
+      <div class="gear-btns"><button class="jelly ghost" id="gSort">BY RARITY</button><button class="jelly gold" id="gChest"><img alt="" data-icon="gear">CHEST</button><button class="jelly violet" id="gFuse">FUSE</button></div>
+      <div class="gear-grid" id="gearGrid"></div>
+    </div>
+  </section>
+
+  <section id="artInfo" class="screen modal menu" hidden>
+    <div class="modal-body">
+      <div class="panel art-info">
+        <div class="art-big" id="artBig"></div>
+        <p class="eyebrow rar" id="artRar">Common · Weapon</p>
+        <h2 id="artName">Goo Sword</h2>
+        <p class="art-stat" id="artStat"></p>
+        <p class="dim" id="artNote"></p>
+      </div>
+      <div class="row-actions"><button class="jelly" id="artEquip">Equip</button><button class="jelly violet" id="artFuse">Fuse 3</button><button class="jelly ghost" id="artClose">Close</button></div>
+    </div>
+  </section>
+
+  <section id="scrollChest" class="screen modal menu" hidden>
+    <div class="modal-body" style="text-align:center">
+      <h1 class="title outline" style="color:var(--gold);font-size:clamp(28px,7vw,40px);white-space:nowrap">TREASURE CHEST</h1>
+      <div class="chest-stage" id="chestStage"><div class="rays"></div><div id="chestArt"></div><div class="chest-reveal" id="chestReveal" hidden></div></div>
+      <p class="dim" style="margin:0" id="scText"></p>
+      <div class="row-actions"><button class="jelly gold" id="scOpen">Unlock</button><button class="jelly ghost" id="scDone">Done</button></div>
     </div>
   </section>
 
@@ -4814,49 +4921,49 @@ const META_UPGRADES = {
 };
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
 
-// Body colors. "top" makes a two-tone gradient from the feet up.
+// Body colors. "top" makes a two-tone gradient from the feet up. "boost" is a small stat bonus (see STAT_INFO).
 const SKINS = [
   { id: 'classic', name: 'Classic', cost: 0, base: '#18d2ff', accent: '#7b55f5', rim: '#8ef3ff' },
-  { id: 'lime', name: 'Lime', cost: 300, base: '#7be04a', accent: '#1f9e7a', rim: '#d8ffb0' },
-  { id: 'bubblegum', name: 'Bubblegum', cost: 500, base: '#ff7ac8', accent: '#9a4dff', rim: '#ffd3f0' },
-  { id: 'sunny', name: 'Sunny', cost: 700, base: '#ffd23a', accent: '#ff8a1f', rim: '#fff3b0' },
-  { id: 'cherry', name: 'Cherry', cost: 900, base: '#ff4d6d', accent: '#9a2bd6', rim: '#ffc2cc' },
-  { id: 'grape', name: 'Grape', cost: 1200, base: '#9c6bff', accent: '#ff5fb8', rim: '#e0ccff' },
-  { id: 'mint', name: 'Mint', cost: 1500, base: '#3ef0b8', accent: '#1a8cff', rim: '#c8fff0' },
-  { id: 'snow', name: 'Snow', cost: 1800, base: '#eaf4ff', accent: '#7fb8ff', rim: '#ffffff' },
-  { id: 'night', name: 'Night', cost: 2200, base: '#34343f', accent: '#ff5fb8', rim: '#a0a0b8' },
-  { id: 'galaxy', name: 'Galaxy', cost: 3000, base: '#3f7bff', top: '#b45cff', accent: '#ff5fb8', rim: '#d6c8ff' },
-  { id: 'sunset', name: 'Sunset', cost: 3500, base: '#ff6f91', top: '#ffd23a', accent: '#ff8a1f', rim: '#ffe0c0' },
-  { id: 'ocean', name: 'Ocean', cost: 4000, base: '#1a8cff', top: '#3ef0b8', accent: '#7b55f5', rim: '#c8fff8' },
+  { id: 'lime', name: 'Lime', cost: 300, base: '#7be04a', accent: '#1f9e7a', rim: '#d8ffb0', boost: { speed: 3 } },
+  { id: 'bubblegum', name: 'Bubblegum', cost: 500, base: '#ff7ac8', accent: '#9a4dff', rim: '#ffd3f0', boost: { hp: 5 } },
+  { id: 'sunny', name: 'Sunny', cost: 700, base: '#ffd23a', accent: '#ff8a1f', rim: '#fff3b0', boost: { xp: 5 } },
+  { id: 'cherry', name: 'Cherry', cost: 900, base: '#ff4d6d', accent: '#9a2bd6', rim: '#ffc2cc', boost: { dmg: 4 } },
+  { id: 'grape', name: 'Grape', cost: 1200, base: '#9c6bff', accent: '#ff5fb8', rim: '#e0ccff', boost: { cd: 4 } },
+  { id: 'mint', name: 'Mint', cost: 1500, base: '#3ef0b8', accent: '#1a8cff', rim: '#c8fff0', boost: { regen: 0.1 } },
+  { id: 'snow', name: 'Snow', cost: 1800, base: '#eaf4ff', accent: '#7fb8ff', rim: '#ffffff', boost: { armor: 5 } },
+  { id: 'night', name: 'Night', cost: 2200, base: '#34343f', accent: '#ff5fb8', rim: '#a0a0b8', boost: { dmg: 5 } },
+  { id: 'galaxy', name: 'Galaxy', cost: 3000, base: '#3f7bff', top: '#b45cff', accent: '#ff5fb8', rim: '#d6c8ff', boost: { area: 6 } },
+  { id: 'sunset', name: 'Sunset', cost: 3500, base: '#ff6f91', top: '#ffd23a', accent: '#ff8a1f', rim: '#ffe0c0', boost: { gold: 10 } },
+  { id: 'ocean', name: 'Ocean', cost: 4000, base: '#1a8cff', top: '#3ef0b8', accent: '#7b55f5', rim: '#c8fff8', boost: { magnet: 25 } },
 ];
 // Costumes are extra goo shapes on the hero, offsets in hero units from the head (or pelvis).
 // Parts: ['sph', anchor, pos, r, k, col] | ['cap', anchor, a, b, r1, r2, k, col, sway] | ['ell', anchor, pos, radii, k, col]
 // col: 'b' = body color, 0-3 = this costume's palette. sway lets a tip lag and bob with the head.
 const COSTUMES = [
   { id: 'none', name: 'No costume', cost: 0, pal: [], parts: [] },
-  { id: 'bunny', name: 'Bunny', cost: 400, pal: ['#ffffff'], parts: [
+  { id: 'bunny', name: 'Bunny', cost: 400, boost: { speed: 4 }, pal: ['#ffffff'], parts: [
     ['cap', 'head', [0.09, 0.15, -0.02], [0.15, 0.56, -0.07], 0.078, 0.062, 0.05, 'b', 0.05],
     ['cap', 'head', [-0.09, 0.15, -0.02], [-0.15, 0.56, -0.07], 0.078, 0.062, 0.05, 'b', 0.05],
   ] },
-  { id: 'cat', name: 'Cat', cost: 600, pal: ['#1c1a22', '#ff9ac8'], parts: [
+  { id: 'cat', name: 'Cat', cost: 600, boost: { xp: 6 }, pal: ['#1c1a22', '#ff9ac8'], parts: [
     ['cap', 'head', [0.11, 0.14, 0.0], [0.17, 0.34, 0.02], 0.09, 0.018, 0.04, 'b'],
     ['cap', 'head', [-0.11, 0.14, 0.0], [-0.17, 0.34, 0.02], 0.09, 0.018, 0.04, 'b'],
     ['sph', 'head', [0, -0.02, 0.225], 0.03, 0.015, 1],
   ] },
-  { id: 'bear', name: 'Bear', cost: 800, pal: ['#1c1a22', '#ffe2b8'], parts: [
+  { id: 'bear', name: 'Bear', cost: 800, boost: { hp: 6 }, pal: ['#1c1a22', '#ffe2b8'], parts: [
     ['sph', 'head', [0.17, 0.16, -0.02], 0.085, 0.04, 'b'],
     ['sph', 'head', [-0.17, 0.16, -0.02], 0.085, 0.04, 'b'],
     ['ell', 'head', [0, -0.05, 0.19], [0.1, 0.07, 0.07], 0.03, 1],
     ['sph', 'head', [0, -0.01, 0.255], 0.035, 0.012, 0],
   ] },
-  { id: 'chick', name: 'Chick', cost: 1000, pal: ['#16141c', '#ffb020'], parts: [
+  { id: 'chick', name: 'Chick', cost: 1000, boost: { magnet: 25 }, pal: ['#16141c', '#ffb020'], parts: [
     ['cap', 'head', [0, -0.02, 0.19], [0, -0.04, 0.34], 0.065, 0.012, 0.025, 1],
     ['sph', 'head', [0.085, 0.07, 0.195], 0.042, 0.012, 0],
     ['sph', 'head', [-0.085, 0.07, 0.195], 0.042, 0.012, 0],
     ['cap', 'head', [0, 0.19, 0.0], [0.05, 0.33, 0.04], 0.03, 0.01, 0.03, 'b', 0.03],
     ['cap', 'head', [0, 0.19, 0.0], [-0.04, 0.31, 0.06], 0.03, 0.01, 0.03, 'b', 0.03],
   ] },
-  { id: 'frog', name: 'Frog', cost: 1200, pal: ['#16141c', '#ffffff'], parts: [
+  { id: 'frog', name: 'Frog', cost: 1200, boost: { area: 5 }, pal: ['#16141c', '#ffffff'], parts: [
     ['sph', 'head', [0.1, 0.17, 0.07], 0.08, 0.05, 'b'],
     ['sph', 'head', [-0.1, 0.17, 0.07], 0.08, 0.05, 'b'],
     ['sph', 'head', [0.1, 0.19, 0.12], 0.055, 0.012, 1],
@@ -4864,7 +4971,7 @@ const COSTUMES = [
     ['sph', 'head', [0.1, 0.2, 0.172], 0.03, 0.008, 0],
     ['sph', 'head', [-0.1, 0.2, 0.172], 0.03, 0.008, 0],
   ] },
-  { id: 'panda', name: 'Panda', cost: 1500, pal: ['#16141c', '#f6f6f2'], parts: [
+  { id: 'panda', name: 'Panda', cost: 1500, boost: { armor: 5 }, pal: ['#16141c', '#f6f6f2'], parts: [
     ['sph', 'head', [0, 0.005, 0.0], 0.238, 0.02, 1],
     ['sph', 'head', [0.165, 0.165, -0.02], 0.072, 0.025, 0],
     ['sph', 'head', [-0.165, 0.165, -0.02], 0.072, 0.025, 0],
@@ -4872,22 +4979,73 @@ const COSTUMES = [
     ['ell', 'head', [-0.08, 0.035, 0.19], [0.06, 0.075, 0.05], 0.012, 0],
     ['sph', 'head', [0, -0.045, 0.235], 0.03, 0.01, 0],
   ] },
-  { id: 'devil', name: 'Devil', cost: 2000, pal: ['#e8283c'], parts: [
+  { id: 'devil', name: 'Devil', cost: 2000, boost: { dmg: 5 }, pal: ['#e8283c'], parts: [
     ['cap', 'head', [0.1, 0.15, 0.03], [0.16, 0.31, 0.0], 0.05, 0.01, 0.03, 0],
     ['cap', 'head', [-0.1, 0.15, 0.03], [-0.16, 0.31, 0.0], 0.05, 0.01, 0.03, 0],
     ['cap', 'pelvis', [0, -0.05, -0.22], [0, -0.2, -0.44], 0.04, 0.03, 0.04, 0, 0.06],
     ['ell', 'pelvis', [0, -0.12, -0.56], [0.07, 0.07, 0.04], 0.03, 0],
   ] },
-  { id: 'unicorn', name: 'Unicorn', cost: 2500, pal: ['#ffd040', '#ffffff'], parts: [
+  { id: 'unicorn', name: 'Unicorn', cost: 2500, boost: { cd: 5 }, pal: ['#ffd040', '#ffffff'], parts: [
     ['cap', 'head', [0, 0.16, 0.09], [0, 0.44, 0.16], 0.05, 0.008, 0.03, 0],
     ['cap', 'head', [0.12, 0.14, -0.02], [0.16, 0.27, -0.04], 0.06, 0.02, 0.03, 'b'],
     ['cap', 'head', [-0.12, 0.14, -0.02], [-0.16, 0.27, -0.04], 0.06, 0.02, 0.03, 'b'],
   ] },
-  { id: 'party', name: 'Party Hat', cost: 3000, pal: ['#ff4fa8', '#ffd040'], parts: [
+  { id: 'party', name: 'Party Hat', cost: 3000, boost: { gold: 12 }, pal: ['#ff4fa8', '#ffd040'], parts: [
     ['cap', 'head', [0.02, 0.17, 0.0], [0.06, 0.5, -0.03], 0.13, 0.012, 0.02, 0],
     ['sph', 'head', [0.065, 0.53, -0.035], 0.045, 0.015, 1, 0.03],
   ] },
 ];
+
+// ---------- stat bonuses: skins, costumes and artifacts ----------
+// Percent bonuses, except regen (percent of max health per second)
+const STAT_INFO = {
+  dmg: { name: 'damage', short: 'DMG' },
+  hp: { name: 'max health', short: 'HP' },
+  armor: { name: 'less damage taken', short: 'ARMOR' },
+  speed: { name: 'move speed', short: 'SPEED' },
+  cd: { name: 'faster skills', short: 'HASTE' },
+  area: { name: 'skill area', short: 'AREA' },
+  xp: { name: 'XP', short: 'XP' },
+  regen: { name: 'health regen per second', short: 'REGEN' },
+  magnet: { name: 'pickup radius', short: 'MAGNET' },
+  gold: { name: 'coins', short: 'COINS' },
+};
+const fmtBonus = (k, v) => `+${+v.toFixed(2)}% ${STAT_INFO[k].name}`;
+
+// Artifacts: found in scroll chests, fused three-into-one up the rarity ladder, one equipped per slot
+const RARITIES = [
+  { id: 'common', name: 'Common', mul: 1, odds: 0.62 },
+  { id: 'uncommon', name: 'Uncommon', mul: 1.6, odds: 0.25 },
+  { id: 'rare', name: 'Rare', mul: 2.4, odds: 0.095 },
+  { id: 'epic', name: 'Epic', mul: 3.5, odds: 0.03 },
+  { id: 'legendary', name: 'Legendary', mul: 5, odds: 0.005 },
+];
+const GEAR_SLOTS = [
+  { id: 'weapon', name: 'Weapon' }, { id: 'armor', name: 'Armor' },
+  { id: 'ring', name: 'Ring' }, { id: 'necklace', name: 'Necklace' },
+];
+// stats are the common values; higher rarities multiply them by RARITIES[r].mul
+const ARTIFACTS = {
+  sword: { name: 'Goo Sword', slot: 'weapon', stats: { dmg: 4, hp: 3 } },
+  wand: { name: 'Star Wand', slot: 'weapon', stats: { dmg: 6 } },
+  bow: { name: 'Twig Bow', slot: 'weapon', stats: { dmg: 3, cd: 3 } },
+  cloak: { name: 'Hero Cloak', slot: 'armor', stats: { hp: 8 } },
+  plate: { name: 'Steel Plate', slot: 'armor', stats: { armor: 5 } },
+  vest: { name: 'Leather Vest', slot: 'armor', stats: { hp: 4, speed: 3 } },
+  goldRing: { name: 'Gold Ring', slot: 'ring', stats: { hp: 4 } },
+  silverRing: { name: 'Silver Ring', slot: 'ring', stats: { xp: 5 } },
+  rubyRing: { name: 'Ruby Ring', slot: 'ring', stats: { regen: 0.1 } },
+  skull: { name: 'Skull Necklace', slot: 'necklace', stats: { dmg: 4 } },
+  moon: { name: 'Moon Pendant', slot: 'necklace', stats: { cd: 4 } },
+  clover: { name: 'Clover Charm', slot: 'necklace', stats: { gold: 8 } },
+};
+const artKey = (id, r) => id + ':' + r;
+const artParse = key => { const [id, r] = key.split(':'); return { id, r: Number(r), def: ARTIFACTS[id] }; };
+function artStats(key) {
+  const { r, def } = artParse(key), out = {};
+  for (const k in def.stats) out[k] = def.stats[k] * RARITIES[r].mul;
+  return out;
+}
 
 // ---- 11-game.js ----
 // ============================================================
@@ -5030,6 +5188,7 @@ function startRun(chapter) {
     nextId: 1, spawnAcc: 0, events: makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
     vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
   };
+  run.gear = gearStats();
   applyArena(info.arena);
   buildArena(chapter);
   G.hero.reset(0, 0);
@@ -5059,18 +5218,20 @@ function addOrLevel(id) {
 function recomputeStats() {
   const run = G.run, meta = G.save.upgrades, lv = lvlOf;
   const oldMax = run.maxHp;
+  // skin, costume and artifact bonuses (percent), fixed for the run
+  const gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
   run.stats = {
-    dmgMul: (1 + 0.05 * lv('power')) * (1 + 0.03 * meta.damage),
-    speedMul: (1 + 0.04 * lv('speed')) * (1 + 0.01 * meta.speed),
-    magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + 0.05 * meta.magnet),
-    armorMul: Math.pow(0.97, lv('armor')),
-    cdMul: Math.pow(0.97, lv('haste')),
-    areaMul: 1 + 0.05 * lv('reach'),
+    dmgMul: (1 + 0.05 * lv('power')) * (1 + 0.03 * meta.damage) * (1 + g('dmg')),
+    speedMul: (1 + 0.04 * lv('speed')) * (1 + 0.01 * meta.speed) * (1 + g('speed')),
+    magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + 0.05 * meta.magnet) * (1 + g('magnet')),
+    armorMul: Math.pow(0.97, lv('armor')) * (1 - Math.min(0.6, g('armor'))),
+    cdMul: Math.pow(0.97, lv('haste')) * (1 - Math.min(0.5, g('cd'))),
+    areaMul: (1 + 0.05 * lv('reach')) * (1 + g('area')),
     extra: lv('multishot'),
-    xpMul: 1 + 0.04 * lv('growth'),
-    regen: 0.002 * lv('regen'),
+    xpMul: (1 + 0.04 * lv('growth')) * (1 + g('xp')),
+    regen: 0.002 * lv('regen') + g('regen'),
   };
-  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health);
+  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = 1 + 0.01 * lv('thick');
@@ -5625,6 +5786,7 @@ function finishRun(won) {
   run.won = won;
   const sv = G.save;
   const reward = won ? run.info.reward : 0;
+  run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100));
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
@@ -6916,6 +7078,7 @@ const UI = {
     $('heroTap').addEventListener('pointerdown', () => { AUDIO.unlock(); pokeHero(); });
     $('skinAction').addEventListener('click', () => this.skinAction());
     document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
+    this.initGear();
   },
 
   show(id, on) { const e = $(id); if (e) e.hidden = !on; },
@@ -6926,6 +7089,8 @@ const UI = {
     this.show('home', menu && this.menuTab === 'home');
     this.show('upgrades', menu && this.menuTab === 'upgrades');
     this.show('skins', menu && this.menuTab === 'skins');
+    this.show('gear', menu && this.menuTab === 'gear');
+    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); }
     this.show('chapters', menu && this.menuTab === 'chapters');
     const inRun = ['run', 'levelup', 'chest', 'pause', 'dying', 'revive', 'victory'].includes(s);
     this.show('hud', inRun);
@@ -6948,6 +7113,7 @@ const UI = {
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     if (tab === 'upgrades') this.renderUpgrades();
     if (tab === 'skins') this.renderSkins();
+    if (tab === 'gear') this.renderGear();
     if (tab === 'chapters') this.renderChapters();
     this.onState(G.state);
   },
@@ -7009,9 +7175,10 @@ const UI = {
     grid.replaceChildren(...list.map(s => {
       const b = document.createElement('button');
       b.className = 'skin' + (s.id === sel ? ' sel' : '');
-      b.innerHTML = `<img alt=""><span></span><small></small>`;
+      b.innerHTML = `<img alt=""><span></span><em class="boost"></em><small></small>`;
       b.querySelector('img').src = ICONS.get((colors ? 'skin-' : 'costume-') + s.id);
       b.querySelector('span').textContent = s.name;
+      b.querySelector('.boost').textContent = s.boost ? fmtBoost(s.boost) : 'No bonus';
       const sm = b.querySelector('small');
       if (worn === s.id) sm.textContent = 'Equipped';
       else if (owned.includes(s.id)) sm.textContent = 'Owned';
@@ -7432,6 +7599,280 @@ function applyChoice(c) {
   addOrLevel(c.id);
 }
 
+// ---- 14a-gear.js ----
+// ============================================================
+// Gear: artifacts from scroll chests, fusing three into one, the four
+// equip slots, and the stat bonuses of body colors and costumes
+// ============================================================
+
+// ---------- artwork: chunky outlined SVGs ----------
+const GEAR_OL = 'stroke="#23305a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"';
+const svgDoc = (inner, vb = '0 0 64 64') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${inner}</svg>`;
+const svgUrl = s => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+function starPts(cx, cy, R, r, n = 5) {
+  const p = [];
+  for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n, d = i % 2 ? r : R; p.push((cx + Math.cos(a) * d).toFixed(1) + ',' + (cy + Math.sin(a) * d).toFixed(1)); }
+  return p.join(' ');
+}
+const sparkle = (x, y, s) => `<path d="M${x} ${y - s} Q${x + s * 0.2} ${y - s * 0.2} ${x + s} ${y} Q${x + s * 0.2} ${y + s * 0.2} ${x} ${y + s} Q${x - s * 0.2} ${y + s * 0.2} ${x - s} ${y} Q${x - s * 0.2} ${y - s * 0.2} ${x} ${y - s} Z" fill="#fff" stroke="#23305a" stroke-width="2" stroke-linejoin="round"/>`;
+const ringArt = (band, gem) => `<circle cx="32" cy="39" r="15" fill="none" stroke="#23305a" stroke-width="12"/><circle cx="32" cy="39" r="15" fill="none" stroke="${band}" stroke-width="6"/>
+  <path d="M21 33 A12 12 0 0 1 27 27" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/>
+  <path d="M23 18 L27.5 11 L36.5 11 L41 18 L32 29 Z" fill="${gem}" ${GEAR_OL}/>
+  <path d="M23.5 18 H40.5 M27.5 11 L29.5 18 L32 28 L34.5 18 L36.5 11" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.5" stroke-linejoin="round"/>`;
+const chainArt = `<path d="M10 5 Q32 45 54 5" fill="none" stroke="#23305a" stroke-width="5" stroke-linecap="round"/><path d="M10 5 Q32 45 54 5" fill="none" stroke="#ffd23a" stroke-width="2.4" stroke-dasharray="3 2.4" stroke-linecap="round"/>`;
+const GEAR_SVG = {
+  sword: `<g transform="rotate(45 32 32)"><path d="M32 2 L38 9 L38 39 L26 39 L26 9 Z" fill="#eef4fb" ${GEAR_OL}/><path d="M32 8 V36" stroke="#b9cbe0" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="17" y="38" width="30" height="7" rx="3.5" fill="#ffc83a" ${GEAR_OL}/><rect x="28.5" y="45" width="7" height="11" rx="2" fill="#9a5b2c" ${GEAR_OL}/><circle cx="32" cy="58.5" r="4" fill="#ffc83a" ${GEAR_OL}/></g>`,
+  wand: `<path d="M13 53 L37 29" stroke="#23305a" stroke-width="10" stroke-linecap="round"/><path d="M13 53 L37 29" stroke="#7a4bd6" stroke-width="5" stroke-linecap="round"/><path d="M15.5 50.5 L21 45" stroke="#c9b1ff" stroke-width="2" stroke-linecap="round"/>
+    <polygon points="${starPts(42, 22, 15, 7)}" fill="#ffd23a" ${GEAR_OL}/><path d="M37 19 L40 17" stroke="#fff6c0" stroke-width="2.4" stroke-linecap="round"/>${sparkle(55, 42, 5)}${sparkle(20, 13, 4)}`,
+  bow: `<path d="M22 6 Q52 32 22 58" fill="none" stroke="#23305a" stroke-width="10" stroke-linecap="round"/><path d="M22 6 Q52 32 22 58" fill="none" stroke="#c07a3c" stroke-width="5" stroke-linecap="round"/><path d="M22 6 L22 58" stroke="#23305a" stroke-width="2"/>
+    <path d="M8 32 H50" stroke="#23305a" stroke-width="6" stroke-linecap="round"/><path d="M8 32 H50" stroke="#f0dcb0" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M47 25 L60 32 L47 39 Z" fill="#cfd8e6" ${GEAR_OL}/><path d="M15 32 L8 24 L3 24 L9 32 L3 40 L8 40 Z" fill="#ff5f7a" stroke="#23305a" stroke-width="2" stroke-linejoin="round"/>`,
+  cloak: `<path d="M20 12 Q32 18 44 12 L55 52 Q43 59 32 54 Q21 59 9 52 Z" fill="#e8445a" ${GEAR_OL}/><path d="M25 18 Q32 23 39 18 L44 50 Q38 53 32 51 Q26 53 20 50 Z" fill="#b8243c"/>
+    <path d="M16 13 Q32 23 48 13 L45 7 Q32 15 19 7 Z" fill="#ffc83a" ${GEAR_OL}/><circle cx="32" cy="17" r="4.5" fill="#5ad0ff" ${GEAR_OL}/><path d="M13 49 L19 22" stroke="#ff8a98" stroke-width="2.4" stroke-linecap="round"/>`,
+  plate: `<path d="M13 18 L24 10 Q32 16 40 10 L51 18 L47 31 L44 30 L44 54 Q32 59 20 54 L20 30 L17 31 Z" fill="#c4d0de" ${GEAR_OL}/><path d="M32 17 V56" stroke="#8496ad" stroke-width="2.5"/>
+    <path d="M22 39 Q32 44 42 39" fill="none" stroke="#8496ad" stroke-width="2.5" stroke-linecap="round"/><circle cx="25" cy="24" r="2" fill="#6c7f98"/><circle cx="39" cy="24" r="2" fill="#6c7f98"/>
+    <path d="M16 18 L24 13" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><path d="M23 33 V50" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".55"/>`,
+  vest: `<path d="M16 16 L25 9 L29 24 L29 55 Q22 57 15 54 L15 33 L11 31 Z" fill="#b8733e" ${GEAR_OL}/><path d="M48 16 L39 9 L35 24 L35 55 Q42 57 49 54 L49 33 L53 31 Z" fill="#b8733e" ${GEAR_OL}/>
+    <path d="M29 30 L35 34 M35 30 L29 34 M29 40 L35 44 M35 40 L29 44" stroke="#f1d39a" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M19 21 V50 M45 21 V50" stroke="#7a4420" stroke-width="1.6" stroke-dasharray="3 3"/><rect x="38" y="40" width="8" height="7" rx="1.5" fill="#9a5c2e" stroke="#7a4420" stroke-width="1.6"/>`,
+  goldRing: ringArt('#ffc83a', '#4fb6ff'),
+  silverRing: ringArt('#dfe7f1', '#b46bff'),
+  rubyRing: ringArt('#ffc83a', '#ff3d5e'),
+  skull: `${chainArt}<path d="M32 24 V30" stroke="#23305a" stroke-width="3"/><path d="M20 40 a12 12 0 1 1 24 0 q0 6 -4 8 v5 h-16 v-5 q-4 -2 -4 -8 Z" fill="#f4f1e8" ${GEAR_OL}/>
+    <circle cx="27" cy="40" r="3.6" fill="#23305a"/><circle cx="37" cy="40" r="3.6" fill="#23305a"/><path d="M32 44 l-2 3 h4 Z" fill="#23305a"/><path d="M28 53 v-4 M32 53 v-4 M36 53 v-4" stroke="#23305a" stroke-width="1.6"/>`,
+  moon: `${chainArt}<path d="M38 24 V29" stroke="#23305a" stroke-width="3"/><path d="M38 28 A14 14 0 1 0 38 54 A18 18 0 0 1 38 28 Z" fill="#ffe066" ${GEAR_OL}/><path d="M25 36 A10 10 0 0 0 26 47" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+    <polygon points="${starPts(47, 45, 4.5, 2)}" fill="#fff6c0" stroke="#23305a" stroke-width="1.6" stroke-linejoin="round"/>`,
+  clover: `${chainArt}<path d="M32 24 V30" stroke="#23305a" stroke-width="3"/><path d="M33 47 Q36 54 42 56" fill="none" stroke="#23305a" stroke-width="6" stroke-linecap="round"/><path d="M33 47 Q36 54 42 56" fill="none" stroke="#3fd06a" stroke-width="2.6" stroke-linecap="round"/>
+    <g stroke="#23305a" stroke-width="6" fill="#3fd06a"><circle cx="26" cy="36" r="6.5"/><circle cx="38" cy="36" r="6.5"/><circle cx="26" cy="47" r="6.5"/><circle cx="38" cy="47" r="6.5"/></g>
+    <g fill="#3fd06a"><circle cx="26" cy="36" r="6.5"/><circle cx="38" cy="36" r="6.5"/><circle cx="26" cy="47" r="6.5"/><circle cx="38" cy="47" r="6.5"/><circle cx="32" cy="41.5" r="5"/></g>
+    <path d="M32 41.5 L24 34 M32 41.5 L40 34 M32 41.5 L24 49 M32 41.5 L40 49" stroke="#23a34a" stroke-width="1.8" stroke-linecap="round"/><path d="M23 33 Q25 31 27 32" stroke="#bff5c8" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+  scroll: `<rect x="15" y="17" width="34" height="30" rx="3" fill="#fbe7b8" ${GEAR_OL}/><path d="M22 25 H42 M22 31 H42 M22 37 H35" stroke="#c9a46a" stroke-width="2.2" stroke-linecap="round"/>
+    <rect x="7" y="13" width="11" height="38" rx="5.5" fill="#f2d18e" ${GEAR_OL}/><rect x="46" y="13" width="11" height="38" rx="5.5" fill="#f2d18e" ${GEAR_OL}/>
+    <path d="M28 46 V59 L32 55 L36 59 V46" fill="#ff4d6d" stroke="#23305a" stroke-width="2" stroke-linejoin="round"/><circle cx="32" cy="46" r="5.5" fill="#e8283c" ${GEAR_OL}/>`,
+  atk: `<g transform="rotate(45 32 32)"><path d="M32 3 L39 10 L39 40 L25 40 L25 10 Z" fill="#eef4fb" ${GEAR_OL}/><rect x="15" y="39" width="34" height="8" rx="4" fill="#ffc83a" ${GEAR_OL}/><rect x="28" y="47" width="8" height="12" rx="2" fill="#9a5b2c" ${GEAR_OL}/></g>`,
+  heart: `<path d="M32 56 C10 42 6 30 10 21 C14 12 27 11 32 21 C37 11 50 12 54 21 C58 30 54 42 32 56 Z" fill="#ff4d6d" ${GEAR_OL}/><path d="M16 22 Q19 17 24 18" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".85"/>`,
+};
+// slot badges: white glyphs on a dark disc
+const SLOT_SVG = {
+  weapon: '<g transform="rotate(45 12 12)"><path d="M12 2 L14.5 5 V15 H9.5 V5 Z M6.5 15 H17.5 V17.5 H6.5 Z M10.8 17.5 H13.2 V22 H10.8 Z" fill="#fff"/></g>',
+  armor: '<path d="M4 7 L9 3.5 Q12 6 15 3.5 L20 7 L18.5 11.5 L17 11 V20.5 H7 V11 L5.5 11.5 Z" fill="#fff"/>',
+  ring: '<circle cx="12" cy="14" r="6" fill="none" stroke="#fff" stroke-width="3"/><path d="M9 6 L10.5 3 H13.5 L15 6 L12 9 Z" fill="#fff"/>',
+  necklace: '<path d="M4 3 Q12 15 20 3" fill="none" stroke="#fff" stroke-width="2"/><path d="M12 10 L16 15 L12 21 L8 15 Z" fill="#fff"/>',
+};
+const CHEST_SVG = svgDoc(`<g class="ch-base"><rect x="10" y="50" width="100" height="52" rx="9" fill="#b8733e" ${GEAR_OL.replace('3"', '5"')}/>
+  <rect x="24" y="50" width="10" height="52" fill="#ffc83a" stroke="#23305a" stroke-width="3"/><rect x="86" y="50" width="10" height="52" fill="#ffc83a" stroke="#23305a" stroke-width="3"/>
+  <path d="M16 60 H104" stroke="#8f5427" stroke-width="3" stroke-linecap="round"/><path d="M16 88 H104" stroke="#8f5427" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+  <rect x="49" y="54" width="22" height="24" rx="5" fill="#ffc83a" ${GEAR_OL}/><path d="M60 62 v7" stroke="#23305a" stroke-width="4" stroke-linecap="round"/></g>
+  <g class="ch-lid"><path d="M10 54 V40 Q10 12 60 12 Q110 12 110 40 V54 Z" fill="#c98446" ${GEAR_OL.replace('3"', '5"')}/>
+  <path d="M24 54 V18 M34 54 V15 M86 54 V15 M96 54 V18" stroke="#23305a" stroke-width="3"/><path d="M24.5 54 V18.5 L33.5 15.5 V54 Z M86.5 54 V15.5 L95.5 18.5 V54 Z" fill="#ffc83a"/>
+  <rect x="8" y="46" width="104" height="10" rx="4" fill="#ffc83a" ${GEAR_OL}/><path d="M22 26 Q40 17 60 17" stroke="#e7ad74" stroke-width="4" fill="none" stroke-linecap="round"/></g>`, '0 0 120 110');
+const GEAR_URL = {};
+const gearIcon = id => GEAR_URL[id] || (GEAR_URL[id] = svgUrl(svgDoc(GEAR_SVG[id])));
+const slotIcon = id => GEAR_URL['slot-' + id] || (GEAR_URL['slot-' + id] = svgUrl(svgDoc(SLOT_SVG[id], '0 0 24 24')));
+
+// ---------- inventory logic (G.save.gear = { items: { 'wand:2': count }, eq: { slot: key } }) ----------
+function gearStats(sv = G.save) {
+  const out = {};
+  const add = st => { if (st) for (const k in st) out[k] = (out[k] || 0) + st[k]; };
+  add((SKINS.find(s => s.id === sv.skin) || {}).boost);
+  add((COSTUMES.find(c => c.id === sv.costume) || {}).boost);
+  const g = sv.gear;
+  if (g) for (const sl in g.eq) { const k = g.eq[sl]; if (k && g.items[k] > 0 && ARTIFACTS[artParse(k).id]) add(artStats(k)); }
+  return out;
+}
+// the attack and health numbers shown on the inventory screen
+function gearTotals(sv = G.save) {
+  const g = gearStats(sv), up = sv.upgrades;
+  return { atk: Math.round(100 * (1 + 0.03 * up.damage) * (1 + (g.dmg || 0) / 100)), hp: Math.round(140 * (1 + 0.05 * up.health) * (1 + (g.hp || 0) / 100)) };
+}
+function rollArtifact() {
+  const ids = Object.keys(ARTIFACTS), id = ids[Math.floor(Math.random() * ids.length)];
+  let r = 0, x = Math.random();
+  for (; r < RARITIES.length - 1; r++) { if ((x -= RARITIES[r].odds) < 0) break; }
+  return artKey(id, r);
+}
+function addArtifact(key, n = 1) { const it = G.save.gear.items; it[key] = (it[key] || 0) + n; }
+// three of one artifact and rarity become one of the next rarity; an equipped copy moves up with it
+function fuseArtifact(key) {
+  const g = G.save.gear, { id, r } = artParse(key);
+  if (r >= RARITIES.length - 1 || (g.items[key] || 0) < 3) return null;
+  g.items[key] -= 3;
+  if (!g.items[key]) delete g.items[key];
+  const next = artKey(id, r + 1);
+  addArtifact(next);
+  for (const sl in g.eq) if (g.eq[sl] === key && !g.items[key]) g.eq[sl] = next;
+  return next;
+}
+function fuseAll() {
+  const made = [];
+  for (let r = 0; r < RARITIES.length - 1; r++) for (const id in ARTIFACTS) {
+    const k = artKey(id, r);
+    while ((G.save.gear.items[k] || 0) >= 3) made.push(fuseArtifact(k));
+  }
+  return made;
+}
+const canFuse = () => Object.keys(G.save.gear.items).some(k => G.save.gear.items[k] >= 3 && artParse(k).r < RARITIES.length - 1);
+const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
+
+// ---------- screens ----------
+Object.assign(UI, {
+  gearSort: 'rarity', artKeyOpen: null, chestBusy: false,
+
+  initGear() {
+    ICONS.map.gear = svgUrl(CHEST_SVG); ICONS.map.scroll = gearIcon('scroll'); ICONS.map['g-atk'] = gearIcon('atk'); ICONS.map['g-heart'] = gearIcon('heart');
+    $('gSort').addEventListener('click', () => { this.gearSort = this.gearSort === 'rarity' ? 'slot' : 'rarity'; AUDIO.play('click'); this.renderGear(); });
+    $('gChest').addEventListener('click', () => { AUDIO.play('click'); this.openScrollChest(); });
+    $('gFuse').addEventListener('click', () => this.fuseAllUi());
+    document.querySelectorAll('#gearStage .eq').forEach(b => b.addEventListener('click', () => {
+      const k = G.save.gear.eq[b.dataset.slot];
+      AUDIO.play('click');
+      if (k) this.openArtifact(k); else this.toast(`No ${b.dataset.slot} equipped`);
+    }));
+    $('artEquip').addEventListener('click', () => this.equipToggle());
+    $('artFuse').addEventListener('click', () => this.fuseOneUi());
+    $('artClose').addEventListener('click', () => { AUDIO.play('click'); this.show('artInfo', false); });
+    $('scOpen').addEventListener('click', () => this.crackChest());
+    $('scDone').addEventListener('click', () => { AUDIO.play('click'); this.show('scrollChest', false); this.renderGear(); });
+    $('chestArt').innerHTML = CHEST_SVG;
+  },
+
+  renderGear() {
+    const sv = G.save, g = sv.gear;
+    const tot = gearTotals();
+    $('gAtk').textContent = fmtNum(tot.atk); $('gHp').textContent = fmtNum(tot.hp);
+    $('gScrolls').textContent = fmtNum(sv.scrolls || 0);
+    $('gChest').classList.toggle('glow', (sv.scrolls || 0) > 0);
+    $('gSort').textContent = this.gearSort === 'rarity' ? 'BY RARITY' : 'BY SLOT';
+    $('gFuse').classList.toggle('glow', canFuse());
+    document.querySelectorAll('#gearStage .eq').forEach(b => {
+      const k = g.eq[b.dataset.slot];
+      b.className = 'eq' + (k ? ' art r' + artParse(k).r : '');
+      b.innerHTML = k ? `<img alt="" src="${gearIcon(artParse(k).id)}">` : `<img alt="" class="ghost" src="${slotIcon(b.dataset.slot)}">`;
+      b.setAttribute('aria-label', k ? `${RARITIES[artParse(k).r].name} ${artParse(k).def.name}` : `Empty ${b.dataset.slot} slot`);
+    });
+    const slotOrder = GEAR_SLOTS.map(s => s.id), ids = Object.keys(ARTIFACTS);
+    const keys = Object.keys(g.items).filter(k => g.items[k] > 0 && ARTIFACTS[artParse(k).id]);
+    keys.sort((a, b) => {
+      const A = artParse(a), B = artParse(b);
+      const bySlot = slotOrder.indexOf(A.def.slot) - slotOrder.indexOf(B.def.slot), byR = B.r - A.r;
+      return (this.gearSort === 'rarity' ? byR || bySlot : bySlot || byR) || ids.indexOf(A.id) - ids.indexOf(B.id);
+    });
+    const cards = keys.map(k => {
+      const { id, r, def } = artParse(k), b = document.createElement('button');
+      const worn = g.eq[def.slot] === k;
+      b.className = `art r${r}${worn ? ' worn' : ''}${g.items[k] >= 3 && r < RARITIES.length - 1 ? ' fusable' : ''}`;
+      b.innerHTML = `<i class="badge"><img alt="" src="${slotIcon(def.slot)}"></i><img alt="" src="${gearIcon(id)}"><b>${g.items[k]}</b>`;
+      b.setAttribute('aria-label', `${RARITIES[r].name} ${def.name}, ${g.items[k]} owned${worn ? ', equipped' : ''}`);
+      b.addEventListener('click', () => { AUDIO.play('click'); this.openArtifact(k); });
+      return b;
+    });
+    if (!cards.length) {
+      const p = document.createElement('p');
+      p.className = 'gear-empty';
+      p.textContent = 'No artifacts yet. Tougher enemies very rarely drop a scroll; each scroll opens a treasure chest.';
+      cards.push(p);
+    }
+    $('gearGrid').replaceChildren(...cards);
+  },
+
+  openArtifact(key) {
+    const g = G.save.gear, { id, r, def } = artParse(key), n = g.items[key] || 0;
+    this.artKeyOpen = key;
+    $('artBig').className = 'art-big art r' + r;
+    $('artBig').innerHTML = `<img alt="" src="${gearIcon(id)}">`;
+    $('artRar').textContent = `${RARITIES[r].name} · ${GEAR_SLOTS.find(s => s.id === def.slot).name}`;
+    $('artRar').className = 'eyebrow rar r' + r;
+    $('artName').textContent = def.name;
+    const st = artStats(key);
+    $('artStat').textContent = Object.keys(st).map(k => fmtBonus(k, st[k])).join(' · ');
+    const top = r >= RARITIES.length - 1;
+    let note = `You have ${n}.`;
+    if (!top) { const nx = artStats(artKey(id, r + 1)); note += ` Fuse 3 into ${RARITIES[r + 1].name}: ${Object.keys(nx).map(k => fmtBonus(k, nx[k])).join(' · ')}`; }
+    else note += ' Legendary is the top rarity.';
+    $('artNote').textContent = note;
+    const worn = g.eq[def.slot] === key;
+    $('artEquip').textContent = worn ? 'Unequip' : 'Equip';
+    $('artEquip').className = worn ? 'jelly ghost' : 'jelly';
+    $('artFuse').hidden = top;
+    $('artFuse').disabled = n < 3;
+    $('artFuse').textContent = `Fuse 3 → ${top ? '' : RARITIES[r + 1].name}`;
+    this.show('artInfo', true);
+  },
+  equipToggle() {
+    const g = G.save.gear, key = this.artKeyOpen;
+    if (!key || !(g.items[key] > 0)) return;
+    const slot = artParse(key).def.slot;
+    g.eq[slot] = g.eq[slot] === key ? null : key;
+    saveGame(); AUDIO.play(g.eq[slot] ? 'levelup' : 'click'); G.hero.impulse(1.6);
+    this.renderGear(); this.openArtifact(key);
+  },
+  fuseOneUi() {
+    const key = this.artKeyOpen, made = key && fuseArtifact(key);
+    if (!made) return;
+    saveGame(); AUDIO.play('chest'); G.hero.impulse(2);
+    this.toast(`Fused into ${RARITIES[artParse(made).r].name} ${artParse(made).def.name}`);
+    this.renderGear();
+    this.openArtifact(G.save.gear.items[key] > 0 ? key : made);
+  },
+  fuseAllUi() {
+    const made = fuseAll();
+    if (!made.length) { AUDIO.play('click'); this.toast('Fusing needs 3 of the same artifact and rarity'); return; }
+    saveGame(); AUDIO.play('chest'); G.hero.impulse(2.2);
+    // only the final results matter: a fused item can itself be fused again in the same pass
+    const left = made.filter(k => G.save.gear.items[k] > 0);
+    const best = left.reduce((a, k) => (artParse(k).r > artParse(a).r ? k : a), left[0] || made[made.length - 1]);
+    this.toast(`Fused ${made.length}× · best: ${RARITIES[artParse(best).r].name} ${artParse(best).def.name}`);
+    this.renderGear();
+  },
+
+  // ---------- scroll chest ----------
+  openScrollChest() {
+    this.chestBusy = false;
+    const st = $('chestStage');
+    st.className = 'chest-stage';
+    $('chestReveal').hidden = true;
+    this.syncChestButtons();
+    $('scText').textContent = (G.save.scrolls || 0) > 0 ? 'Use a scroll to unlock the chest.' : 'You have no scrolls. Tougher enemies very rarely drop one.';
+    this.show('scrollChest', true);
+  },
+  syncChestButtons() {
+    const n = G.save.scrolls || 0, b = $('scOpen');
+    b.disabled = n <= 0 || this.chestBusy;
+    b.innerHTML = `<img alt="" src="${gearIcon('scroll')}">${$('chestReveal').hidden ? 'Unlock' : 'Open another'} · ${n}`;
+  },
+  crackChest() {
+    const sv = G.save;
+    if (this.chestBusy || !(sv.scrolls > 0)) return;
+    sv.scrolls--;
+    const key = rollArtifact();
+    addArtifact(key);
+    saveGame();
+    this.chestBusy = true;
+    const st = $('chestStage'), { id, r, def } = artParse(key);
+    $('chestReveal').hidden = true;
+    st.className = 'chest-stage';
+    void st.offsetWidth;
+    st.classList.add('shake');
+    AUDIO.play('click');
+    this.syncChestButtons();
+    $('scText').textContent = 'Unlocking…';
+    setTimeout(() => {
+      st.className = 'chest-stage open r' + r;
+      const rv = $('chestReveal');
+      rv.innerHTML = `<span class="art r${r}"><img alt="" src="${gearIcon(id)}"></span><small class="rar r${r}">${RARITIES[r].name}</small><b></b><span class="dim"></span>`;
+      rv.querySelector('b').textContent = def.name;
+      const s = artStats(key);
+      rv.querySelector('.dim').textContent = Object.keys(s).map(k => fmtBonus(k, s[k])).join(' · ');
+      rv.hidden = false;
+      AUDIO.play(r >= 3 ? 'win' : 'chest');
+      $('scText').textContent = 'Added to your inventory.';
+      this.chestBusy = false;
+      this.syncChestButtons();
+    }, 900);
+  },
+});
+
 // ---- 15-save.js ----
 // ============================================================
 // Saving progress in localStorage
@@ -7442,6 +7883,7 @@ function defaultSave() {
     v: 1, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', costumes: ['none'],
+    scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null } }, devUnlocked: false,
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0 }, tutorial: true,
   };
@@ -7460,6 +7902,7 @@ function loadGame() {
         skins: Array.isArray(s.skins) && s.skins.length ? s.skins : d.skins,
         costumes: Array.isArray(s.costumes) && s.costumes.length ? s.costumes : d.costumes,
         cleared: s.cleared || {}, best: s.best || {},
+        gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) } },
       };
     }
   } catch (_) { /* storage unavailable: play without saving */ }
@@ -7862,9 +8305,16 @@ function homeCamera(dt) {
   // on the skins screen the hero sits smaller and higher, above the skin grid
   // portrait: smaller and higher above the picker; landscape: on the left of the picker panel
   const skins = UI.menuTab === 'skins', wide = aspect >= 1.1;
-  const wantFrac = skins ? (portrait ? 0.22 : wide ? 0.42 : 0.3) : (portrait ? 0.27 : 0.4);
-  const wantLift = skins ? (portrait ? 0.17 : wide ? 0.02 : 0.14) : 0;
-  const wantSide = skins && wide ? 0.21 : 0;
+  let wantFrac = skins ? (portrait ? 0.2 : wide ? 0.42 : 0.3) : (portrait ? 0.27 : 0.4);
+  let wantLift = skins ? (portrait ? 0.22 : wide ? 0.02 : 0.16) : 0;
+  let wantSide = skins && wide ? 0.21 : 0;
+  // on the gear screen the hero stands in the middle of the equip-slot stage
+  const st = UI.menuTab === 'gear' && $('gearStage').getBoundingClientRect();
+  if (st && st.height > 0 && R.cssH > 0) {
+    wantFrac = clamp(st.height * 0.92 / R.cssH, 0.12, 0.6);
+    wantLift = (R.cssH / 2 - (st.top + st.height * 0.5)) / R.cssH;
+    wantSide = (R.cssW / 2 - (st.left + st.width * 0.5)) / R.cssW;
+  }
   const k = HOME.frac ? 1 - Math.exp(-dt * 6) : 1;
   HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
   const viewH = 2.2 / HOME.frac, d = viewH / (2 * half);

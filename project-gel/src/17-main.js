@@ -225,9 +225,16 @@ function homeCamera(dt) {
   // on the skins screen the hero sits smaller and higher, above the skin grid
   // portrait: smaller and higher above the picker; landscape: on the left of the picker panel
   const skins = UI.menuTab === 'skins', wide = aspect >= 1.1;
-  const wantFrac = skins ? (portrait ? 0.22 : wide ? 0.42 : 0.3) : (portrait ? 0.27 : 0.4);
-  const wantLift = skins ? (portrait ? 0.17 : wide ? 0.02 : 0.14) : 0;
-  const wantSide = skins && wide ? 0.21 : 0;
+  let wantFrac = skins ? (portrait ? 0.2 : wide ? 0.42 : 0.3) : (portrait ? 0.27 : 0.4);
+  let wantLift = skins ? (portrait ? 0.22 : wide ? 0.02 : 0.16) : 0;
+  let wantSide = skins && wide ? 0.21 : 0;
+  // on the gear screen the hero stands in the middle of the equip-slot stage
+  const st = UI.menuTab === 'gear' && $('gearStage').getBoundingClientRect();
+  if (st && st.height > 0 && R.cssH > 0) {
+    wantFrac = clamp(st.height * 0.92 / R.cssH, 0.12, 0.6);
+    wantLift = (R.cssH / 2 - (st.top + st.height * 0.5)) / R.cssH;
+    wantSide = (R.cssW / 2 - (st.left + st.width * 0.5)) / R.cssW;
+  }
   const k = HOME.frac ? 1 - Math.exp(-dt * 6) : 1;
   HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
   const viewH = 2.2 / HOME.frac, d = viewH / (2 * half);

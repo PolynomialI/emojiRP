@@ -93,7 +93,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 #loadError { max-width: 360px; text-align: center; color: #fff; font-weight: 500; }
 
 /* home */
-#home, #skins { display: flex; flex-direction: column; }
+#home, #skins, #gear { display: flex; flex-direction: column; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .home-title { text-align: center; margin-top: 8px; font-size: clamp(38px, 10vw, 54px); line-height: 0.95; color: var(--sky); -webkit-text-stroke: 8px #fff; }
 .chapter-card { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; padding: 12px; margin-top: 14px; }
@@ -111,9 +111,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   background-size: 260px 28px; }
 .play-wrap { display: grid; gap: 10px; }
 #btnPlay { width: 100%; }
-.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
 .tab { display: grid; justify-items: center; gap: 2px; padding: 6px 2px 8px; border-radius: 16px; font-size: 13px; color: var(--ink); background: var(--card-2); box-shadow: inset 0 -4px 0 var(--card-edge); }
-.tab img { width: 40px; height: 40px; }
+.tab img { width: 40px; height: 40px; object-fit: contain; }
 .tab.on { color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); background: linear-gradient(180deg, #6fcbff, var(--sky)); box-shadow: inset 0 -4px 0 var(--sky-deep), 0 3px 0 var(--sky-shadow); }
 
 /* sub screens */
@@ -132,8 +132,8 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .blob-pick { margin-top: auto; display: grid; gap: 10px; }
 .blob-tabs { justify-self: center; }
 .blob-tabs button { padding: 8px 20px; font-size: 15px; }
-.skins-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 44vh; overflow-y: auto; padding: 2px 2px 6px; }
-.skin { display: grid; justify-items: center; gap: 1px; padding: 6px 4px 8px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; font-size: 13px; }
+.skins-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-height: 44vh; overflow-y: auto; padding: 2px 2px 6px; }
+.skin { display: grid; justify-items: center; gap: 1px; padding: 6px 2px 8px; min-width: 0; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; font-size: 13px; }
 .skin img { width: 58px; height: 58px; }
 .skin.sel { box-shadow: inset 0 0 0 3px var(--sky), 0 4px 0 var(--sky-deep); }
 .skin small { font-size: 12px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; }
@@ -158,6 +158,77 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .node .ds { display: block; font-size: 12px; font-weight: 500; color: var(--ink-dim); }
 .node.big .num { width: 72px; height: 72px; }
 
+/* gear: a ribbon title, the hero between four equip slots, then totals, buttons and the artifact grid */
+.subhead h2.ribbon, .ribbon { justify-self: center; margin: 0; text-align: center; padding: 6px 34px 9px; font-size: 24px; line-height: 1.1; letter-spacing: 0.06em; color: #fff; -webkit-text-stroke: 5px #b86a06; paint-order: stroke fill;
+  background: linear-gradient(180deg, #ffe680, #ffc21f 55%, #ffab12); box-shadow: inset 0 -5px 0 #e08e0b, inset 0 2px 0 rgba(255,255,255,.6);
+  clip-path: polygon(0 0, 100% 0, 93% 50%, 100% 100%, 0 100%, 7% 50%); filter: drop-shadow(0 4px 0 rgba(150, 80, 0, 0.5)); }
+.pill .ico { width: 26px; height: 26px; }
+.gear-stage { flex: 1; min-height: 190px; display: grid; grid-template-columns: 70px 1fr 70px; grid-template-rows: 1fr 1fr; align-items: center; gap: 8px 0; margin-block: 8px; }
+.gear-stage .eq { width: 70px; height: 70px; border-radius: 18px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.28); box-shadow: inset 0 0 0 3px rgba(255,255,255,.7); }
+.gear-stage .eq img { width: 80%; height: 80%; }
+.gear-stage .eq img.ghost { width: 46%; height: 46%; opacity: 0.85; }
+.gear-stage [data-slot="armor"], .gear-stage [data-slot="necklace"] { grid-column: 3; }
+.gear-stage [data-slot="ring"], .gear-stage [data-slot="necklace"] { grid-row: 2; }
+.gear-panel { display: grid; gap: 10px; padding: 12px; }
+.gear-stats { display: flex; justify-content: center; gap: 22px; font-size: 22px; font-variant-numeric: tabular-nums; }
+.gear-stats span { display: inline-flex; align-items: center; gap: 6px; }
+.gear-stats img { width: 30px; height: 30px; }
+.gear-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gear-btns .jelly { min-height: 42px; padding: 6px 6px 10px; font-size: 14px; border-radius: 14px; gap: 5px; }
+.gear-btns .jelly img { width: 22px; height: 22px; }
+.jelly.glow { animation: glow 1.4s ease-in-out infinite; }
+@keyframes glow { 50% { filter: brightness(1.15) drop-shadow(0 0 8px rgba(255, 220, 90, 0.9)); } }
+.gear-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; max-height: 34vh; overflow-y: auto; padding: 2px 2px 6px; align-content: start; }
+.gear-empty { grid-column: 1 / -1; margin: 6px; text-align: center; font-size: 14px; font-weight: 500; color: var(--ink-dim); }
+.art { position: relative; aspect-ratio: 1; border-radius: 14px; display: grid; place-items: center; }
+.art > img { width: 76%; height: 76%; filter: drop-shadow(0 2px 0 rgba(0,0,0,.18)); }
+.art.r0 { background: linear-gradient(180deg, #d5dbe3, #9ba6b4); box-shadow: inset 0 -4px 0 #7b8696, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #5f6a7a; }
+.art.r1 { background: linear-gradient(180deg, #a9f08c, #4fbf45); box-shadow: inset 0 -4px 0 #3a9a33, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #2d7a28; }
+.art.r2 { background: linear-gradient(180deg, #98d6ff, #3d8ff0); box-shadow: inset 0 -4px 0 #2a6fcf, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #1f55a3; }
+.art.r3 { background: linear-gradient(180deg, #dcbcff, #9a5cf0); box-shadow: inset 0 -4px 0 #7b3fd6, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #5a2ba3; }
+.art.r4 { background: linear-gradient(180deg, #fff0a0, #ffb52a); box-shadow: inset 0 -4px 0 #e08e0b, inset 0 2px 0 rgba(255,255,255,.7), 0 3px 0 #a86006, 0 0 12px rgba(255, 190, 40, 0.7); }
+.art .badge { position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: #23305a; box-shadow: 0 1px 0 rgba(255,255,255,.4); }
+.art .badge img { width: 14px; height: 14px; }
+.art b { position: absolute; right: 5px; bottom: 2px; font-size: 15px; color: #fff; -webkit-text-stroke: 3.5px #23305a; paint-order: stroke fill; }
+.art.worn { outline: 3px solid #fff; outline-offset: -3px; }
+.art.worn::after { content: ''; position: absolute; right: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #3fe0a0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.6 2.6L12 5.5' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100%; box-shadow: 0 0 0 2px #23305a; }
+.art.fusable { animation: fusable 1.6s ease-in-out infinite; }
+@keyframes fusable { 50% { transform: translateY(-2px); filter: brightness(1.12); } }
+.rar.r0 { color: #6d7887; } .rar.r1 { color: #2f9a2a; } .rar.r2 { color: #2a6fcf; } .rar.r3 { color: #7b3fd6; } .rar.r4 { color: #d08300; }
+.art-big { width: 120px; height: 120px; border-radius: 26px; margin: 0 auto; }
+.art-info { display: grid; gap: 6px; padding: 18px 16px; text-align: center; }
+.art-info h2 { margin: 0; font-size: 26px; color: var(--ink); }
+.art-info .art-stat { margin: 0; font-size: 18px; color: var(--ink); }
+.art-info .dim { margin: 0; font-size: 14px; font-weight: 500; }
+.chest-stage { position: relative; height: 280px; display: grid; place-items: center; }
+.chest-stage .rays { position: absolute; width: 300px; height: 300px; border-radius: 50%; opacity: 0; transition: opacity .3s;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.55) 0deg 10deg, rgba(255,255,255,0) 10deg 24deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%); }
+.chest-stage.open .rays { opacity: 1; animation: spin 7s linear infinite; }
+.chest-stage.open.r1 .rays { background-color: rgba(80, 200, 70, .35); } .chest-stage.open.r2 .rays { background-color: rgba(60, 140, 240, .4); }
+.chest-stage.open.r3 .rays { background-color: rgba(160, 90, 240, .45); } .chest-stage.open.r4 .rays { background-color: rgba(255, 190, 40, .55); }
+@keyframes spin { to { transform: rotate(360deg); } }
+#chestArt { position: relative; width: 190px; transition: transform .3s, opacity .3s; }
+#chestArt svg { width: 100%; display: block; overflow: visible; }
+#chestArt .ch-lid { transform-origin: 10% 50%; transform-box: fill-box; transition: transform .35s cubic-bezier(.3,1.6,.5,1); }
+.chest-stage.shake #chestArt { animation: shake .9s ease-in-out; }
+@keyframes shake { 10%, 50%, 90% { transform: rotate(-5deg) scale(1.03); } 30%, 70% { transform: rotate(5deg) scale(1.05); } }
+.chest-stage.open #chestArt { transform: translateY(78px) scale(.72); }
+.chest-stage.open #chestArt .ch-lid { transform: translate(-6px, -34px) rotate(-24deg); }
+.chest-reveal { position: absolute; top: 0; display: grid; justify-items: center; gap: 2px; animation: rise .55s cubic-bezier(.3,1.6,.5,1); }
+.chest-reveal .art { width: 104px; height: 104px; border-radius: 24px; }
+.chest-reveal small { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; -webkit-text-stroke: 4px #fff; paint-order: stroke fill; }
+.chest-reveal b { font-size: 22px; color: #fff; -webkit-text-stroke: 5px var(--sky-deep); paint-order: stroke fill; }
+.chest-reveal .dim { font-size: 15px; color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); }
+@keyframes rise { from { transform: translateY(70px) scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
+#scOpen img { width: 26px; height: 26px; }
+.skin .boost { font-style: normal; font-size: 10px; color: #13a56f; white-space: nowrap; max-width: 100%; overflow: hidden; letter-spacing: -0.01em; }
+.skin > span { max-width: 100%; font-size: 12.5px; line-height: 1.15; text-align: center; }
+/* wide screens: the hero and slots on the left, the panel on the right */
+@media (min-aspect-ratio: 11/10) {
+  #gear .gear-panel { position: absolute; right: max(3vw, 16px); top: 84px; bottom: 18px; width: min(470px, 48vw); margin: 0; align-content: start; grid-template-rows: auto auto minmax(0, 1fr); }
+  #gear .gear-grid { max-height: none; }
+  #gear .gear-stage { position: absolute; left: max(3vw, 16px); right: calc(min(470px, 48vw) + max(3vw, 16px) + 2vw); top: 84px; bottom: 18px; width: auto; margin: 0; grid-template-columns: 76px 1fr 76px; }
+}
 /* HUD: pause, skill tiles and coins; then the chapter bar and the XP bar with its level badge */
 #hud { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
 #hud > * { pointer-events: none; }
@@ -285,6 +356,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
     <nav class="col tabs" aria-label="Menu">
       <button class="tab" data-tab="upgrades"><img alt="" data-icon="meta-damage">Upgrades</button>
+      <button class="tab" data-tab="gear"><img alt="" data-icon="gear">Gear</button>
       <button class="tab on" data-tab="home"><img alt="" data-icon="hero">Play</button>
       <button class="tab" data-tab="skins"><img alt="" data-icon="costume-bunny">Blobs</button>
       <button class="tab" data-tab="chapters"><img alt="" data-icon="chapters">Chapters</button>
@@ -305,6 +377,41 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <div class="seg blob-tabs" id="blobTabs"><button data-bt="colors" aria-pressed="true">Colors</button><button data-bt="costumes" aria-pressed="false">Costumes</button></div>
       <div class="skins-grid" id="skinGrid"></div>
       <button class="jelly" id="skinAction">Equipped</button>
+    </div>
+  </section>
+
+  <section id="gear" class="screen" hidden>
+    <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="ribbon">INVENTORY</h2><div class="pill" title="Scrolls"><img class="ico" alt="Scrolls" data-icon="scroll"><span id="gScrolls">0</span></div></div>
+    <div class="col gear-stage" id="gearStage">
+      <button class="eq" data-slot="weapon"></button><button class="eq" data-slot="armor"></button>
+      <button class="eq" data-slot="ring"></button><button class="eq" data-slot="necklace"></button>
+    </div>
+    <div class="col panel gear-panel">
+      <div class="gear-stats"><span><img alt="Attack" data-icon="g-atk"><b id="gAtk">100</b></span><span><img alt="Health" data-icon="g-heart"><b id="gHp">140</b></span></div>
+      <div class="gear-btns"><button class="jelly ghost" id="gSort">BY RARITY</button><button class="jelly gold" id="gChest"><img alt="" data-icon="gear">CHEST</button><button class="jelly violet" id="gFuse">FUSE</button></div>
+      <div class="gear-grid" id="gearGrid"></div>
+    </div>
+  </section>
+
+  <section id="artInfo" class="screen modal menu" hidden>
+    <div class="modal-body">
+      <div class="panel art-info">
+        <div class="art-big" id="artBig"></div>
+        <p class="eyebrow rar" id="artRar">Common · Weapon</p>
+        <h2 id="artName">Goo Sword</h2>
+        <p class="art-stat" id="artStat"></p>
+        <p class="dim" id="artNote"></p>
+      </div>
+      <div class="row-actions"><button class="jelly" id="artEquip">Equip</button><button class="jelly violet" id="artFuse">Fuse 3</button><button class="jelly ghost" id="artClose">Close</button></div>
+    </div>
+  </section>
+
+  <section id="scrollChest" class="screen modal menu" hidden>
+    <div class="modal-body" style="text-align:center">
+      <h1 class="title outline" style="color:var(--gold);font-size:clamp(28px,7vw,40px);white-space:nowrap">TREASURE CHEST</h1>
+      <div class="chest-stage" id="chestStage"><div class="rays"></div><div id="chestArt"></div><div class="chest-reveal" id="chestReveal" hidden></div></div>
+      <p class="dim" style="margin:0" id="scText"></p>
+      <div class="row-actions"><button class="jelly gold" id="scOpen">Unlock</button><button class="jelly ghost" id="scDone">Done</button></div>
     </div>
   </section>
 

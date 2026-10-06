@@ -39,7 +39,7 @@ await page.evaluate(() => { __manual(); __installNanCheck(); __installDmgLog(); 
 await render(3);
 if (mode === 'boot') {
   await render(30); await shot('home');
-  for (const tab of ['upgrades', 'skins', 'chapters']) { await page.click(`.tab[data-tab="${tab}"]`); await render(2); await shot('menu-' + tab); await page.click(`#${tab} .back`); }
+  for (const tab of ['upgrades', 'gear', 'skins', 'chapters']) { await page.click(`.tab[data-tab="${tab}"]`); await render(2); await shot('menu-' + tab); await page.click(`#${tab} .back`); }
   await page.click('#btnSettings'); await render(1); await shot('menu-settings');
   await page.click('#btnSettingsDone');
 }
@@ -316,6 +316,29 @@ if (mode === 'gait') {
   const { execFileSync } = await import('node:child_process');
   execFileSync('node', [path.join(dir, 'montage.mjs'), path.join(shots, 'gait.png'), '6', ...names]);
   console.log('stride cycle (s):', cyc.toFixed(2));
+}
+if (mode === 'gear') {
+  // inventory: fill it, open scroll chests, fuse, equip, and check the run picks up the bonuses
+  await page.evaluate(() => {
+    const sv = G.save; sv.scrolls = 3; sv.coins = 99999;
+    for (const [k, n] of [['wand:0', 5], ['sword:1', 1], ['cloak:2', 1], ['goldRing:0', 3], ['skull:3', 1], ['moon:4', 1], ['plate:0', 2], ['bow:1', 2], ['clover:2', 1], ['vest:0', 1], ['silverRing:1', 1], ['rubyRing:0', 1]]) sv.gear.items[k] = n;
+    sv.gear.eq.weapon = 'sword:1'; sv.gear.eq.necklace = 'skull:3';
+  });
+  await page.click('.tab[data-tab="gear"]'); await render(30); await shot('gear');
+  await page.click('#gChest'); await render(2); await shot('gear-chest-closed');
+  await page.click('#scOpen'); await page.waitForTimeout(1100); await render(2); await shot('gear-chest-open');
+  await page.click('#scDone');
+  await page.click('#gFuse'); await render(2);
+  const fused = await page.evaluate(() => JSON.stringify(G.save.gear.items));
+  console.log('after fuse:', fused);
+  await page.click('#gearGrid .art'); await render(2); await shot('gear-item');
+  await page.click('#artEquip'); await page.click('#artClose'); await render(4); await shot('gear-after');
+  const totals = await page.evaluate(() => ({ eq: G.save.gear.eq, stats: gearStats(), tot: gearTotals() }));
+  console.log('equipped:', JSON.stringify(totals));
+  await page.click('#gear .back');
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  console.log('run stats:', await page.evaluate(() => JSON.stringify({ gear: G.run.gear, dmg: +G.run.stats.dmgMul.toFixed(3), maxHp: Math.round(G.run.maxHp), cd: +G.run.stats.cdMul.toFixed(3) })));
 }
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
