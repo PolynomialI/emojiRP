@@ -398,7 +398,7 @@ SKILL_HOOKS.worms = {
     if (!nearestEnemy(h[0], h[2], 11)) return;
     st.t = L.cd * cdMul();
     for (let i = 0; i < L.count; i++) {
-      hero.addBud({ joint: 'pelvis', off: [rand(-0.12, 0.12), -0.45, 0.12], r: 0.12, grow: 0.18 + i * 0.1, colw: 3, glow: 0.15, onRelease: wp => spawnWorm(wp, L) });
+      hero.addBud({ joint: 'pelvis', off: [rand(-0.12, 0.12), -0.73, 0.12], r: 0.12, grow: 0.18 + i * 0.1, colw: 3, glow: 0.15, onRelease: wp => spawnWorm(wp, L) });
     }
   },
 };
@@ -659,7 +659,7 @@ SKILL_HOOKS.shield = {
     const h = G.hero.pos, sc = G.hero.scale;
     const inf = easeOutBack(clamp(st.inflate, 0, 1));
     const hp = st.hitPos || [0, 0, 0];
-    SCENE.bubble = { x: h[0], y: 0.82 * sc, z: h[2], r: 1.0 * sc * Math.max(0.05, inf), hit: [hp[0], hp[1], hp[2], st.hitT < 1 ? st.hitT + 0.001 : 0], fade: 1 };
+    SCENE.bubble = { x: h[0], y: 1.0 * sc, z: h[2], r: 1.15 * sc * Math.max(0.05, inf), hit: [hp[0], hp[1], hp[2], st.hitT < 1 ? st.hitT + 0.001 : 0], fade: 1 };
   },
 };
 

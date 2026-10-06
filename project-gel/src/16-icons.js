@@ -128,7 +128,7 @@ function renderHeroIcons() {
   const h = new Hero();
   h.reset(0, 0); h.setArmCount(2); h.yaw = 0.35;
   for (let i = 0; i < 45; i++) h.update(1 / 60, [0, 0, 0], true);
-  const shot = key => { h.buildPrims(); R.resetStreams(); ICONS.map[key] = iconCapture([0, 1.6, 3.5], [0, 1.18, 0], 0.55, h.out); };
+  const shot = key => { h.buildPrims(); R.resetStreams(); ICONS.map[key] = iconCapture([0, 1.9, 3.9], [0, 1.42, 0], 0.55, h.out); };
   const paint = s => {
     R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
     const g = h.out.grad; if (s.top) { g.set(hexToRgb(s.top)); g[3] = 1; } else g[3] = 0;

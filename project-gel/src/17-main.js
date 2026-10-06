@@ -207,7 +207,7 @@ function homeAction(loud) {
   if (r < 0.45) {
     const arm = Math.random() < 0.5 ? 0 : 1, side = hero.arms[arm].side;
     if (hero.arms[arm].action) { hero.impulse(1.5); return; }
-    const t = hero.toWorld([side * 1.25, 1.1, 0.55], [0, 0, 0]);
+    const t = hero.toWorld([side * 1.25, 1.38, 0.55], [0, 0, 0]);
     hero.punch(arm, t, 1.3, imp => {
       FX.glow(imp[0], imp[1], imp[2], 0.5, COLORS.violetHi, 0.12);
       FX.burst(imp[0], imp[1], imp[2], 5, [1, 1, 1], 3, 0.05, 0.2, 1, 0.3);
@@ -230,8 +230,8 @@ function homeCamera(dt) {
   const wantSide = skins && wide ? 0.21 : 0;
   const k = HOME.frac ? 1 - Math.exp(-dt * 6) : 1;
   HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
-  const viewH = 1.9 / HOME.frac, d = viewH / (2 * half);
-  const tgt = [HOME.side * viewH * aspect, (portrait ? 1.0 : 0.95) - HOME.lift * viewH, 0];
+  const viewH = 2.2 / HOME.frac, d = viewH / (2 * half);
+  const tgt = [HOME.side * viewH * aspect, (portrait ? 1.15 : 1.1) - HOME.lift * viewH, 0];
   const pitch = 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
   R.setCamera([tgt[0] + Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);
 }
@@ -251,7 +251,7 @@ function renderFrame() {
     // menus: the hero stands on a bright sky backdrop with a soft shadow
     SCENE.floor = false;
     const q = [0, 0];
-    SCENE.backdrop = R.project(h[0], 1.0, h[2], q) ? [q[0] / R.cssW, 1 - q[1] / R.cssH] : [0.5, 0.55];
+    SCENE.backdrop = R.project(h[0], 1.15, h[2], q) ? [q[0] / R.cssW, 1 - q[1] / R.cssH] : [0.5, 0.55];
     Object.assign(f, HOME_LIGHT);
     f.spot = [0, 0, 0, 50]; f.fogRange = [200, 400]; f.hurt = 0; f.lowHp = 0;
     pushDecal(h[0] + 0.08, h[2] + 0.04, 0.95, 0.6, 0, 1, 0, 0, 0.02, 0.2, 0.55, 0.42);

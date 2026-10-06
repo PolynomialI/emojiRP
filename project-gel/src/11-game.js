@@ -271,7 +271,7 @@ function hurtHero(dmg, fromX, fromZ) {
   G.hero.hit([fromX, 0.8, fromZ]);
   run.hurtFlash = 0.55;
   G.cam.shake = Math.max(G.cam.shake, 0.08);
-  addNumberAt(G.hero.pos[0], 1.7, G.hero.pos[2], dmg, [1, 0.35, 0.35]);
+  addNumberAt(G.hero.pos[0], 2.0, G.hero.pos[2], dmg, [1, 0.35, 0.35]);
   AUDIO.play('hurt');
   if (navigator.vibrate) { try { if (G.save.settings.haptics) navigator.vibrate(12); } catch (_) {} }
   if (run.hp <= 0) heroDown();
@@ -675,7 +675,7 @@ function updatePickups(dt) {
     if (d < (p.kind === 'chest' ? 0.85 : 0.6) && p.t > 0.35) {
       p.dead = true;
       if (p.kind === 'coin') { run.coins += p.value; AUDIO.play('coin'); FX.star(p.x, 0.6, p.z, 0.35, COLORS.gold); }
-      else if (p.kind === 'heart') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.3); AUDIO.play('levelup'); FX.burst(h[0], 1, h[2], 12, [1, 0.4, 0.55], 3, 0.12, 0.6, 3); addNumberAt(h[0], 1.8, h[2], run.maxHp * 0.3, [0.4, 1, 0.6]); }
+      else if (p.kind === 'heart') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.3); AUDIO.play('levelup'); FX.burst(h[0], 1, h[2], 12, [1, 0.4, 0.55], 3, 0.12, 0.6, 3); addNumberAt(h[0], 2.1, h[2], run.maxHp * 0.3, [0.4, 1, 0.6]); }
       else if (p.kind === 'magnet') { for (const g of run.gems) g.pull = true; for (const q of run.pickups) if (q.kind === 'coin' || q.kind === 'scroll') q.pull = true; AUDIO.play('shield'); FX.ring(h[0], h[2], 3, COLORS.mint, 0.5); }
       else if (p.kind === 'chest') { run.chestQueued = (run.chestQueued || 0) + 1; AUDIO.play('chest'); }
       else if (p.kind === 'scroll') { run.scrolls = (run.scrolls || 0) + 1; AUDIO.play('chest'); FX.burst(p.x, 0.6, p.z, 14, COLORS.gold, 3, 0.12, 0.6, 3); }

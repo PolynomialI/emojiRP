@@ -24,24 +24,7 @@ page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') er
 await page.addInitScript({ path: path.join(dir, 'harness.js') });
 if (process.env.SAVE) await page.addInitScript(s => { localStorage.setItem('projectGel.save.v1', s); }, process.env.SAVE);
 const t0 = Date.now();
-process.on('unhandledRejection', async e => { console.log('FAILED:', e.message.split('\n')[0]); console.log('ERRORS:\n' + errors.join('\n')); try { if (mode === 'drops') {
-  // the floor drops up close: blue crystals, emeralds, a scroll, a coin, a heart and a chest
-  await page.click('#btnPlay');
-  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
-  await page.evaluate(() => {
-    const h = G.hero.pos;
-    for (let i = 0; i < 8; i++) dropGem(h[0] - 2.4 + i * 0.6, h[2] + 1.6, 1, 0);
-    for (let i = 0; i < 3; i++) dropGem(h[0] - 1.2 + i * 1.2, h[2] + 2.6, 8, 1);
-    for (const [k, dx] of [['scroll', -2], ['coin', -0.7], ['heart', 0.7], ['chest', 2]]) spawnPickup(k, h[0] + dx, h[2] - 1.6);
-    for (const o of [...G.run.gems, ...G.run.pickups]) { o.vx = o.vz = 0; }
-    G.run.stats.magnet = 0;
-  });
-  await page.evaluate(() => { for (let i = 0; i < 60; i++) { G.run.invuln = 1; __frames(1); } });
-  await render(2); await shot('drops');
-  const vp = page.viewportSize();
-  await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'drops-close.png'), clip: { x: vp.width / 2 - 260, y: vp.height / 2 - 170, width: 520, height: 340 } });
-}
-console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan))); console.log('state', await page.evaluate(() => G.state)); } catch (_) {} await browser.close(); process.exit(1); });
+process.on('unhandledRejection', async e => { console.log('FAILED:', e.message.split('\n')[0]); console.log('ERRORS:\n' + errors.join('\n')); try { console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan))); console.log('state', await page.evaluate(() => G.state)); } catch (_) {} await browser.close(); process.exit(1); });
 await page.goto(url);
 if (mode === 'boot') await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'loading.png') });
 const shot = async name => { await page.waitForTimeout(450); await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + name + '.png') }); };
@@ -314,6 +297,25 @@ if (mode === 'drops') {
   await render(2); await shot('drops');
   const vp = page.viewportSize();
   await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'drops-close.png'), clip: { x: vp.width / 2 - 260, y: vp.height / 2 - 170, width: 520, height: 340 } });
+}
+if (mode === 'gait') {
+  // the hero running in place on the home screen, seen from the side, through one stride
+  await page.evaluate(() => {
+    window.updateHome = dt => { const h = G.hero; h.pos[0] = h.pos[1] = h.pos[2] = 0; h.update(dt, [h.topSpeed, 0, 0], true); FX.update(dt); };
+    G.hero.topSpeed = 4.5;
+  });
+  await page.evaluate(() => __frames(90));
+  const cyc = await page.evaluate(() => STRIDE * G.hero.scale / G.hero.topSpeed);
+  const vp = page.viewportSize(), names = [];
+  for (let i = 0; i < 6; i++) {
+    await page.evaluate(n => __frames(n, 1 / 120, true), Math.round(cyc / 6 * 120));
+    const n = path.join(shots, 'gait-' + i + '.png');
+    await page.screenshot({ path: n, clip: { x: vp.width / 2 - 170, y: vp.height * 0.1, width: 340, height: vp.height * 0.62 } });
+    names.push(n);
+  }
+  const { execFileSync } = await import('node:child_process');
+  execFileSync('node', [path.join(dir, 'montage.mjs'), path.join(shots, 'gait.png'), '6', ...names]);
+  console.log('stride cycle (s):', cyc.toFixed(2));
 }
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');

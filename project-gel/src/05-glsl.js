@@ -316,7 +316,7 @@ float mapH(vec3 p) {
 vec3 primCol(float w, vec3 p) {
   if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 3.0))];
   vec3 c = gooColor(w);
-  if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.35, 1.45, p.y - uGroundY));
+  if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.5, 1.75, p.y - uGroundY));
   return c;
 }
 // distance, with the blended color and glow of the shapes that meet here

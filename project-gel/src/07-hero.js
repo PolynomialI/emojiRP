@@ -2,22 +2,25 @@
 // Hero rig: spring-driven blended shapes with procedural animation
 // ============================================================
 // Local frame: x = side, y = up, z = forward. World = pos + rotY(yaw) * (local * scale)
+// Long legs: the body rides high on thigh and shin segments of LEG_SEG each, and one full
+// gait cycle (two steps) covers STRIDE world units, so the hero takes long strides.
+const PELVIS_Y = 0.88, HIP_Y = 0.78, LEG_SEG = 0.36, STRIDE = 1.8;
 const HERO_JOINTS = {
-  pelvis: { rest: [0, 0.6, 0], k: 420, z: 0.62, inertia: 0.15 },
-  chest: { rest: [0, 0.93, 0], k: 260, z: 0.42, inertia: 0.42 },
-  head: { rest: [0, 1.3, 0.03], k: 170, z: 0.34, inertia: 0.7 },
-  hipA: { rest: [0.13, 0.5, 0], k: 520, z: 0.7, inertia: 0.08 },
-  hipB: { rest: [-0.13, 0.5, 0], k: 520, z: 0.7, inertia: 0.08 },
-  kneeA: { rest: [0.16, 0.29, 0.05], k: 460, z: 0.62, inertia: 0.12 },
-  kneeB: { rest: [-0.16, 0.29, 0.05], k: 460, z: 0.62, inertia: 0.12 },
-  footA: { rest: [0.18, 0.075, 0.06], k: 950, z: 0.85, inertia: 0 },
-  footB: { rest: [-0.18, 0.075, 0.06], k: 950, z: 0.85, inertia: 0 },
+  pelvis: { rest: [0, PELVIS_Y, 0], k: 420, z: 0.62, inertia: 0.15 },
+  chest: { rest: [0, 1.21, 0], k: 260, z: 0.42, inertia: 0.42 },
+  head: { rest: [0, 1.58, 0.03], k: 170, z: 0.34, inertia: 0.7 },
+  hipA: { rest: [0.13, HIP_Y, 0], k: 520, z: 0.7, inertia: 0.08 },
+  hipB: { rest: [-0.13, HIP_Y, 0], k: 520, z: 0.7, inertia: 0.08 },
+  kneeA: { rest: [0.15, 0.43, 0.08], k: 460, z: 0.62, inertia: 0.12 },
+  kneeB: { rest: [-0.15, 0.43, 0.08], k: 460, z: 0.62, inertia: 0.12 },
+  footA: { rest: [0.17, 0.075, 0.06], k: 950, z: 0.85, inertia: 0 },
+  footB: { rest: [-0.17, 0.075, 0.06], k: 950, z: 0.85, inertia: 0 },
 };
 const ARM_SLOTS = [
-  { side: 1, sh: [0.29, 1.06, 0], el: [0.42, 0.86, 0.05], fi: [0.5, 0.7, 0.15] },
-  { side: -1, sh: [-0.29, 1.06, 0], el: [-0.42, 0.86, 0.05], fi: [-0.5, 0.7, 0.15] },
-  { side: 1, sh: [0.22, 1.13, -0.15], el: [0.42, 1.12, -0.28], fi: [0.56, 1.0, -0.12] },
-  { side: -1, sh: [-0.22, 1.13, -0.15], el: [-0.42, 1.12, -0.28], fi: [-0.56, 1.0, -0.12] },
+  { side: 1, sh: [0.29, 1.34, 0], el: [0.42, 1.14, 0.05], fi: [0.5, 0.98, 0.15] },
+  { side: -1, sh: [-0.29, 1.34, 0], el: [-0.42, 1.14, 0.05], fi: [-0.5, 0.98, 0.15] },
+  { side: 1, sh: [0.22, 1.41, -0.15], el: [0.42, 1.4, -0.28], fi: [0.56, 1.28, -0.12] },
+  { side: -1, sh: [-0.22, 1.41, -0.15], el: [-0.42, 1.4, -0.28], fi: [-0.56, 1.28, -0.12] },
 ];
 
 class Spring3 {
@@ -196,23 +199,29 @@ class Hero {
 
     // targets
     const sN = clamp(speed / this.topSpeed, 0, 1);
-    this.phase += dt * (speed / 1.15) * TAU;
+    this.phase += dt * (speed / (STRIDE * this.scale)) * TAU;
     const ph = this.phase, t = this.time;
-    const bob = sN * (0.035 * Math.cos(2 * ph) - 0.012) + (1 - sN) * 0.008 * Math.sin(t * 1.8);
+    // the body rises as a leg passes under it and dips when the legs are spread
+    const bob = sN * (0.05 * Math.cos(2 * ph) - 0.03) + (1 - sN) * 0.008 * Math.sin(t * 1.8);
     const lean = sN * 0.17 * this.stretchMul;
     const breathe = Math.sin(t * TAU / 3.4);
     const J = this.joints;
-    const leanPt = (out, base, h) => { out[0] = base[0]; out[1] = base[1] - (base[1] - 0.6) * (1 - Math.cos(lean)); out[2] = base[2] + (base[1] - 0.6) * Math.sin(lean); return out; };
-    V3.set(J.pelvis.t, 0.008 * Math.sin(t * 1.3) * (1 - sN), 0.6 + bob, 0);
-    leanPt(J.chest.t, [0, 0.93 + bob * 1.1 + 0.006 * breathe, 0.0], 0);
-    leanPt(J.head.t, [0.012 * Math.sin(t * 0.9) * (1 - sN), 1.3 + bob * 1.25, 0.03], 0);
+    const leanPt = (out, base, h) => { out[0] = base[0]; out[1] = base[1] - (base[1] - PELVIS_Y) * (1 - Math.cos(lean)); out[2] = base[2] + (base[1] - PELVIS_Y) * Math.sin(lean); return out; };
+    V3.set(J.pelvis.t, 0.008 * Math.sin(t * 1.3) * (1 - sN), PELVIS_Y + bob, 0);
+    leanPt(J.chest.t, [0, 1.21 + bob * 1.1 + 0.006 * breathe, 0.0], 0);
+    leanPt(J.head.t, [0.012 * Math.sin(t * 0.9) * (1 - sN), 1.58 + bob * 1.25, 0.03], 0);
     for (let i = 0; i < 2; i++) {
       const sg = i === 0 ? 1 : -1, phi = ph + i * Math.PI;
       const hip = i === 0 ? J.hipA : J.hipB, knee = i === 0 ? J.kneeA : J.kneeB, foot = i === 0 ? J.footA : J.footB;
-      V3.set(hip.t, sg * 0.13, 0.5 + bob, 0);
-      const fz = 0.06 + sN * 0.25 * Math.sin(phi), fy = 0.075 + sN * 0.15 * Math.max(0, Math.cos(phi));
-      V3.set(foot.t, sg * 0.18, fy, fz);
-      V3.set(knee.t, sg * 0.165, (hip.t[1] + fy) * 0.5 + 0.02, (fz) * 0.5 + 0.05 + 0.08 * sN * Math.max(0, Math.cos(phi)));
+      // the hips swing a little with the stride; the foot sweeps back on the ground and lifts high on the way forward
+      V3.set(hip.t, sg * 0.13, HIP_Y + bob, sN * 0.05 * Math.sin(phi));
+      const lift = Math.max(0, Math.cos(phi));
+      const fz = 0.06 + sN * STRIDE * 0.25 * Math.sin(phi), fy = 0.075 + sN * 0.26 * lift * lift;
+      V3.set(foot.t, sg * 0.17, fy, fz);
+      // two-segment leg: the knee bends forward where thigh and shin meet
+      const dz = fz - hip.t[2], dy = fy - hip.t[1], d = Math.hypot(dz, dy) || 1e-3;
+      const kb = Math.sqrt(Math.max(0, LEG_SEG * LEG_SEG - d * d / 4));
+      V3.set(knee.t, sg * 0.15, hip.t[1] + dy * 0.5 + dz / d * kb, hip.t[2] + dz * 0.5 - dy / d * kb);
     }
     // arms
     for (const a of this.arms) {
@@ -221,7 +230,7 @@ class Hero {
       const phi = ph + (sg > 0 ? 0 : Math.PI);
       leanPt(a.sh.t, [slot.sh[0], slot.sh[1] + bob * 1.1, slot.sh[2]], 0);
       if (!a.action) {
-        const swing = a.i < 2 ? sN * 0.22 * Math.sin(phi) : 0.05 * Math.sin(t * 2.2 + a.i);
+        const swing = a.i < 2 ? sN * 0.32 * Math.sin(phi) : 0.05 * Math.sin(t * 2.2 + a.i);
         V3.set(a.fi.t, slot.fi[0] + 0.015 * Math.sin(t * 1.7 + a.i), slot.fi[1] + 0.02 * Math.sin(t * 2.1 + a.i) + bob, slot.fi[2] - swing);
         V3.set(a.el.t, (a.sh.t[0] + a.fi.t[0]) * 0.5 + sg * 0.06, (a.sh.t[1] + a.fi.t[1]) * 0.5 - 0.05, (a.sh.t[2] + a.fi.t[2]) * 0.5 - 0.02);
         a.fi.setK(a.fi.k0 + (a.fi.k - a.fi.k0) * Math.max(0, 1 - dt * 6)); a.el.setK(a.el.k0);
