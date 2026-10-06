@@ -53,6 +53,7 @@ if (mode === 'play') {
     await page.click('#btnPlay');
     await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
     await page.evaluate(() => { window.readInput = () => __botInput(); __bot.on = true; });
+    if (process.env.PREFER) await page.evaluate(ids => { __bot.prefer = ids.split(','); __blasts.length = 0; if (!window.__blastHooked) { window.__blastHooked = true; __installBlastLog(__bot.prefer[0]); } }, process.env.PREFER);
     const stats = [];
     const shotAt = new Set(wantShots ? [20, 95, 200, 302, 330] : []);
     let levelShot = !wantShots, chestShot = !wantShots, deaths = [];
@@ -95,6 +96,7 @@ if (mode === 'play') {
     console.log(`#${run + 1} ${fin.won ? 'WON ' : 'LOST'} t=${fin.t} lvl=${fin.lvl} kills=${fin.kills} coins=${fin.coins} deaths=[${deaths}] peakEnemies=${peak} wall=${((Date.now() - wall) / 1000).toFixed(0)}s`);
     console.log('   slots:', fin.slots, ' dmg:', JSON.stringify(dmg));
     if (verbose) { console.log('   picks:', await page.evaluate(() => __bot.picks.join(' '))); console.log('   en over time:', stats.map(s => s.t + ':' + s.en).join(' ')); }
+    if (process.env.PREFER) console.log('   blasts by level:', await page.evaluate(() => { const o = {}; for (const b of __blasts) { const k = 'L' + b.lvl; (o[k] = o[k] || []).push(b.kills); } return JSON.stringify(Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { n: v.length, avg: +(v.reduce((a, c) => a + c, 0) / v.length).toFixed(1), max: Math.max(...v) }]))); }));
     summary.push(fin.won);
     await page.click('#btnContinue');
     await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });

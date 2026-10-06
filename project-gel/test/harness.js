@@ -88,7 +88,7 @@
     const run = G.run, ch = run.choices;
     const w = ch.map(c => {
       if (__bot.prefer && __bot.prefer.includes(c.id)) return 50;
-      if (SKILLS[c.id]) { const lv = lvlOf(c.id); const nSk = run.slots.filter(s => s.kind === 'skill').length; return lv ? 3 : nSk < 5 ? 2.2 : 0.6; }
+      if (SKILLS[c.id]) { const lv = lvlOf(c.id); const nSk = run.slots.filter(s => s.kind === 'skill').length; return lv ? 3 : nSk < 3 ? 6 : nSk < 5 ? 2.2 : 0.6; }
       if (PASSIVES[c.id]) return ['power', 'thick', 'armor', 'haste', 'regen'].includes(c.id) ? 1.4 : 0.9;
       return 0.5;
     });
@@ -137,5 +137,15 @@ window.__installDmgLog = () => {
     if (src === 'other') for (const s of run.eShots) if (s.x === fx && s.z === fz || s.tx === fx && s.tz === fz) { src = 'shot-' + s.kind; break; }
     const k = Math.floor(run.t / 30) * 30 + 's ' + src;
     __dmg[k] = Math.round((__dmg[k] || 0) + lost);
+  };
+};
+// Kills per explosion of one skill (wraps explode and records kills it causes, with the skill level)
+window.__blasts = [];
+window.__installBlastLog = id => {
+  const orig = window.explode;
+  window.explode = function (...a) {
+    const before = G.run.kills;
+    orig.apply(this, a);
+    __blasts.push({ t: Math.round(G.run.t), lvl: lvlOf(id), kills: G.run.kills - before });
   };
 };

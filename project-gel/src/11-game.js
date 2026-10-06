@@ -117,9 +117,9 @@ function applySkin(id, costume) {
 
 // ---------- runs ----------
 function makeEvents() {
-  return [{ t: 90, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 40 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
+  return [{ t: 90, kind: 'swarm', n: 14 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 24 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
 }
-const RATE_KEYS = [[0, 0.35], [30, 0.55], [60, 0.8], [120, 1.3], [180, 1.8], [240, 2.3], [270, 3.0], [300, 3.0]];
+const RATE_KEYS = [[0, 0.35], [30, 0.5], [60, 0.72], [120, 1.15], [180, 1.6], [240, 2.0], [270, 2.6], [300, 2.6]];
 function spawnRate(t) {
   for (let i = 1; i < RATE_KEYS.length; i++) {
     const [t1, r1] = RATE_KEYS[i], [t0, r0] = RATE_KEYS[i - 1];
@@ -178,7 +178,7 @@ function recomputeStats() {
     xpMul: 1 + 0.04 * lv('growth'),
     regen: 0.002 * lv('regen'),
   };
-  run.maxHp = 100 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health);
+  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health);
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = 1 + 0.01 * lv('thick');
@@ -198,7 +198,7 @@ function spawnEnemy(type, x, z, opts = {}) {
   const elite = !!opts.elite;
   // the chapter's extra toughness eases in over the first 90 seconds, while the hero has few skills
   const chapterHp = 1 + (info.hpMul - 1) * clamp(0.5 + run.t / 180, 0.5, 1);
-  const hpMul = chapterHp * (1 + 0.12 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
+  const hpMul = chapterHp * (1 + 0.09 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
   const e = {
     id: run.nextId++, type, def: d, model: d.model, boss: false, elite,
     x, z, vx: 0, vz: 0, kx: 0, kz: 0, yaw: Math.atan2(G.hero.pos[0] - x, G.hero.pos[2] - z),
@@ -264,7 +264,7 @@ function hurtHero(dmg, fromX, fromZ) {
   if (SKILL_HOOKS.shield.absorb(run, fromX, fromZ)) return;
   dmg *= run.stats.armorMul;
   run.hp -= dmg;
-  run.invuln = 0.2;
+  run.invuln = 0.35;
   G.hero.hit([fromX, 0.8, fromZ]);
   run.hurtFlash = 0.55;
   G.cam.shake = Math.max(G.cam.shake, 0.08);
@@ -392,13 +392,14 @@ function runEvent(ev) {
   const run = G.run;
   if (ev.kind === 'swarm') {
     const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU);
-    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
+    // a ring of stickmen closing in, with a gap to break out through
+    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU * 0.75; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
   } else if (ev.kind === 'elite') {
     const types = ELITE_TYPES.filter(k => k === 'stickman' || run.info.has[k]);
     const [x, z] = spawnPoint(2);
     spawnEnemy(pick(types), x, z, { elite: true });
   } else if (ev.kind === 'surge') {
-    for (let i = 0; i < 30; i++) spawnFromMix();
+    for (let i = 0; i < 18; i++) spawnFromMix();
   } else if (ev.kind === 'boss') {
     startBoss();
   }
@@ -408,7 +409,7 @@ function spawnFromMix() {
   const run = G.run, t = run.t, ch = run.chapter;
   const w = { stickman: 1 };
   // each type joins after its unlock time; in later chapters it shows up sooner
-  for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.6 : 1)) w[k] = wt; }
+  for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.8 : 1)) w[k] = wt; }
   let total = 0; for (const k in w) total += w[k];
   let r = Math.random() * total, type = 'stickman';
   for (const k in w) { r -= w[k]; if (r <= 0) { type = k; break; } }
@@ -492,7 +493,7 @@ function updateEnemyAI(e, dt) {
     if (e.aim > 0) {
       want = 0;
       e.aim += dt;
-      if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 2.5; }
+      if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 3.2; }
     } else {
       e.reload -= dt;
       if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) { e.aim = 0.001; AUDIO.play('throw'); }
@@ -531,7 +532,7 @@ function startEnemyAct(e, d, dx, dz) {
   return true;
 }
 function enemyAct(e, dt, d, dx, dz) {
-  const a = e.act, run = G.run, h = G.hero.pos, D = e.def, mul = run.info.dmgMul * (e.elite ? 1.5 : 1);
+  const a = e.act, run = G.run, h = G.hero.pos, D = e.def, mul = run.info.dmgMul * (e.elite ? 1.3 : 1);
   a.t += dt;
   e.vx *= 0.8; e.vz *= 0.8;
   if (a.kind === 'lunge') {
@@ -543,7 +544,7 @@ function enemyAct(e, dt, d, dx, dz) {
       const reach = 0.95 * e.scale, tx = e.x + a.dir[0] * reach, tz = e.z + a.dir[1] * reach;
       if (!a.hit && (Math.hypot(h[0] - tx, h[2] - tz) < HERO_R + 0.45 || d < e.radius + HERO_R + 0.2)) { a.hit = true; hurtHero(D.hit * mul, e.x, e.z); }
     } else if (a.t < 1.0) a.u = 0.75 + (a.t - 0.65) / 0.35 * 0.24;
-    else { e.act = null; e.cool = 2.8; }
+    else { e.act = null; e.cool = 3.6; }
   } else if (a.kind === 'chop') {
     const W = D.wind || 0.55;
     e.yaw = angleLerp(e.yaw, Math.atan2(a.cx - e.x, a.cz - e.z), Math.min(1, dt * 10));

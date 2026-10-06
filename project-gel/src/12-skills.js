@@ -92,7 +92,7 @@ function updateProjectiles(dt) {
     p.t += dt; p.life -= dt;
     if (p.kind === 'ball') {
       p.x += p.vx * dt; p.y = Math.max(0.35, p.y + p.vy * dt); p.z += p.vz * dt;
-      if (inRock(p.x, p.z) || arenaSd(p.x, p.z) > 0) p.dead = true;
+      if (arenaSd(p.x, p.z) > 0) p.dead = true;
       enemiesInRadius(p.x, p.z, p.hitR, e => {
         if (p.dead || p.hit.has(e)) return;
         if (shieldBlocks(e, p.x, p.z)) { p.dead = true; blockedFx(p.x, p.y, p.z); return; }
@@ -213,7 +213,10 @@ SKILL_HOOKS.grenade = {
     const st = s.st, run = G.run, hero = G.hero, h = hero.pos;
     st.t = (st.t ?? 1.5) - dt;
     if (st.t > 0) return;
-    if (!nearestEnemy(h[0], h[2], 7)) { st.t = 0.3; return; }
+    // wait until a small group is close, so the blast catches a few of them
+    let near = 0;
+    enemiesInRadius(h[0], h[2], 3.5, () => { near++; });
+    if (near < 2) { st.t = 0.25; return; }
     st.t = L.cd * cdMul();
     const n = L.count + extraShots();
     for (let i = 0; i < n; i++) {

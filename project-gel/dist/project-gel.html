@@ -4624,7 +4624,7 @@ const SKILLS = {
   ball: {
     name: 'Blob Ball', intro: 'Fires balls of goo at the closest enemy.', icon: { type: 0, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Balls'], ['pierce', 'Pierce']],
-    levels: L10({ dmg: [7, 8, 9, 9, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
+    levels: L10({ dmg: [8, 8, 9, 10, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
   },
   fists: {
     name: 'Blob Fists', intro: 'Your arms stretch out and punch nearby enemies, knocking them back.', icon: { type: 17, colw: 1 },
@@ -4634,7 +4634,7 @@ const SKILLS = {
   grenade: {
     name: 'Blob Grenade', intro: 'Drops a fused goo grenade at your feet. It bursts a moment later in a big splash.', icon: { type: 6, colw: 1 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Grenades'], ['radius', 'Blast radius', 'm']],
-    levels: L10({ dmg: [14, 15, 17, 19, 21, 23, 26, 29, 32, 36], cd: [4.0, 3.9, 3.8, 3.6, 3.5, 3.4, 3.2, 3.0, 2.8, 2.6], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.5, 1.55, 1.6, 1.65, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], fuse: 1.4 }),
+    levels: L10({ dmg: [14, 15, 17, 19, 21, 23, 26, 29, 32, 36], cd: [4.0, 3.9, 3.8, 3.6, 3.5, 3.4, 3.2, 3.0, 2.8, 2.6], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.5, 1.55, 1.6, 1.65, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], fuse: 1.2 }),
   },
   missile: {
     name: 'Blob Missile', intro: 'Homing goo missiles burst out of your back and dive at enemies.', icon: { type: 1, colw: 0.8 },
@@ -4710,10 +4710,10 @@ const ENEMY_TYPES = {
   stickman: { model: 'stickman', hp: 12, speed: 2.2, dmg: 4, xp: 1, radius: 0.4, scale: 1.35, tint: '#f5891f', mass: 1 },
   sprinter: { model: 'sprinter', hp: 8, speed: 3.5, dmg: 3, xp: 1, radius: 0.36, scale: 1.3, tint: '#ffad2e', mass: 0.8 },
   helmet: { model: 'helmet', hp: 26, speed: 1.9, dmg: 5, xp: 2, radius: 0.42, scale: 1.4, tint: '#f28a2a', mass: 1.4 },
-  spear: { model: 'spear', hp: 18, speed: 2.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#f5931f', mass: 1.1, ai: 'lunge', hit: 12 },
+  spear: { model: 'spear', hp: 18, speed: 2.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#f5931f', mass: 1.1, ai: 'lunge', hit: 10 },
   axe: { model: 'axe', hp: 32, speed: 1.8, dmg: 7, xp: 3, radius: 0.44, scale: 1.45, tint: '#ee7420', mass: 1.5, ai: 'chop', hit: 16, wind: 0.6 },
-  brute: { model: 'brute', hp: 70, speed: 1.6, dmg: 10, xp: 5, radius: 0.7, scale: 2.0, tint: '#e8642a', mass: 4, ai: 'chop', hit: 20, wind: 0.75, reach: 1.5 },
-  archer: { model: 'archer', hp: 16, speed: 2.0, dmg: 5, shot: 8, xp: 2, radius: 0.4, scale: 1.35, tint: '#f28a2a', mass: 1, ranged: true },
+  brute: { model: 'brute', hp: 70, speed: 1.6, dmg: 10, xp: 5, radius: 0.7, scale: 2.0, tint: '#e8642a', mass: 4, ai: 'chop', hit: 15, wind: 0.85, reach: 1.5 },
+  archer: { model: 'archer', hp: 16, speed: 2.0, dmg: 5, shot: 6, xp: 2, radius: 0.4, scale: 1.35, tint: '#f28a2a', mass: 1, ranged: true },
   javelin: { model: 'javelin', hp: 16, speed: 2.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#f69a2c', mass: 1, ai: 'toss', hit: 11 },
   splitter: { model: 'splitter', hp: 28, speed: 2.0, dmg: 6, xp: 2, radius: 0.46, scale: 1.45, tint: '#f6a03a', mass: 1.5, splits: true },
   mini: { model: 'stickman', hp: 7, speed: 2.6, dmg: 3, xp: 1, radius: 0.28, scale: 0.85, tint: '#ffb85a', mass: 0.5 },
@@ -4753,8 +4753,8 @@ function chapterInfo(n) {
   const bosses = n % 5 === 0 ? ['conductor', BOSS_ORDER[(Math.floor(n / 5) - 1) % 4]] : [BOSS_ORDER[(n - 1) % 5]];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
-    hpMul: 1 + 0.12 * k + 0.004 * k * k,
-    dmgMul: 1 + 0.08 * k,
+    hpMul: 1 + 0.09 * k + 0.004 * k * k,
+    dmgMul: 1 + 0.06 * k,
     rateMul: Math.min(1.8, 0.85 + 0.05 * k),
     bossHpMul: Math.pow(1.17, k) * (bosses.length > 1 ? 0.75 : 1),
     reward: Math.round(150 * Math.pow(1.08, k)),
@@ -4969,9 +4969,9 @@ function applySkin(id, costume) {
 
 // ---------- runs ----------
 function makeEvents() {
-  return [{ t: 90, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 40 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
+  return [{ t: 90, kind: 'swarm', n: 14 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 24 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
 }
-const RATE_KEYS = [[0, 0.35], [30, 0.55], [60, 0.8], [120, 1.3], [180, 1.8], [240, 2.3], [270, 3.0], [300, 3.0]];
+const RATE_KEYS = [[0, 0.35], [30, 0.5], [60, 0.72], [120, 1.15], [180, 1.6], [240, 2.0], [270, 2.6], [300, 2.6]];
 function spawnRate(t) {
   for (let i = 1; i < RATE_KEYS.length; i++) {
     const [t1, r1] = RATE_KEYS[i], [t0, r0] = RATE_KEYS[i - 1];
@@ -5030,7 +5030,7 @@ function recomputeStats() {
     xpMul: 1 + 0.04 * lv('growth'),
     regen: 0.002 * lv('regen'),
   };
-  run.maxHp = 100 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health);
+  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health);
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = 1 + 0.01 * lv('thick');
@@ -5050,7 +5050,7 @@ function spawnEnemy(type, x, z, opts = {}) {
   const elite = !!opts.elite;
   // the chapter's extra toughness eases in over the first 90 seconds, while the hero has few skills
   const chapterHp = 1 + (info.hpMul - 1) * clamp(0.5 + run.t / 180, 0.5, 1);
-  const hpMul = chapterHp * (1 + 0.12 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
+  const hpMul = chapterHp * (1 + 0.09 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
   const e = {
     id: run.nextId++, type, def: d, model: d.model, boss: false, elite,
     x, z, vx: 0, vz: 0, kx: 0, kz: 0, yaw: Math.atan2(G.hero.pos[0] - x, G.hero.pos[2] - z),
@@ -5116,7 +5116,7 @@ function hurtHero(dmg, fromX, fromZ) {
   if (SKILL_HOOKS.shield.absorb(run, fromX, fromZ)) return;
   dmg *= run.stats.armorMul;
   run.hp -= dmg;
-  run.invuln = 0.2;
+  run.invuln = 0.35;
   G.hero.hit([fromX, 0.8, fromZ]);
   run.hurtFlash = 0.55;
   G.cam.shake = Math.max(G.cam.shake, 0.08);
@@ -5244,13 +5244,14 @@ function runEvent(ev) {
   const run = G.run;
   if (ev.kind === 'swarm') {
     const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU);
-    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
+    // a ring of stickmen closing in, with a gap to break out through
+    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU * 0.75; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
   } else if (ev.kind === 'elite') {
     const types = ELITE_TYPES.filter(k => k === 'stickman' || run.info.has[k]);
     const [x, z] = spawnPoint(2);
     spawnEnemy(pick(types), x, z, { elite: true });
   } else if (ev.kind === 'surge') {
-    for (let i = 0; i < 30; i++) spawnFromMix();
+    for (let i = 0; i < 18; i++) spawnFromMix();
   } else if (ev.kind === 'boss') {
     startBoss();
   }
@@ -5260,7 +5261,7 @@ function spawnFromMix() {
   const run = G.run, t = run.t, ch = run.chapter;
   const w = { stickman: 1 };
   // each type joins after its unlock time; in later chapters it shows up sooner
-  for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.6 : 1)) w[k] = wt; }
+  for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.8 : 1)) w[k] = wt; }
   let total = 0; for (const k in w) total += w[k];
   let r = Math.random() * total, type = 'stickman';
   for (const k in w) { r -= w[k]; if (r <= 0) { type = k; break; } }
@@ -5344,7 +5345,7 @@ function updateEnemyAI(e, dt) {
     if (e.aim > 0) {
       want = 0;
       e.aim += dt;
-      if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 2.5; }
+      if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 3.2; }
     } else {
       e.reload -= dt;
       if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) { e.aim = 0.001; AUDIO.play('throw'); }
@@ -5383,7 +5384,7 @@ function startEnemyAct(e, d, dx, dz) {
   return true;
 }
 function enemyAct(e, dt, d, dx, dz) {
-  const a = e.act, run = G.run, h = G.hero.pos, D = e.def, mul = run.info.dmgMul * (e.elite ? 1.5 : 1);
+  const a = e.act, run = G.run, h = G.hero.pos, D = e.def, mul = run.info.dmgMul * (e.elite ? 1.3 : 1);
   a.t += dt;
   e.vx *= 0.8; e.vz *= 0.8;
   if (a.kind === 'lunge') {
@@ -5395,7 +5396,7 @@ function enemyAct(e, dt, d, dx, dz) {
       const reach = 0.95 * e.scale, tx = e.x + a.dir[0] * reach, tz = e.z + a.dir[1] * reach;
       if (!a.hit && (Math.hypot(h[0] - tx, h[2] - tz) < HERO_R + 0.45 || d < e.radius + HERO_R + 0.2)) { a.hit = true; hurtHero(D.hit * mul, e.x, e.z); }
     } else if (a.t < 1.0) a.u = 0.75 + (a.t - 0.65) / 0.35 * 0.24;
-    else { e.act = null; e.cool = 2.8; }
+    else { e.act = null; e.cool = 3.6; }
   } else if (a.kind === 'chop') {
     const W = D.wind || 0.55;
     e.yaw = angleLerp(e.yaw, Math.atan2(a.cx - e.x, a.cz - e.z), Math.min(1, dt * 10));
@@ -5784,7 +5785,7 @@ function updateProjectiles(dt) {
     p.t += dt; p.life -= dt;
     if (p.kind === 'ball') {
       p.x += p.vx * dt; p.y = Math.max(0.35, p.y + p.vy * dt); p.z += p.vz * dt;
-      if (inRock(p.x, p.z) || arenaSd(p.x, p.z) > 0) p.dead = true;
+      if (arenaSd(p.x, p.z) > 0) p.dead = true;
       enemiesInRadius(p.x, p.z, p.hitR, e => {
         if (p.dead || p.hit.has(e)) return;
         if (shieldBlocks(e, p.x, p.z)) { p.dead = true; blockedFx(p.x, p.y, p.z); return; }
@@ -5905,7 +5906,10 @@ SKILL_HOOKS.grenade = {
     const st = s.st, run = G.run, hero = G.hero, h = hero.pos;
     st.t = (st.t ?? 1.5) - dt;
     if (st.t > 0) return;
-    if (!nearestEnemy(h[0], h[2], 7)) { st.t = 0.3; return; }
+    // wait until a small group is close, so the blast catches a few of them
+    let near = 0;
+    enemiesInRadius(h[0], h[2], 3.5, () => { near++; });
+    if (near < 2) { st.t = 0.25; return; }
     st.t = L.cd * cdMul();
     const n = L.count + extraShots();
     for (let i = 0; i < n; i++) {

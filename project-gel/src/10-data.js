@@ -15,7 +15,7 @@ const SKILLS = {
   ball: {
     name: 'Blob Ball', intro: 'Fires balls of goo at the closest enemy.', icon: { type: 0, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Balls'], ['pierce', 'Pierce']],
-    levels: L10({ dmg: [7, 8, 9, 9, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
+    levels: L10({ dmg: [8, 8, 9, 10, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
   },
   fists: {
     name: 'Blob Fists', intro: 'Your arms stretch out and punch nearby enemies, knocking them back.', icon: { type: 17, colw: 1 },
@@ -25,7 +25,7 @@ const SKILLS = {
   grenade: {
     name: 'Blob Grenade', intro: 'Drops a fused goo grenade at your feet. It bursts a moment later in a big splash.', icon: { type: 6, colw: 1 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Grenades'], ['radius', 'Blast radius', 'm']],
-    levels: L10({ dmg: [14, 15, 17, 19, 21, 23, 26, 29, 32, 36], cd: [4.0, 3.9, 3.8, 3.6, 3.5, 3.4, 3.2, 3.0, 2.8, 2.6], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.5, 1.55, 1.6, 1.65, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], fuse: 1.4 }),
+    levels: L10({ dmg: [14, 15, 17, 19, 21, 23, 26, 29, 32, 36], cd: [4.0, 3.9, 3.8, 3.6, 3.5, 3.4, 3.2, 3.0, 2.8, 2.6], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.5, 1.55, 1.6, 1.65, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], fuse: 1.2 }),
   },
   missile: {
     name: 'Blob Missile', intro: 'Homing goo missiles burst out of your back and dive at enemies.', icon: { type: 1, colw: 0.8 },
@@ -101,10 +101,10 @@ const ENEMY_TYPES = {
   stickman: { model: 'stickman', hp: 12, speed: 2.2, dmg: 4, xp: 1, radius: 0.4, scale: 1.35, tint: '#f5891f', mass: 1 },
   sprinter: { model: 'sprinter', hp: 8, speed: 3.5, dmg: 3, xp: 1, radius: 0.36, scale: 1.3, tint: '#ffad2e', mass: 0.8 },
   helmet: { model: 'helmet', hp: 26, speed: 1.9, dmg: 5, xp: 2, radius: 0.42, scale: 1.4, tint: '#f28a2a', mass: 1.4 },
-  spear: { model: 'spear', hp: 18, speed: 2.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#f5931f', mass: 1.1, ai: 'lunge', hit: 12 },
+  spear: { model: 'spear', hp: 18, speed: 2.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#f5931f', mass: 1.1, ai: 'lunge', hit: 10 },
   axe: { model: 'axe', hp: 32, speed: 1.8, dmg: 7, xp: 3, radius: 0.44, scale: 1.45, tint: '#ee7420', mass: 1.5, ai: 'chop', hit: 16, wind: 0.6 },
-  brute: { model: 'brute', hp: 70, speed: 1.6, dmg: 10, xp: 5, radius: 0.7, scale: 2.0, tint: '#e8642a', mass: 4, ai: 'chop', hit: 20, wind: 0.75, reach: 1.5 },
-  archer: { model: 'archer', hp: 16, speed: 2.0, dmg: 5, shot: 8, xp: 2, radius: 0.4, scale: 1.35, tint: '#f28a2a', mass: 1, ranged: true },
+  brute: { model: 'brute', hp: 70, speed: 1.6, dmg: 10, xp: 5, radius: 0.7, scale: 2.0, tint: '#e8642a', mass: 4, ai: 'chop', hit: 15, wind: 0.85, reach: 1.5 },
+  archer: { model: 'archer', hp: 16, speed: 2.0, dmg: 5, shot: 6, xp: 2, radius: 0.4, scale: 1.35, tint: '#f28a2a', mass: 1, ranged: true },
   javelin: { model: 'javelin', hp: 16, speed: 2.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#f69a2c', mass: 1, ai: 'toss', hit: 11 },
   splitter: { model: 'splitter', hp: 28, speed: 2.0, dmg: 6, xp: 2, radius: 0.46, scale: 1.45, tint: '#f6a03a', mass: 1.5, splits: true },
   mini: { model: 'stickman', hp: 7, speed: 2.6, dmg: 3, xp: 1, radius: 0.28, scale: 0.85, tint: '#ffb85a', mass: 0.5 },
@@ -144,8 +144,8 @@ function chapterInfo(n) {
   const bosses = n % 5 === 0 ? ['conductor', BOSS_ORDER[(Math.floor(n / 5) - 1) % 4]] : [BOSS_ORDER[(n - 1) % 5]];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
-    hpMul: 1 + 0.12 * k + 0.004 * k * k,
-    dmgMul: 1 + 0.08 * k,
+    hpMul: 1 + 0.09 * k + 0.004 * k * k,
+    dmgMul: 1 + 0.06 * k,
     rateMul: Math.min(1.8, 0.85 + 0.05 * k),
     bossHpMul: Math.pow(1.17, k) * (bosses.length > 1 ? 0.75 : 1),
     reward: Math.round(150 * Math.pow(1.08, k)),
