@@ -176,7 +176,7 @@ SKILL_HOOKS.fists = {
       const tgt = nearestEnemy(h[0], h[2], reach + 0.4);
       if (!tgt) { st.timers[i] = 0.12; continue; }
       st.timers[i] = L.cd * cdMul();
-      hero.punch(i, [tgt.x, 0.55 * tgt.scale + 0.25, tgt.z], reach, imp => fistImpact(imp, L));
+      hero.punch(i, [tgt.x, 0.55 * tgt.scale + 0.53, tgt.z], reach, imp => fistImpact(imp, L));
     }
   },
   emit(s, L) {

@@ -49,6 +49,7 @@ if (mode === 'play') {
   const summary = [];
   for (let run = 0; run < runs; run++) {
     await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); for (const k in __dmg) delete __dmg[k]; __bot.picks.length = 0; }, chapter);
+    if (process.env.MAP) await page.evaluate(m => { ARENA.hw = ARENA.hd = Number(m) / 2; ARENA.cr = Math.min(8, Number(m) * 0.1); }, process.env.MAP);
     if (process.env.META) await page.evaluate(m => { const v = Number(m); for (const k in G.save.upgrades) if (k !== 'offline') G.save.upgrades[k] = v; }, process.env.META);
     await page.click('#btnPlay');
     await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });

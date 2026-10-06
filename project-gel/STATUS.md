@@ -63,13 +63,15 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 
 ## Balance (bot results; the bot is a mediocre player who dodges poorly)
 
+Measured after the 100x100 arena, emeralds and long legs:
+
 | Chapter | Upgrades | Bot wins |
 |---|---|---|
-| 1 | none | 3/4 to 4/4 |
-| 3 | none | 0/4 |
-| 3 | level 3 | 2/4 |
-| 5 | level 3 | 1/4 |
-| 5 | level 6 | 2/4 |
+| 1 | none | 4/4 |
+| 3 | level 3 | 1/8 (the build before these changes: 2/8 on the same test) |
+| 5 | level 6 | 0/4 |
+
+An A/B run of chapter 3 at upgrade level 3 shows no real change in difficulty from the bigger map: average survival was 318 s now against 304 s before. Small samples swing a lot; the earlier 2/4 results were partly luck.
 
 Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/10-data.js`, and the spawn curve in `RATE_KEYS` in `src/11-game.js`.
 
@@ -77,6 +79,8 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
 1. Balance chapter 10 and later.
 2. Measure performance on a real phone, which can't be done here.
 3. A lower-detail stickman mesh if big crowds struggle on phones.
+4. Show equipped artifacts on the 3D hero. Today they only change stats.
+5. Tune the scroll drop rate after real play (0.3% per tougher kill, 5% from elites).
 
 ## Build and test
 - **Build:**
@@ -87,6 +91,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `play <chapter> [--runs=N] [--shots]`: bot playthroughs with a win rate and damage sources.
     - `META=<level>` sets the permanent upgrades.
     - `NOREVIVE=1` skips the revive.
+    - `MAP=<size>` sets the arena width for the runs (default 100).
   - `skills [--group=a,b] [--phone]`: every skill at max level against a crowd.
   - `bosses`: each boss fight.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
