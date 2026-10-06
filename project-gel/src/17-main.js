@@ -2,7 +2,7 @@
 // Boot, background mesh building, input, home scene, main loop
 // ============================================================
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
-const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2 };
+const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, software: false };
 const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0 };
 const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
@@ -132,18 +132,24 @@ function applySettings() {
   FX.reduced = st.quality === 'low';
   if (st.quality === 'high') { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = PERF.min = Math.min(dpr, 2); }
   else if (st.quality === 'low') { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = PERF.min = Math.max(0.5, Math.min(dpr, 1) * 0.75); }
-  else { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = Math.min(dpr, 1.5); PERF.max = Math.min(dpr, 2); PERF.min = 0.6; }
+  else if (PERF.software) { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = 0.6; PERF.min = 0.5; }
+  else { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = Math.min(dpr, 1.5); PERF.min = 0.6; }
   resize();
 }
 function resize() { R.resize(window.innerWidth, window.innerHeight, PERF.ratio); }
+function gpuName() { const d = gl.getExtension('WEBGL_debug_renderer_info'); return (d && gl.getParameter(d.UNMASKED_RENDERER_WEBGL)) || gl.getParameter(gl.RENDERER) || ''; }
 function adaptQuality(dt) {
   if (G.save.settings.quality !== 'auto' || (G.state !== 'run' && G.state !== 'home')) { PERF.acc = PERF.frames = 0; return; }
   PERF.acc += dt; PERF.frames++;
   if (PERF.acc < 2) return;
   const avg = PERF.acc / PERF.frames;
   PERF.acc = 0; PERF.frames = 0;
-  if (avg > 1 / 42 && PERF.ratio > PERF.min) { PERF.ratio = Math.max(PERF.min, PERF.ratio * 0.85); resize(); }
-  else if (avg < 1 / 58 && PERF.ratio < PERF.max) { PERF.ratio = Math.min(PERF.max, PERF.ratio * 1.08); resize(); }
+  // too slow: lower the resolution first, then drop MSAA, then bloom (both stay off until the settings change)
+  if (avg > 1 / 42) {
+    if (PERF.ratio > PERF.min) { PERF.ratio = Math.max(PERF.min, PERF.ratio * 0.85); resize(); }
+    else if (R.settings.msaa) { R.settings.msaa = false; resize(); }
+    else R.settings.bloom = false;
+  } else if (avg < 1 / 58 && PERF.ratio < PERF.max) { PERF.ratio = Math.min(PERF.max, PERF.ratio * 1.08); resize(); }
 }
 
 // ---------- game flow ----------
@@ -270,10 +276,18 @@ function renderFrame() {
 }
 
 // ---------- main loop ----------
-let lastT = 0;
+let lastT = 0, rafT = 0, frameAcc = 0;
 function loop(now) {
-  const dt = lastT ? clamp((now - lastT) / 1000, 0, 0.05) : 1 / 60;
+  // pace to about 60 frames a second whatever the screen's refresh rate: 120-240 Hz screens would
+  // otherwise multiply the GPU work. Time from skipped refreshes carries over to the next frame.
+  frameAcc += rafT ? Math.max(0, now - rafT) : 0;
+  rafT = now;
+  if (lastT && frameAcc < 1000 / 60 - 2) { requestAnimationFrame(loop); return; }
+  frameAcc = clamp(frameAcc - 1000 / 60, 0, 1000 / 60);
+  const raw = lastT ? (now - lastT) / 1000 : 1 / 60;
+  const dt = clamp(raw, 0, 0.05);
   lastT = now;
+  PERF.fps += (1 / Math.max(raw, 1e-3) - PERF.fps) * 0.05;
   R.frame.time += dt;
   readInput();
   const s = G.state;
@@ -323,6 +337,8 @@ async function boot() {
   let ok = false;
   try { ok = R.init(canvas); } catch (err) { showLoadError(err); return; }
   if (!ok) { showLoadError('This browser does not support WebGL2, which the game needs. Try a recent Chrome, Edge, Firefox or Safari.'); return; }
+  // WebGL drawn by the CPU (no hardware acceleration) is far too slow for this game: use the lightest settings
+  PERF.software = !window.__allowSoftwareGL && /swiftshader|llvmpipe|softpipe|software|basic render/i.test(gpuName());
   canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); setState('loading'); showLoadError('The graphics driver stopped the game. Reload the page to keep playing.'); });
   { const L = R.frame.lightDir, l = Math.hypot(...L); R.frame.lightDir = L.map(v => v / l); }
   applySettings();
@@ -344,6 +360,7 @@ async function boot() {
   UI.menuTab = 'home';
   setState('home');
   UI.openTab('home');
+  if (PERF.software) UI.toast('Hardware acceleration is off in this browser, so the game will be slow. Turn it on in the browser settings.', 8);
   const off = offlineEarnings();
   if (off) UI.showOffline(off.coins, off.hours);
   saveGame();

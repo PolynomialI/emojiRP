@@ -264,7 +264,7 @@ const UI = {
     b.classList.add('show');
   },
   bossIntro(name) { this.banner(name, true); },
-  toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); this.toastT = 1.6; },
+  toast(msg, secs = 1.6) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); this.toastT = secs; },
 
   // ---------- level up ----------
   openLevelUp() {

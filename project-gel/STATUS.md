@@ -50,6 +50,11 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   - CHEST spends a scroll on a treasure chest that reveals one artifact (odds 62/25/9.5/3/0.5%).
   - Three identical artifacts fuse into the next rarity, either from an item's card or all at once with FUSE. An equipped item that gets fused is replaced by the result.
   - All bonuses (color, costume, artifacts) are fixed at the start of each run.
+- **Performance safeguards:**
+  - The loop is paced to about 60 frames a second on any screen; 120-240 Hz screens used to get 2-4x the GPU work.
+  - Auto quality never raises the resolution above where it starts. When frames are slow, it lowers the resolution down to 0.6, then turns MSAA off, then bloom.
+  - If the browser draws WebGL without the graphics card (SwiftShader, llvmpipe and the like), Auto uses the lightest settings and a message says hardware acceleration is off.
+  - The dev console's `perf` command shows the graphics card, frame rate, render size and quality settings.
 - **Dev console:** typing `specimen` anywhere unlocks it (saved) and opens it; after that the backtick key opens and closes it. The run freezes while it is open. Type `help` for the commands.
 - **HUD and menus:** follow the reference screenshots:
   - pause button, skill tiles, coins
@@ -102,6 +107,8 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `dev`: unlocks the dev console by typing, toggles it with backtick and runs commands at home and in a run.
   - `drops`: crystals, emeralds, a scroll and the other pickups up close.
   - `gait`: the hero running in place on the home screen, one stride as a contact sheet.
+  - `perf`: frame cost with the GPU work included, on the menus and in a crowded run, with the hero, bloom, MSAA and gems switched off one at a time. The test GPU is software, so compare builds with it rather than reading the numbers as real-GPU timings.
+  - `SOFTGL=1` before any mode makes the game treat the test browser as a machine without a GPU; normally the tests skip that check.
   - `play` also accepts `PREFER=<skill>`: the bot favors that skill and logs kills per blast.
   - `arenas` (`ONLY=21` limits it to one chapter): the first chapter of each arena, mid-run.
 - Screenshots go to `test/shots/`, and logs to `test/*.log`; git ignores both. Combine screenshots with `node test/montage.mjs out.png <cols> a.png b.png ...`.

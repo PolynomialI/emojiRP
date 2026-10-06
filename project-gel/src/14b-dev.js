@@ -166,6 +166,15 @@ const DEV_CMDS = {
   win: { args: '', desc: 'clear the current chapter', run: () => { devRun(); DEV.toggle(false); finishRun(true); return ''; } },
   lose: { args: '', desc: 'end the run as a loss', run: () => { devRun(); DEV.toggle(false); finishRun(false); return ''; } },
   reset: { args: 'yes', desc: 'erase all progress', run: a => { if (a[0] !== 'yes') return 'Type "reset yes" to erase everything'; G.save = defaultSave(); G.save.devUnlocked = true; applySkin(G.save.skin); devRefresh(); return 'Progress erased'; } },
+  perf: {
+    args: '', desc: 'frame rate, render size and graphics card',
+    run: () => [
+      `Graphics card: ${gpuName() || 'hidden by the browser'}${PERF.software ? ' (software, no hardware acceleration)' : ''}`,
+      `Frame rate: ${PERF.fps.toFixed(0)} fps (${(1000 / PERF.fps).toFixed(1)} ms a frame)`,
+      `Render size: ${gl.drawingBufferWidth}x${gl.drawingBufferHeight} (scale ${PERF.ratio.toFixed(2)}, screen ${window.devicePixelRatio || 1}x)`,
+      `Quality: ${G.save.settings.quality}, MSAA ${R.settings.msaa ? 'on' : 'off'}, bloom ${R.settings.bloom ? 'on' : 'off'}`,
+    ].join('\n'),
+  },
   clear: { args: '', desc: 'clear this log', run: () => { $('devLog').replaceChildren(); return ''; } },
   close: { args: '', desc: 'close the console (or press `)', run: () => { DEV.toggle(false); return ''; } },
 };

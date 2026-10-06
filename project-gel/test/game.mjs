@@ -22,6 +22,8 @@ page.setDefaultTimeout(300000);
 page.on('pageerror', e => errors.push('pageerror: ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
 page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.type() + ': ' + m.text()); else if (process.env.LOG) console.log('console:', m.text()); });
 await page.addInitScript({ path: path.join(dir, 'harness.js') });
+// SOFTGL=1 lets the game treat this software-rendered test browser like a real one without a GPU
+if (process.env.SOFTGL) await page.addInitScript(() => { window.__allowSoftwareGL = false; });
 if (process.env.SAVE) await page.addInitScript(s => { localStorage.setItem('projectGel.save.v1', s); }, process.env.SAVE);
 const t0 = Date.now();
 process.on('unhandledRejection', async e => { console.log('FAILED:', e.message.split('\n')[0]); console.log('ERRORS:\n' + errors.join('\n')); try { console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan))); console.log('state', await page.evaluate(() => G.state)); } catch (_) {} await browser.close(); process.exit(1); });
@@ -349,8 +351,21 @@ if (mode === 'dev') {
   await page.keyboard.type('specimen');
   console.log('open after typing specimen:', await isOpen(), 'focused:', await page.evaluate(() => document.activeElement && document.activeElement.id));
   const cmd = async c => { await page.keyboard.type(c); await page.keyboard.press('Enter'); };
-  for (const c of ['help', 'coins 500', 'scrolls 2', 'artifact wand epic 3', 'artifact random 0 4', 'chapter 3', 'unlock', 'bogus', 'spawn brute']) await cmd(c);
+  for (const c of ['help', 'perf', 'coins 500', 'scrolls 2', 'artifact wand epic 3', 'artifact random 0 4', 'chapter 3', 'unlock', 'bogus', 'spawn brute']) await cmd(c);
   await render(2); await shot('dev-home');
+  console.log('perf command:\n' + await page.evaluate(() => DEV_CMDS.perf.run([])));
+  // Auto quality under sustained slow frames: resolution first, then MSAA, then bloom
+  console.log('auto step-down:', await page.evaluate(() => {
+    const out = [];
+    for (let i = 0; i < 9; i++) { for (let k = 0; k < 45; k++) adaptQuality(0.05); out.push(PERF.ratio.toFixed(2) + (R.settings.msaa ? '+msaa' : '') + (R.settings.bloom ? '+bloom' : '')); }
+    applySettings();
+    return out.join(' ');
+  }));
+  // the frame cap: rAF at 144 Hz should run the game loop at most ~72 times a second
+  console.log('loops per second at 144 Hz:', await page.evaluate(() => {
+    let n = 0; const keep = window.updateHome; window.updateHome = dt => { n++; keep(dt); };
+    __frames(144, 1 / 144, false); window.updateHome = keep; return n;
+  }));
   await page.keyboard.press('Backquote');
   console.log('closed by backtick:', !(await isOpen()));
   await page.keyboard.press('Backquote');
@@ -374,6 +389,57 @@ if (mode === 'dev') {
   for (const c of ['boss', 'kill', 'win']) await cmd(c);
   await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
   console.log('results scrolls saved:', await page.evaluate(() => G.save.scrolls));
+}
+if (mode === 'perf') {
+  // frame cost with the GPU work included (gl.finish), at a fixed resolution, with parts switched off one at a time
+  await page.evaluate(() => { G.save.settings.quality = 'high'; applySettings(); });
+  const time = (n, render) => page.evaluate(([n, render]) => {
+    const out = [];
+    const px = new Uint8Array(4);
+    for (let i = 0; i < n; i++) { const t0 = performance.now(); __frames(1, 1 / 60, render); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); out.push(performance.now() - t0); }
+    out.sort((a, b) => a - b);
+    return { avg: +(out.reduce((a, b) => a + b, 0) / n).toFixed(1), p90: +out[Math.floor(n * 0.9)].toFixed(1) };
+  }, [n, render]);
+  const variants = async label => {
+    const row = { label };
+    row.full = await time(40, true);
+    row.logicOnly = await time(40, false);
+    await page.evaluate(() => { window.__keepHero = R.drawHero; R.drawHero = () => {}; });
+    row.noHero = await time(40, true);
+    await page.evaluate(() => { R.drawHero = window.__keepHero; R.settings.bloom = false; });
+    row.noBloom = await time(40, true);
+    await page.evaluate(() => { R.settings.bloom = true; R.settings.msaa = false; resize(); });
+    row.noMsaa = await time(40, true);
+    await page.evaluate(() => { R.settings.msaa = true; resize(); });
+    if (await page.evaluate(() => !!G.run)) {
+      await page.evaluate(() => { window.__gems = G.run.gems; G.run.gems = []; });
+      row.noGems = await time(40, true);
+      await page.evaluate(() => { G.run.gems = window.__gems; });
+    }
+    console.log(JSON.stringify(row));
+  };
+  await render(10);
+  await variants('home');
+  await page.click('.tab[data-tab="skins"]'); await render(5); await variants('skins');
+  await page.click('#skins .back');
+  if (await page.$('.tab[data-tab="gear"]')) { await page.click('.tab[data-tab="gear"]'); await render(5); await variants('gear'); await page.click('#gear .back'); }
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  await page.evaluate(() => {
+    window.readInput = () => { G.input.x = 0; G.input.z = 0; };
+    const run = G.run, h = G.hero.pos;
+    run.events.length = 0; run.spawnAcc = -1e9; run.invuln = 1e9;
+    for (const id of ['ball', 'missile', 'aura', 'worms', 'laser', 'blade']) for (let i = 0; i < 6; i++) addOrLevel(id);
+    for (let i = 0; i < 120; i++) { const a = i / 120 * TAU * 7, r = 3 + (i % 9) * 0.8; spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }
+    for (let i = 0; i < 150; i++) { const a = Math.random() * TAU, r = 1.5 + Math.random() * 6; dropGem(h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r, 1, i % 8 ? 0 : 1); }
+    for (const g of run.gems) { g.vx = g.vz = 0; }
+    run.stats.magnet = 0;
+    for (const e of run.enemies) e.hp = e.maxHp = 1e9;
+  });
+  await page.evaluate(() => { for (let i = 0; i < 30; i++) { G.run.invuln = 1e9; __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } } });
+  await variants('run: 120 enemies, 150 gems, 6 skills');
+  await render(1); await shot('perf-run');
+  console.log('renderer:', await page.evaluate(() => { const d = gl.getExtension('WEBGL_debug_renderer_info'); return d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : 'n/a'; }), 'canvas', await page.evaluate(() => gl.drawingBufferWidth + 'x' + gl.drawingBufferHeight));
 }
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');

@@ -1,5 +1,6 @@
 // Injected before the game loads: manual frame control and a bot player.
 (() => {
+  window.__allowSoftwareGL = true; // the tests run on SwiftShader on purpose
   const realRAF = window.requestAnimationFrame.bind(window);
   window.__auto = true;
   window.__rafQ = [];
