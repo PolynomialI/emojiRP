@@ -319,6 +319,16 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #6fcbff, var(--sky)); color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); }
 #toast { position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%); padding: 10px 18px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5, 0 8px 18px rgba(0,40,110,.25); font-size: 15px; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }
 #toast.show { opacity: 1; }
+#dev { padding: 0; pointer-events: none; }
+.dev-box { position: absolute; left: 0; right: 0; top: 0; max-height: 46vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; pointer-events: auto;
+  font: 500 13px/1.45 ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: #d6f5ff; background: rgba(6, 16, 34, 0.92); border-bottom: 3px solid #2f8bff; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.dev-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; font-weight: 700; letter-spacing: .12em; color: #6fd0ff; }
+.dev-head button { font-size: 22px; line-height: 1; color: #fff; padding: 0 6px; }
+.dev-log { overflow-y: auto; padding: 0 12px 6px; white-space: pre-wrap; min-height: 90px; user-select: text; -webkit-user-select: text; }
+.dev-log .cmd { color: #ffe066; } .dev-log .ok { color: #8ff5c4; } .dev-log .err { color: #ff8a96; }
+.dev-line { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid rgba(111, 208, 255, .25); }
+.dev-line span { color: #ffe066; }
+.dev-line input { flex: 1; min-width: 0; font: inherit; color: #fff; background: none; border: 0; outline: none; }
 #prep { display: grid; place-items: center; background: rgba(26,112,230,.45); pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -510,6 +520,13 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   </section>
 
   <section id="prep" class="screen" hidden><div class="panel" style="padding:18px 22px;display:grid;gap:10px;justify-items:center"><b>Getting the enemies ready…</b><div class="loadbar" style="margin:0"><b id="prepFill"></b></div></div></section>
+  <section id="dev" class="screen" hidden>
+    <div class="dev-box" role="dialog" aria-label="Dev console">
+      <div class="dev-head"><span>DEV CONSOLE</span><button id="devClose" aria-label="Close console">×</button></div>
+      <div class="dev-log" id="devLog"></div>
+      <label class="dev-line"><span>&gt;</span><input id="devIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type help, Tab completes, Esc or ` closes"></label>
+    </div>
+  </section>
   <div id="toast" role="status"></div>
 </div>
 <script type="text/plain" id="workerSrc">/*WORKER*/</script>

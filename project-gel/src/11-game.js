@@ -266,7 +266,7 @@ function killEnemy(e) {
 // ---------- hero damage ----------
 function hurtHero(dmg, fromX, fromZ) {
   const run = G.run;
-  if (G.state !== 'run' || run.invuln > 0 || run.over) return;
+  if (G.state !== 'run' || run.invuln > 0 || run.over || DEV.god) return;
   if (SKILL_HOOKS.shield.absorb(run, fromX, fromZ)) return;
   dmg *= run.stats.armorMul;
   run.hp -= dmg;

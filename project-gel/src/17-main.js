@@ -78,6 +78,7 @@ function ensureMeshNow(name) {
 // ---------- input ----------
 function initInput(canvas) {
   window.addEventListener('keydown', e => {
+    if (DEV.onKey(e)) return;
     const k = e.key.toLowerCase();
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     INPUT.keys.add(k);
@@ -276,8 +277,9 @@ function loop(now) {
   R.frame.time += dt;
   readInput();
   const s = G.state;
-  if (s === 'run' || s === 'victory') {
-    const sdt = dt * G.timeScale;
+  if ((s === 'run' || s === 'victory') && DEV.open) updateCamera(0, false, true);
+  else if (s === 'run' || s === 'victory') {
+    const sdt = dt * G.timeScale * DEV.speed;
     const steps = Math.min(4, Math.max(1, Math.ceil(sdt / (1 / 60))));
     updateView();
     for (let i = 0; i < steps && (G.state === 'run' || G.state === 'victory'); i++) { updateRun(sdt / steps); updateTelegraphs(sdt / steps); }

@@ -340,6 +340,40 @@ if (mode === 'gear') {
   await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
   console.log('run stats:', await page.evaluate(() => JSON.stringify({ gear: G.run.gear, dmg: +G.run.stats.dmgMul.toFixed(3), maxHp: Math.round(G.run.maxHp), cd: +G.run.stats.cdMul.toFixed(3) })));
 }
+if (mode === 'dev') {
+  // the dev console: closed by default, "specimen" unlocks and opens it, backtick toggles it after that
+  const isOpen = () => page.evaluate(() => DEV.open && !$('dev').hidden);
+  await page.keyboard.press('Backquote');
+  console.log('backtick before unlock opens it:', await isOpen());
+  await page.keyboard.type('specimen');
+  console.log('open after typing specimen:', await isOpen(), 'focused:', await page.evaluate(() => document.activeElement && document.activeElement.id));
+  const cmd = async c => { await page.keyboard.type(c); await page.keyboard.press('Enter'); };
+  for (const c of ['help', 'coins 500', 'scrolls 2', 'artifact wand epic 3', 'artifact random 0 4', 'chapter 3', 'unlock', 'bogus', 'spawn brute']) await cmd(c);
+  await render(2); await shot('dev-home');
+  await page.keyboard.press('Backquote');
+  console.log('closed by backtick:', !(await isOpen()));
+  await page.keyboard.press('Backquote');
+  console.log('reopened by backtick:', await isOpen());
+  await page.keyboard.press('Escape');
+  const sv = await page.evaluate(() => ({ coins: G.save.coins, scrolls: G.save.scrolls, items: G.save.gear.items, chapter: G.save.chapter, skins: G.save.skins.length, dev: G.save.devUnlocked }));
+  console.log('save:', JSON.stringify(sv));
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  await page.keyboard.press('Backquote');
+  const t0 = await page.evaluate(() => G.run.t);
+  for (const c of ['god', 'spawn brute 4 elite', 'spawn stickman 30', 'drop scroll 2', 'drop emerald 3', 'skill laser 3', 'skill power 2', 'level 2', 'map 160', 'speed 2', 'time 200']) await cmd(c);
+  await page.evaluate(() => __frames(30));
+  console.log('frozen while open:', await page.evaluate(t => G.run.t === t || G.run.t === 200, t0));
+  await render(2); await shot('dev-run');
+  await page.keyboard.press('Backquote');
+  for (let i = 0; i < 20; i++) { await page.evaluate(() => { for (let k = 0; k < 30; k++) { __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); } }); }
+  const st = await page.evaluate(() => ({ t: Math.round(G.run.t), hp: Math.round(G.run.hp), max: Math.round(G.run.maxHp), lvl: G.run.level, arena: ARENA.hw * 2, slots: G.run.slots.map(s => s.id + s.lvl).join(' '), scrolls: G.run.scrolls || 0, state: G.state }));
+  console.log('run after commands:', JSON.stringify(st));
+  await page.keyboard.press('Backquote');
+  for (const c of ['boss', 'kill', 'win']) await cmd(c);
+  await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+  console.log('results scrolls saved:', await page.evaluate(() => G.save.scrolls));
+}
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
 await browser.close();

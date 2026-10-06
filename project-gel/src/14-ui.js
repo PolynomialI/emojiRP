@@ -39,6 +39,7 @@ const UI = {
     $('skinAction').addEventListener('click', () => this.skinAction());
     document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
     this.initGear();
+    DEV.init();
   },
 
   show(id, on) { const e = $(id); if (e) e.hidden = !on; },
