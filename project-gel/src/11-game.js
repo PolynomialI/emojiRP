@@ -175,7 +175,7 @@ function recomputeStats() {
     speedMul: (1 + 0.04 * lv('speed')) * (1 + 0.01 * meta.speed) * (1 + g('speed')),
     magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + 0.05 * meta.magnet) * (1 + g('magnet')),
     armorMul: Math.pow(0.97, lv('armor')) * (1 - Math.min(0.6, g('armor'))),
-    cdMul: Math.pow(0.97, lv('haste')) * (1 - Math.min(0.5, g('cd'))),
+    cdMul: Math.pow(0.96, lv('haste')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: (1 + 0.05 * lv('reach')) * (1 + g('area')),
     extra: lv('multishot'),
     xpMul: (1 + 0.04 * lv('growth')) * (1 + g('xp')),
@@ -240,11 +240,11 @@ function killEnemy(e) {
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
   AUDIO.play('squish');
   if (e.boss) { onBossKilled(e); return; }
-  // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and very rarely a scroll
+  // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and sometimes a scroll; elites always drop one
   const tough = e.elite || e.def.xp >= 2;
   if (e.elite || (tough && Math.random() < EMERALD_CHANCE)) dropGem(e.x, e.z, e.elite ? e.xp : e.xp * 3 + 2, 1);
   else dropGem(e.x, e.z, e.xp, 0);
-  if (tough && Math.random() < (e.elite ? SCROLL_CHANCE_ELITE : SCROLL_CHANCE)) spawnPickup('scroll', e.x, e.z);
+  if (e.elite || (tough && Math.random() < SCROLL_CHANCE)) spawnPickup('scroll', e.x + 0.5, e.z);
   if (e.elite) {
     spawnPickup('chest', e.x, e.z);
     for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), 2);
@@ -303,7 +303,7 @@ function reviveHero() {
 
 // ---------- gems and pickups ----------
 // tier 0 is the small blue crystal, tier 1 the big green emerald
-const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.003, SCROLL_CHANCE_ELITE = 0.05;
+const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.02;
 function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {
@@ -673,9 +673,9 @@ function updatePickups(dt) {
       if (p.y <= 0.3) { p.y = 0.3; p.vy = 0; p.vx = 0; p.vz = 0; resolveCircle(p, 0.3); }
     }
     const dx = h[0] - p.x, dz = h[2] - p.z, d = Math.hypot(dx, dz);
-    if (p.kind === 'coin' && !p.pull && d < mag) p.pull = true;
+    if ((p.kind === 'coin' || p.kind === 'scroll') && !p.pull && d < mag) p.pull = true;
     if (p.pull) { p.sp = Math.min(p.sp + 40 * dt, 30); const st = Math.max(4, p.sp) * dt; if (st < d) { p.x += dx / d * st; p.z += dz / d * st; } }
-    if (d < (p.kind === 'chest' ? 0.85 : 0.6) && p.t > 0.35) {
+    if (d < (p.kind === 'chest' || p.kind === 'heart' ? 0.85 : 0.6) && p.t > 0.35) {
       p.dead = true;
       if (p.kind === 'coin') { run.coins += p.value; AUDIO.play('coin'); FX.star(p.x, 0.6, p.z, 0.35, COLORS.gold); }
       else if (p.kind === 'heart') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.3); AUDIO.play('levelup'); FX.burst(h[0], 1, h[2], 12, [1, 0.4, 0.55], 3, 0.12, 0.6, 3); addNumberAt(h[0], 2.1, h[2], run.maxHp * 0.3, [0.4, 1, 0.6]); }

@@ -218,7 +218,7 @@ SKILL_HOOKS.grenade = {
     enemiesInRadius(h[0], h[2], 3.5, () => { near++; });
     if (near < 2) { st.t = 0.25; return; }
     st.t = L.cd * cdMul();
-    const n = L.count + extraShots();
+    const n = L.count;
     for (let i = 0; i < n; i++) {
       hero.addBud({
         joint: i % 2 ? 'footA' : 'footB', off: [0, 0.05, -0.14], r: 0.15, grow: 0.2 + i * 0.12, colw: 1, glow: 0.3,
@@ -285,7 +285,7 @@ function updateMines(dt) {
     if (m.life <= 0) { m.dead = true; FX.splat(m.x, m.z, 0.4, R.goo.base, 1.2); continue; }
     if (m.t < 0.5) continue;
     let trig = false;
-    enemiesInRadius(m.x, m.z, 0.9, () => { trig = true; });
+    enemiesInRadius(m.x, m.z, 1.1, () => { trig = true; });
     if (trig) { m.dead = true; explode(m.x, m.z, m.radius, m.dmg, 1.8, R.goo.pink); }
   }
   run.mines = run.mines.filter(m => !m.dead);
@@ -337,7 +337,7 @@ SKILL_HOOKS.lightning = {
     const cands = run.enemies.filter(e => !e.dying && onScreen(e.x, e.z, -0.6));
     if (!cands.length) return;
     st.t = L.cd * cdMul();
-    const n = Math.min(cands.length, L.strikes + extraShots());
+    const n = Math.min(cands.length, L.strikes);
     st.queue = st.queue || [];
     for (let i = 0; i < n; i++) {
       const k = Math.floor(Math.random() * cands.length);

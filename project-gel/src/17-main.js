@@ -2,7 +2,7 @@
 // Boot, background mesh building, input, home scene, main loop
 // ============================================================
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
-const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, software: false };
+const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, cap: 60, software: false };
 const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0 };
 const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
@@ -129,8 +129,11 @@ function readInput() {
 function applySettings() {
   const st = G.save.settings, dpr = window.devicePixelRatio || 1;
   AUDIO.enabled = st.sound;
-  FX.reduced = st.quality === 'low';
-  if (st.quality === 'high') { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = PERF.min = Math.min(dpr, 2); }
+  FX.reduced = st.quality === 'low' || st.quality === 'ultra';
+  // Ultra low: a third of the pixels of Low, no MSAA or bloom, and 30 frames a second
+  PERF.cap = st.quality === 'ultra' ? 30 : 60;
+  if (st.quality === 'ultra') { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = PERF.min = 0.4; }
+  else if (st.quality === 'high') { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = PERF.min = Math.min(dpr, 2); }
   else if (st.quality === 'low') { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = PERF.min = Math.max(0.5, Math.min(dpr, 1) * 0.75); }
   else if (PERF.software) { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = 0.6; PERF.min = 0.5; }
   else { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = Math.min(dpr, 1.5); PERF.min = 0.6; }
@@ -282,8 +285,9 @@ function loop(now) {
   // otherwise multiply the GPU work. Time from skipped refreshes carries over to the next frame.
   frameAcc += rafT ? Math.max(0, now - rafT) : 0;
   rafT = now;
-  if (lastT && frameAcc < 1000 / 60 - 2) { requestAnimationFrame(loop); return; }
-  frameAcc = clamp(frameAcc - 1000 / 60, 0, 1000 / 60);
+  const frameMs = 1000 / PERF.cap;
+  if (lastT && frameAcc < frameMs - 2) { requestAnimationFrame(loop); return; }
+  frameAcc = clamp(frameAcc - frameMs, 0, frameMs);
   const raw = lastT ? (now - lastT) / 1000 : 1 / 60;
   const dt = clamp(raw, 0, 0.05);
   lastT = now;
@@ -360,7 +364,8 @@ async function boot() {
   UI.menuTab = 'home';
   setState('home');
   UI.openTab('home');
-  if (PERF.software) UI.toast('Hardware acceleration is off in this browser, so the game will be slow. Turn it on in the browser settings.', 8);
+  // the setting can be on while the browser still falls back to software (blocked driver, or after graphics crashes)
+  if (PERF.software) UI.toast(`Your browser is drawing the game without the graphics card (it reports "${gpuName()}"), so it will be slow. Restarting the browser often fixes this; try Graphics: Ultra low too.`, 10);
   const off = offlineEarnings();
   if (off) UI.showOffline(off.coins, off.hours);
   saveGame();

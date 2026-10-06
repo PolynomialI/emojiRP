@@ -221,6 +221,16 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .chest-reveal .dim { font-size: 15px; color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); }
 @keyframes rise { from { transform: translateY(70px) scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
 #scOpen img { width: 26px; height: 26px; }
+.fuse-panel { display: grid; gap: 12px; padding: 16px 14px; }
+.fuse-panel .dim { margin: 0; text-align: center; font-size: 14px; font-weight: 500; min-height: 2.6em; }
+.fuse-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.fslot { position: relative; width: 66px; height: 66px; border-radius: 16px; display: grid; place-items: center; font-size: 28px; color: #9dbde3; background: var(--card-2); box-shadow: inset 0 0 0 3px var(--card-edge); }
+.fslot img { width: 78%; height: 78%; }
+.fslot.result { width: 80px; height: 80px; border-radius: 20px; }
+.fslot.faint { opacity: 0.45; filter: grayscale(0.35); }
+.fslot.made { animation: pop 0.45s cubic-bezier(.3, 1.6, .5, 1); }
+.fuse-arrow { font-size: 26px; color: var(--violet); }
+.fuse-grid .art:disabled { opacity: 0.35; filter: grayscale(0.6); }
 .skin .boost { font-style: normal; font-size: 10px; color: #13a56f; white-space: nowrap; max-width: 100%; overflow: hidden; letter-spacing: -0.01em; }
 .skin > span { max-width: 100%; font-size: 12.5px; line-height: 1.15; text-align: center; }
 /* wide screens: the hero and slots on the left, the panel on the right */
@@ -238,7 +248,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 #btnPause svg { width: 24px; height: 24px; }
 #hudCoins { font-size: 15px; padding: 4px 12px 4px 4px; }
 #hudCoins .coin { width: 20px; height: 20px; }
-.slots { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; max-width: 440px; }
+.slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 6px repeat(4, minmax(0, 1fr)); gap: 5px; max-width: 450px; }
+.slot.empty-skill { background: rgba(255, 143, 203, 0.22); box-shadow: inset 0 0 0 2px rgba(255, 170, 215, .55); }
+.slot.empty-passive { background: rgba(127, 227, 255, 0.2); box-shadow: inset 0 0 0 2px rgba(160, 235, 255, .55); }
 .slot { position: relative; aspect-ratio: 1; border-radius: 10px; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); overflow: hidden; }
 .slot img { width: 100%; height: 100%; }
 .slot.skill { background: linear-gradient(180deg, #ff8fcb, #ef3d98); box-shadow: inset 0 -3px 0 rgba(150,20,80,.4), 0 2px 0 rgba(0,0,0,.25); }
@@ -250,7 +262,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .chapbar.boss i { background: linear-gradient(180deg, #ff8fa6, #ff4a6a 55%, #d92b4b); box-shadow: inset 0 -4px 0 rgba(120,0,30,.35); }
 .chapbar span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; color: #fff; -webkit-text-stroke: 4px #18263d; paint-order: stroke fill; }
 .xpbar { position: relative; height: 14px; border-radius: 8px; background: rgba(236, 243, 252, 0.94); box-shadow: inset 0 0 0 2px rgba(0,0,0,.08), 0 2px 0 rgba(0,0,0,.2); }
-.xpbar i { position: absolute; inset: 2px auto 2px 2px; width: 0; border-radius: 6px; background: linear-gradient(180deg, #8fe7ff, #23aef5); }
+.xpbar i { position: absolute; inset: 2px auto 2px 2px; width: 0; border-radius: 6px; background: linear-gradient(180deg, #ff8d9c, #ec4b61); }
 .xpbar em { position: absolute; right: 6px; top: 9px; padding: 2px 8px; border-radius: 7px; font-style: normal; font-size: 11px; letter-spacing: 0.06em; color: #fff; background: #1b3a66; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
 #banner { position: absolute; left: 0; right: 0; top: 24%; text-align: center; font-size: clamp(20px, 5.5vw, 30px); padding-inline: 16px; opacity: 0; color: #fff; -webkit-text-stroke: 5px var(--sky-deep); paint-order: stroke fill; pointer-events: none; }
 #banner.show { animation: banner 2.6s ease forwards; }
@@ -316,6 +328,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .switch[aria-checked="true"]::after { transform: translateX(24px); }
 .seg { display: inline-flex; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 3px 0 #a9cdf5; }
 .seg button { padding: 8px 12px; font-size: 14px; color: var(--ink-dim); }
+#qualitySeg button { padding: 8px 9px; white-space: nowrap; }
 .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #6fcbff, var(--sky)); color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); }
 #toast { position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%); padding: 10px 18px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5, 0 8px 18px rgba(0,40,110,.25); font-size: 15px; opacity: 0; transition: opacity .2s; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); text-align: center; }
 #toast.show { opacity: 1; }
@@ -416,6 +429,18 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
   </section>
 
+  <section id="fuseBox" class="screen modal menu" hidden>
+    <div class="modal-body">
+      <h1 class="title outline" style="color:var(--violet)">FUSE</h1>
+      <div class="panel fuse-panel">
+        <div class="fuse-row"><button class="fslot" data-i="0"></button><button class="fslot" data-i="1"></button><button class="fslot" data-i="2"></button><span class="fuse-arrow" aria-hidden="true">➜</span><div class="fslot result" id="fuseResult"></div></div>
+        <p class="dim" id="fuseHint"></p>
+        <div class="gear-grid fuse-grid" id="fuseGrid"></div>
+      </div>
+      <div class="row-actions"><button class="jelly violet" id="fuseGo" disabled>Fuse</button><button class="jelly ghost" id="fuseClose">Done</button></div>
+    </div>
+  </section>
+
   <section id="scrollChest" class="screen modal menu" hidden>
     <div class="modal-body" style="text-align:center">
       <h1 class="title outline" style="color:var(--gold);font-size:clamp(28px,7vw,40px);white-space:nowrap">TREASURE CHEST</h1>
@@ -502,7 +527,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
         <div class="setting"><span>Damage numbers</span><button class="switch" role="switch" data-set="numbers" aria-label="Damage numbers"></button></div>
         <div class="setting"><span>Screen shake</span><button class="switch" role="switch" data-set="shake" aria-label="Screen shake"></button></div>
         <div class="setting"><span>Vibration</span><button class="switch" role="switch" data-set="haptics" aria-label="Vibration"></button></div>
-        <div class="setting"><span>Graphics</span><div class="seg" id="qualitySeg"><button data-q="auto">Auto</button><button data-q="high">High</button><button data-q="low">Low</button></div></div>
+        <div class="setting"><span>Graphics</span><div class="seg" id="qualitySeg"><button data-q="auto">Auto</button><button data-q="high">High</button><button data-q="low">Low</button><button data-q="ultra">Ultra low</button></div></div>
         <div class="setting"><span>Reset progress</span><button class="jelly ghost" id="btnReset" style="min-height:40px;padding:6px 14px 10px;font-size:14px">Reset</button></div>
         <div class="panel confirm" id="resetConfirm" hidden><span>Erase all coins, upgrades, skins and chapters?</span><div class="row-actions"><button class="jelly danger" id="btnResetYes">Erase</button><button class="jelly ghost" id="btnResetNo">Cancel</button></div></div>
       </div>

@@ -221,6 +221,16 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .chest-reveal .dim { font-size: 15px; color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); }
 @keyframes rise { from { transform: translateY(70px) scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
 #scOpen img { width: 26px; height: 26px; }
+.fuse-panel { display: grid; gap: 12px; padding: 16px 14px; }
+.fuse-panel .dim { margin: 0; text-align: center; font-size: 14px; font-weight: 500; min-height: 2.6em; }
+.fuse-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.fslot { position: relative; width: 66px; height: 66px; border-radius: 16px; display: grid; place-items: center; font-size: 28px; color: #9dbde3; background: var(--card-2); box-shadow: inset 0 0 0 3px var(--card-edge); }
+.fslot img { width: 78%; height: 78%; }
+.fslot.result { width: 80px; height: 80px; border-radius: 20px; }
+.fslot.faint { opacity: 0.45; filter: grayscale(0.35); }
+.fslot.made { animation: pop 0.45s cubic-bezier(.3, 1.6, .5, 1); }
+.fuse-arrow { font-size: 26px; color: var(--violet); }
+.fuse-grid .art:disabled { opacity: 0.35; filter: grayscale(0.6); }
 .skin .boost { font-style: normal; font-size: 10px; color: #13a56f; white-space: nowrap; max-width: 100%; overflow: hidden; letter-spacing: -0.01em; }
 .skin > span { max-width: 100%; font-size: 12.5px; line-height: 1.15; text-align: center; }
 /* wide screens: the hero and slots on the left, the panel on the right */
@@ -238,7 +248,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 #btnPause svg { width: 24px; height: 24px; }
 #hudCoins { font-size: 15px; padding: 4px 12px 4px 4px; }
 #hudCoins .coin { width: 20px; height: 20px; }
-.slots { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; max-width: 440px; }
+.slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) 6px repeat(4, minmax(0, 1fr)); gap: 5px; max-width: 450px; }
+.slot.empty-skill { background: rgba(255, 143, 203, 0.22); box-shadow: inset 0 0 0 2px rgba(255, 170, 215, .55); }
+.slot.empty-passive { background: rgba(127, 227, 255, 0.2); box-shadow: inset 0 0 0 2px rgba(160, 235, 255, .55); }
 .slot { position: relative; aspect-ratio: 1; border-radius: 10px; background: rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); overflow: hidden; }
 .slot img { width: 100%; height: 100%; }
 .slot.skill { background: linear-gradient(180deg, #ff8fcb, #ef3d98); box-shadow: inset 0 -3px 0 rgba(150,20,80,.4), 0 2px 0 rgba(0,0,0,.25); }
@@ -250,7 +262,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .chapbar.boss i { background: linear-gradient(180deg, #ff8fa6, #ff4a6a 55%, #d92b4b); box-shadow: inset 0 -4px 0 rgba(120,0,30,.35); }
 .chapbar span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; color: #fff; -webkit-text-stroke: 4px #18263d; paint-order: stroke fill; }
 .xpbar { position: relative; height: 14px; border-radius: 8px; background: rgba(236, 243, 252, 0.94); box-shadow: inset 0 0 0 2px rgba(0,0,0,.08), 0 2px 0 rgba(0,0,0,.2); }
-.xpbar i { position: absolute; inset: 2px auto 2px 2px; width: 0; border-radius: 6px; background: linear-gradient(180deg, #8fe7ff, #23aef5); }
+.xpbar i { position: absolute; inset: 2px auto 2px 2px; width: 0; border-radius: 6px; background: linear-gradient(180deg, #ff8d9c, #ec4b61); }
 .xpbar em { position: absolute; right: 6px; top: 9px; padding: 2px 8px; border-radius: 7px; font-style: normal; font-size: 11px; letter-spacing: 0.06em; color: #fff; background: #1b3a66; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
 #banner { position: absolute; left: 0; right: 0; top: 24%; text-align: center; font-size: clamp(20px, 5.5vw, 30px); padding-inline: 16px; opacity: 0; color: #fff; -webkit-text-stroke: 5px var(--sky-deep); paint-order: stroke fill; pointer-events: none; }
 #banner.show { animation: banner 2.6s ease forwards; }
@@ -316,6 +328,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .switch[aria-checked="true"]::after { transform: translateX(24px); }
 .seg { display: inline-flex; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 3px 0 #a9cdf5; }
 .seg button { padding: 8px 12px; font-size: 14px; color: var(--ink-dim); }
+#qualitySeg button { padding: 8px 9px; white-space: nowrap; }
 .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #6fcbff, var(--sky)); color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); }
 #toast { position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%); padding: 10px 18px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5, 0 8px 18px rgba(0,40,110,.25); font-size: 15px; opacity: 0; transition: opacity .2s; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); text-align: center; }
 #toast.show { opacity: 1; }
@@ -416,6 +429,18 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
   </section>
 
+  <section id="fuseBox" class="screen modal menu" hidden>
+    <div class="modal-body">
+      <h1 class="title outline" style="color:var(--violet)">FUSE</h1>
+      <div class="panel fuse-panel">
+        <div class="fuse-row"><button class="fslot" data-i="0"></button><button class="fslot" data-i="1"></button><button class="fslot" data-i="2"></button><span class="fuse-arrow" aria-hidden="true">➜</span><div class="fslot result" id="fuseResult"></div></div>
+        <p class="dim" id="fuseHint"></p>
+        <div class="gear-grid fuse-grid" id="fuseGrid"></div>
+      </div>
+      <div class="row-actions"><button class="jelly violet" id="fuseGo" disabled>Fuse</button><button class="jelly ghost" id="fuseClose">Done</button></div>
+    </div>
+  </section>
+
   <section id="scrollChest" class="screen modal menu" hidden>
     <div class="modal-body" style="text-align:center">
       <h1 class="title outline" style="color:var(--gold);font-size:clamp(28px,7vw,40px);white-space:nowrap">TREASURE CHEST</h1>
@@ -502,7 +527,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
         <div class="setting"><span>Damage numbers</span><button class="switch" role="switch" data-set="numbers" aria-label="Damage numbers"></button></div>
         <div class="setting"><span>Screen shake</span><button class="switch" role="switch" data-set="shake" aria-label="Screen shake"></button></div>
         <div class="setting"><span>Vibration</span><button class="switch" role="switch" data-set="haptics" aria-label="Vibration"></button></div>
-        <div class="setting"><span>Graphics</span><div class="seg" id="qualitySeg"><button data-q="auto">Auto</button><button data-q="high">High</button><button data-q="low">Low</button></div></div>
+        <div class="setting"><span>Graphics</span><div class="seg" id="qualitySeg"><button data-q="auto">Auto</button><button data-q="high">High</button><button data-q="low">Low</button><button data-q="ultra">Ultra low</button></div></div>
         <div class="setting"><span>Reset progress</span><button class="jelly ghost" id="btnReset" style="min-height:40px;padding:6px 14px 10px;font-size:14px">Reset</button></div>
         <div class="panel confirm" id="resetConfirm" hidden><span>Erase all coins, upgrades, skins and chapters?</span><div class="row-actions"><button class="jelly danger" id="btnResetYes">Erase</button><button class="jelly ghost" id="btnResetNo">Cancel</button></div></div>
       </div>
@@ -2704,7 +2729,7 @@ flat in vec4 fP1;
 out vec4 fragColor;
 uniform float uPixAng;
 
-// material codes returned by the map: 0 goo, 1 gem, 2 gold, 3 stone, 4 wood, 5 toon orange, 6 emissive orb, 7 white goo tip, 8 steel, 9 dark wood, 10 red goo, 11 parchment
+// material codes returned by the map: 0 goo, 1 gem, 2 gold, 3 stone, 4 wood, 5 toon orange, 6 emissive orb, 7 white goo tip, 8 steel, 9 dark wood, 10 red goo, 11 parchment, 12 glossy black
 float sdRoundCone(vec3 p, vec3 a, vec3 b, float r1, float r2) {
   vec3 ba = b - a; float l2 = dot(ba, ba); float rr = r1 - r2; float a2 = l2 - rr * rr; float il2 = 1.0 / l2;
   vec3 pa = p - a; float y = dot(pa, ba); float z = y - l2;
@@ -2968,6 +2993,25 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     d = smin(d, length(p - vec3(-0.85, 0.0, 0.0)) - 0.42, 0.2);
     return vec2(d, 0.0);
   }
+  if (type == 31) {
+    // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
+    // (modelled standing on y = 0, drawn centred 0.65 above the floor so it fits the impostor bounds)
+    p.y += 0.65;
+    float sq = 1.0 + 0.07 * sin(ph * 7.0);
+    vec3 b = vec3(p.x * sqrt(sq), p.y / sq, p.z * sqrt(sq));
+    float body = sdEllipsoid(b - vec3(0.0, 0.42, 0.0), vec3(0.8, 0.52, 0.8));
+    body = smin(body, length(b - vec3(0.0, 0.82, 0.0)) - 0.24, 0.22);
+    vec3 e = vec3(abs(p.x) - 0.27, p.y - 0.68 * sq, p.z - 0.6);
+    float eye = length(e) - 0.2;
+    float pupil = length(e - vec3(-0.02, 0.03, 0.13)) - 0.11;
+    float sprout = sdCapsule(p, vec3(0.0, 0.95 * sq, 0.0), vec3(0.14, 1.22 * sq, -0.04), 0.05);
+    float tip = length(p - vec3(0.15, 1.3 * sq, -0.04)) - 0.11;
+    float d = smin(body, sprout, 0.08);
+    float m = 0.0;
+    if (eye < d) { d = eye; m = pupil < 0.0 ? 12.0 : 7.0; }
+    if (tip < d) { d = tip; m = 6.0; }
+    return vec2(d, m);
+  }
   return vec2(length(p) - 0.8, 0.0);
 }
 
@@ -3023,7 +3067,11 @@ void main() {
   float mat = res.y;
   vec3 col;
   float emissive = fP0.z;
-  if (mat > 10.5) {
+  if (mat > 11.5) {
+    // glossy near-black (pupils)
+    vec3 H = normalize(uLightDir + v);
+    col = vec3(0.03, 0.03, 0.05) + uLightCol * pow(max(dot(n, H), 0.0), 60.0) * 0.9;
+  } else if (mat > 10.5) {
     vec3 paper = vec3(0.98, 0.88, 0.66) * (0.9 + 0.12 * texture(uNoise, lp.xy * 1.3).g);
     float ndl = max(dot(n, uLightDir), 0.0);
     col = paper * (mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5) * 0.7 + uLightCol * ndl * 0.75) * mix(0.6, 1.0, ao) + paper * emissive;
@@ -3054,7 +3102,8 @@ void main() {
     col = mix(body * vec3(0.75, 0.64, 0.5), body, smoothstep(0.1, 0.3, ndl));
   } else if (mat < 6.5) {
     float ndv = clamp(dot(n, v), 0.0, 1.0);
-    col = mix(vec3(1.0, 0.45, 0.08), vec3(1.0, 0.9, 0.55), pow(ndv, 2.0)) * (1.2 + emissive);
+    // the blob mine's fuse tip blinks through P1.x without lighting up the rest of the mine
+    col = mix(vec3(1.0, 0.45, 0.08), vec3(1.0, 0.9, 0.55), pow(ndv, 2.0)) * (1.2 + emissive + (type == 31 ? fP1.x * 2.5 : 0.0));
   } else if (mat < 7.5) {
     col = gooShade(vec3(0.95, 0.97, 1.0), wp, n, v, thin, ao, emissive * 0.5, 1.0);
   } else if (mat < 8.5) {
@@ -4806,9 +4855,9 @@ const SKILLS = {
     levels: L10({ dmg: [8, 9, 10, 11, 12, 13, 14, 15, 16, 18], cd: [2.6, 2.6, 2.5, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0, 0.7, 0.7, 0.8, 0.8, 0.9, 1.0] }),
   },
   mine: {
-    name: 'Blob Mine', intro: 'Drops sticky mines behind you that burst when enemies step close.', icon: { type: 2, colw: 1.6 },
+    name: 'Blob Mine', intro: 'Drops little goo blobs behind you that burst when enemies step close.', icon: { type: 31, colw: 1.6 },
     fields: [['dmg', 'Damage'], ['cd', 'Drop every', 's'], ['max', 'Max mines'], ['radius', 'Blast radius', 'm']],
-    levels: L10({ dmg: [12, 13, 14, 16, 18, 20, 22, 24, 27, 30], cd: [3.0, 3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.2, 2.0], max: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], radius: [1.4, 1.45, 1.5, 1.55, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1] }),
+    levels: L10({ dmg: [18, 20, 22, 24, 27, 30, 33, 37, 41, 46], cd: [2.6, 2.6, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.7], max: [3, 3, 3, 4, 4, 5, 5, 6, 6, 7], radius: [1.7, 1.75, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.6] }),
   },
   blade: {
     name: 'Blade', intro: 'Crescent blades of hardened goo orbit you and cut what they touch.', icon: { type: 3, colw: 0.3 },
@@ -4852,7 +4901,7 @@ const SKILLS = {
   },
 };
 
-// Passives: 10 levels each (Multishot adds a whole projectile per level, so it stays at 2)
+// Passives ("blob abilities"): 10 levels each (Projectile Count adds a whole projectile per level, so it stays at 2)
 const PASSIVES = {
   thick: { name: 'Thick Goo', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
   regen: { name: 'Regen', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
@@ -4860,12 +4909,14 @@ const PASSIVES = {
   magnet: { name: 'Magnet', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
   power: { name: 'Power', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
   armor: { name: 'Armor', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
-  haste: { name: 'Haste', desc: 'Skills recharge 3% faster.', max: 10, icon: { type: 22, colw: 0 } },
+  haste: { name: 'Haste', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
   reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
-  multishot: { name: 'Multishot', desc: '+1 ball, grenade, missile or axe, and +1 lightning strike.', max: 2, icon: { type: 24, colw: 0.4 } },
+  multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile and Goo Axe.', max: 2, icon: { type: 24, colw: 0.4 } },
   growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
+// a run holds at most this many different skills and this many different passives
+const SLOT_LIMIT = { skill: 4, passive: 4 };
 
 // Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1).
 // ai: how the enemy attacks besides walking into you. lunge = spear thrust, chop = overhead swing,
@@ -5242,7 +5293,7 @@ function recomputeStats() {
     speedMul: (1 + 0.04 * lv('speed')) * (1 + 0.01 * meta.speed) * (1 + g('speed')),
     magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + 0.05 * meta.magnet) * (1 + g('magnet')),
     armorMul: Math.pow(0.97, lv('armor')) * (1 - Math.min(0.6, g('armor'))),
-    cdMul: Math.pow(0.97, lv('haste')) * (1 - Math.min(0.5, g('cd'))),
+    cdMul: Math.pow(0.96, lv('haste')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: (1 + 0.05 * lv('reach')) * (1 + g('area')),
     extra: lv('multishot'),
     xpMul: (1 + 0.04 * lv('growth')) * (1 + g('xp')),
@@ -5307,11 +5358,11 @@ function killEnemy(e) {
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
   AUDIO.play('squish');
   if (e.boss) { onBossKilled(e); return; }
-  // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and very rarely a scroll
+  // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and sometimes a scroll; elites always drop one
   const tough = e.elite || e.def.xp >= 2;
   if (e.elite || (tough && Math.random() < EMERALD_CHANCE)) dropGem(e.x, e.z, e.elite ? e.xp : e.xp * 3 + 2, 1);
   else dropGem(e.x, e.z, e.xp, 0);
-  if (tough && Math.random() < (e.elite ? SCROLL_CHANCE_ELITE : SCROLL_CHANCE)) spawnPickup('scroll', e.x, e.z);
+  if (e.elite || (tough && Math.random() < SCROLL_CHANCE)) spawnPickup('scroll', e.x + 0.5, e.z);
   if (e.elite) {
     spawnPickup('chest', e.x, e.z);
     for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), 2);
@@ -5370,7 +5421,7 @@ function reviveHero() {
 
 // ---------- gems and pickups ----------
 // tier 0 is the small blue crystal, tier 1 the big green emerald
-const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.003, SCROLL_CHANCE_ELITE = 0.05;
+const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.02;
 function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {
@@ -5740,9 +5791,9 @@ function updatePickups(dt) {
       if (p.y <= 0.3) { p.y = 0.3; p.vy = 0; p.vx = 0; p.vz = 0; resolveCircle(p, 0.3); }
     }
     const dx = h[0] - p.x, dz = h[2] - p.z, d = Math.hypot(dx, dz);
-    if (p.kind === 'coin' && !p.pull && d < mag) p.pull = true;
+    if ((p.kind === 'coin' || p.kind === 'scroll') && !p.pull && d < mag) p.pull = true;
     if (p.pull) { p.sp = Math.min(p.sp + 40 * dt, 30); const st = Math.max(4, p.sp) * dt; if (st < d) { p.x += dx / d * st; p.z += dz / d * st; } }
-    if (d < (p.kind === 'chest' ? 0.85 : 0.6) && p.t > 0.35) {
+    if (d < (p.kind === 'chest' || p.kind === 'heart' ? 0.85 : 0.6) && p.t > 0.35) {
       p.dead = true;
       if (p.kind === 'coin') { run.coins += p.value; AUDIO.play('coin'); FX.star(p.x, 0.6, p.z, 0.35, COLORS.gold); }
       else if (p.kind === 'heart') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.3); AUDIO.play('levelup'); FX.burst(h[0], 1, h[2], 12, [1, 0.4, 0.55], 3, 0.12, 0.6, 3); addNumberAt(h[0], 2.1, h[2], run.maxHp * 0.3, [0.4, 1, 0.6]); }
@@ -6162,7 +6213,7 @@ SKILL_HOOKS.grenade = {
     enemiesInRadius(h[0], h[2], 3.5, () => { near++; });
     if (near < 2) { st.t = 0.25; return; }
     st.t = L.cd * cdMul();
-    const n = L.count + extraShots();
+    const n = L.count;
     for (let i = 0; i < n; i++) {
       hero.addBud({
         joint: i % 2 ? 'footA' : 'footB', off: [0, 0.05, -0.14], r: 0.15, grow: 0.2 + i * 0.12, colw: 1, glow: 0.3,
@@ -6229,7 +6280,7 @@ function updateMines(dt) {
     if (m.life <= 0) { m.dead = true; FX.splat(m.x, m.z, 0.4, R.goo.base, 1.2); continue; }
     if (m.t < 0.5) continue;
     let trig = false;
-    enemiesInRadius(m.x, m.z, 0.9, () => { trig = true; });
+    enemiesInRadius(m.x, m.z, 1.1, () => { trig = true; });
     if (trig) { m.dead = true; explode(m.x, m.z, m.radius, m.dmg, 1.8, R.goo.pink); }
   }
   run.mines = run.mines.filter(m => !m.dead);
@@ -6281,7 +6332,7 @@ SKILL_HOOKS.lightning = {
     const cands = run.enemies.filter(e => !e.dying && onScreen(e.x, e.z, -0.6));
     if (!cands.length) return;
     st.t = L.cd * cdMul();
-    const n = Math.min(cands.length, L.strikes + extraShots());
+    const n = Math.min(cands.length, L.strikes);
     st.queue = st.queue || [];
     for (let i = 0; i < n; i++) {
       const k = Math.floor(Math.random() * cands.length);
@@ -6876,6 +6927,7 @@ function onBossKilled(e) {
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
   for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
+  spawnPickup('scroll', e.x, e.z);
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);
@@ -6974,12 +7026,14 @@ function emitRunScene() {
     const u = b.t / b.fuse, grow = clamp(b.t / 0.2, 0, 1);
     const blink = Math.sin(b.t * (8 + u * 30)) > 0 ? 0.8 : 0.2;
     pushImp(b.x, 0.34 * grow, b.z, 0.34 * easeOutBack(grow) * (1 + 0.12 * u * Math.sin(b.t * 40)), 0, 1, 0.15, 1, 6, 1, blink, b.ph + b.t * 2, 0, 0, 0, 1);
-    pushDecal(b.x, b.z, b.radius, b.radius, 0, 4, 0, u, 0.75, 0.45, 1.0, 0.5 * grow);
   }
   for (const m of run.mines) {
+    // a little goo blob with eyes; its fuse sprout blinks once it is armed
     const armed = m.t > 0.5, grow = clamp(m.t / 0.2, 0, 1), blink = armed && Math.sin(m.t * 10) > 0;
     const fade = clamp(m.life / 0.4, 0, 1);
-    pushImp(m.x, 0.0, m.z, 0.38 * easeOutBack(grow) * fade, 0, 0, 1, 1, 2, armed ? 1.6 + (blink ? 0.4 : 0) : 0.3, armed ? (blink ? 0.7 : 0.3) : 0.1, m.t, 0, 0, 0, 1);
+    const ms = 0.5 * easeOutBack(grow) * fade;
+    pushImp(m.x, 0.65 * ms, m.z, ms, 0, 0, 1, 1, 31, 1.6, 0.1, m.t + m.ph, blink ? 1 : 0, 0, 0, 1);
+    pushDecal(m.x + 0.05, m.z + 0.04, 0.5, 0.4, 0, 1, 0, 0, 0.02, 0.05, 0.1, 0.45);
   }
   for (const w of run.worms) {
     if (w.state === 'burrow' || w.E < 0.05) pushDecal(w.x, w.z, 0.85, 0.85, 0, 7, 0, 0, 0.35, 0.95, 0.75, 0.75);
@@ -7002,18 +7056,11 @@ function emitRunScene() {
   for (const p of run.pickups) {
     const bob = Math.sin(run.t * 3 + p.ph) * 0.05;
     if (p.kind === 'coin') pushImp(p.x, p.y + 0.05 + bob, p.z, 0.2, 0, 0, 1, 1, 9, 0, 0.1, run.t + p.ph, 0, 0, 0, 1);
-    else if (p.kind === 'heart') pushImp(p.x, p.y + 0.12 + bob, p.z, 0.24, 0, 0, 1, 1, 10, 4, 0.2, run.t + p.ph, 0, 0, 0, 1);
+    else if (p.kind === 'heart') pushImp(p.x, p.y + 0.42 + bob, p.z, 0.62, 0, 0, 1, 1, 10, 4, 0.2, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'magnet') pushImp(p.x, p.y + 0.12 + bob, p.z, 0.26, 0, 0, 1, 1, 11, 4, 0.1, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'scroll') { pushImp(p.x, p.y + 0.15 + bob, p.z, 0.3, 0, 0, 1, 1, 30, 0, 0.12, (run.t + p.ph) * 0.6, 0, 0, 0, 1); FX.glow(p.x, 0.45, p.z, 0.8, [1, 0.85, 0.45], 0.05, 0.3); }
     else if (p.kind === 'chest') { pushImp(p.x, p.y + 0.02, p.z, 0.36, 0, 0, 1, 1, 12, 0, 0.05, run.t, 0, 0, 0, 1); FX.glow(p.x, 0.5, p.z, 0.9, [1, 0.8, 0.3], 0.05, 0.25); }
     pushDecal(p.x + 0.06, p.z + 0.05, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.4);
-  }
-  // magnet radius ring when gems are near
-  if (lvlOf('magnet') > 0) {
-    const r = run.stats.magnet;
-    let near = false;
-    for (const g of run.gems) if (Math.hypot(g.x - h[0], g.z - h[2]) < r * 1.8) { near = true; break; }
-    if (near) pushDecal(h[0], h[2], r, r, 0, 6, 0, 0, 0.4, 1, 0.75, 0.35);
   }
   // lightning bolts
   for (const b of G.bolts) {
@@ -7108,7 +7155,7 @@ const UI = {
     this.show('upgrades', menu && this.menuTab === 'upgrades');
     this.show('skins', menu && this.menuTab === 'skins');
     this.show('gear', menu && this.menuTab === 'gear');
-    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); }
+    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); this.show('fuseBox', false); }
     this.show('chapters', menu && this.menuTab === 'chapters');
     const inRun = ['run', 'levelup', 'chest', 'pause', 'dying', 'revive', 'victory'].includes(s);
     this.show('hud', inRun);
@@ -7284,15 +7331,20 @@ const UI = {
     const sig = run.slots.map(s => s.id + s.lvl).join(',');
     if (sig !== this.slotSig) {
       this.slotSig = sig;
+      // two groups of boxes: skills, then passives
       const cells = [];
-      for (let i = 0; i < 8; i++) {
-        const s = run.slots[i], d = document.createElement('div');
-        if (s) {
-          d.className = 'slot ' + s.kind;
-          d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / maxLevel(s.id)) * 100}%"></i></u>`;
-          d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
-        } else d.className = 'slot';
-        cells.push(d);
+      for (const kind of ['skill', 'passive']) {
+        const list = run.slots.filter(s => s.kind === kind);
+        for (let i = 0; i < SLOT_LIMIT[kind]; i++) {
+          const s = list[i], d = document.createElement('div');
+          if (s) {
+            d.className = 'slot ' + s.kind;
+            d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / maxLevel(s.id)) * 100}%"></i></u>`;
+            d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
+          } else d.className = 'slot empty-' + kind;
+          cells.push(d);
+        }
+        if (kind === 'skill') { const gap = document.createElement('span'); gap.className = 'slot-gap'; cells.push(gap); }
       }
       $('slots').replaceChildren(...cells);
     }
@@ -7372,7 +7424,8 @@ const UI = {
   openChest() {
     const run = G.run;
     run.chestQueued--;
-    const r = Math.random(), n = r < 0.7 ? 1 : r < 0.95 ? 3 : 5;
+    // one upgrade per chest
+    const n = 1;
     const results = [];
     for (let k = 0; k < n; k++) {
       const up = run.slots.filter(s => s.lvl < maxLevel(s.id) - results.filter(x => x === s.id).length);
@@ -7566,16 +7619,16 @@ function roundRect(ctx, x, y, w, h, r) {
 
 // ---------- level-up choices ----------
 function rollChoices() {
-  const run = G.run, owned = run.slots, many = owned.length >= 4, full = owned.length >= 8;
+  // up to SLOT_LIMIT different skills and passives; once a kind is full only upgrades of it are offered
+  const run = G.run, owned = run.slots, many = owned.length >= 4;
+  const nSkills = owned.filter(s => s.kind === 'skill').length, nPassives = owned.length - nSkills;
   const pool = [];
   for (const s of owned) {
     const max = maxLevel(s.id);
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
-  if (!full) {
-    for (const id in SKILLS) if (!slotOf(id)) pool.push({ id, w: many ? 0.55 : 1 });
-    for (const id in PASSIVES) if (!slotOf(id)) pool.push({ id, w: many ? 0.45 : 0.7 });
-  }
+  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id)) pool.push({ id, w: many ? 0.55 : 1 });
+  if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id)) pool.push({ id, w: many ? 0.45 : 0.7 });
   const out = [];
   while (out.length < 3 && pool.length) {
     let r = Math.random() * pool.reduce((a, c) => a + c.w, 0), i = 0;
@@ -7722,33 +7775,31 @@ function fuseArtifact(key) {
   for (const sl in g.eq) if (g.eq[sl] === key && !g.items[key]) g.eq[sl] = next;
   return next;
 }
-function fuseAll() {
-  const made = [];
-  for (let r = 0; r < RARITIES.length - 1; r++) for (const id in ARTIFACTS) {
-    const k = artKey(id, r);
-    while ((G.save.gear.items[k] || 0) >= 3) made.push(fuseArtifact(k));
-  }
-  return made;
-}
 const canFuse = () => Object.keys(G.save.gear.items).some(k => G.save.gear.items[k] >= 3 && artParse(k).r < RARITIES.length - 1);
 const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
 
 // ---------- screens ----------
 Object.assign(UI, {
-  gearSort: 'rarity', artKeyOpen: null, chestBusy: false,
+  gearSort: 'rarity', artKeyOpen: null, chestBusy: false, fuseSel: [], fuseMade: null,
 
   initGear() {
     ICONS.map.gear = svgUrl(CHEST_SVG); ICONS.map.scroll = gearIcon('scroll'); ICONS.map['g-atk'] = gearIcon('atk'); ICONS.map['g-heart'] = gearIcon('heart');
     $('gSort').addEventListener('click', () => { this.gearSort = this.gearSort === 'rarity' ? 'slot' : 'rarity'; AUDIO.play('click'); this.renderGear(); });
     $('gChest').addEventListener('click', () => { AUDIO.play('click'); this.openScrollChest(); });
-    $('gFuse').addEventListener('click', () => this.fuseAllUi());
+    $('gFuse').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(); });
+    document.querySelectorAll('#fuseBox .fslot[data-i]').forEach(b => b.addEventListener('click', () => {
+      const i = Number(b.dataset.i);
+      if (i < this.fuseSel.length) { this.fuseSel.splice(i, 1); AUDIO.play('click'); this.renderFuse(); }
+    }));
+    $('fuseGo').addEventListener('click', () => this.fuseGo());
+    $('fuseClose').addEventListener('click', () => { AUDIO.play('click'); this.show('fuseBox', false); this.renderGear(); });
     document.querySelectorAll('#gearStage .eq').forEach(b => b.addEventListener('click', () => {
       const k = G.save.gear.eq[b.dataset.slot];
       AUDIO.play('click');
       if (k) this.openArtifact(k); else this.toast(`No ${b.dataset.slot} equipped`);
     }));
     $('artEquip').addEventListener('click', () => this.equipToggle());
-    $('artFuse').addEventListener('click', () => this.fuseOneUi());
+    $('artFuse').addEventListener('click', () => { AUDIO.play('click'); this.show('artInfo', false); this.openFuse(this.artKeyOpen); });
     $('artClose').addEventListener('click', () => { AUDIO.play('click'); this.show('artInfo', false); });
     $('scOpen').addEventListener('click', () => this.crackChest());
     $('scDone').addEventListener('click', () => { AUDIO.play('click'); this.show('scrollChest', false); this.renderGear(); });
@@ -7769,14 +7820,7 @@ Object.assign(UI, {
       b.innerHTML = k ? `<img alt="" src="${gearIcon(artParse(k).id)}">` : `<img alt="" class="ghost" src="${slotIcon(b.dataset.slot)}">`;
       b.setAttribute('aria-label', k ? `${RARITIES[artParse(k).r].name} ${artParse(k).def.name}` : `Empty ${b.dataset.slot} slot`);
     });
-    const slotOrder = GEAR_SLOTS.map(s => s.id), ids = Object.keys(ARTIFACTS);
-    const keys = Object.keys(g.items).filter(k => g.items[k] > 0 && ARTIFACTS[artParse(k).id]);
-    keys.sort((a, b) => {
-      const A = artParse(a), B = artParse(b);
-      const bySlot = slotOrder.indexOf(A.def.slot) - slotOrder.indexOf(B.def.slot), byR = B.r - A.r;
-      return (this.gearSort === 'rarity' ? byR || bySlot : bySlot || byR) || ids.indexOf(A.id) - ids.indexOf(B.id);
-    });
-    const cards = keys.map(k => {
+    const cards = this.sortedArtKeys().map(k => {
       const { id, r, def } = artParse(k), b = document.createElement('button');
       const worn = g.eq[def.slot] === k;
       b.className = `art r${r}${worn ? ' worn' : ''}${g.items[k] >= 3 && r < RARITIES.length - 1 ? ' fusable' : ''}`;
@@ -7788,10 +7832,19 @@ Object.assign(UI, {
     if (!cards.length) {
       const p = document.createElement('p');
       p.className = 'gear-empty';
-      p.textContent = 'No artifacts yet. Tougher enemies very rarely drop a scroll; each scroll opens a treasure chest.';
+      p.textContent = 'No artifacts yet. Elites and bosses drop scrolls, and tougher enemies sometimes do; each scroll opens a treasure chest.';
       cards.push(p);
     }
     $('gearGrid').replaceChildren(...cards);
+  },
+  sortedArtKeys() {
+    const g = G.save.gear, slotOrder = GEAR_SLOTS.map(s => s.id), ids = Object.keys(ARTIFACTS);
+    const keys = Object.keys(g.items).filter(k => g.items[k] > 0 && ARTIFACTS[artParse(k).id]);
+    return keys.sort((a, b) => {
+      const A = artParse(a), B = artParse(b);
+      const bySlot = slotOrder.indexOf(A.def.slot) - slotOrder.indexOf(B.def.slot), byR = B.r - A.r;
+      return (this.gearSort === 'rarity' ? byR || bySlot : bySlot || byR) || ids.indexOf(A.id) - ids.indexOf(B.id);
+    });
   },
 
   openArtifact(key) {
@@ -7813,8 +7866,7 @@ Object.assign(UI, {
     $('artEquip').textContent = worn ? 'Unequip' : 'Equip';
     $('artEquip').className = worn ? 'jelly ghost' : 'jelly';
     $('artFuse').hidden = top;
-    $('artFuse').disabled = n < 3;
-    $('artFuse').textContent = `Fuse 3 → ${top ? '' : RARITIES[r + 1].name}`;
+    $('artFuse').textContent = 'Fuse';
     this.show('artInfo', true);
   },
   equipToggle() {
@@ -7825,23 +7877,59 @@ Object.assign(UI, {
     saveGame(); AUDIO.play(g.eq[slot] ? 'levelup' : 'click'); G.hero.impulse(1.6);
     this.renderGear(); this.openArtifact(key);
   },
-  fuseOneUi() {
-    const key = this.artKeyOpen, made = key && fuseArtifact(key);
+
+  // ---------- fuse: three slots, filled from the inventory with the same artifact and rarity ----------
+  openFuse(prefill) {
+    this.fuseSel = []; this.fuseMade = null;
+    const n = prefill ? Math.min(3, G.save.gear.items[prefill] || 0) : 0;
+    if (prefill && artParse(prefill).r < RARITIES.length - 1) for (let i = 0; i < n; i++) this.fuseSel.push(prefill);
+    this.show('fuseBox', true);
+    this.renderFuse();
+  },
+  renderFuse() {
+    const g = G.save.gear, sel = this.fuseSel, key = sel[0], top = RARITIES.length - 1;
+    document.querySelectorAll('#fuseBox .fslot[data-i]').forEach((b, i) => {
+      const k = sel[i];
+      b.className = 'fslot' + (k ? ' art r' + artParse(k).r : '');
+      b.innerHTML = k ? `<img alt="" src="${gearIcon(artParse(k).id)}">` : '<span>+</span>';
+      b.setAttribute('aria-label', k ? `Remove ${artParse(k).def.name}` : 'Empty fuse slot');
+    });
+    const res = $('fuseResult'), show = key || this.fuseMade;
+    if (show) {
+      const { id, r } = artParse(show), rr = key ? r + 1 : r;
+      res.className = `fslot result art r${rr}${key && sel.length < 3 ? ' faint' : ''}${!key ? ' made' : ''}`;
+      res.innerHTML = `<img alt="" src="${gearIcon(id)}">`;
+    } else { res.className = 'fslot result'; res.innerHTML = '<span>?</span>'; }
+    const hint = $('fuseHint');
+    if (key) {
+      const { id, r, def } = artParse(key), nx = artStats(artKey(id, r + 1));
+      hint.textContent = sel.length < 3 ? `Add ${3 - sel.length} more ${RARITIES[r].name} ${def.name}.`
+        : `Fuse into ${RARITIES[r + 1].name} ${def.name}: ${Object.keys(nx).map(k => fmtBonus(k, nx[k])).join(' · ')}`;
+    } else if (this.fuseMade) {
+      const { r, def } = artParse(this.fuseMade);
+      hint.textContent = `You made a ${RARITIES[r].name} ${def.name}!`;
+    } else hint.textContent = 'Tap an artifact below. Three of the same artifact and rarity fuse into the next rarity.';
+    const cards = this.sortedArtKeys().map(k => {
+      const { id, r, def } = artParse(k), b = document.createElement('button');
+      const left = g.items[k] - sel.filter(x => x === k).length;
+      b.className = `art r${r}`;
+      b.innerHTML = `<i class="badge"><img alt="" src="${slotIcon(def.slot)}"></i><img alt="" src="${gearIcon(id)}"><b>${left}</b>`;
+      b.disabled = left <= 0 || r >= top || sel.length >= 3 || (key && k !== key);
+      b.setAttribute('aria-label', `${RARITIES[r].name} ${def.name}, ${left} left`);
+      b.addEventListener('click', () => { this.fuseMade = null; this.fuseSel.push(k); AUDIO.play('pop'); this.renderFuse(); });
+      return b;
+    });
+    $('fuseGrid').replaceChildren(...cards);
+    $('fuseGo').disabled = sel.length < 3;
+  },
+  fuseGo() {
+    const sel = this.fuseSel;
+    if (sel.length < 3 || sel.some(k => k !== sel[0])) return;
+    const made = fuseArtifact(sel[0]);
     if (!made) return;
     saveGame(); AUDIO.play('chest'); G.hero.impulse(2);
-    this.toast(`Fused into ${RARITIES[artParse(made).r].name} ${artParse(made).def.name}`);
-    this.renderGear();
-    this.openArtifact(G.save.gear.items[key] > 0 ? key : made);
-  },
-  fuseAllUi() {
-    const made = fuseAll();
-    if (!made.length) { AUDIO.play('click'); this.toast('Fusing needs 3 of the same artifact and rarity'); return; }
-    saveGame(); AUDIO.play('chest'); G.hero.impulse(2.2);
-    // only the final results matter: a fused item can itself be fused again in the same pass
-    const left = made.filter(k => G.save.gear.items[k] > 0);
-    const best = left.reduce((a, k) => (artParse(k).r > artParse(a).r ? k : a), left[0] || made[made.length - 1]);
-    this.toast(`Fused ${made.length}× · best: ${RARITIES[artParse(best).r].name} ${artParse(best).def.name}`);
-    this.renderGear();
+    this.fuseSel = []; this.fuseMade = made;
+    this.renderFuse(); this.renderGear();
   },
 
   // ---------- scroll chest ----------
@@ -7851,7 +7939,7 @@ Object.assign(UI, {
     st.className = 'chest-stage';
     $('chestReveal').hidden = true;
     this.syncChestButtons();
-    $('scText').textContent = (G.save.scrolls || 0) > 0 ? 'Use a scroll to unlock the chest.' : 'You have no scrolls. Tougher enemies very rarely drop one.';
+    $('scText').textContent = (G.save.scrolls || 0) > 0 ? 'Use a scroll to unlock the chest.' : 'You have no scrolls. Elites and bosses drop them, and tougher enemies sometimes do.';
     this.show('scrollChest', true);
   },
   syncChestButtons() {
@@ -8009,7 +8097,8 @@ const DEV_CMDS = {
       const r = devRun(), id = a[0] && Object.keys({ ...SKILLS, ...PASSIVES }).find(k => k.toLowerCase() === a[0].toLowerCase());
       if (!id) throw new Error(`Unknown skill. Skills: ${Object.keys(SKILLS).join(', ')}. Passives: ${Object.keys(PASSIVES).join(', ')}`);
       const n = clamp(Math.round(devNum(a[1], 1)), 1, 10);
-      if (!slotOf(id) && r.slots.length >= 8) throw new Error('All 8 slots are full');
+      const kind = SKILLS[id] ? 'skill' : 'passive';
+      if (!slotOf(id) && r.slots.filter(s => s.kind === kind).length >= SLOT_LIMIT[kind]) throw new Error(`All ${SLOT_LIMIT[kind]} ${kind} slots are full`);
       for (let i = 0; i < n && lvlOf(id) < maxLevel(id); i++) addOrLevel(id);
       return `${(SKILLS[id] || PASSIVES[id]).name} level ${lvlOf(id)}`;
     },
@@ -8282,7 +8371,7 @@ function renderBossPortrait(model) {
 // Boot, background mesh building, input, home scene, main loop
 // ============================================================
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
-const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, software: false };
+const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, cap: 60, software: false };
 const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0 };
 const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
@@ -8409,8 +8498,11 @@ function readInput() {
 function applySettings() {
   const st = G.save.settings, dpr = window.devicePixelRatio || 1;
   AUDIO.enabled = st.sound;
-  FX.reduced = st.quality === 'low';
-  if (st.quality === 'high') { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = PERF.min = Math.min(dpr, 2); }
+  FX.reduced = st.quality === 'low' || st.quality === 'ultra';
+  // Ultra low: a third of the pixels of Low, no MSAA or bloom, and 30 frames a second
+  PERF.cap = st.quality === 'ultra' ? 30 : 60;
+  if (st.quality === 'ultra') { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = PERF.min = 0.4; }
+  else if (st.quality === 'high') { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = PERF.min = Math.min(dpr, 2); }
   else if (st.quality === 'low') { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = PERF.min = Math.max(0.5, Math.min(dpr, 1) * 0.75); }
   else if (PERF.software) { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = 0.6; PERF.min = 0.5; }
   else { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = Math.min(dpr, 1.5); PERF.min = 0.6; }
@@ -8562,8 +8654,9 @@ function loop(now) {
   // otherwise multiply the GPU work. Time from skipped refreshes carries over to the next frame.
   frameAcc += rafT ? Math.max(0, now - rafT) : 0;
   rafT = now;
-  if (lastT && frameAcc < 1000 / 60 - 2) { requestAnimationFrame(loop); return; }
-  frameAcc = clamp(frameAcc - 1000 / 60, 0, 1000 / 60);
+  const frameMs = 1000 / PERF.cap;
+  if (lastT && frameAcc < frameMs - 2) { requestAnimationFrame(loop); return; }
+  frameAcc = clamp(frameAcc - frameMs, 0, frameMs);
   const raw = lastT ? (now - lastT) / 1000 : 1 / 60;
   const dt = clamp(raw, 0, 0.05);
   lastT = now;
@@ -8640,7 +8733,8 @@ async function boot() {
   UI.menuTab = 'home';
   setState('home');
   UI.openTab('home');
-  if (PERF.software) UI.toast('Hardware acceleration is off in this browser, so the game will be slow. Turn it on in the browser settings.', 8);
+  // the setting can be on while the browser still falls back to software (blocked driver, or after graphics crashes)
+  if (PERF.software) UI.toast(`Your browser is drawing the game without the graphics card (it reports "${gpuName()}"), so it will be slow. Restarting the browser often fixes this; try Graphics: Ultra low too.`, 10);
   const off = offlineEarnings();
   if (off) UI.showOffline(off.coins, off.hours);
   saveGame();

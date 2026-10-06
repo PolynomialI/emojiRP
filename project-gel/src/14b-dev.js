@@ -115,7 +115,8 @@ const DEV_CMDS = {
       const r = devRun(), id = a[0] && Object.keys({ ...SKILLS, ...PASSIVES }).find(k => k.toLowerCase() === a[0].toLowerCase());
       if (!id) throw new Error(`Unknown skill. Skills: ${Object.keys(SKILLS).join(', ')}. Passives: ${Object.keys(PASSIVES).join(', ')}`);
       const n = clamp(Math.round(devNum(a[1], 1)), 1, 10);
-      if (!slotOf(id) && r.slots.length >= 8) throw new Error('All 8 slots are full');
+      const kind = SKILLS[id] ? 'skill' : 'passive';
+      if (!slotOf(id) && r.slots.filter(s => s.kind === kind).length >= SLOT_LIMIT[kind]) throw new Error(`All ${SLOT_LIMIT[kind]} ${kind} slots are full`);
       for (let i = 0; i < n && lvlOf(id) < maxLevel(id); i++) addOrLevel(id);
       return `${(SKILLS[id] || PASSIVES[id]).name} level ${lvlOf(id)}`;
     },

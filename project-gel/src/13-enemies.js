@@ -263,6 +263,7 @@ function onBossKilled(e) {
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
   for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
+  spawnPickup('scroll', e.x, e.z);
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);
@@ -361,12 +362,14 @@ function emitRunScene() {
     const u = b.t / b.fuse, grow = clamp(b.t / 0.2, 0, 1);
     const blink = Math.sin(b.t * (8 + u * 30)) > 0 ? 0.8 : 0.2;
     pushImp(b.x, 0.34 * grow, b.z, 0.34 * easeOutBack(grow) * (1 + 0.12 * u * Math.sin(b.t * 40)), 0, 1, 0.15, 1, 6, 1, blink, b.ph + b.t * 2, 0, 0, 0, 1);
-    pushDecal(b.x, b.z, b.radius, b.radius, 0, 4, 0, u, 0.75, 0.45, 1.0, 0.5 * grow);
   }
   for (const m of run.mines) {
+    // a little goo blob with eyes; its fuse sprout blinks once it is armed
     const armed = m.t > 0.5, grow = clamp(m.t / 0.2, 0, 1), blink = armed && Math.sin(m.t * 10) > 0;
     const fade = clamp(m.life / 0.4, 0, 1);
-    pushImp(m.x, 0.0, m.z, 0.38 * easeOutBack(grow) * fade, 0, 0, 1, 1, 2, armed ? 1.6 + (blink ? 0.4 : 0) : 0.3, armed ? (blink ? 0.7 : 0.3) : 0.1, m.t, 0, 0, 0, 1);
+    const ms = 0.5 * easeOutBack(grow) * fade;
+    pushImp(m.x, 0.65 * ms, m.z, ms, 0, 0, 1, 1, 31, 1.6, 0.1, m.t + m.ph, blink ? 1 : 0, 0, 0, 1);
+    pushDecal(m.x + 0.05, m.z + 0.04, 0.5, 0.4, 0, 1, 0, 0, 0.02, 0.05, 0.1, 0.45);
   }
   for (const w of run.worms) {
     if (w.state === 'burrow' || w.E < 0.05) pushDecal(w.x, w.z, 0.85, 0.85, 0, 7, 0, 0, 0.35, 0.95, 0.75, 0.75);
@@ -389,18 +392,11 @@ function emitRunScene() {
   for (const p of run.pickups) {
     const bob = Math.sin(run.t * 3 + p.ph) * 0.05;
     if (p.kind === 'coin') pushImp(p.x, p.y + 0.05 + bob, p.z, 0.2, 0, 0, 1, 1, 9, 0, 0.1, run.t + p.ph, 0, 0, 0, 1);
-    else if (p.kind === 'heart') pushImp(p.x, p.y + 0.12 + bob, p.z, 0.24, 0, 0, 1, 1, 10, 4, 0.2, run.t + p.ph, 0, 0, 0, 1);
+    else if (p.kind === 'heart') pushImp(p.x, p.y + 0.42 + bob, p.z, 0.62, 0, 0, 1, 1, 10, 4, 0.2, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'magnet') pushImp(p.x, p.y + 0.12 + bob, p.z, 0.26, 0, 0, 1, 1, 11, 4, 0.1, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'scroll') { pushImp(p.x, p.y + 0.15 + bob, p.z, 0.3, 0, 0, 1, 1, 30, 0, 0.12, (run.t + p.ph) * 0.6, 0, 0, 0, 1); FX.glow(p.x, 0.45, p.z, 0.8, [1, 0.85, 0.45], 0.05, 0.3); }
     else if (p.kind === 'chest') { pushImp(p.x, p.y + 0.02, p.z, 0.36, 0, 0, 1, 1, 12, 0, 0.05, run.t, 0, 0, 0, 1); FX.glow(p.x, 0.5, p.z, 0.9, [1, 0.8, 0.3], 0.05, 0.25); }
     pushDecal(p.x + 0.06, p.z + 0.05, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.4);
-  }
-  // magnet radius ring when gems are near
-  if (lvlOf('magnet') > 0) {
-    const r = run.stats.magnet;
-    let near = false;
-    for (const g of run.gems) if (Math.hypot(g.x - h[0], g.z - h[2]) < r * 1.8) { near = true; break; }
-    if (near) pushDecal(h[0], h[2], r, r, 0, 6, 0, 0, 0.4, 1, 0.75, 0.35);
   }
   // lightning bolts
   for (const b of G.bolts) {

@@ -425,7 +425,7 @@ flat in vec4 fP1;
 out vec4 fragColor;
 uniform float uPixAng;
 
-// material codes returned by the map: 0 goo, 1 gem, 2 gold, 3 stone, 4 wood, 5 toon orange, 6 emissive orb, 7 white goo tip, 8 steel, 9 dark wood, 10 red goo, 11 parchment
+// material codes returned by the map: 0 goo, 1 gem, 2 gold, 3 stone, 4 wood, 5 toon orange, 6 emissive orb, 7 white goo tip, 8 steel, 9 dark wood, 10 red goo, 11 parchment, 12 glossy black
 float sdRoundCone(vec3 p, vec3 a, vec3 b, float r1, float r2) {
   vec3 ba = b - a; float l2 = dot(ba, ba); float rr = r1 - r2; float a2 = l2 - rr * rr; float il2 = 1.0 / l2;
   vec3 pa = p - a; float y = dot(pa, ba); float z = y - l2;
@@ -689,6 +689,25 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     d = smin(d, length(p - vec3(-0.85, 0.0, 0.0)) - 0.42, 0.2);
     return vec2(d, 0.0);
   }
+  if (type == 31) {
+    // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
+    // (modelled standing on y = 0, drawn centred 0.65 above the floor so it fits the impostor bounds)
+    p.y += 0.65;
+    float sq = 1.0 + 0.07 * sin(ph * 7.0);
+    vec3 b = vec3(p.x * sqrt(sq), p.y / sq, p.z * sqrt(sq));
+    float body = sdEllipsoid(b - vec3(0.0, 0.42, 0.0), vec3(0.8, 0.52, 0.8));
+    body = smin(body, length(b - vec3(0.0, 0.82, 0.0)) - 0.24, 0.22);
+    vec3 e = vec3(abs(p.x) - 0.27, p.y - 0.68 * sq, p.z - 0.6);
+    float eye = length(e) - 0.2;
+    float pupil = length(e - vec3(-0.02, 0.03, 0.13)) - 0.11;
+    float sprout = sdCapsule(p, vec3(0.0, 0.95 * sq, 0.0), vec3(0.14, 1.22 * sq, -0.04), 0.05);
+    float tip = length(p - vec3(0.15, 1.3 * sq, -0.04)) - 0.11;
+    float d = smin(body, sprout, 0.08);
+    float m = 0.0;
+    if (eye < d) { d = eye; m = pupil < 0.0 ? 12.0 : 7.0; }
+    if (tip < d) { d = tip; m = 6.0; }
+    return vec2(d, m);
+  }
   return vec2(length(p) - 0.8, 0.0);
 }
 
@@ -744,7 +763,11 @@ void main() {
   float mat = res.y;
   vec3 col;
   float emissive = fP0.z;
-  if (mat > 10.5) {
+  if (mat > 11.5) {
+    // glossy near-black (pupils)
+    vec3 H = normalize(uLightDir + v);
+    col = vec3(0.03, 0.03, 0.05) + uLightCol * pow(max(dot(n, H), 0.0), 60.0) * 0.9;
+  } else if (mat > 10.5) {
     vec3 paper = vec3(0.98, 0.88, 0.66) * (0.9 + 0.12 * texture(uNoise, lp.xy * 1.3).g);
     float ndl = max(dot(n, uLightDir), 0.0);
     col = paper * (mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5) * 0.7 + uLightCol * ndl * 0.75) * mix(0.6, 1.0, ao) + paper * emissive;
@@ -775,7 +798,8 @@ void main() {
     col = mix(body * vec3(0.75, 0.64, 0.5), body, smoothstep(0.1, 0.3, ndl));
   } else if (mat < 6.5) {
     float ndv = clamp(dot(n, v), 0.0, 1.0);
-    col = mix(vec3(1.0, 0.45, 0.08), vec3(1.0, 0.9, 0.55), pow(ndv, 2.0)) * (1.2 + emissive);
+    // the blob mine's fuse tip blinks through P1.x without lighting up the rest of the mine
+    col = mix(vec3(1.0, 0.45, 0.08), vec3(1.0, 0.9, 0.55), pow(ndv, 2.0)) * (1.2 + emissive + (type == 31 ? fP1.x * 2.5 : 0.0));
   } else if (mat < 7.5) {
     col = gooShade(vec3(0.95, 0.97, 1.0), wp, n, v, thin, ao, emissive * 0.5, 1.0);
   } else if (mat < 8.5) {

@@ -102,33 +102,31 @@ function fuseArtifact(key) {
   for (const sl in g.eq) if (g.eq[sl] === key && !g.items[key]) g.eq[sl] = next;
   return next;
 }
-function fuseAll() {
-  const made = [];
-  for (let r = 0; r < RARITIES.length - 1; r++) for (const id in ARTIFACTS) {
-    const k = artKey(id, r);
-    while ((G.save.gear.items[k] || 0) >= 3) made.push(fuseArtifact(k));
-  }
-  return made;
-}
 const canFuse = () => Object.keys(G.save.gear.items).some(k => G.save.gear.items[k] >= 3 && artParse(k).r < RARITIES.length - 1);
 const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
 
 // ---------- screens ----------
 Object.assign(UI, {
-  gearSort: 'rarity', artKeyOpen: null, chestBusy: false,
+  gearSort: 'rarity', artKeyOpen: null, chestBusy: false, fuseSel: [], fuseMade: null,
 
   initGear() {
     ICONS.map.gear = svgUrl(CHEST_SVG); ICONS.map.scroll = gearIcon('scroll'); ICONS.map['g-atk'] = gearIcon('atk'); ICONS.map['g-heart'] = gearIcon('heart');
     $('gSort').addEventListener('click', () => { this.gearSort = this.gearSort === 'rarity' ? 'slot' : 'rarity'; AUDIO.play('click'); this.renderGear(); });
     $('gChest').addEventListener('click', () => { AUDIO.play('click'); this.openScrollChest(); });
-    $('gFuse').addEventListener('click', () => this.fuseAllUi());
+    $('gFuse').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(); });
+    document.querySelectorAll('#fuseBox .fslot[data-i]').forEach(b => b.addEventListener('click', () => {
+      const i = Number(b.dataset.i);
+      if (i < this.fuseSel.length) { this.fuseSel.splice(i, 1); AUDIO.play('click'); this.renderFuse(); }
+    }));
+    $('fuseGo').addEventListener('click', () => this.fuseGo());
+    $('fuseClose').addEventListener('click', () => { AUDIO.play('click'); this.show('fuseBox', false); this.renderGear(); });
     document.querySelectorAll('#gearStage .eq').forEach(b => b.addEventListener('click', () => {
       const k = G.save.gear.eq[b.dataset.slot];
       AUDIO.play('click');
       if (k) this.openArtifact(k); else this.toast(`No ${b.dataset.slot} equipped`);
     }));
     $('artEquip').addEventListener('click', () => this.equipToggle());
-    $('artFuse').addEventListener('click', () => this.fuseOneUi());
+    $('artFuse').addEventListener('click', () => { AUDIO.play('click'); this.show('artInfo', false); this.openFuse(this.artKeyOpen); });
     $('artClose').addEventListener('click', () => { AUDIO.play('click'); this.show('artInfo', false); });
     $('scOpen').addEventListener('click', () => this.crackChest());
     $('scDone').addEventListener('click', () => { AUDIO.play('click'); this.show('scrollChest', false); this.renderGear(); });
@@ -149,14 +147,7 @@ Object.assign(UI, {
       b.innerHTML = k ? `<img alt="" src="${gearIcon(artParse(k).id)}">` : `<img alt="" class="ghost" src="${slotIcon(b.dataset.slot)}">`;
       b.setAttribute('aria-label', k ? `${RARITIES[artParse(k).r].name} ${artParse(k).def.name}` : `Empty ${b.dataset.slot} slot`);
     });
-    const slotOrder = GEAR_SLOTS.map(s => s.id), ids = Object.keys(ARTIFACTS);
-    const keys = Object.keys(g.items).filter(k => g.items[k] > 0 && ARTIFACTS[artParse(k).id]);
-    keys.sort((a, b) => {
-      const A = artParse(a), B = artParse(b);
-      const bySlot = slotOrder.indexOf(A.def.slot) - slotOrder.indexOf(B.def.slot), byR = B.r - A.r;
-      return (this.gearSort === 'rarity' ? byR || bySlot : bySlot || byR) || ids.indexOf(A.id) - ids.indexOf(B.id);
-    });
-    const cards = keys.map(k => {
+    const cards = this.sortedArtKeys().map(k => {
       const { id, r, def } = artParse(k), b = document.createElement('button');
       const worn = g.eq[def.slot] === k;
       b.className = `art r${r}${worn ? ' worn' : ''}${g.items[k] >= 3 && r < RARITIES.length - 1 ? ' fusable' : ''}`;
@@ -168,10 +159,19 @@ Object.assign(UI, {
     if (!cards.length) {
       const p = document.createElement('p');
       p.className = 'gear-empty';
-      p.textContent = 'No artifacts yet. Tougher enemies very rarely drop a scroll; each scroll opens a treasure chest.';
+      p.textContent = 'No artifacts yet. Elites and bosses drop scrolls, and tougher enemies sometimes do; each scroll opens a treasure chest.';
       cards.push(p);
     }
     $('gearGrid').replaceChildren(...cards);
+  },
+  sortedArtKeys() {
+    const g = G.save.gear, slotOrder = GEAR_SLOTS.map(s => s.id), ids = Object.keys(ARTIFACTS);
+    const keys = Object.keys(g.items).filter(k => g.items[k] > 0 && ARTIFACTS[artParse(k).id]);
+    return keys.sort((a, b) => {
+      const A = artParse(a), B = artParse(b);
+      const bySlot = slotOrder.indexOf(A.def.slot) - slotOrder.indexOf(B.def.slot), byR = B.r - A.r;
+      return (this.gearSort === 'rarity' ? byR || bySlot : bySlot || byR) || ids.indexOf(A.id) - ids.indexOf(B.id);
+    });
   },
 
   openArtifact(key) {
@@ -193,8 +193,7 @@ Object.assign(UI, {
     $('artEquip').textContent = worn ? 'Unequip' : 'Equip';
     $('artEquip').className = worn ? 'jelly ghost' : 'jelly';
     $('artFuse').hidden = top;
-    $('artFuse').disabled = n < 3;
-    $('artFuse').textContent = `Fuse 3 → ${top ? '' : RARITIES[r + 1].name}`;
+    $('artFuse').textContent = 'Fuse';
     this.show('artInfo', true);
   },
   equipToggle() {
@@ -205,23 +204,59 @@ Object.assign(UI, {
     saveGame(); AUDIO.play(g.eq[slot] ? 'levelup' : 'click'); G.hero.impulse(1.6);
     this.renderGear(); this.openArtifact(key);
   },
-  fuseOneUi() {
-    const key = this.artKeyOpen, made = key && fuseArtifact(key);
+
+  // ---------- fuse: three slots, filled from the inventory with the same artifact and rarity ----------
+  openFuse(prefill) {
+    this.fuseSel = []; this.fuseMade = null;
+    const n = prefill ? Math.min(3, G.save.gear.items[prefill] || 0) : 0;
+    if (prefill && artParse(prefill).r < RARITIES.length - 1) for (let i = 0; i < n; i++) this.fuseSel.push(prefill);
+    this.show('fuseBox', true);
+    this.renderFuse();
+  },
+  renderFuse() {
+    const g = G.save.gear, sel = this.fuseSel, key = sel[0], top = RARITIES.length - 1;
+    document.querySelectorAll('#fuseBox .fslot[data-i]').forEach((b, i) => {
+      const k = sel[i];
+      b.className = 'fslot' + (k ? ' art r' + artParse(k).r : '');
+      b.innerHTML = k ? `<img alt="" src="${gearIcon(artParse(k).id)}">` : '<span>+</span>';
+      b.setAttribute('aria-label', k ? `Remove ${artParse(k).def.name}` : 'Empty fuse slot');
+    });
+    const res = $('fuseResult'), show = key || this.fuseMade;
+    if (show) {
+      const { id, r } = artParse(show), rr = key ? r + 1 : r;
+      res.className = `fslot result art r${rr}${key && sel.length < 3 ? ' faint' : ''}${!key ? ' made' : ''}`;
+      res.innerHTML = `<img alt="" src="${gearIcon(id)}">`;
+    } else { res.className = 'fslot result'; res.innerHTML = '<span>?</span>'; }
+    const hint = $('fuseHint');
+    if (key) {
+      const { id, r, def } = artParse(key), nx = artStats(artKey(id, r + 1));
+      hint.textContent = sel.length < 3 ? `Add ${3 - sel.length} more ${RARITIES[r].name} ${def.name}.`
+        : `Fuse into ${RARITIES[r + 1].name} ${def.name}: ${Object.keys(nx).map(k => fmtBonus(k, nx[k])).join(' · ')}`;
+    } else if (this.fuseMade) {
+      const { r, def } = artParse(this.fuseMade);
+      hint.textContent = `You made a ${RARITIES[r].name} ${def.name}!`;
+    } else hint.textContent = 'Tap an artifact below. Three of the same artifact and rarity fuse into the next rarity.';
+    const cards = this.sortedArtKeys().map(k => {
+      const { id, r, def } = artParse(k), b = document.createElement('button');
+      const left = g.items[k] - sel.filter(x => x === k).length;
+      b.className = `art r${r}`;
+      b.innerHTML = `<i class="badge"><img alt="" src="${slotIcon(def.slot)}"></i><img alt="" src="${gearIcon(id)}"><b>${left}</b>`;
+      b.disabled = left <= 0 || r >= top || sel.length >= 3 || (key && k !== key);
+      b.setAttribute('aria-label', `${RARITIES[r].name} ${def.name}, ${left} left`);
+      b.addEventListener('click', () => { this.fuseMade = null; this.fuseSel.push(k); AUDIO.play('pop'); this.renderFuse(); });
+      return b;
+    });
+    $('fuseGrid').replaceChildren(...cards);
+    $('fuseGo').disabled = sel.length < 3;
+  },
+  fuseGo() {
+    const sel = this.fuseSel;
+    if (sel.length < 3 || sel.some(k => k !== sel[0])) return;
+    const made = fuseArtifact(sel[0]);
     if (!made) return;
     saveGame(); AUDIO.play('chest'); G.hero.impulse(2);
-    this.toast(`Fused into ${RARITIES[artParse(made).r].name} ${artParse(made).def.name}`);
-    this.renderGear();
-    this.openArtifact(G.save.gear.items[key] > 0 ? key : made);
-  },
-  fuseAllUi() {
-    const made = fuseAll();
-    if (!made.length) { AUDIO.play('click'); this.toast('Fusing needs 3 of the same artifact and rarity'); return; }
-    saveGame(); AUDIO.play('chest'); G.hero.impulse(2.2);
-    // only the final results matter: a fused item can itself be fused again in the same pass
-    const left = made.filter(k => G.save.gear.items[k] > 0);
-    const best = left.reduce((a, k) => (artParse(k).r > artParse(a).r ? k : a), left[0] || made[made.length - 1]);
-    this.toast(`Fused ${made.length}× · best: ${RARITIES[artParse(best).r].name} ${artParse(best).def.name}`);
-    this.renderGear();
+    this.fuseSel = []; this.fuseMade = made;
+    this.renderFuse(); this.renderGear();
   },
 
   // ---------- scroll chest ----------
@@ -231,7 +266,7 @@ Object.assign(UI, {
     st.className = 'chest-stage';
     $('chestReveal').hidden = true;
     this.syncChestButtons();
-    $('scText').textContent = (G.save.scrolls || 0) > 0 ? 'Use a scroll to unlock the chest.' : 'You have no scrolls. Tougher enemies very rarely drop one.';
+    $('scText').textContent = (G.save.scrolls || 0) > 0 ? 'Use a scroll to unlock the chest.' : 'You have no scrolls. Elites and bosses drop them, and tougher enemies sometimes do.';
     this.show('scrollChest', true);
   },
   syncChestButtons() {

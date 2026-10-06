@@ -51,7 +51,7 @@ const UI = {
     this.show('upgrades', menu && this.menuTab === 'upgrades');
     this.show('skins', menu && this.menuTab === 'skins');
     this.show('gear', menu && this.menuTab === 'gear');
-    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); }
+    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); this.show('fuseBox', false); }
     this.show('chapters', menu && this.menuTab === 'chapters');
     const inRun = ['run', 'levelup', 'chest', 'pause', 'dying', 'revive', 'victory'].includes(s);
     this.show('hud', inRun);
@@ -227,15 +227,20 @@ const UI = {
     const sig = run.slots.map(s => s.id + s.lvl).join(',');
     if (sig !== this.slotSig) {
       this.slotSig = sig;
+      // two groups of boxes: skills, then passives
       const cells = [];
-      for (let i = 0; i < 8; i++) {
-        const s = run.slots[i], d = document.createElement('div');
-        if (s) {
-          d.className = 'slot ' + s.kind;
-          d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / maxLevel(s.id)) * 100}%"></i></u>`;
-          d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
-        } else d.className = 'slot';
-        cells.push(d);
+      for (const kind of ['skill', 'passive']) {
+        const list = run.slots.filter(s => s.kind === kind);
+        for (let i = 0; i < SLOT_LIMIT[kind]; i++) {
+          const s = list[i], d = document.createElement('div');
+          if (s) {
+            d.className = 'slot ' + s.kind;
+            d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / maxLevel(s.id)) * 100}%"></i></u>`;
+            d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
+          } else d.className = 'slot empty-' + kind;
+          cells.push(d);
+        }
+        if (kind === 'skill') { const gap = document.createElement('span'); gap.className = 'slot-gap'; cells.push(gap); }
       }
       $('slots').replaceChildren(...cells);
     }
@@ -315,7 +320,8 @@ const UI = {
   openChest() {
     const run = G.run;
     run.chestQueued--;
-    const r = Math.random(), n = r < 0.7 ? 1 : r < 0.95 ? 3 : 5;
+    // one upgrade per chest
+    const n = 1;
     const results = [];
     for (let k = 0; k < n; k++) {
       const up = run.slots.filter(s => s.lvl < maxLevel(s.id) - results.filter(x => x === s.id).length);
@@ -509,16 +515,16 @@ function roundRect(ctx, x, y, w, h, r) {
 
 // ---------- level-up choices ----------
 function rollChoices() {
-  const run = G.run, owned = run.slots, many = owned.length >= 4, full = owned.length >= 8;
+  // up to SLOT_LIMIT different skills and passives; once a kind is full only upgrades of it are offered
+  const run = G.run, owned = run.slots, many = owned.length >= 4;
+  const nSkills = owned.filter(s => s.kind === 'skill').length, nPassives = owned.length - nSkills;
   const pool = [];
   for (const s of owned) {
     const max = maxLevel(s.id);
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
-  if (!full) {
-    for (const id in SKILLS) if (!slotOf(id)) pool.push({ id, w: many ? 0.55 : 1 });
-    for (const id in PASSIVES) if (!slotOf(id)) pool.push({ id, w: many ? 0.45 : 0.7 });
-  }
+  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id)) pool.push({ id, w: many ? 0.55 : 1 });
+  if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id)) pool.push({ id, w: many ? 0.45 : 0.7 });
   const out = [];
   while (out.length < 3 && pool.length) {
     let r = Math.random() * pool.reduce((a, c) => a + c.w, 0), i = 0;

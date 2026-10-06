@@ -295,11 +295,15 @@ if (mode === 'drops') {
     for (const [k, dx] of [['scroll', -2], ['coin', -0.7], ['heart', 0.7], ['chest', 2]]) spawnPickup(k, h[0] + dx, h[2] - 1.6);
     for (const o of [...G.run.gems, ...G.run.pickups]) { o.vx = o.vz = 0; }
     G.run.stats.magnet = 0;
+    // two blob mines (one still arming) and a grenade, with no enemies to set them off
+    G.run.mines.push({ x: h[0] - 3.2, z: h[2] + 0.4, t: 5, life: 99, dmg: 0, radius: 1, ph: 0 }, { x: h[0] + 3.2, z: h[2] + 0.4, t: 0.3, life: 99, dmg: 0, radius: 1, ph: 2 });
+    G.run.bombs.push({ x: h[0] - 3.2, z: h[2] - 1.6, t: 0, fuse: 99, dmg: 0, radius: 1.5, ph: 0 });
+    G.run.events.length = 0; G.run.spawnAcc = -1e9;
   });
   await page.evaluate(() => { for (let i = 0; i < 60; i++) { G.run.invuln = 1; __frames(1); } });
   await render(2); await shot('drops');
   const vp = page.viewportSize();
-  await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'drops-close.png'), clip: { x: vp.width / 2 - 260, y: vp.height / 2 - 170, width: 520, height: 340 } });
+  await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'drops-close.png'), clip: { x: vp.width / 2 - 300, y: vp.height / 2 - 170, width: 600, height: 340 } });
 }
 if (mode === 'gait') {
   // the hero running in place on the home screen, seen from the side, through one stride
@@ -331,7 +335,12 @@ if (mode === 'gear') {
   await page.click('#gChest'); await render(2); await shot('gear-chest-closed');
   await page.click('#scOpen'); await page.waitForTimeout(1100); await render(2); await shot('gear-chest-open');
   await page.click('#scDone');
-  await page.click('#gFuse'); await render(2);
+  await page.click('#gFuse'); await render(2); await shot('gear-fuse-empty');
+  for (let i = 0; i < 3; i++) await page.click('#fuseGrid .art[aria-label^="Common Star Wand"]');
+  await render(1); await shot('gear-fuse-ready');
+  console.log('other cards locked while filling:', await page.evaluate(() => [...document.querySelectorAll('#fuseGrid .art')].filter(b => !b.disabled).length));
+  await page.click('#fuseGo'); await render(2); await shot('gear-fuse-done');
+  await page.click('#fuseClose');
   const fused = await page.evaluate(() => JSON.stringify(G.save.gear.items));
   console.log('after fuse:', fused);
   await page.click('#gearGrid .art'); await render(2); await shot('gear-item');

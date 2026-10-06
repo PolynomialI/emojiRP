@@ -16,7 +16,11 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   - Boulders and pools block movement, and enemies steer around them. Obstacle counts scale with the floor area, and obstacle lookups use a coarse grid.
   - Floors are calm, low-contrast bricks in each of the six arena palettes.
 - **Skills:**
-  - 13 skills with 10 levels each. Passives also have 10 levels, except Multishot (2).
+  - 13 skills with 10 levels each. Passives ("blob abilities") also have 10 levels, except Projectile Count (2).
+  - A run holds at most 4 different skills and 4 different passives, shown as two groups of boxes in the HUD. Once a group is full, level-ups only offer upgrades for it.
+  - Projectile Count (formerly Multishot) adds projectiles to Blob Ball, Blob Missile and Goo Axe only. Haste is 4% per level.
+  - The Blob Mine is a little goo blob with eyes and a blinking fuse sprout, and hits harder (18-46 damage, 1.7-2.6 m blast). Grenades and the magnet no longer draw radius circles.
+  - Treasure chests from elites give exactly one upgrade.
   - Nerfed heavily since the first build.
   - The Grenade is a fused bomb dropped at your feet: about 2-4 kills per blast early on.
   - Effects are bigger and chunkier.
@@ -37,7 +41,8 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   - Killed enemies no longer leave splats, so gems stay visible.
   - Basic enemies (stickman, sprinter, mini) drop a small blue crystal.
   - Tougher enemies (tier 2 and up) have a 10% chance of a big square green emerald instead, worth 3x their XP + 2. Elites and bosses always drop emeralds.
-  - Tougher enemies very rarely drop a scroll: 0.3% per kill, 5% from elites. Scrolls are kept even when a run is lost.
+  - Scrolls: every elite and every boss drops one, and tougher enemies drop one 2% of the time. A full chapter 1 run gave 6 in each of three bot runs. The magnet pulls scrolls in like coins, and they are kept even when a run is lost.
+  - Health hearts are drawn much larger.
 - **Customization:** a "Choose your blob" screen with 12 body colors (3 gradients) and 9 costumes, bought with coins and saved.
   - Every color and costume except Classic and No costume gives a small bonus, shown on its card (for example +4% damage, +6% max health, +25% pickup radius).
 - **Gear (inventory tab):** laid out after the reference screenshot.
@@ -48,18 +53,19 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
     - Rings: Gold Ring (health, less than the cloak), Silver Ring (XP), Ruby Ring (regen).
     - Necklaces: Skull Necklace (damage), Moon Pendant (faster skills), Clover Charm (coins).
   - CHEST spends a scroll on a treasure chest that reveals one artifact (odds 62/25/9.5/3/0.5%).
-  - Three identical artifacts fuse into the next rarity, either from an item's card or all at once with FUSE. An equipped item that gets fused is replaced by the result.
+  - FUSE opens three slots: tap three of the same artifact and rarity from the inventory below (other items dim), then Fuse turns them into one of the next rarity. An item's card has a Fuse button that opens it with that item filled in. An equipped item that gets fused is replaced by the result.
   - All bonuses (color, costume, artifacts) are fixed at the start of each run.
 - **Performance safeguards:**
   - The loop is paced to about 60 frames a second on any screen; 120-240 Hz screens used to get 2-4x the GPU work.
   - Auto quality never raises the resolution above where it starts. When frames are slow, it lowers the resolution down to 0.6, then turns MSAA off, then bloom.
-  - If the browser draws WebGL without the graphics card (SwiftShader, llvmpipe and the like), Auto uses the lightest settings and a message says hardware acceleration is off.
+  - If the browser draws WebGL without the graphics card (SwiftShader, llvmpipe and the like), Auto uses the lightest settings and a message names the renderer the browser reported. This can happen with the browser's acceleration setting on, when the browser has blocked the graphics driver or turned the GPU off after graphics crashes.
+  - Graphics: Ultra low renders at 0.4x, with no MSAA or bloom, fewer particles, and 30 frames a second.
   - The dev console's `perf` command shows the graphics card, frame rate, render size and quality settings.
 - **Dev console:** typing `specimen` anywhere unlocks it (saved) and opens it; after that the backtick key opens and closes it. The run freezes while it is open. Type `help` for the commands.
 - **HUD and menus:** follow the reference screenshots:
   - pause button, skill tiles, coins
   - a CHAPTER bar that becomes the boss bar
-  - an XP bar with a LEVEL badge
+  - a faded hot-red XP bar with a LEVEL badge
   - a bright blue and white bubbly menu style
 - **Meta:**
   - Coins and 5 upgrades.
@@ -85,7 +91,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
 2. Measure performance on a real phone, which can't be done here.
 3. A lower-detail stickman mesh if big crowds struggle on phones.
 4. Show equipped artifacts on the 3D hero. Today they only change stats.
-5. Tune the scroll drop rate after real play (0.3% per tougher kill, 5% from elites).
+5. Tune the scroll drop rate after real play (now elites and bosses always, tougher enemies 2%).
 
 ## Build and test
 - **Build:**
@@ -103,9 +109,9 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `input`: keyboard, drag joystick, Esc and number keys.
   - `roster`: every enemy type in a row, plain and elite.
   - `blob`: the Choose your blob screen, including a purchase.
-  - `gear`: the inventory, a scroll chest, fusing and equipping, then checks the run picks up the bonuses.
+  - `gear`: the inventory, a scroll chest, the three-slot fuse screen and equipping, then checks the run picks up the bonuses.
   - `dev`: unlocks the dev console by typing, toggles it with backtick and runs commands at home and in a run.
-  - `drops`: crystals, emeralds, a scroll and the other pickups up close.
+  - `drops`: crystals, emeralds, a scroll, the other pickups, two blob mines and a grenade up close.
   - `gait`: the hero running in place on the home screen, one stride as a contact sheet.
   - `perf`: frame cost with the GPU work included, on the menus and in a crowded run, with the hero, bloom, MSAA and gems switched off one at a time. The test GPU is software, so compare builds with it rather than reading the numbers as real-GPU timings.
   - `SOFTGL=1` before any mode makes the game treat the test browser as a machine without a GPU; normally the tests skip that check.

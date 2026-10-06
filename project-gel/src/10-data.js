@@ -33,9 +33,9 @@ const SKILLS = {
     levels: L10({ dmg: [8, 9, 10, 11, 12, 13, 14, 15, 16, 18], cd: [2.6, 2.6, 2.5, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0, 0.7, 0.7, 0.8, 0.8, 0.9, 1.0] }),
   },
   mine: {
-    name: 'Blob Mine', intro: 'Drops sticky mines behind you that burst when enemies step close.', icon: { type: 2, colw: 1.6 },
+    name: 'Blob Mine', intro: 'Drops little goo blobs behind you that burst when enemies step close.', icon: { type: 31, colw: 1.6 },
     fields: [['dmg', 'Damage'], ['cd', 'Drop every', 's'], ['max', 'Max mines'], ['radius', 'Blast radius', 'm']],
-    levels: L10({ dmg: [12, 13, 14, 16, 18, 20, 22, 24, 27, 30], cd: [3.0, 3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.2, 2.0], max: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], radius: [1.4, 1.45, 1.5, 1.55, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1] }),
+    levels: L10({ dmg: [18, 20, 22, 24, 27, 30, 33, 37, 41, 46], cd: [2.6, 2.6, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.7], max: [3, 3, 3, 4, 4, 5, 5, 6, 6, 7], radius: [1.7, 1.75, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.6] }),
   },
   blade: {
     name: 'Blade', intro: 'Crescent blades of hardened goo orbit you and cut what they touch.', icon: { type: 3, colw: 0.3 },
@@ -79,7 +79,7 @@ const SKILLS = {
   },
 };
 
-// Passives: 10 levels each (Multishot adds a whole projectile per level, so it stays at 2)
+// Passives ("blob abilities"): 10 levels each (Projectile Count adds a whole projectile per level, so it stays at 2)
 const PASSIVES = {
   thick: { name: 'Thick Goo', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
   regen: { name: 'Regen', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
@@ -87,12 +87,14 @@ const PASSIVES = {
   magnet: { name: 'Magnet', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
   power: { name: 'Power', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
   armor: { name: 'Armor', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
-  haste: { name: 'Haste', desc: 'Skills recharge 3% faster.', max: 10, icon: { type: 22, colw: 0 } },
+  haste: { name: 'Haste', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
   reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
-  multishot: { name: 'Multishot', desc: '+1 ball, grenade, missile or axe, and +1 lightning strike.', max: 2, icon: { type: 24, colw: 0.4 } },
+  multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile and Goo Axe.', max: 2, icon: { type: 24, colw: 0.4 } },
   growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
+// a run holds at most this many different skills and this many different passives
+const SLOT_LIMIT = { skill: 4, passive: 4 };
 
 // Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1).
 // ai: how the enemy attacks besides walking into you. lunge = spear thrust, chop = overhead swing,
