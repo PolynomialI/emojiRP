@@ -262,7 +262,7 @@ function onBossKilled(e) {
   G.cam.shake = 0.3;
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
-  for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25);
+  for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);
@@ -383,14 +383,15 @@ function emitRunScene() {
   // gems and pickups
   for (const g of run.gems) {
     if (!onScreen(g.x, g.z, 1)) continue;
-    const s = [0.11, 0.14, 0.19][g.tier];
-    pushImp(g.x, g.y + Math.sin(run.t * 3 + g.ph) * 0.04, g.z, s, 0, 0, 1, 1, 8, 0, 0.15, run.t + g.ph, 0, g.tier, 0, 1);
+    if (g.tier) pushImp(g.x, g.y + 0.08 + Math.sin(run.t * 3 + g.ph) * 0.05, g.z, 0.36, 0, 0, 1, 1, 29, 0, 0.2, (run.t + g.ph) * 0.5, 0, 1, 0, 1);
+    else pushImp(g.x, g.y + Math.sin(run.t * 3 + g.ph) * 0.04, g.z, 0.24, 0, 0, 1, 1, 8, 0, 0.15, run.t + g.ph, 0, 0, 0, 1);
   }
   for (const p of run.pickups) {
     const bob = Math.sin(run.t * 3 + p.ph) * 0.05;
     if (p.kind === 'coin') pushImp(p.x, p.y + 0.05 + bob, p.z, 0.2, 0, 0, 1, 1, 9, 0, 0.1, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'heart') pushImp(p.x, p.y + 0.12 + bob, p.z, 0.24, 0, 0, 1, 1, 10, 4, 0.2, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'magnet') pushImp(p.x, p.y + 0.12 + bob, p.z, 0.26, 0, 0, 1, 1, 11, 4, 0.1, run.t + p.ph, 0, 0, 0, 1);
+    else if (p.kind === 'scroll') { pushImp(p.x, p.y + 0.15 + bob, p.z, 0.3, 0, 0, 1, 1, 30, 0, 0.12, (run.t + p.ph) * 0.6, 0, 0, 0, 1); FX.glow(p.x, 0.45, p.z, 0.8, [1, 0.85, 0.45], 0.05, 0.3); }
     else if (p.kind === 'chest') { pushImp(p.x, p.y + 0.02, p.z, 0.36, 0, 0, 1, 1, 12, 0, 0.05, run.t, 0, 0, 0, 1); FX.glow(p.x, 0.5, p.z, 0.9, [1, 0.8, 0.3], 0.05, 0.25); }
     pushDecal(p.x + 0.06, p.z + 0.05, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.4);
   }

@@ -425,7 +425,7 @@ flat in vec4 fP1;
 out vec4 fragColor;
 uniform float uPixAng;
 
-// material codes returned by the map: 0 goo, 1 gem, 2 gold, 3 stone, 4 wood, 5 toon orange, 6 emissive orb, 7 white goo tip, 8 steel, 9 dark wood
+// material codes returned by the map: 0 goo, 1 gem, 2 gold, 3 stone, 4 wood, 5 toon orange, 6 emissive orb, 7 white goo tip, 8 steel, 9 dark wood, 10 red goo, 11 parchment
 float sdRoundCone(vec3 p, vec3 a, vec3 b, float r1, float r2) {
   vec3 ba = b - a; float l2 = dot(ba, ba); float rr = r1 - r2; float a2 = l2 - rr * rr; float il2 = 1.0 / l2;
   vec3 pa = p - a; float y = dot(pa, ba); float z = y - l2;
@@ -527,11 +527,38 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     return vec2(d * min(sq, 1.0), 0.0);
   }
   if (type == 8) {
+    // small XP crystal: an eight-sided bipyramid, a little taller than wide
     vec3 q = p;
     q.xz = rot2(ph * 1.7) * q.xz;
-    q.yz = rot2(0.6) * q.yz;
-    q.xy = rot2(0.5) * q.xy;
-    return vec2(sdRBox(q, vec3(0.44), 0.14), 1.0);
+    q.xy = rot2(0.18) * q.xy;
+    q.y *= 0.74;
+    vec3 a = abs(q);
+    vec3 b = abs(vec3(rot2(0.785) * q.xz, q.y).xzy);
+    float d = max(a.x + a.y + a.z, b.x + b.y + b.z) * 0.57735 - 0.37;
+    return vec2(d - 0.03, 1.0);
+  }
+  if (type == 29) {
+    // emerald: a square step cut with clipped corners, tilted and spinning
+    vec3 q = p;
+    q.xz = rot2(ph * 1.2) * q.xz;
+    q.yz = rot2(0.95) * q.yz;
+    vec3 a = abs(q);
+    float m = max(a.x, a.y);
+    float d = max(m - 0.62, a.z - 0.3);
+    d = max(d, (a.x + a.y) * 0.7071 - 0.74);
+    d = max(d, (m * 0.5 + a.z) * 0.8944 - 0.43);
+    return vec2(d - 0.02, 1.0);
+  }
+  if (type == 30) {
+    // rolled scroll: parchment tube along x with wooden knobs and a ribbon
+    vec3 q = p;
+    q.xz = rot2(ph * 1.2) * q.xz;
+    vec3 c = q.yxz;
+    float body = sdCyl(c, 0.32, 0.6, 0.05);
+    float knobs = sdCyl(vec3(c.x, abs(c.y) - 0.7, c.z), 0.15, 0.1, 0.05);
+    float band = sdCyl(c, 0.35, 0.08, 0.03);
+    float d = min(body, min(knobs, band));
+    return vec2(d, d == knobs ? 9.0 : d == band ? 10.0 : 11.0);
   }
   if (type == 9) {
     vec3 q = p;
@@ -717,11 +744,15 @@ void main() {
   float mat = res.y;
   vec3 col;
   float emissive = fP0.z;
-  if (mat < 0.5 || mat > 9.5) {
+  if (mat > 10.5) {
+    vec3 paper = vec3(0.98, 0.88, 0.66) * (0.9 + 0.12 * texture(uNoise, lp.xy * 1.3).g);
+    float ndl = max(dot(n, uLightDir), 0.0);
+    col = paper * (mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5) * 0.7 + uLightCol * ndl * 0.75) * mix(0.6, 1.0, ao) + paper * emissive;
+  } else if (mat < 0.5 || mat > 9.5) {
     vec3 base = mat > 9.5 ? vec3(1.0, 0.3, 0.42) : gooColor(fP0.y);
     col = gooShade(base, wp, n, v, thin, ao, emissive, 1.0);
   } else if (mat < 1.5) {
-    vec3 base = fP1.y < 0.5 ? vec3(0.32, 1.0, 0.68) : fP1.y < 1.5 ? vec3(0.35, 0.72, 1.0) : vec3(0.72, 0.45, 1.0);
+    vec3 base = fP1.y < 0.5 ? vec3(0.12, 0.42, 1.0) : fP1.y < 1.5 ? vec3(0.06, 0.8, 0.26) : vec3(0.72, 0.45, 1.0);
     col = gooShade(base, wp, n, v, max(thin, 0.6), ao, 0.35 + emissive, 1.2);
   } else if (mat < 2.5) {
     vec3 gold = vec3(1.0, 0.76, 0.22);

@@ -233,12 +233,15 @@ function killEnemy(e) {
   e.dying = 0.0001;
   run.kills++;
   const s = e.scale;
-  FX.splat(e.x, e.z, 0.75 * s, ORANGE, 2.0);
-  FX.droplets(e.x, 0.55 * s, e.z, e.boss ? 30 : 5, 5, e.boss ? 7 : 3.2, 0.05 * Math.min(s, 2), ORANGE);
+  FX.droplets(e.x, 0.55 * s, e.z, e.boss ? 30 : 5, 5, e.boss ? 7 : 3.2, 0.05 * Math.min(s, 2), null);
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
   AUDIO.play('squish');
   if (e.boss) { onBossKilled(e); return; }
-  dropGem(e.x, e.z, e.xp);
+  // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and very rarely a scroll
+  const tough = e.elite || e.def.xp >= 2;
+  if (e.elite || (tough && Math.random() < EMERALD_CHANCE)) dropGem(e.x, e.z, e.elite ? e.xp : e.xp * 3 + 2, 1);
+  else dropGem(e.x, e.z, e.xp, 0);
+  if (tough && Math.random() < (e.elite ? SCROLL_CHANCE_ELITE : SCROLL_CHANCE)) spawnPickup('scroll', e.x, e.z);
   if (e.elite) {
     spawnPickup('chest', e.x, e.z);
     for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), 2);
@@ -296,15 +299,18 @@ function reviveHero() {
 }
 
 // ---------- gems and pickups ----------
-function dropGem(x, z, value) {
+// tier 0 is the small blue crystal, tier 1 the big green emerald
+const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.003, SCROLL_CHANCE_ELITE = 0.05;
+function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {
+    // too many on the floor: fold the oldest into another one
     const g0 = run.gems.shift();
     const g1 = run.gems[Math.floor(Math.random() * run.gems.length)];
-    if (g1) { g1.value += g0.value; g1.tier = g1.value >= 25 ? 2 : g1.value >= 5 ? 1 : 0; }
+    if (g1) { g1.value += g0.value; if (g1.value >= 20) g1.tier = 1; }
   }
   const a = rand(0, TAU);
-  run.gems.push({ x, z, y: 0.3, vx: Math.cos(a) * 1.2, vz: Math.sin(a) * 1.2, vy: 3.2, value, tier: value >= 25 ? 2 : value >= 5 ? 1 : 0, pull: false, sp: 0, ph: rand(0, 10) });
+  run.gems.push({ x, z, y: 0.3, vx: Math.cos(a) * 1.2, vz: Math.sin(a) * 1.2, vy: 3.2, value, tier, pull: false, sp: 0, ph: rand(0, 10) });
 }
 function spawnPickup(kind, x, z, value = 1) {
   const a = rand(0, TAU);
@@ -381,9 +387,9 @@ function updateRun(dt) {
   // victory check: the remaining enemies melt and every gem and coin flies to the hero
   if (live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) {
     run.won = true; run.endT = 0;
-    for (const e of run.enemies) if (!e.dying && !e.boss) { e.dying = 0.0001; FX.splat(e.x, e.z, 0.6 * e.scale, ORANGE, 2.0); }
+    for (const e of run.enemies) if (!e.dying && !e.boss) e.dying = 0.0001;
     for (const g of run.gems) g.pull = true;
-    for (const p of run.pickups) if (p.kind === 'coin') p.pull = true;
+    for (const p of run.pickups) if (p.kind === 'coin' || p.kind === 'scroll') p.pull = true;
     setState('victory');
   }
 }
@@ -670,8 +676,9 @@ function updatePickups(dt) {
       p.dead = true;
       if (p.kind === 'coin') { run.coins += p.value; AUDIO.play('coin'); FX.star(p.x, 0.6, p.z, 0.35, COLORS.gold); }
       else if (p.kind === 'heart') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.3); AUDIO.play('levelup'); FX.burst(h[0], 1, h[2], 12, [1, 0.4, 0.55], 3, 0.12, 0.6, 3); addNumberAt(h[0], 1.8, h[2], run.maxHp * 0.3, [0.4, 1, 0.6]); }
-      else if (p.kind === 'magnet') { for (const g of run.gems) g.pull = true; for (const q of run.pickups) if (q.kind === 'coin') q.pull = true; AUDIO.play('shield'); FX.ring(h[0], h[2], 3, COLORS.mint, 0.5); }
+      else if (p.kind === 'magnet') { for (const g of run.gems) g.pull = true; for (const q of run.pickups) if (q.kind === 'coin' || q.kind === 'scroll') q.pull = true; AUDIO.play('shield'); FX.ring(h[0], h[2], 3, COLORS.mint, 0.5); }
       else if (p.kind === 'chest') { run.chestQueued = (run.chestQueued || 0) + 1; AUDIO.play('chest'); }
+      else if (p.kind === 'scroll') { run.scrolls = (run.scrolls || 0) + 1; AUDIO.play('chest'); FX.burst(p.x, 0.6, p.z, 14, COLORS.gold, 3, 0.12, 0.6, 3); }
     }
   }
   run.pickups = run.pickups.filter(p => !p.dead);
@@ -732,6 +739,7 @@ function finishRun(won) {
   const best = sv.best[run.chapter] || 0;
   if (run.t > best) sv.best[run.chapter] = Math.round(run.t);
   if (won) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
+  sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   sv.stats.runs++; sv.stats.kills += run.kills;
   saveGame();
   AUDIO.play(won ? 'win' : 'lose');

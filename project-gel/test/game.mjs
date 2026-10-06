@@ -24,7 +24,24 @@ page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') er
 await page.addInitScript({ path: path.join(dir, 'harness.js') });
 if (process.env.SAVE) await page.addInitScript(s => { localStorage.setItem('projectGel.save.v1', s); }, process.env.SAVE);
 const t0 = Date.now();
-process.on('unhandledRejection', async e => { console.log('FAILED:', e.message.split('\n')[0]); console.log('ERRORS:\n' + errors.join('\n')); try { console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan))); console.log('state', await page.evaluate(() => G.state)); } catch (_) {} await browser.close(); process.exit(1); });
+process.on('unhandledRejection', async e => { console.log('FAILED:', e.message.split('\n')[0]); console.log('ERRORS:\n' + errors.join('\n')); try { if (mode === 'drops') {
+  // the floor drops up close: blue crystals, emeralds, a scroll, a coin, a heart and a chest
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  await page.evaluate(() => {
+    const h = G.hero.pos;
+    for (let i = 0; i < 8; i++) dropGem(h[0] - 2.4 + i * 0.6, h[2] + 1.6, 1, 0);
+    for (let i = 0; i < 3; i++) dropGem(h[0] - 1.2 + i * 1.2, h[2] + 2.6, 8, 1);
+    for (const [k, dx] of [['scroll', -2], ['coin', -0.7], ['heart', 0.7], ['chest', 2]]) spawnPickup(k, h[0] + dx, h[2] - 1.6);
+    for (const o of [...G.run.gems, ...G.run.pickups]) { o.vx = o.vz = 0; }
+    G.run.stats.magnet = 0;
+  });
+  await page.evaluate(() => { for (let i = 0; i < 60; i++) { G.run.invuln = 1; __frames(1); } });
+  await render(2); await shot('drops');
+  const vp = page.viewportSize();
+  await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'drops-close.png'), clip: { x: vp.width / 2 - 260, y: vp.height / 2 - 170, width: 520, height: 340 } });
+}
+console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan))); console.log('state', await page.evaluate(() => G.state)); } catch (_) {} await browser.close(); process.exit(1); });
 await page.goto(url);
 if (mode === 'boot') await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'loading.png') });
 const shot = async name => { await page.waitForTimeout(450); await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + name + '.png') }); };
@@ -280,6 +297,23 @@ if (mode === 'blob') {
   await render(40); await shot('blob-costumes');
   await page.click('#skinAction'); await render(2);
   console.log('costume after buying:', await page.evaluate(() => G.save.costume + ' owned=' + G.save.costumes.join(',')));
+}
+if (mode === 'drops') {
+  // the floor drops up close: blue crystals, emeralds, a scroll, a coin, a heart and a chest
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+  await page.evaluate(() => {
+    const h = G.hero.pos;
+    for (let i = 0; i < 8; i++) dropGem(h[0] - 2.4 + i * 0.6, h[2] + 1.6, 1, 0);
+    for (let i = 0; i < 3; i++) dropGem(h[0] - 1.2 + i * 1.2, h[2] + 2.6, 8, 1);
+    for (const [k, dx] of [['scroll', -2], ['coin', -0.7], ['heart', 0.7], ['chest', 2]]) spawnPickup(k, h[0] + dx, h[2] - 1.6);
+    for (const o of [...G.run.gems, ...G.run.pickups]) { o.vx = o.vz = 0; }
+    G.run.stats.magnet = 0;
+  });
+  await page.evaluate(() => { for (let i = 0; i < 60; i++) { G.run.invuln = 1; __frames(1); } });
+  await render(2); await shot('drops');
+  const vp = page.viewportSize();
+  await page.screenshot({ path: path.join(shots, (phone ? 'phone-' : '') + 'drops-close.png'), clip: { x: vp.width / 2 - 260, y: vp.height / 2 - 170, width: 520, height: 340 } });
 }
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
