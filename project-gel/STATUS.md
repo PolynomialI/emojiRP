@@ -7,70 +7,58 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 
 ## Done
 - **Rendering:**
-  - The hero is a raymarched blob with spring physics. Arms stretch to punch, and skills grow and pinch off goo buds.
-  - Enemies are single meshes generated from SDF models, with baked AO and GPU-skinned animation.
-  - Six arena floors.
-  - Goo pickups and projectiles, decals, particles and ribbons.
-  - HDR bloom and tonemapping.
-- **Gameplay:**
-  - Keyboard, touch-stick and gamepad movement.
-  - 13 skills, 10 passives, 7 enemy types plus elites, and 5 bosses. Every 5th chapter is a double boss.
-  - Endless chapters across 6 arenas.
-  - Level-up cards with rerolls, chests, one free revive, and the victory and results screens.
+  - The hero is a raymarched jelly blob with spring physics: soft translucency, a bright candy rim, arms that stretch to punch, and goo buds for skills.
+  - Enemies and bosses are SDF meshes with baked AO and GPU-skinned animation.
+  - Boulders are meshes too; pools are animated liquids.
+  - HDR bloom.
+- **Arena:** a walled, rounded-square map, 40x40.
+  - Boulders and pools block movement, and enemies steer around them.
+  - Floors are calm, low-contrast bricks in each of the six arena palettes.
+- **Skills:**
+  - 13 skills with 10 levels each. Passives also have 10 levels, except Multishot (2).
+  - Nerfed heavily since the first build.
+  - The Grenade is a fused bomb dropped at your feet: about 2-4 kills per blast early on.
+  - Effects are bigger and chunkier.
+- **Enemies:** 12 types, all a bit shorter than the hero:
+  - stickman, sprinter and helmet
+  - spearman (lunges) and axeman (chops)
+  - brute with a club, archer, javelin thrower (arcing throws)
+  - splitter, shield, bomber (explodes) and knight
+  - Types unlock by chapter and time, with no announcements (only the boss warning remains). Elites wear crowns.
+- **Bosses:** one at the end of every chapter, two every 5th chapter. All are cartoon characters with faces:
+  - pink ogre (Big Stomper)
+  - purple cyclops (Hurler)
+  - red bull (Charger)
+  - pink and violet imps (Twins)
+  - pink devil (Conductor)
+  - They drop in on screen. Off-screen bosses get an edge arrow showing their face.
+- **Customization:** a "Choose your blob" screen with 12 body colors (3 gradients) and 9 costumes, bought with coins and saved.
+- **HUD and menus:** follow the reference screenshots:
+  - pause button, skill tiles, coins
+  - a CHAPTER bar that becomes the boss bar
+  - an XP bar with a LEVEL badge
+  - a bright blue and white bubbly menu style
 - **Meta:**
-  - Coins and 5 permanent upgrades.
-  - 6 skins, a chapter map, offline earnings and settings.
-  - Saves to localStorage.
-- **Verified in headless Chromium:**
-  - Boot and every menu, at desktop and phone sizes.
-  - All 13 skills at max level, and all 5 boss fights.
-  - Chest roulette, melt and revive, victory and results screens.
-  - Upgrade and skin purchases, chapter unlocks, offline earnings, and the Low quality preset.
-  - Keyboard, arrow keys, drag joystick, Esc pause, and number keys on level-up.
-  - No script errors, and nothing sent to the GPU contains NaN.
-- **Fixed during testing:**
-  - A NaN enemy tint that blew out the bloom into white blocks.
-  - An endless Conductor fight: the boss now follows the hero.
-  - The chest roulette landing between tiles.
-  - Bosses spawning off-screen: they now drop in on screen.
-  - Hit flash stuck solid white on bosses.
-  - Olive Aura tint, now a cyan rim glow.
-  - Elite brutes appearing in chapter 1.
+  - Coins and 5 upgrades.
+  - Chapter map, offline earnings, settings and saving.
+- **Verified in headless Chromium:** every test mode below runs with no script errors and nothing invalid sent to the GPU.
 
-## Balance (bot results; the bot is a mediocre player)
+## Balance (bot results; the bot is a mediocre player who dodges poorly)
 
 | Chapter | Upgrades | Bot wins |
 |---|---|---|
-| 1 | none | 4/4 (earlier 8/8) |
-| 2 | none | 3/4 |
-| 3 | none | 3/4 |
-| 3 | level 6 | 3/4 |
-| 5 | none | 1/4 |
-| 5 | level 3 | 3/4 |
-| 5 | level 6 | 3/4 |
+| 1 | none | 3/4 to 4/4 |
+| 3 | none | 0/4 |
+| 3 | level 3 | 2/4 |
+| 5 | level 3 | 1/4 |
+| 5 | level 6 | 2/4 |
 
-- Chapter 5 is the first double-boss chapter and is meant to need some upgrades.
-- Chapter scaling is in `chapterInfo()` in `src/10-data.js`:
-  - `hpMul = 1 + 0.12k + 0.004k²`
-  - `dmgMul = 1 + 0.08k`
-  - `rateMul = min(1.8, 1 + 0.035k)`
-- The chapter's extra HP and spawn rate ease in over the first 90 s (HP) and 120 s (spawn rate). See `spawnEnemy` and `updateRun` in `src/11-game.js`.
-- Ch1 runs reach level 21–23 with about 2,000 kills and 50–110 enemies on screen at peak. One win pays about 280–320 coins.
+Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/10-data.js`, and the spawn curve in `RATE_KEYS` in `src/11-game.js`.
 
-## Resolved: slow boss meshes
-- Boss meshes used to arrive 48–54 s after load. The cause was each boss portrait being rendered with a GPU readback the moment its mesh arrived, which blocked the main thread.
-- Portraits are now drawn only when the chapter map opens. All 17 meshes are ready about 1.7 s after the home screen appears (measured in headless Chromium).
-
-## Next steps
-The planned work is done. The final visual pass covered:
-- Each arena in a real run (Ice Lab was darkened so the hero stands out).
-- The loading screen.
-- Hero close-ups.
-
-Optional follow-ups:
-1. Balance chapter 10 and later, with upgrades.
-2. A lower-detail stickman mesh, if real phones struggle with big crowds.
-3. Measure performance on a real phone. This hasn't been possible here.
+## Next steps (optional)
+1. Balance chapter 10 and later.
+2. Measure performance on a real phone, which can't be done here.
+3. A lower-detail stickman mesh if big crowds struggle on phones.
 
 ## Build and test
 - **Build:**
@@ -85,6 +73,9 @@ Optional follow-ups:
   - `bosses`: each boss fight.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.
+  - `roster`: every enemy type in a row, plain and elite.
+  - `blob`: the Choose your blob screen, including a purchase.
+  - `play` also accepts `PREFER=<skill>`: the bot favors that skill and logs kills per blast.
   - `arenas` (`ONLY=21` limits it to one chapter): the first chapter of each arena, mid-run.
 - Screenshots go to `test/shots/`, and logs to `test/*.log`; git ignores both. Combine screenshots with `node test/montage.mjs out.png <cols> a.png b.png ...`.
 - **Harness notes (`test/harness.js`):**
