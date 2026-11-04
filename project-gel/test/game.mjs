@@ -458,6 +458,33 @@ if (mode === 'perf') {
   await render(1); await shot('perf-run');
   console.log('renderer:', await page.evaluate(() => { const d = gl.getExtension('WEBGL_debug_renderer_info'); return d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : 'n/a'; }), 'canvas', await page.evaluate(() => gl.drawingBufferWidth + 'x' + gl.drawingBufferHeight));
 }
+if (mode === 'powerups') {
+  // each chapter power-up at max level in its own chapter, with a crowd to work on
+  const ids = (process.env.IDS || 'sandstorm').split(',');
+  for (const id of ids) {
+    const ch = await page.evaluate(id => (SKILLS[id] || PASSIVES[id]).from || 1, id);
+    await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); }, ch);
+    await page.click('#btnPlay');
+    await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+    await page.evaluate(id => {
+      window.readInput = () => __botInput(); __bot.on = true;
+      const run = G.run;
+      run.slots.length = 0; run.events = run.events.filter(e => e.kind === 'boss'); run.t = 150;
+      for (let i = 0; i < maxLevel(id); i++) addOrLevel(id);
+      const h = G.hero.pos;
+      for (let i = 0; i < 60; i++) { const a = i / 60 * TAU, r = 3 + (i % 4) * 1.3; spawnEnemy(i % 6 ? 'stickman' : 'brute', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }
+    }, id);
+    for (let k = 0; k < 2; k++) {
+      await page.evaluate(() => { for (let i = 0; i < 75; i++) { G.run.invuln = 1; __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); } });
+      await render(2); await shot(`power-${id}-${k}`);
+    }
+    console.log(id, 'kills', await page.evaluate(() => G.run.kills));
+    await page.evaluate(() => finishRun(false));
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.click('#btnContinue');
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+  }
+}
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
 await browser.close();

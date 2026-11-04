@@ -14,7 +14,7 @@ function updateSkills(dt) {
     const L = SKILLS[s.id].levels[s.lvl - 1];
     SKILL_HOOKS[s.id].update(s, L, dt);
   }
-  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt);
+  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt);
   for (const b of G.bolts) b.life -= dt;
   G.bolts = G.bolts.filter(b => b.life > 0);
 }
@@ -25,6 +25,7 @@ function emitSkills() {
     const hook = SKILL_HOOKS[s.id];
     if (hook.emit) hook.emit(s, SKILLS[s.id].levels[s.lvl - 1]);
   }
+  emitStorms();
 }
 
 // Densest cluster of enemies within range of a point -> [x, z] or null

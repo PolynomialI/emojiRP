@@ -45,9 +45,10 @@ function spawnBoss(id, x, z, opts) {
     ai: { state: 'enter', t: 1.2, summonT: 8, throwT: 2.5, jumpCd: 2, attackT: 2.5, charges: 0, anchor: [x, z], orbit: rand(0, TAU), mode: 0 },
   };
   e.contactDmg = e.dmg;
-  e.y = 9;
   resolveCircle(e, B.radius * 1.4);
   run.enemies.push(e); run.bosses.push(e);
+  if (B.noDrop) { e.ai.state = 'intro'; e.y = 0; return e; }
+  e.y = 9;
   addTele({ kind: 'circle', x: e.x, z: e.z, r: B.radius * 2.2, dur: 1.2 });
   return e;
 }
@@ -333,6 +334,7 @@ function emitRunScene() {
   // enemy shots
   for (const s of run.eShots) {
     if (s.kind === 'arrow') { const sp = Math.hypot(s.vx, s.vz) || 1; pushImp(s.x, s.y, s.z, 0.32, s.vx / sp, 0, s.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); }
+    else if (s.kind === 'sand') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.2, 33, 0, 0, s.ph + run.t * 6, 0, 0, 0, 1); pushDecal(s.x + 0.1, s.z + 0.08, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.35); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }
     else if (s.kind === 'javelin') {
       const u = clamp(s.t / s.dur, 0, 1), vy = (0.3 - s.sy) + Math.cos(u * Math.PI) * Math.PI * s.peak;

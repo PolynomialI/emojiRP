@@ -20,7 +20,8 @@ const gkey = (cx, cz) => (cx + 32768) * 65536 + (cz + 32768);
 function gridBuild(list) {
   GRID.map.clear();
   for (const e of list) {
-    if (e.dying) continue;
+    // burrowed or otherwise untouchable enemies are left out, so nothing can target them
+    if (e.dying || e.hidden) continue;
     const k = gkey(Math.floor(e.x / GRID.cell), Math.floor(e.z / GRID.cell));
     let a = GRID.map.get(k);
     if (!a) GRID.map.set(k, (a = []));
@@ -382,6 +383,7 @@ function updateRun(dt) {
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
   hero.update(dt, run.vel, true);
   updateArenaFx(dt);
+  updateTempZones(dt);
 
   gridBuild(run.enemies);
   updateEnemies(dt);
@@ -464,7 +466,7 @@ function updateEnemies(dt) {
     e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
     // hero contact
     const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz), rr = e.radius + HERO_R;
-    if (d < rr && G.hero.melt < 0.5) {
+    if (d < rr && G.hero.melt < 0.5 && !e.hidden) {
       touching++;
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }

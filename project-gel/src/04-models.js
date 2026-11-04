@@ -231,7 +231,19 @@ function modelDefs() {
   rock('rock0', [{ c: [0, 0.16, 0], r: 0.42, bump: 0.13 }, { c: [0.3, 0.06, 0.14], r: 0.22, bump: 0.16 }]);
   rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
   rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
+  themeModels(defs);
   return defs;
+}
+// Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
+function prop(defs, name, parts, o = {}) {
+  const m = makeHumanoid(STICK);
+  m.parts = parts.map(p => ({ bone: 0, k: 0.03, ...p }));
+  let lo = 0, top = 0, rad = 0;
+  for (const p of m.parts) { if (p.sub) continue; const [c, r] = partBounds(p); lo = Math.min(lo, c[1] - r); top = Math.max(top, c[1] + r); rad = Math.max(rad, Math.hypot(c[0], c[2]) + r); }
+  m.bmin = [-rad - 0.06, lo - 0.06, -rad - 0.06]; m.bmax = [rad + 0.06, top + 0.06, rad + 0.06];
+  m.top = top; m.aoScale = o.ao || 1.5; m.name = name;
+  defs[name] = m;
+  return m;
 }
 
 // Elite crown, sized for each base type's head
@@ -293,6 +305,10 @@ const CLIPS = {
     const s = Math.sin(t * TAU), c = Math.cos(t * TAU);
     return { root: [0.02 * s, -0.03, 0.02 * c], rot: [[0, 0, 0.06 * s], [0.12, 0, 0.12 * s], [0.18 * c, 0.3 * s, 0.25 * c],
       [0.2, 0, 0.5 + 0.2 * c], [-0.2, 0, 0], [0.2, 0, -0.5 - 0.2 * c], [-0.2, 0, 0], [-0.1, 0, 0.1], [0.2, 0, 0], [-0.1, 0, -0.1], [0.2, 0, 0]] };
+  } },
+  // a rigid prop tumbling forward (about x) around its pivot
+  roll: { frames: 16, fn(t) {
+    return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [t * TAU, 0, 0] : [0, 0, 0])) };
   } },
   still: { frames: 1, fn() {
     return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, () => [0, 0, 0]) };
@@ -361,7 +377,7 @@ const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'helmet',
 
 function prepareModelDefs() {
   const defs = modelDefs();
-  for (const name in defs) defs[name].clipNames = MODEL_CLIPS[name];
+  for (const name in defs) defs[name].clipNames = MODEL_CLIPS[name] || THEME_CLIPS[name] || ['still'];
   defs.brute.runAmp = 0.8; defs.sprinter.lean = 0.3; defs.sprinter.runAmp = 1.15;
   defs.shield.shieldArm = true; defs.stomper.runAmp = 0.75; defs.charger.lean = 0.35; defs.charger.headDown = 0.25;
   defs.knight.shieldArm = true; defs.knight.runAmp = 0.85; defs.helmet.runAmp = 0.9; defs.bomber.lean = 0.28; defs.bomber.runAmp = 1.1;
@@ -378,7 +394,7 @@ function prepareAnimations() {
 // Build one mesh by name ('stickman', 'brute_crown', ...)
 function buildMeshByName(defs, name) {
   if (name.endsWith('_crown')) return buildSkinnedMesh(crownModel(defs[name.slice(0, -6)]), CROWN_CELL);
-  return buildSkinnedMesh(defs[name], MESH_CELLS[name]);
+  return buildSkinnedMesh(defs[name], MESH_CELLS[name] || THEME_CELLS[name] || 0.035);
 }
 // Synchronous build of everything (used by tests and as a fallback)
 function buildModels(progress) {

@@ -7,7 +7,7 @@ const root = path.dirname(new URL(import.meta.url).pathname);
 const target = process.argv[2] || 'game';
 const src = path.join(root, 'src');
 const files = fs.readdirSync(src).filter(f => f.endsWith('.js')).sort();
-const engine = files.filter(f => /^0\d-/.test(f) || f === '10-data.js');
+const engine = files.filter(f => /^0\d[a-z]?-/.test(f) || f === '10-data.js');
 let js;
 let template;
 let out;
@@ -23,7 +23,7 @@ if (target === 'visual') {
 let html = template.replace('/*JS*/', () => js);
 if (target !== 'visual') {
   // the mesh-building worker reuses the util, SDF mesher and model files as plain text
-  const worker = ['00-util.js', '03-sdfmesh.js', '04-models.js'].map(f => fs.readFileSync(path.join(src, f), 'utf8')).join('\n');
+  const worker = ['00-util.js', '03-sdfmesh.js', '04-models.js', '04a-theme-models.js'].map(f => fs.readFileSync(path.join(src, f), 'utf8')).join('\n');
   if (/<\/script/i.test(worker) || /<\/script/i.test(js)) throw new Error('source contains a closing script tag');
   html = html.replace('/*WORKER*/', () => worker);
 }

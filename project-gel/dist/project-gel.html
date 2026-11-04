@@ -1155,7 +1155,19 @@ function modelDefs() {
   rock('rock0', [{ c: [0, 0.16, 0], r: 0.42, bump: 0.13 }, { c: [0.3, 0.06, 0.14], r: 0.22, bump: 0.16 }]);
   rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
   rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
+  themeModels(defs);
   return defs;
+}
+// Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
+function prop(defs, name, parts, o = {}) {
+  const m = makeHumanoid(STICK);
+  m.parts = parts.map(p => ({ bone: 0, k: 0.03, ...p }));
+  let lo = 0, top = 0, rad = 0;
+  for (const p of m.parts) { if (p.sub) continue; const [c, r] = partBounds(p); lo = Math.min(lo, c[1] - r); top = Math.max(top, c[1] + r); rad = Math.max(rad, Math.hypot(c[0], c[2]) + r); }
+  m.bmin = [-rad - 0.06, lo - 0.06, -rad - 0.06]; m.bmax = [rad + 0.06, top + 0.06, rad + 0.06];
+  m.top = top; m.aoScale = o.ao || 1.5; m.name = name;
+  defs[name] = m;
+  return m;
 }
 
 // Elite crown, sized for each base type's head
@@ -1217,6 +1229,10 @@ const CLIPS = {
     const s = Math.sin(t * TAU), c = Math.cos(t * TAU);
     return { root: [0.02 * s, -0.03, 0.02 * c], rot: [[0, 0, 0.06 * s], [0.12, 0, 0.12 * s], [0.18 * c, 0.3 * s, 0.25 * c],
       [0.2, 0, 0.5 + 0.2 * c], [-0.2, 0, 0], [0.2, 0, -0.5 - 0.2 * c], [-0.2, 0, 0], [-0.1, 0, 0.1], [0.2, 0, 0], [-0.1, 0, -0.1], [0.2, 0, 0]] };
+  } },
+  // a rigid prop tumbling forward (about x) around its pivot
+  roll: { frames: 16, fn(t) {
+    return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [t * TAU, 0, 0] : [0, 0, 0])) };
   } },
   still: { frames: 1, fn() {
     return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, () => [0, 0, 0]) };
@@ -1285,7 +1301,7 @@ const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'helmet',
 
 function prepareModelDefs() {
   const defs = modelDefs();
-  for (const name in defs) defs[name].clipNames = MODEL_CLIPS[name];
+  for (const name in defs) defs[name].clipNames = MODEL_CLIPS[name] || THEME_CLIPS[name] || ['still'];
   defs.brute.runAmp = 0.8; defs.sprinter.lean = 0.3; defs.sprinter.runAmp = 1.15;
   defs.shield.shieldArm = true; defs.stomper.runAmp = 0.75; defs.charger.lean = 0.35; defs.charger.headDown = 0.25;
   defs.knight.shieldArm = true; defs.knight.runAmp = 0.85; defs.helmet.runAmp = 0.9; defs.bomber.lean = 0.28; defs.bomber.runAmp = 1.1;
@@ -1302,7 +1318,7 @@ function prepareAnimations() {
 // Build one mesh by name ('stickman', 'brute_crown', ...)
 function buildMeshByName(defs, name) {
   if (name.endsWith('_crown')) return buildSkinnedMesh(crownModel(defs[name.slice(0, -6)]), CROWN_CELL);
-  return buildSkinnedMesh(defs[name], MESH_CELLS[name]);
+  return buildSkinnedMesh(defs[name], MESH_CELLS[name] || THEME_CELLS[name] || 0.035);
 }
 // Synchronous build of everything (used by tests and as a fallback)
 function buildModels(progress) {
@@ -1311,6 +1327,70 @@ function buildModels(progress) {
   let n = 0;
   for (const name of MESH_ORDER) { MODELS.meshes[name] = buildMeshByName(defs, name); progress && progress(++n / MESH_ORDER.length); }
   return MODELS;
+}
+
+// ============================================================
+// Theme scenery and new boss bodies, built with prop() (see 04-models.js).
+// Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
+// ============================================================
+const THEME_CLIPS = { tumbleweed: ['roll'] };
+const THEME_CELLS = { wormhead: 0.022, wormseg: 0.03 };
+// built after everything chapter 1 needs
+MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg');
+function themeModels(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  // ---------- desert ----------
+  const cg = C('#56a23e'), cgd = C('#3f8030'), pink = C('#ff6fa8'), yel = C('#ffd34a'), bone = C('#f1e6cf'), dark = C('#2a1a12');
+  const ribs = (cx, cz, y0, y1, r, n) => Array.from({ length: n }, (_, i) => { const a = (i / n) * TAU; return { s: 'cap', a: [cx + Math.cos(a) * r, y0, cz + Math.sin(a) * r], b: [cx + Math.cos(a) * r, y1, cz + Math.sin(a) * r], r: 0.028, col: cgd, k: 0.03 }; });
+  P('cactus0', [
+    { s: 'cap', a: [0, -0.05, 0], b: [0, 1.25, 0], r: 0.17, col: cg },
+    ...ribs(0, 0, 0.05, 1.22, 0.15, 7),
+    { s: 'cap', a: [0.08, 0.55, 0], b: [0.34, 0.6, 0], r: 0.1, col: cg }, { s: 'cap', a: [0.34, 0.6, 0], b: [0.35, 0.98, 0], r: 0.1, col: cg },
+    { s: 'cap', a: [-0.08, 0.76, 0], b: [-0.3, 0.8, 0.02], r: 0.09, col: cg }, { s: 'cap', a: [-0.3, 0.8, 0.02], b: [-0.31, 1.05, 0.02], r: 0.09, col: cg },
+    { s: 'sph', c: [0, 1.4, 0], r: 0.075, col: pink, k: 0.01 }, { s: 'sph', c: [0.35, 1.06, 0], r: 0.05, col: pink, k: 0.01 },
+  ]);
+  P('cactus1', [
+    { s: 'ell', c: [0, 0.26, 0], rr: [0.33, 0.3, 0.33], col: cg },
+    ...Array.from({ length: 9 }, (_, i) => { const a = (i / 9) * TAU; return { s: 'ell', c: [Math.cos(a) * 0.27, 0.26, Math.sin(a) * 0.27], rr: [0.06, 0.27, 0.06], col: cgd, k: 0.04 }; }),
+    { s: 'sph', c: [0.06, 0.56, 0.03], r: 0.07, col: yel, k: 0.01 }, { s: 'sph', c: [-0.08, 0.55, -0.04], r: 0.06, col: pink, k: 0.01 },
+  ]);
+  P('skull', [
+    { s: 'ell', c: [0, 0.13, 0], rr: [0.2, 0.13, 0.26], col: bone, k: 0.05 },
+    { s: 'ell', c: [0, 0.1, 0.24], rr: [0.11, 0.08, 0.12], col: bone, k: 0.05 },
+    { s: 'sph', c: [0.09, 0.18, 0.15], r: 0.05, col: dark, k: 0.0 }, { s: 'sph', c: [-0.09, 0.18, 0.15], r: 0.05, col: dark, k: 0.0 },
+    { s: 'cap', a: [0.15, 0.18, -0.08], b: [0.38, 0.27, -0.02], r: 0.045, r2: 0.012, col: bone, k: 0.02 },
+    { s: 'cap', a: [-0.15, 0.18, -0.08], b: [-0.38, 0.27, -0.02], r: 0.045, r2: 0.012, col: bone, k: 0.02 },
+  ]);
+  // a ball of dry twigs, centred on the pivot so it can roll
+  {
+    const rnd = mulberry32(777), parts = [], tw = C('#b48a52'), twd = C('#8a6436');
+    for (let i = 0; i < 26; i++) {
+      const a1 = rnd() * TAU, b1 = Math.acos(rnd() * 2 - 1), a2 = rnd() * TAU, b2 = Math.acos(rnd() * 2 - 1), R1 = 0.3 + rnd() * 0.15, R2 = 0.3 + rnd() * 0.15;
+      parts.push({ s: 'cap', a: [Math.sin(b1) * Math.cos(a1) * R1, 0.5 + Math.cos(b1) * R1, Math.sin(b1) * Math.sin(a1) * R1], b: [Math.sin(b2) * Math.cos(a2) * R2, 0.5 + Math.cos(b2) * R2, Math.sin(b2) * Math.sin(a2) * R2], r: 0.022, col: i % 3 ? tw : twd, k: 0.0 });
+    }
+    P('tumbleweed', parts, { ao: 0.8 });
+  }
+  // ---------- Sand Worm (chapter 2 boss): a goo worm; body parts without col take the boss tint ----------
+  {
+    const tooth = C('#fff6e2'), mouth = C('#3a0d22'), eyeW = C('#fff6e6'), pupil = C('#16101a'), spike = C('#ffe0a8'), belly = C('#f0b6e8');
+    P('wormhead', [
+      { s: 'ell', c: [0, 0, 0], rr: [0.46, 0.42, 0.5], k: 0.06 },
+      { s: 'ell', c: [0, -0.12, 0.3], rr: [0.34, 0.2, 0.26], col: belly, k: 0.05 },
+      { s: 'ell', c: [0, -0.08, 0.44], rr: [0.24, 0.12, 0.08], col: mouth, k: 0.02 },
+      ...[-0.16, -0.06, 0.06, 0.16].map(x => ({ s: 'cap', a: [x, 0.03, 0.47], b: [x, -0.06, 0.5], r: 0.03, r2: 0.008, col: tooth, k: 0 })),
+      ...[-0.11, 0, 0.11].map(x => ({ s: 'cap', a: [x, -0.19, 0.47], b: [x, -0.11, 0.5], r: 0.026, r2: 0.007, col: tooth, k: 0 })),
+      { s: 'sph', c: [0.18, 0.22, 0.32], r: 0.11, col: eyeW, k: 0.0 }, { s: 'sph', c: [-0.18, 0.22, 0.32], r: 0.11, col: eyeW, k: 0.0 },
+      { s: 'sph', c: [0.19, 0.23, 0.41], r: 0.05, col: pupil, k: 0 }, { s: 'sph', c: [-0.19, 0.23, 0.41], r: 0.05, col: pupil, k: 0 },
+      { s: 'cap', a: [0.3, -0.18, 0.3], b: [0.36, -0.2, 0.62], r: 0.06, r2: 0.02, col: spike, k: 0.02 }, { s: 'cap', a: [-0.3, -0.18, 0.3], b: [-0.36, -0.2, 0.62], r: 0.06, r2: 0.02, col: spike, k: 0.02 },
+      ...[0.0, -0.18, -0.34].map((z, i) => ({ s: 'cap', a: [0, 0.36 - i * 0.02, z], b: [0, 0.62 - i * 0.05, z - 0.12], r: 0.07, r2: 0.015, col: spike, k: 0.02 })),
+    ]);
+    P('wormseg', [
+      { s: 'ell', c: [0, 0, 0], rr: [0.4, 0.38, 0.3], k: 0.06 },
+      { s: 'tor', ax: 'z', c: [0, 0, 0.0], R: 0.36, r: 0.05, a0: -Math.PI, a1: Math.PI, col: belly, k: 0.03 },
+      { s: 'ell', c: [0, -0.2, 0.0], rr: [0.26, 0.18, 0.26], col: belly, k: 0.05 },
+      { s: 'cap', a: [0, 0.32, 0], b: [0, 0.58, -0.08], r: 0.065, r2: 0.014, col: spike, k: 0.02 },
+    ]);
+  }
 }
 </script>
 <script>
@@ -2143,7 +2223,19 @@ function modelDefs() {
   rock('rock0', [{ c: [0, 0.16, 0], r: 0.42, bump: 0.13 }, { c: [0.3, 0.06, 0.14], r: 0.22, bump: 0.16 }]);
   rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
   rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
+  themeModels(defs);
   return defs;
+}
+// Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
+function prop(defs, name, parts, o = {}) {
+  const m = makeHumanoid(STICK);
+  m.parts = parts.map(p => ({ bone: 0, k: 0.03, ...p }));
+  let lo = 0, top = 0, rad = 0;
+  for (const p of m.parts) { if (p.sub) continue; const [c, r] = partBounds(p); lo = Math.min(lo, c[1] - r); top = Math.max(top, c[1] + r); rad = Math.max(rad, Math.hypot(c[0], c[2]) + r); }
+  m.bmin = [-rad - 0.06, lo - 0.06, -rad - 0.06]; m.bmax = [rad + 0.06, top + 0.06, rad + 0.06];
+  m.top = top; m.aoScale = o.ao || 1.5; m.name = name;
+  defs[name] = m;
+  return m;
 }
 
 // Elite crown, sized for each base type's head
@@ -2205,6 +2297,10 @@ const CLIPS = {
     const s = Math.sin(t * TAU), c = Math.cos(t * TAU);
     return { root: [0.02 * s, -0.03, 0.02 * c], rot: [[0, 0, 0.06 * s], [0.12, 0, 0.12 * s], [0.18 * c, 0.3 * s, 0.25 * c],
       [0.2, 0, 0.5 + 0.2 * c], [-0.2, 0, 0], [0.2, 0, -0.5 - 0.2 * c], [-0.2, 0, 0], [-0.1, 0, 0.1], [0.2, 0, 0], [-0.1, 0, -0.1], [0.2, 0, 0]] };
+  } },
+  // a rigid prop tumbling forward (about x) around its pivot
+  roll: { frames: 16, fn(t) {
+    return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [t * TAU, 0, 0] : [0, 0, 0])) };
   } },
   still: { frames: 1, fn() {
     return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, () => [0, 0, 0]) };
@@ -2273,7 +2369,7 @@ const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'helmet',
 
 function prepareModelDefs() {
   const defs = modelDefs();
-  for (const name in defs) defs[name].clipNames = MODEL_CLIPS[name];
+  for (const name in defs) defs[name].clipNames = MODEL_CLIPS[name] || THEME_CLIPS[name] || ['still'];
   defs.brute.runAmp = 0.8; defs.sprinter.lean = 0.3; defs.sprinter.runAmp = 1.15;
   defs.shield.shieldArm = true; defs.stomper.runAmp = 0.75; defs.charger.lean = 0.35; defs.charger.headDown = 0.25;
   defs.knight.shieldArm = true; defs.knight.runAmp = 0.85; defs.helmet.runAmp = 0.9; defs.bomber.lean = 0.28; defs.bomber.runAmp = 1.1;
@@ -2290,7 +2386,7 @@ function prepareAnimations() {
 // Build one mesh by name ('stickman', 'brute_crown', ...)
 function buildMeshByName(defs, name) {
   if (name.endsWith('_crown')) return buildSkinnedMesh(crownModel(defs[name.slice(0, -6)]), CROWN_CELL);
-  return buildSkinnedMesh(defs[name], MESH_CELLS[name]);
+  return buildSkinnedMesh(defs[name], MESH_CELLS[name] || THEME_CELLS[name] || 0.035);
 }
 // Synchronous build of everything (used by tests and as a fallback)
 function buildModels(progress) {
@@ -2299,6 +2395,71 @@ function buildModels(progress) {
   let n = 0;
   for (const name of MESH_ORDER) { MODELS.meshes[name] = buildMeshByName(defs, name); progress && progress(++n / MESH_ORDER.length); }
   return MODELS;
+}
+
+// ---- 04a-theme-models.js ----
+// ============================================================
+// Theme scenery and new boss bodies, built with prop() (see 04-models.js).
+// Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
+// ============================================================
+const THEME_CLIPS = { tumbleweed: ['roll'] };
+const THEME_CELLS = { wormhead: 0.022, wormseg: 0.03 };
+// built after everything chapter 1 needs
+MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg');
+function themeModels(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  // ---------- desert ----------
+  const cg = C('#56a23e'), cgd = C('#3f8030'), pink = C('#ff6fa8'), yel = C('#ffd34a'), bone = C('#f1e6cf'), dark = C('#2a1a12');
+  const ribs = (cx, cz, y0, y1, r, n) => Array.from({ length: n }, (_, i) => { const a = (i / n) * TAU; return { s: 'cap', a: [cx + Math.cos(a) * r, y0, cz + Math.sin(a) * r], b: [cx + Math.cos(a) * r, y1, cz + Math.sin(a) * r], r: 0.028, col: cgd, k: 0.03 }; });
+  P('cactus0', [
+    { s: 'cap', a: [0, -0.05, 0], b: [0, 1.25, 0], r: 0.17, col: cg },
+    ...ribs(0, 0, 0.05, 1.22, 0.15, 7),
+    { s: 'cap', a: [0.08, 0.55, 0], b: [0.34, 0.6, 0], r: 0.1, col: cg }, { s: 'cap', a: [0.34, 0.6, 0], b: [0.35, 0.98, 0], r: 0.1, col: cg },
+    { s: 'cap', a: [-0.08, 0.76, 0], b: [-0.3, 0.8, 0.02], r: 0.09, col: cg }, { s: 'cap', a: [-0.3, 0.8, 0.02], b: [-0.31, 1.05, 0.02], r: 0.09, col: cg },
+    { s: 'sph', c: [0, 1.4, 0], r: 0.075, col: pink, k: 0.01 }, { s: 'sph', c: [0.35, 1.06, 0], r: 0.05, col: pink, k: 0.01 },
+  ]);
+  P('cactus1', [
+    { s: 'ell', c: [0, 0.26, 0], rr: [0.33, 0.3, 0.33], col: cg },
+    ...Array.from({ length: 9 }, (_, i) => { const a = (i / 9) * TAU; return { s: 'ell', c: [Math.cos(a) * 0.27, 0.26, Math.sin(a) * 0.27], rr: [0.06, 0.27, 0.06], col: cgd, k: 0.04 }; }),
+    { s: 'sph', c: [0.06, 0.56, 0.03], r: 0.07, col: yel, k: 0.01 }, { s: 'sph', c: [-0.08, 0.55, -0.04], r: 0.06, col: pink, k: 0.01 },
+  ]);
+  P('skull', [
+    { s: 'ell', c: [0, 0.13, 0], rr: [0.2, 0.13, 0.26], col: bone, k: 0.05 },
+    { s: 'ell', c: [0, 0.1, 0.24], rr: [0.11, 0.08, 0.12], col: bone, k: 0.05 },
+    { s: 'sph', c: [0.09, 0.18, 0.15], r: 0.05, col: dark, k: 0.0 }, { s: 'sph', c: [-0.09, 0.18, 0.15], r: 0.05, col: dark, k: 0.0 },
+    { s: 'cap', a: [0.15, 0.18, -0.08], b: [0.38, 0.27, -0.02], r: 0.045, r2: 0.012, col: bone, k: 0.02 },
+    { s: 'cap', a: [-0.15, 0.18, -0.08], b: [-0.38, 0.27, -0.02], r: 0.045, r2: 0.012, col: bone, k: 0.02 },
+  ]);
+  // a ball of dry twigs, centred on the pivot so it can roll
+  {
+    const rnd = mulberry32(777), parts = [], tw = C('#b48a52'), twd = C('#8a6436');
+    for (let i = 0; i < 26; i++) {
+      const a1 = rnd() * TAU, b1 = Math.acos(rnd() * 2 - 1), a2 = rnd() * TAU, b2 = Math.acos(rnd() * 2 - 1), R1 = 0.3 + rnd() * 0.15, R2 = 0.3 + rnd() * 0.15;
+      parts.push({ s: 'cap', a: [Math.sin(b1) * Math.cos(a1) * R1, 0.5 + Math.cos(b1) * R1, Math.sin(b1) * Math.sin(a1) * R1], b: [Math.sin(b2) * Math.cos(a2) * R2, 0.5 + Math.cos(b2) * R2, Math.sin(b2) * Math.sin(a2) * R2], r: 0.022, col: i % 3 ? tw : twd, k: 0.0 });
+    }
+    P('tumbleweed', parts, { ao: 0.8 });
+  }
+  // ---------- Sand Worm (chapter 2 boss): a goo worm; body parts without col take the boss tint ----------
+  {
+    const tooth = C('#fff6e2'), mouth = C('#3a0d22'), eyeW = C('#fff6e6'), pupil = C('#16101a'), spike = C('#ffe0a8'), belly = C('#f0b6e8');
+    P('wormhead', [
+      { s: 'ell', c: [0, 0, 0], rr: [0.46, 0.42, 0.5], k: 0.06 },
+      { s: 'ell', c: [0, -0.12, 0.3], rr: [0.34, 0.2, 0.26], col: belly, k: 0.05 },
+      { s: 'ell', c: [0, -0.08, 0.44], rr: [0.24, 0.12, 0.08], col: mouth, k: 0.02 },
+      ...[-0.16, -0.06, 0.06, 0.16].map(x => ({ s: 'cap', a: [x, 0.03, 0.47], b: [x, -0.06, 0.5], r: 0.03, r2: 0.008, col: tooth, k: 0 })),
+      ...[-0.11, 0, 0.11].map(x => ({ s: 'cap', a: [x, -0.19, 0.47], b: [x, -0.11, 0.5], r: 0.026, r2: 0.007, col: tooth, k: 0 })),
+      { s: 'sph', c: [0.18, 0.22, 0.32], r: 0.11, col: eyeW, k: 0.0 }, { s: 'sph', c: [-0.18, 0.22, 0.32], r: 0.11, col: eyeW, k: 0.0 },
+      { s: 'sph', c: [0.19, 0.23, 0.41], r: 0.05, col: pupil, k: 0 }, { s: 'sph', c: [-0.19, 0.23, 0.41], r: 0.05, col: pupil, k: 0 },
+      { s: 'cap', a: [0.3, -0.18, 0.3], b: [0.36, -0.2, 0.62], r: 0.06, r2: 0.02, col: spike, k: 0.02 }, { s: 'cap', a: [-0.3, -0.18, 0.3], b: [-0.36, -0.2, 0.62], r: 0.06, r2: 0.02, col: spike, k: 0.02 },
+      ...[0.0, -0.18, -0.34].map((z, i) => ({ s: 'cap', a: [0, 0.36 - i * 0.02, z], b: [0, 0.62 - i * 0.05, z - 0.12], r: 0.07, r2: 0.015, col: spike, k: 0.02 })),
+    ]);
+    P('wormseg', [
+      { s: 'ell', c: [0, 0, 0], rr: [0.4, 0.38, 0.3], k: 0.06 },
+      { s: 'tor', ax: 'z', c: [0, 0, 0.0], R: 0.36, r: 0.05, a0: -Math.PI, a1: Math.PI, col: belly, k: 0.03 },
+      { s: 'ell', c: [0, -0.2, 0.0], rr: [0.26, 0.18, 0.26], col: belly, k: 0.05 },
+      { s: 'cap', a: [0, 0.32, 0], b: [0, 0.58, -0.08], r: 0.065, r2: 0.014, col: spike, k: 0.02 },
+    ]);
+  }
 }
 
 // ---- 05-glsl.js ----
@@ -2676,8 +2837,8 @@ void main() {
       // quicksand: a slow swirl sinking toward the middle
       float swirl = sin(ang * 3.0 + r * 9.0 - uTime * 1.2 + uSeed) * 0.5 + 0.5;
       float grain = texture(uNoise, q * 1.4 + vec2(uTime * 0.05, 0.0)).g;
-      col = mix(uPoolCol * 0.55, uPoolCol, smoothstep(0.0, edge, r) * 0.6 + swirl * 0.25 + grain * 0.15);
-      col *= mix(0.62, 1.0, smoothstep(0.0, 0.5, r));
+      col = mix(uPoolCol * 0.8, uPoolCol * 1.08, smoothstep(0.0, edge, r) * 0.5 + swirl * 0.35 + grain * 0.15);
+      col *= mix(0.82, 1.0, smoothstep(0.0, 0.5, r));
       col = mix(col, uPoolCol * 1.12, smoothstep(edge - 0.1, edge - 0.01, r) * 0.5);
     }
     col += uPoolCol * uPoolGlow;
@@ -3151,6 +3312,21 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float d = sdCapsule(p, vec3(-0.9, 0.0, 0.0), vec3(0.8, 0.0, 0.0), 0.3 + 0.05 * sin(p.x * 12.0 - ph * 10.0));
     d = smin(d, length(p - vec3(-0.85, 0.0, 0.0)) - 0.42, 0.2);
     return vec2(d, 0.0);
+  }
+  if (type == 32) {
+    // tornado: a twisting goo funnel, narrow at the ground
+    float u = clamp(p.y * 0.5 + 0.5, 0.0, 1.0);
+    vec2 q = rot2(p.y * 2.6 - ph * 5.0) * p.xz;
+    q.x += 0.1 * sin(p.y * 4.0 + ph * 3.0);
+    float rad = mix(0.16, 0.72, u * u * 0.6 + u * 0.4);
+    float d = length(q) - rad + 0.05 * sin(atan(q.y, q.x) * 4.0 + p.y * 7.0);
+    d = max(d * 0.7, abs(p.y) - 0.98);
+    return vec2(d, 0.0);
+  }
+  if (type == 33) {
+    // a clod of packed sand
+    float b = sin(p.x * 7.0 + ph) * sin(p.y * 6.0) * sin(p.z * 6.5 + 1.0) * 0.1;
+    return vec2(length(p) - 0.75 + b, 4.0);
   }
   if (type == 31) {
     // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
@@ -5064,6 +5240,12 @@ const SKILLS = {
     fields: [['dmg', 'Damage per tick'], ['dur', 'Duration', 's'], ['cd', 'Cooldown', 's'], ['beams', 'Jets']],
     levels: L10({ dmg: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], dur: [1.0, 1.1, 1.2, 1.2, 1.3, 1.4, 1.5, 1.5, 1.6, 1.8], cd: [5, 5, 4.8, 4.6, 4.5, 4.4, 4.2, 4, 3.8, 3.5], beams: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2] }),
   },
+  // ---------- chapter power-ups (from: the first chapter they can be found in) ----------
+  sandstorm: {
+    name: 'Sandstorm', from: 2, intro: 'Whips up goo tornadoes that wander into crowds, pulling enemies in and grinding them down.', icon: { type: 32, colw: 0 },
+    fields: [['dmg', 'Damage per tick'], ['count', 'Tornadoes'], ['radius', 'Radius', 'm'], ['life', 'Lasts', 's']],
+    levels: L10({ dmg: [3, 3, 4, 4, 5, 5, 6, 7, 8, 9], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.4, 1.5, 1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], life: [3, 3.2, 3.4, 3.6, 3.8, 4, 4.3, 4.6, 5, 5.5], cd: [8, 7.8, 7.6, 7.4, 7.2, 7, 6.6, 6.3, 6, 5.5] }),
+  },
   shield: {
     name: 'Bubble Shield', intro: 'A goo bubble absorbs hits, then grows back.', icon: { type: 27, colw: 0 },
     fields: [['hits', 'Hits absorbed'], ['recharge', 'Regrows in', 's'], ['pop', 'Pop damage'], ['push', 'Pop knockback', 'm']],
@@ -5129,6 +5311,8 @@ const BOSS_TYPES = {
   twins: { name: 'Twins', model: 'twin', hp: 1400, speed: 2.4, dmg: 12, scale: 2.3, radius: 0.9, tint: '#ff70b0', tint2: '#9a6bff', mass: 60 },
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
+// Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 0.8 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
 const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
@@ -5138,15 +5322,21 @@ const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
 const ARENAS = [
   { id: 'plaza', name: 'Stone Plaza', floor: 0, stoneA: '#34536e', stoneB: '#3c5e7b', grout: '#08121c', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.5, shadowTint: '#0a1f3a', rock: '#8592a0', pool: '#1f7a9c', poolGlow: 0.05,
     props: [['rock', 11, 0.8, 1.4]], zones: [['pool', 4, 1.7, 2.6]], wall: 'rock' },
+  { id: 'desert', name: 'Desert Dunes', floor: 1, stoneA: '#e8c08a', stoneB: '#d29f66', grout: '#5e3b22', accent: '#ffcf70', fog: '#4b2d18', sky: '#f6dcb0', ground: '#a87a48', light: '#fff2d8', spotMin: 0.6, shadowTint: '#5c2f10', rock: '#c4875a', pool: '#a8793f', poolGlow: 0,
+    props: [['cactus', 12, 0.4, 0.62], ['rock', 6, 0.9, 1.5], ['skull', 4, 0.45, 0.55]], zones: [['quicksand', 5, 2.0, 3.2]], wall: 'rock', kinds: ['tumbleweed'] },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
 const PROP_KINDS = {
   rock: { models: ['rock0', 'rock1', 'rock2'], unit: 0.45, tint: 'rock', block: true, shots: true },
+  cactus: { models: ['cactus0', 'cactus0', 'cactus1'], unit: 0.3, block: true, shots: true, tall: 1.6 },
+  skull: { models: ['skull'], unit: 0.35, block: false },
+  tumbleweed: { models: ['tumbleweed'], unit: 0.45, block: false },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
   pool: { block: true },
+  quicksand: { slow: 0.5, col: '#a8793f', glow: 0, style: 2 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -5330,7 +5520,8 @@ const gkey = (cx, cz) => (cx + 32768) * 65536 + (cz + 32768);
 function gridBuild(list) {
   GRID.map.clear();
   for (const e of list) {
-    if (e.dying) continue;
+    // burrowed or otherwise untouchable enemies are left out, so nothing can target them
+    if (e.dying || e.hidden) continue;
     const k = gkey(Math.floor(e.x / GRID.cell), Math.floor(e.z / GRID.cell));
     let a = GRID.map.get(k);
     if (!a) GRID.map.set(k, (a = []));
@@ -5692,6 +5883,7 @@ function updateRun(dt) {
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
   hero.update(dt, run.vel, true);
   updateArenaFx(dt);
+  updateTempZones(dt);
 
   gridBuild(run.enemies);
   updateEnemies(dt);
@@ -5774,7 +5966,7 @@ function updateEnemies(dt) {
     e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
     // hero contact
     const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz), rr = e.radius + HERO_R;
-    if (d < rr && G.hero.melt < 0.5) {
+    if (d < rr && G.hero.melt < 0.5 && !e.hidden) {
       touching++;
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }
@@ -6250,6 +6442,57 @@ const ARENA_FEATURES = {};
 function updateArenaFx(dt) { const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
 function emitArenaFx() { const F = ARENA.fx; if (F && F.def.emit) F.def.emit(F.st); }
 
+// ---- 11b-themes.js ----
+// ============================================================
+// Theme set pieces and moving parts (layouts and features for 11a-arena.js)
+// ============================================================
+
+// ---------- Desert Dunes: tumbleweeds roll across with the wind, hopping and bouncing off you ----------
+ARENA_FEATURES.desert = {
+  init(st, rnd) { st.weeds = []; st.wind = rnd() * TAU; st.spawnT = 1; },
+  update(st, dt) {
+    const h = G.hero.pos, wx = Math.sin(st.wind), wz = Math.cos(st.wind);
+    st.wind += dt * 0.02;
+    st.spawnT -= dt;
+    if (st.weeds.length < 7 && st.spawnT <= 0) {
+      // arrive from upwind, just off screen
+      st.spawnT = rand(1.2, 2.6);
+      const side = rand(-14, 14), w = { x: h[0] - wx * 20 - wz * side, z: h[2] - wz * 20 + wx * side, y: 0, vy: 2, r: rand(0.45, 0.7), ph: rand(0, 1), sp: rand(2.6, 4.2), dx: wx, dz: wz };
+      if (arenaSd(w.x, w.z) < -1) st.weeds.push(w);
+    }
+    for (const w of st.weeds) {
+      // steer back toward the wind, roll, and hop over the ripples
+      w.dx += (wx - w.dx) * dt * 0.8; w.dz += (wz - w.dz) * dt * 0.8;
+      const l = Math.hypot(w.dx, w.dz) || 1;
+      w.x += w.dx / l * w.sp * dt; w.z += w.dz / l * w.sp * dt;
+      w.ph += w.sp * dt / (TAU * w.r);
+      w.vy -= 14 * dt; w.y += w.vy * dt;
+      if (w.y <= 0) { w.y = 0; w.vy = rand(1.2, 3.2); }
+      const hit = resolveCircle(w, w.r);
+      if (hit) { w.dx = -w.dx + rand(-0.5, 0.5); w.dz = -w.dz + rand(-0.5, 0.5); w.vy = 3; }
+      // running into one sends it bouncing away (no damage)
+      const hx = w.x - h[0], hz = w.z - h[2], hd = Math.hypot(hx, hz);
+      if (hd < w.r + HERO_R && hd > 1e-3) {
+        w.dx = hx / hd * 2; w.dz = hz / hd * 2; w.vy = 4.5; w.x = h[0] + hx / hd * (w.r + HERO_R);
+        FX.burst(w.x, 0.5, w.z, 6, [0.72, 0.55, 0.32], 3, 0.06, 0.4, 1);
+      }
+      if (Math.hypot(w.x - h[0], w.z - h[2]) > 34) w.dead = true;
+    }
+    st.weeds = st.weeds.filter(w => !w.dead);
+  },
+  emit(st) {
+    if (!R.enemyDraw.tumbleweed) return;
+    const clip = MODELS.defs.tumbleweed.clips.roll;
+    for (const w of st.weeds) {
+      if (!onScreen(w.x, w.z, 2)) continue;
+      const sc = w.r / 0.45, row = clip.row + Math.floor((w.ph - Math.floor(w.ph)) * clip.frames);
+      // the model's pivot sits 0.5 up, so lift it until the ball touches the ground
+      pushEnemy('tumbleweed', false, w.x, w.y + (0.45 - 0.5) * sc, w.z, Math.atan2(w.dx, w.dz), row, sc, 1, 0, 0, 0, 1, 1, 1);
+      pushDecal(w.x + 0.15, w.z + 0.1, w.r * 0.9, w.r * 0.7, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4 * (1 - Math.min(1, w.y / 3)));
+    }
+  },
+};
+
 // ---- 12-skills.js ----
 // ============================================================
 // Skills: behaviors, hero body actions, projectiles and visuals
@@ -6267,7 +6510,7 @@ function updateSkills(dt) {
     const L = SKILLS[s.id].levels[s.lvl - 1];
     SKILL_HOOKS[s.id].update(s, L, dt);
   }
-  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt);
+  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt);
   for (const b of G.bolts) b.life -= dt;
   G.bolts = G.bolts.filter(b => b.life > 0);
 }
@@ -6278,6 +6521,7 @@ function emitSkills() {
     const hook = SKILL_HOOKS[s.id];
     if (hook.emit) hook.emit(s, SKILLS[s.id].levels[s.lvl - 1]);
   }
+  emitStorms();
 }
 
 // Densest cluster of enemies within range of a point -> [x, z] or null
@@ -6919,6 +7163,75 @@ SKILL_HOOKS.shield = {
 // ---------- passives have no per-frame behavior ----------
 for (const id in PASSIVES) SKILL_HOOKS[id] = SKILL_HOOKS[id] || {};
 
+// ---- 12a-new-skills.js ----
+// ============================================================
+// Chapter power-ups: one new skill or ability per chapter from chapter 2 (data in SKILLS / PASSIVES)
+// ============================================================
+
+// ---------- Sandstorm (chapter 2): wandering goo tornadoes that pull crowds in ----------
+SKILL_HOOKS.sandstorm = {
+  update(s, L, dt) {
+    const st = s.st, run = G.run, h = G.hero.pos;
+    run.storms = run.storms || [];
+    st.t = (st.t ?? 1.2) - dt;
+    if (st.t <= 0 && nearestEnemy(h[0], h[2], 9)) {
+      st.t = L.cd * cdMul();
+      for (let i = 0; i < L.count; i++) {
+        const a = rand(0, TAU);
+        run.storms.push({ x: h[0] + Math.cos(a) * 1.5, z: h[2] + Math.sin(a) * 1.5, t: 0, life: L.life, dmg: L.dmg, r: L.radius * areaMul(), tick: 0.1, ph: rand(0, TAU), tx: h[0], tz: h[2], seekT: 0 });
+      }
+      AUDIO.play('zap');
+    }
+  },
+  emit() {},
+};
+function updateStorms(dt) {
+  const run = G.run;
+  if (!run.storms || !run.storms.length) return;
+  for (const w of run.storms) {
+    w.t += dt;
+    // drift toward the nearest enemy, picking a new one now and then
+    w.seekT -= dt;
+    if (w.seekT <= 0) { w.seekT = 0.7; const e = nearestEnemy(w.x, w.z, 10); if (e) { w.tx = e.x; w.tz = e.z; } }
+    const dx = w.tx - w.x, dz = w.tz - w.z, d = Math.hypot(dx, dz);
+    if (d > 0.3) { w.x += dx / d * Math.min(d, 2.6 * dt); w.z += dz / d * Math.min(d, 2.6 * dt); }
+    const o = { x: w.x, z: w.z }; resolveCircle(o, 0.4); w.x = o.x; w.z = o.z;
+    // pull everything nearby toward the eye of the storm
+    enemiesInRadius(w.x, w.z, w.r * 1.7, e => {
+      if (e.boss) return;
+      const ex = w.x - e.x, ez = w.z - e.z, ed = Math.hypot(ex, ez) || 1;
+      e.kx += (ex / ed * 9 - ez / ed * 5) * dt / e.mass; e.kz += (ez / ed * 9 + ex / ed * 5) * dt / e.mass;
+    });
+    w.tick -= dt;
+    if (w.tick <= 0) {
+      w.tick = 0.3;
+      enemiesInRadius(w.x, w.z, w.r, e => hurtEnemy(e, w.dmg, 0, 0, { sound: false, color: [1, 0.86, 0.55] }));
+    }
+    if (Math.random() < 0.5) FX.smoke(w.x + rand(-0.5, 0.5), 0.2, w.z + rand(-0.5, 0.5), 0.6 + w.r * 0.3, [0.85, 0.7, 0.48], 0.6, 1.4);
+  }
+  run.storms = run.storms.filter(w => w.t < w.life);
+}
+function emitStorms() {
+  const run = G.run;
+  if (!run.storms) return;
+  for (const w of run.storms) {
+    if (!onScreen(w.x, w.z, 3)) continue;
+    const grow = Math.min(1, w.t / 0.35) * Math.min(1, (w.life - w.t) / 0.4), sc = w.r * 0.55 * grow;
+    if (sc < 0.02) continue;
+    // a spinning goo funnel wrapped in sand ribbons
+    pushImp(w.x, sc * 1.05, w.z, sc, 0, 0, 1, 1, 32, 0, 0.15, w.t * 1.6 + w.ph, 0, 0, 0, 0.6);
+    for (let k = 0; k < 3; k++) {
+      const pts = [], n = 18;
+      for (let j = 0; j < n; j++) {
+        const u = j / (n - 1), y = u * sc * 2.6, rad = (0.4 + u * 1.3) * sc, a = u * 7 + w.t * 9 + k * 2.09 + w.ph;
+        pts.push(w.x + Math.cos(a) * rad, y + 0.05, w.z + Math.sin(a) * rad);
+      }
+      R.ribStrip(pts, n, 0.1 * grow, [0.95, 0.82, 0.58, u => 0.7 * Math.sin(u * Math.PI)], 0, 0, 1);
+    }
+    pushDecal(w.x, w.z, w.r * 1.1, w.r * 1.1, w.t * 3, 3, 0, 0.3, 0.9, 0.75, 0.5, 0.35 * grow, true);
+  }
+}
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -6967,9 +7280,10 @@ function spawnBoss(id, x, z, opts) {
     ai: { state: 'enter', t: 1.2, summonT: 8, throwT: 2.5, jumpCd: 2, attackT: 2.5, charges: 0, anchor: [x, z], orbit: rand(0, TAU), mode: 0 },
   };
   e.contactDmg = e.dmg;
-  e.y = 9;
   resolveCircle(e, B.radius * 1.4);
   run.enemies.push(e); run.bosses.push(e);
+  if (B.noDrop) { e.ai.state = 'intro'; e.y = 0; return e; }
+  e.y = 9;
   addTele({ kind: 'circle', x: e.x, z: e.z, r: B.radius * 2.2, dur: 1.2 });
   return e;
 }
@@ -7255,6 +7569,7 @@ function emitRunScene() {
   // enemy shots
   for (const s of run.eShots) {
     if (s.kind === 'arrow') { const sp = Math.hypot(s.vx, s.vz) || 1; pushImp(s.x, s.y, s.z, 0.32, s.vx / sp, 0, s.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); }
+    else if (s.kind === 'sand') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.2, 33, 0, 0, s.ph + run.t * 6, 0, 0, 0, 1); pushDecal(s.x + 0.1, s.z + 0.08, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.35); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }
     else if (s.kind === 'javelin') {
       const u = clamp(s.t / s.dur, 0, 1), vy = (0.3 - s.sy) + Math.cos(u * Math.PI) * Math.PI * s.peak;
@@ -7368,6 +7683,187 @@ function trailRibbon(trail, w, col, alpha) {
   for (const q of trail) pts.push(q[0], q[1], q[2]);
   R.ribStrip(pts, trail.length, w, [col[0], col[1], col[2], u => (1 - u) * alpha], 0, 0, 1, u => 1 - u * 0.85);
 }
+
+// ---- 13a-bosses.js ----
+// ============================================================
+// Chapter bosses 2-10: behaviour (BOSS_AI) and drawing (BOSS_DRAW). Stats live in BOSS_TYPES (10-data.js).
+// ============================================================
+const isRage = e => e.hp < e.maxHp * 0.5;
+// turn a heading toward a target angle at a limited rate
+function turnToward(a, want, rate) { return a + clamp(angleDiff(a, want), -rate, rate); }
+function sandBurst(x, z, n, r) {
+  FX.burst(x, 0.3, z, n, [0.86, 0.68, 0.42], 6, 0.2, 0.8, 2, 2);
+  FX.ring(x, z, r * 2.4, [1, 0.85, 0.6], 0.5); FX.crack(x, z, r * 1.6, 1.6);
+  for (let i = 0; i < 4; i++) FX.smoke(x + rand(-1, 1), 0.4, z + rand(-1, 1), 1.4, [0.8, 0.65, 0.45], 1.1, 1.2);
+}
+// a short-lived ground zone (quicksand the worm leaves, lava trails...) that fades out
+function tempZone(kind, x, z, r, life) {
+  const o = { kind, x, z, r, ph: rand(0, 10), block: false, life };
+  ARENA.zones.push(o);
+  return o;
+}
+function updateTempZones(dt) {
+  let any = false;
+  for (const o of ARENA.zones) if (o.life !== undefined) { o.life -= dt; any = true; }
+  if (any) ARENA.zones = ARENA.zones.filter(o => o.life === undefined || o.life > 0);
+}
+
+// ---------- Sand Worm (chapter 2): burrows, breaches under you in big arcs, slithers and spits sand ----------
+const WORM = { segs: 11, gap: 0.6 };
+BOSS_AI.sandworm = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, s = e.scale, rage = isRage(e);
+  ai.path = ai.path || [];
+  if (ai.heading === undefined) ai.heading = Math.atan2(dx, dz);
+  const steer = (tx, tz, speed, rate) => {
+    ai.heading = turnToward(ai.heading, Math.atan2(tx - e.x, tz - e.z), rate * dt);
+    e.x += Math.sin(ai.heading) * speed * dt; e.z += Math.cos(ai.heading) * speed * dt;
+    const o = { x: e.x, z: e.z }; resolveCircle(o, 0.5); e.x = o.x; e.z = o.z;
+  };
+  const underY = -0.45 * s, surfY = 0.42 * s;
+  switch (ai.state) {
+    case 'intro':
+      e.hidden = true; e.y = underY;
+      if (Math.random() < 0.5) FX.smoke(e.x + rand(-1, 1), 0.3, e.z + rand(-1, 1), 1.2, [0.8, 0.65, 0.45], 0.9, 1);
+      if (ai.t <= 0) { ai.state = 'breach'; ai.t = ai.dur = 1.5; ai.bx = e.x; ai.bz = e.z; ai.breaches = 1; ai.hit = false; }
+      break;
+    case 'under':
+    case 'tele': {
+      // tunnelling: only the back spikes break the sand, and nothing can hit it
+      e.hidden = true; e.y = underY;
+      const sp = rage ? 8 : 6.5;
+      if (ai.state === 'under') {
+        steer(h[0], h[2], sp, 3.5);
+        if (d < 2.2 || ai.t <= 0) {
+          ai.state = 'tele'; ai.t = rage ? 0.7 : 0.9; ai.bx = h[0]; ai.bz = h[2];
+          const o = { x: ai.bx, z: ai.bz }; resolveCircle(o, 1.5); ai.bx = o.x; ai.bz = o.z;
+          addTele({ kind: 'circle', x: ai.bx, z: ai.bz, r: 2.4, dur: ai.t });
+        }
+      } else {
+        steer(ai.bx, ai.bz, Math.max(sp, Math.hypot(ai.bx - e.x, ai.bz - e.z) / Math.max(ai.t, 0.05)), 8);
+        if (ai.t <= 0) { e.x = ai.bx; e.z = ai.bz; ai.state = 'breach'; ai.t = ai.dur = 1.5; ai.hit = false; }
+      }
+      if (Math.random() < 0.7) FX.smoke(e.x + rand(-0.6, 0.6), 0.2, e.z + rand(-0.6, 0.6), 1.0, [0.82, 0.66, 0.44], 0.8, 0.7);
+      if (Math.random() < 0.3) FX.burst(e.x, 0.2, e.z, 2, [0.86, 0.7, 0.45], 2.5, 0.1, 0.4, 1);
+      break;
+    }
+    case 'breach': {
+      // bursts up through the telegraphed spot and arcs back into the sand ahead
+      e.hidden = false;
+      const u = 1 - ai.t / ai.dur;
+      if (!ai.hit) {
+        ai.hit = true;
+        ai.heading = Math.atan2(h[0] - ai.bx, h[2] - ai.bz) + rand(-0.6, 0.6);
+        if (Math.hypot(h[0] - ai.bx, h[2] - ai.bz) < 2.4 + HERO_R * 0.5) { hurtHero(34 * run.info.dmgMul, ai.bx, ai.bz); run.vel[0] += (h[0] - ai.bx) * 3; run.vel[2] += (h[2] - ai.bz) * 3; }
+        enemiesInRadius(ai.bx, ai.bz, 2.4, o => { if (o !== e && !o.boss) { const ox = o.x - ai.bx, oz = o.z - ai.bz, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 8 / o.mass; o.kz += oz / od * 8 / o.mass; } });
+        sandBurst(ai.bx, ai.bz, 30, 2.4);
+        G.cam.shake = Math.max(G.cam.shake, 0.24); AUDIO.play('boom');
+        if (rage) tempZone('quicksand', ai.bx, ai.bz, 2.2, 9);
+      }
+      e.x = ai.bx + Math.sin(ai.heading) * u * 6.5; e.z = ai.bz + Math.cos(ai.heading) * u * 6.5;
+      const o = { x: e.x, z: e.z }; resolveCircle(o, 0.5); e.x = o.x; e.z = o.z;
+      e.y = underY + Math.sin(u * Math.PI) * 5.2;
+      if (ai.t <= 0) {
+        sandBurst(e.x, e.z, 14, 1.4);
+        ai.breaches--;
+        if (ai.breaches > 0) { ai.state = 'under'; ai.t = 1.1; }
+        else { ai.state = 'rise'; ai.t = 0.9; }
+      }
+      break;
+    }
+    case 'rise':
+      e.hidden = ai.t > 0.5;
+      e.y = lerp(surfY, underY, clamp(ai.t / 0.9, 0, 1));
+      steer(h[0], h[2], 1.5, 4);
+      if (ai.t <= 0) { ai.state = 'slither'; ai.t = rage ? 4 : 5; ai.spitT = 1.4; }
+      break;
+    case 'slither':
+      e.hidden = false;
+      e.y = surfY + Math.sin(run.t * 6) * 0.06 * s;
+      ai.spitT -= dt;
+      steer(h[0] + Math.sin(run.t * 2.4) * 2.5, h[2] + Math.cos(run.t * 2.4) * 2.5, e.speed * (rage ? 1.3 : 1), 2.4);
+      if (ai.spitT <= 0 && d < 12) { ai.state = 'spit'; ai.st = ai.t; ai.t = 0.9; ai.fired = 0; }
+      else if (ai.t <= 0) { ai.state = 'dive'; ai.t = 0.8; }
+      break;
+    case 'spit': {
+      // rears up and sprays a fan of sand clods
+      const u = 1 - ai.t / 0.9;
+      ai.heading = turnToward(ai.heading, Math.atan2(dx, dz), dt * 6);
+      e.y = surfY + Math.sin(Math.min(1, u * 1.6) * Math.PI * 0.5) * 1.2 * s * (1 - smoothstep(0.75, 1, u));
+      const volleys = rage ? 2 : 1;
+      if (ai.fired < volleys && u > 0.45 + ai.fired * 0.2) {
+        ai.fired++;
+        const n = rage ? 9 : 7, base = Math.atan2(dx, dz);
+        for (let i = 0; i < n; i++) {
+          const a = base + (i / (n - 1) - 0.5) * 1.4 + (ai.fired - 1) * 0.08;
+          run.eShots.push({ kind: 'sand', x: e.x, y: 1.1, z: e.z, vx: Math.sin(a) * 6.5, vy: 0, vz: Math.cos(a) * 6.5, dmg: 13 * run.info.dmgMul, r: 0.35, life: 2.6, ph: rand(0, 10) });
+        }
+        AUDIO.play('throw');
+      }
+      if (ai.t <= 0) { ai.state = 'slither'; ai.t = ai.st; ai.spitT = rage ? 1.6 : 2.4; }
+      break;
+    }
+    case 'dive':
+      e.y = lerp(underY, surfY, clamp(ai.t / 0.8, 0, 1));
+      steer(h[0], h[2], e.speed, 2);
+      if (ai.t <= 0) { ai.state = 'under'; ai.t = rage ? 1.2 : 1.6; ai.breaches = rage ? 3 : 2; }
+      break;
+  }
+  e.yaw = ai.heading;
+  e.phase += dt;
+  // the body trails the head's path; record where the head has been
+  const last = ai.path[0];
+  if (!last || Math.hypot(e.x - last[0], e.y - last[1], e.z - last[2]) > 0.08) ai.path.unshift([e.x, e.y, e.z]);
+  if (ai.path.length > 400) ai.path.length = 400;
+  // the body hurts too
+  if (G.state === 'run') for (const b of wormBody(e)) {
+    if (b.y < -0.3 * b.s) continue;
+    if (Math.hypot(b.x - h[0], b.z - h[2]) < 0.34 * b.s + HERO_R) { hurtHero(e.dmg * 0.8, b.x, b.z); break; }
+  }
+};
+// segment positions spaced along the recorded head path
+function wormBody(e) {
+  const out = [], P = e.ai.path || [], s = e.scale;
+  let want = WORM.gap * s, acc = 0, i = 1;
+  for (let k = 0; k < WORM.segs; k++) {
+    const segS = s * (1 - 0.045 * k);
+    while (i < P.length) {
+      const a = P[i - 1], b = P[i], l = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+      if (acc + l >= want) {
+        const u = (want - acc) / (l || 1);
+        out.push({ x: lerp(a[0], b[0], u), y: lerp(a[1], b[1], u), z: lerp(a[2], b[2], u), yaw: Math.atan2(a[0] - b[0], a[2] - b[2]), s: segS });
+        break;
+      }
+      acc += l; i++;
+    }
+    if (i >= P.length) break;
+    want += WORM.gap * segS;
+  }
+  return out;
+}
+BOSS_DRAW.sandworm = function (e) {
+  if (!R.enemyDraw.wormhead || !R.enemyDraw.wormseg) return;
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint;
+  const row = MODELS.defs.wormhead.clips.still.row, srow = MODELS.defs.wormseg.clips.still.row, L = R.frame.lightDir;
+  let body;
+  if (e.portrait) {
+    // a coil rising out of the sand for the portrait
+    body = [];
+    for (let k = 0; k < 4; k++) body.push({ x: -0.5 * k * e.scale * 0.5, y: (0.42 - 0.25 * k) * e.scale, z: -0.55 * k * e.scale * 0.5, yaw: 0.45, s: e.scale * (1 - 0.05 * k) });
+  } else body = wormBody(e);
+  for (let k = body.length - 1; k >= 0; k--) {
+    const b = body[k];
+    if (b.y < -0.7 * b.s) continue;
+    pushEnemy('wormseg', false, b.x, b.y, b.z, b.yaw, srow, b.s, 1, dead, fl, 0, t[0], t[1], t[2]);
+    if (b.y > -0.2 * b.s) pushDecal(b.x - L[0] * 0.3, b.z - L[2] * 0.3, 0.4 * b.s, 0.34 * b.s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.45);
+  }
+  if (e.hidden) {
+    // the mound of churned sand over its head
+    pushDecal(e.x, e.z, 1.6, 1.6, e.phase, 0, 3, 0, 0.45, 0.3, 0.16, 0.5);
+    return;
+  }
+  pushEnemy('wormhead', false, e.x, e.portrait ? 0.62 * e.scale : e.y, e.z, e.yaw, row, e.scale * e.squash, 1, dead, fl, 0, t[0], t[1], t[2]);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.5 * e.scale, 0.42 * e.scale, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5 * (1 - clamp(e.y / 6, 0, 0.8)));
+};
 
 // ---- 14-ui.js ----
 // ============================================================

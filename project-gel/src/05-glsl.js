@@ -372,8 +372,8 @@ void main() {
       // quicksand: a slow swirl sinking toward the middle
       float swirl = sin(ang * 3.0 + r * 9.0 - uTime * 1.2 + uSeed) * 0.5 + 0.5;
       float grain = texture(uNoise, q * 1.4 + vec2(uTime * 0.05, 0.0)).g;
-      col = mix(uPoolCol * 0.55, uPoolCol, smoothstep(0.0, edge, r) * 0.6 + swirl * 0.25 + grain * 0.15);
-      col *= mix(0.62, 1.0, smoothstep(0.0, 0.5, r));
+      col = mix(uPoolCol * 0.8, uPoolCol * 1.08, smoothstep(0.0, edge, r) * 0.5 + swirl * 0.35 + grain * 0.15);
+      col *= mix(0.82, 1.0, smoothstep(0.0, 0.5, r));
       col = mix(col, uPoolCol * 1.12, smoothstep(edge - 0.1, edge - 0.01, r) * 0.5);
     }
     col += uPoolCol * uPoolGlow;
@@ -847,6 +847,21 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float d = sdCapsule(p, vec3(-0.9, 0.0, 0.0), vec3(0.8, 0.0, 0.0), 0.3 + 0.05 * sin(p.x * 12.0 - ph * 10.0));
     d = smin(d, length(p - vec3(-0.85, 0.0, 0.0)) - 0.42, 0.2);
     return vec2(d, 0.0);
+  }
+  if (type == 32) {
+    // tornado: a twisting goo funnel, narrow at the ground
+    float u = clamp(p.y * 0.5 + 0.5, 0.0, 1.0);
+    vec2 q = rot2(p.y * 2.6 - ph * 5.0) * p.xz;
+    q.x += 0.1 * sin(p.y * 4.0 + ph * 3.0);
+    float rad = mix(0.16, 0.72, u * u * 0.6 + u * 0.4);
+    float d = length(q) - rad + 0.05 * sin(atan(q.y, q.x) * 4.0 + p.y * 7.0);
+    d = max(d * 0.7, abs(p.y) - 0.98);
+    return vec2(d, 0.0);
+  }
+  if (type == 33) {
+    // a clod of packed sand
+    float b = sin(p.x * 7.0 + ph) * sin(p.y * 6.0) * sin(p.z * 6.5 + 1.0) * 0.1;
+    return vec2(length(p) - 0.75 + b, 4.0);
   }
   if (type == 31) {
     // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
