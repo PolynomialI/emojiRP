@@ -232,13 +232,13 @@ void main() {
     // bounce house: puffy vinyl cushions in four colors, glossy, with stitched seams
     vec2 c = floor(p / 3.2), f = fract(p / 3.2) - 0.5;
     float h = hash12(c);
-    vec3 pal = h < 0.25 ? uStoneA : h < 0.5 ? uStoneB : h < 0.75 ? uAccent : vec3(1.0, 0.86, 0.22);
+    vec3 pal = h < 0.25 ? uStoneA : h < 0.5 ? uStoneB : h < 0.75 ? uAccent : vec3(0.68, 0.56, 0.95);
     vec2 d = f * 2.0;
     N = normalize(vec3(-d.x * 0.5 * (1.0 - d.y * d.y), 1.0, -d.y * 0.5 * (1.0 - d.x * d.x)));
     float seam = 1.0 - smoothstep(0.42, 0.5, max(abs(f.x), abs(f.y)));
-    alb = pal * (0.9 + 0.08 * fine);
+    alb = pal * (0.84 + 0.08 * fine);
     ao = mix(0.55, 1.0, seam);
-    gloss = 0.5; sharp = 60.0;
+    gloss = 0.32; sharp = 60.0;
   } else if (style == 4) {
     // candy land: pink and cream frosting checks with sprinkles
     vec2 c = floor(p / 3.0);
@@ -876,6 +876,22 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (rotor < d) { d = rotor; m = 8.0; }
     return vec2(d, m);
   }
+  if (type == 35) {
+    // beach ball with a face: six colored panels, white caps, big eyes and a grin; P1.x squashes it
+    float sq = P1.x > 0.05 ? P1.x : 1.0;
+    vec3 q = vec3(p.x * sqrt(sq), p.y / sq, p.z * sqrt(sq));
+    float d = (length(q) - 0.9) * min(1.0, sq);
+    float lon = atan(q.x, q.z) + ph * 0.0;
+    float panel = floor(mod(lon / 6.2832 * 6.0 + 6.0, 6.0));
+    float m = abs(q.y) > 0.72 ? 14.0 : 13.0 + panel * 0.1;
+    vec3 e = vec3(abs(q.x) - 0.3, q.y - 0.22, q.z - 0.72);
+    float eye = length(e) - 0.2;
+    float pupil = length(e - vec3(-0.03, 0.02, 0.14)) - 0.1;
+    if (eye < d) { d = eye; m = pupil < 0.0 ? 12.0 : 7.0; }
+    float mouth = max(length(vec2(q.x * 0.9, q.y + 0.2)) - 0.3, -(q.y + 0.2));
+    if (mouth < 0.0 && q.z > 0.5 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
   if (type == 31) {
     // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
     // (modelled standing on y = 0, drawn centred 0.65 above the floor so it fits the impostor bounds)
@@ -950,7 +966,15 @@ void main() {
   float mat = res.y;
   vec3 col;
   float emissive = fP0.z;
-  if (mat > 11.5) {
+  if (mat > 12.5) {
+    // beach-ball plastic: bright panels (13.0-13.5) or white (14), very glossy
+    float k = mat > 13.75 ? -1.0 : floor((mat - 13.0) * 10.0 + 0.5);
+    vec3 pc = k < -0.5 ? vec3(0.98) : k < 0.5 ? vec3(1.0, 0.25, 0.3) : k < 1.5 ? vec3(1.0, 0.85, 0.2) : k < 2.5 ? vec3(0.25, 0.6, 1.0) : k < 3.5 ? vec3(1.0, 0.55, 0.15) : k < 4.5 ? vec3(0.3, 0.85, 0.45) : vec3(0.75, 0.4, 1.0);
+    float ndl = max(dot(n, uLightDir), 0.0);
+    vec3 H = normalize(uLightDir + v);
+    float rim = pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 3.0);
+    col = pc * (mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5) * 0.55 + uLightCol * ndl * 0.8) + uLightCol * pow(max(dot(n, H), 0.0), 80.0) * 1.2 + rim * 0.25 + pc * emissive;
+  } else if (mat > 11.5) {
     // glossy near-black (pupils)
     vec3 H = normalize(uLightDir + v);
     col = vec3(0.03, 0.03, 0.05) + uLightCol * pow(max(dot(n, H), 0.0), 60.0) * 0.9;

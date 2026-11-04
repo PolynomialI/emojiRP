@@ -1335,10 +1335,11 @@ function buildModels(progress) {
 // ============================================================
 const THEME_CLIPS = { tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
-  'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball');
+  'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
+  'pitball', 'bumper', 'tubewall');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -1494,6 +1495,24 @@ function themeModels(defs) {
       { s: 'sph', c: [0, 0.5, 0], r: 0.38, col: C('#3a3f4a'), k: 0 },
       ...[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1], [0.7, 0.7, 0], [-0.7, 0.7, 0], [0, 0.7, 0.7], [0, 0.7, -0.7], [0.7, -0.7, 0], [-0.7, -0.7, 0]].map(([x, y, z]) => ({ s: 'cap', a: [x * 0.3, 0.5 + y * 0.3, z * 0.3], b: [x * 0.48, 0.5 + y * 0.48, z * 0.48], r: 0.06, r2: 0.02, col: C('#5a6170'), k: 0.01 })),
     ]);
+  }
+  // ---------- Bounce House ----------
+  {
+    const white = C('#fbfbff');
+    // a ball-pit ball, centred on the pivot; the instance tint colors it
+    P('pitball', [{ s: 'sph', c: [0, 0.5, 0], r: 0.5, k: 0 }], { ao: 0.3 });
+    // an inflatable pillar with white rings; the body takes the tint
+    P('bumper', [
+      { s: 'cyl', ax: 'y', c: [0, 0.5, 0], r: 0.42, hh: 0.5, rd: 0.2, k: 0 },
+      { s: 'sph', c: [0, 1.0, 0], r: 0.34, k: 0.12 },
+      ...[0.18, 0.5, 0.82].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.42, r: 0.06, a0: -Math.PI, a1: Math.PI, col: white, k: 0.02 })),
+    ], { ao: 1 });
+    // the bouncy wall: fat inflatable posts
+    P('tubewall', [
+      { s: 'cyl', ax: 'y', c: [0, 0.55, 0], r: 0.48, hh: 0.55, rd: 0.25, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.48, r: 0.07, a0: -Math.PI, a1: Math.PI, col: white, k: 0.03 },
+      { s: 'sph', c: [0, 1.12, 0], r: 0.2, col: white, k: 0.1 },
+    ], { ao: 1 });
   }
 }
 </script>
@@ -2508,10 +2527,11 @@ function buildModels(progress) {
 // ============================================================
 const THEME_CLIPS = { tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
-  'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball');
+  'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
+  'pitball', 'bumper', 'tubewall');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -2667,6 +2687,24 @@ function themeModels(defs) {
       { s: 'sph', c: [0, 0.5, 0], r: 0.38, col: C('#3a3f4a'), k: 0 },
       ...[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1], [0.7, 0.7, 0], [-0.7, 0.7, 0], [0, 0.7, 0.7], [0, 0.7, -0.7], [0.7, -0.7, 0], [-0.7, -0.7, 0]].map(([x, y, z]) => ({ s: 'cap', a: [x * 0.3, 0.5 + y * 0.3, z * 0.3], b: [x * 0.48, 0.5 + y * 0.48, z * 0.48], r: 0.06, r2: 0.02, col: C('#5a6170'), k: 0.01 })),
     ]);
+  }
+  // ---------- Bounce House ----------
+  {
+    const white = C('#fbfbff');
+    // a ball-pit ball, centred on the pivot; the instance tint colors it
+    P('pitball', [{ s: 'sph', c: [0, 0.5, 0], r: 0.5, k: 0 }], { ao: 0.3 });
+    // an inflatable pillar with white rings; the body takes the tint
+    P('bumper', [
+      { s: 'cyl', ax: 'y', c: [0, 0.5, 0], r: 0.42, hh: 0.5, rd: 0.2, k: 0 },
+      { s: 'sph', c: [0, 1.0, 0], r: 0.34, k: 0.12 },
+      ...[0.18, 0.5, 0.82].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.42, r: 0.06, a0: -Math.PI, a1: Math.PI, col: white, k: 0.02 })),
+    ], { ao: 1 });
+    // the bouncy wall: fat inflatable posts
+    P('tubewall', [
+      { s: 'cyl', ax: 'y', c: [0, 0.55, 0], r: 0.48, hh: 0.55, rd: 0.25, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.48, r: 0.07, a0: -Math.PI, a1: Math.PI, col: white, k: 0.03 },
+      { s: 'sph', c: [0, 1.12, 0], r: 0.2, col: white, k: 0.1 },
+    ], { ao: 1 });
   }
 }
 
@@ -2905,13 +2943,13 @@ void main() {
     // bounce house: puffy vinyl cushions in four colors, glossy, with stitched seams
     vec2 c = floor(p / 3.2), f = fract(p / 3.2) - 0.5;
     float h = hash12(c);
-    vec3 pal = h < 0.25 ? uStoneA : h < 0.5 ? uStoneB : h < 0.75 ? uAccent : vec3(1.0, 0.86, 0.22);
+    vec3 pal = h < 0.25 ? uStoneA : h < 0.5 ? uStoneB : h < 0.75 ? uAccent : vec3(0.68, 0.56, 0.95);
     vec2 d = f * 2.0;
     N = normalize(vec3(-d.x * 0.5 * (1.0 - d.y * d.y), 1.0, -d.y * 0.5 * (1.0 - d.x * d.x)));
     float seam = 1.0 - smoothstep(0.42, 0.5, max(abs(f.x), abs(f.y)));
-    alb = pal * (0.9 + 0.08 * fine);
+    alb = pal * (0.84 + 0.08 * fine);
     ao = mix(0.55, 1.0, seam);
-    gloss = 0.5; sharp = 60.0;
+    gloss = 0.32; sharp = 60.0;
   } else if (style == 4) {
     // candy land: pink and cream frosting checks with sprinkles
     vec2 c = floor(p / 3.0);
@@ -3549,6 +3587,22 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (rotor < d) { d = rotor; m = 8.0; }
     return vec2(d, m);
   }
+  if (type == 35) {
+    // beach ball with a face: six colored panels, white caps, big eyes and a grin; P1.x squashes it
+    float sq = P1.x > 0.05 ? P1.x : 1.0;
+    vec3 q = vec3(p.x * sqrt(sq), p.y / sq, p.z * sqrt(sq));
+    float d = (length(q) - 0.9) * min(1.0, sq);
+    float lon = atan(q.x, q.z) + ph * 0.0;
+    float panel = floor(mod(lon / 6.2832 * 6.0 + 6.0, 6.0));
+    float m = abs(q.y) > 0.72 ? 14.0 : 13.0 + panel * 0.1;
+    vec3 e = vec3(abs(q.x) - 0.3, q.y - 0.22, q.z - 0.72);
+    float eye = length(e) - 0.2;
+    float pupil = length(e - vec3(-0.03, 0.02, 0.14)) - 0.1;
+    if (eye < d) { d = eye; m = pupil < 0.0 ? 12.0 : 7.0; }
+    float mouth = max(length(vec2(q.x * 0.9, q.y + 0.2)) - 0.3, -(q.y + 0.2));
+    if (mouth < 0.0 && q.z > 0.5 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
   if (type == 31) {
     // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
     // (modelled standing on y = 0, drawn centred 0.65 above the floor so it fits the impostor bounds)
@@ -3623,7 +3677,15 @@ void main() {
   float mat = res.y;
   vec3 col;
   float emissive = fP0.z;
-  if (mat > 11.5) {
+  if (mat > 12.5) {
+    // beach-ball plastic: bright panels (13.0-13.5) or white (14), very glossy
+    float k = mat > 13.75 ? -1.0 : floor((mat - 13.0) * 10.0 + 0.5);
+    vec3 pc = k < -0.5 ? vec3(0.98) : k < 0.5 ? vec3(1.0, 0.25, 0.3) : k < 1.5 ? vec3(1.0, 0.85, 0.2) : k < 2.5 ? vec3(0.25, 0.6, 1.0) : k < 3.5 ? vec3(1.0, 0.55, 0.15) : k < 4.5 ? vec3(0.3, 0.85, 0.45) : vec3(0.75, 0.4, 1.0);
+    float ndl = max(dot(n, uLightDir), 0.0);
+    vec3 H = normalize(uLightDir + v);
+    float rim = pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 3.0);
+    col = pc * (mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5) * 0.55 + uLightCol * ndl * 0.8) + uLightCol * pow(max(dot(n, H), 0.0), 80.0) * 1.2 + rim * 0.25 + pc * emissive;
+  } else if (mat > 11.5) {
     // glossy near-black (pupils)
     vec3 H = normalize(uLightDir + v);
     col = vec3(0.03, 0.03, 0.05) + uLightCol * pow(max(dot(n, H), 0.0), 60.0) * 0.9;
@@ -4247,7 +4309,7 @@ R.init = function (canvas) {
 
 // Upload an enemy mesh as it arrives; creates normal + elite instance streams. Crowns attach to their base model.
 R.crowns = {};
-const ENEMY_CAPS = { rock0: 160, rock1: 160, rock2: 160, helmet: 220, spear: 220, axe: 180, javelin: 140, bomber: 140, knight: 120, stickman: 700, sprinter: 300, brute: 160, archer: 160, splitter: 160, shield: 160, stomper: 4, hurler: 4, charger: 4, twin: 4, conductor: 4 };
+const ENEMY_CAPS = { pitball: 420, rock0: 160, rock1: 160, rock2: 160, helmet: 220, spear: 220, axe: 180, javelin: 140, bomber: 140, knight: 120, stickman: 700, sprinter: 300, brute: 160, archer: 160, splitter: 160, shield: 160, stomper: 4, hurler: 4, charger: 4, twin: 4, conductor: 4 };
 R._meshVao = function (vbuf, ibuf, stream) {
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
@@ -5467,6 +5529,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage per tick'], ['count', 'Tornadoes'], ['radius', 'Radius', 'm'], ['life', 'Lasts', 's']],
     levels: L10({ dmg: [3, 3, 4, 4, 5, 5, 6, 7, 8, 9], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.4, 1.5, 1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], life: [3, 3.2, 3.4, 3.6, 3.8, 4, 4.3, 4.6, 5, 5.5], cd: [8, 7.8, 7.6, 7.4, 7.2, 7, 6.6, 6.3, 6, 5.5] }),
   },
+  bouncy: {
+    name: 'Bouncy Ball', from: 4, intro: 'Launches rubber goo balls that ricochet from enemy to enemy and off the walls.', icon: { type: 35, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Balls'], ['bounces', 'Bounces'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [10, 11, 12, 13, 14, 16, 18, 20, 22, 25], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], bounces: [3, 3, 4, 4, 5, 5, 6, 6, 7, 8], cd: [2.6, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7], size: [0.45, 0.47, 0.5, 0.52, 0.55, 0.58, 0.62, 0.66, 0.7, 0.75] }),
+  },
   drone: {
     name: 'Neon Drone', from: 3, intro: 'Little neon drones orbit you and zap the closest enemies.', icon: { type: 34, colw: 0 },
     fields: [['dmg', 'Damage'], ['count', 'Drones'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
@@ -5489,7 +5556,7 @@ const PASSIVES = {
   armor: { name: 'Armor', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
   haste: { name: 'Haste', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
   reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
-  multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile and Goo Axe.', max: 2, icon: { type: 24, colw: 0.4 } },
+  multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
   growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
@@ -5538,6 +5605,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 0.8 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
@@ -5553,6 +5621,8 @@ const ARENAS = [
     props: [['cactus', 12, 0.4, 0.62], ['rock', 6, 0.9, 1.5], ['skull', 4, 0.45, 0.55]], zones: [['quicksand', 5, 2.0, 3.2]], wall: 'rock', kinds: ['tumbleweed'] },
   { id: 'city', name: 'Neon City', floor: 2, stoneA: '#5a6172', stoneB: '#8d95a6', grout: '#262a35', accent: '#ff4fd8', fog: '#0c0e1d', sky: '#6070b0', ground: '#1a2036', light: '#e8ecff', spotMin: 0.52, shadowTint: '#0a0e2c', rock: '#7c8292', pool: '#2f5f8f', poolGlow: 0.1,
     props: [['hydrant', 3, 0.22, 0.26], ['bin', 3, 0.28, 0.32]], zones: [], wall: 'barrier', kinds: ['building', 'tower', 'car', 'streetlamp', 'tree'] },
+  { id: 'bounce', name: 'Bounce House', floor: 3, stoneA: '#f27a9c', stoneB: '#62aef0', grout: '#4b2f73', accent: '#6fd49a', fog: '#2a2458', sky: '#cfe8ff', ground: '#e88aa8', light: '#ffffff', spotMin: 0.7, shadowTint: '#3a1f66', rock: '#ff9f40', pool: '#5a4a9a', poolGlow: 0,
+    props: [['bumper', 6, 0.8, 1.1]], zones: [['pit', 1.6, 3.0, 4.2]], wall: 'tubewall', kinds: ['pitball'] },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -5569,12 +5639,16 @@ const PROP_KINDS = {
   bin: { models: ['bin'], unit: 0.15, block: true },
   barrier: { models: ['barrier'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
   tree: { models: ['tree'], unit: 0.18, block: true, tall: 3 },
+  bumper: { models: ['bumper'], unit: 0.45, block: true, shots: false, tint: '#ff4f9a', tall: 2 },
+  tubewall: { models: ['tubewall'], unit: 0.5, block: true, shots: true, tint: '#ffd23a', wallStep: 1.7, wallR: [0.95, 1.05] },
+  pitball: { models: ['pitball'], unit: 0.5, block: false },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
   pool: { block: true },
   quicksand: { slow: 0.5, col: '#a8793f', glow: 0, style: 2 },
   fountain: { block: true, col: '#3fa8e8', glow: 0.15 },
+  pit: { slow: 0.82, col: '#3b2d6e', glow: 0, style: 2 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -6371,6 +6445,18 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
+    if (s.kind === 'rball') {
+      // rubber balls: bounce on the floor and off walls and scenery, then wear out
+      s.vy -= 16 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+      if (s.y < s.r) { s.y = s.r; s.vy = Math.abs(s.vy) * 0.72; }
+      const ox = s.x, oz = s.z;
+      if (resolveCircle(s, s.r)) {
+        const nx = s.x - ox, nz = s.z - oz, nl = Math.hypot(nx, nz);
+        if (nl > 1e-5) { const vn = (s.vx * nx + s.vz * nz) / nl; if (vn < 0) { s.vx -= 2 * vn * nx / nl; s.vz -= 2 * vn * nz / nl; } }
+      }
+      if (Math.hypot(s.x - h[0], s.z - h[2]) < s.r + HERO_R && s.y < 1.4) { s.life = 0; hurtHero(s.dmg, s.x, s.z); FX.burst(s.x, s.y, s.z, 6, s.col, 3, 0.1, 0.3, 1); }
+      continue;
+    }
     if (s.kind === 'boulder' || s.kind === 'rocket') {
       // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;
@@ -6679,6 +6765,8 @@ function zoneAt(x, z) {
 // ARENA_FEATURES[id]: { init(st, rnd), update(st, dt), emit(st) } for moving parts
 const ARENA_LAYOUTS = {};
 const ARENA_FEATURES = {};
+// a blast at (x, z) shoves the theme's loose objects (the bounce house balls)
+function arenaBlast(x, z, r, power) { const F = ARENA.fx; if (F && F.def.blast) F.def.blast(F.st, x, z, r, power); }
 function updateArenaFx(dt) { const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
 function emitArenaFx() { const F = ARENA.fx; if (F && F.def.emit) F.def.emit(F.st); }
 
@@ -6800,6 +6888,107 @@ ARENA_FEATURES.city = {
   },
 };
 
+// ---------- Bounce House: ball pits full of physics balls, and bumpers that bounce you away ----------
+const BALL_COLORS = ['#ff3b4f', '#ffd23a', '#3a8cff', '#3fd06a', '#ff8a1f', '#b05cff', '#ff6fb8'].map(hexToRgb);
+ARENA_FEATURES.bounce = {
+  init(st, rnd) {
+    st.balls = [];
+    const add = (x, z) => { const r = 0.3 + rnd() * 0.12; st.balls.push({ x, z, y: rnd() * 0.3, vx: 0, vz: 0, vy: 0, r, col: BALL_COLORS[Math.floor(rnd() * BALL_COLORS.length)] }); };
+    // each pit is packed with balls; a few more roll loose around the floor
+    for (const z of ARENA.zones) if (z.kind === 'pit') {
+      const n = Math.round(z.r * z.r * 3.2);
+      for (let i = 0; i < n; i++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * (z.r - 0.4); add(z.x + Math.cos(a) * r, z.z + Math.sin(a) * r); }
+    }
+    for (let i = 0; i < 70; i++) { const x = (rnd() * 2 - 1) * (ARENA.hw - 3), z = (rnd() * 2 - 1) * (ARENA.hd - 3); if (!blockedAt(x, z, 0.5)) add(x, z); }
+    st.bumpers = ARENA.props.filter(o => o.kind === 'bumper');
+    st.cell = new Map();
+  },
+  update(st, dt) {
+    const h = G.hero.pos, run = G.run, hv = run ? run.vel : [0, 0, 0];
+    const drag = Math.exp(-1.3 * dt), cell = st.cell;
+    cell.clear();
+    for (const b of st.balls) {
+      b.x += b.vx * dt; b.z += b.vz * dt; b.vx *= drag; b.vz *= drag;
+      b.vy -= 18 * dt; b.y += b.vy * dt;
+      if (b.y < 0) { b.y = 0; b.vy = Math.abs(b.vy) > 1.2 ? -b.vy * 0.55 : 0; }
+      // bounce off scenery and the edge
+      const ox = b.x, oz = b.z;
+      if (resolveCircle(b, b.r)) {
+        const nx = b.x - ox, nz = b.z - oz, nl = Math.hypot(nx, nz);
+        if (nl > 1e-5) { const vn = (b.vx * nx + b.vz * nz) / nl; if (vn < 0) { b.vx -= 1.7 * vn * nx / nl; b.vz -= 1.7 * vn * nz / nl; } }
+      }
+      // the hero plows through: balls get shoved along and pop up
+      const dx = b.x - h[0], dz = b.z - h[2], d = Math.hypot(dx, dz), min = b.r + HERO_R;
+      if (d < min && d > 1e-4) {
+        b.x = h[0] + dx / d * min; b.z = h[2] + dz / d * min;
+        const push = 2.5 + Math.hypot(hv[0], hv[2]) * 0.9;
+        b.vx = hv[0] * 0.8 + dx / d * push; b.vz = hv[2] * 0.8 + dz / d * push;
+        if (b.y < 0.05) b.vy = 2 + Math.random() * 2.5;
+      }
+      // enemies wade through them too
+      gridQuery(b.x, b.z, 1.2, e => {
+        const ex = b.x - e.x, ez = b.z - e.z, ed = Math.hypot(ex, ez), em = b.r + e.radius;
+        if (ed < em && ed > 1e-4) { b.x = e.x + ex / ed * em; b.z = e.z + ez / ed * em; b.vx += ex / ed * 2.2; b.vz += ez / ed * 2.2; }
+      });
+      const k = gkey(Math.floor(b.x), Math.floor(b.z));
+      let a = cell.get(k); if (!a) cell.set(k, (a = [])); a.push(b);
+    }
+    // balls knock into each other
+    for (const [k, a] of cell) {
+      for (const b of a) {
+        const cx = Math.floor(b.x), cz = Math.floor(b.z);
+        for (let ix = cx - 1; ix <= cx + 1; ix++) for (let iz = cz - 1; iz <= cz + 1; iz++) {
+          const o = cell.get(gkey(ix, iz));
+          if (!o) continue;
+          for (const c of o) {
+            if (c === b || c.x < b.x || (c.x === b.x && c.z <= b.z)) continue;
+            const dx = c.x - b.x, dz = c.z - b.z, d = Math.hypot(dx, dz), min = b.r + c.r;
+            if (d >= min || d < 1e-5) continue;
+            const nx = dx / d, nz = dz / d, over = (min - d) * 0.5;
+            b.x -= nx * over; b.z -= nz * over; c.x += nx * over; c.z += nz * over;
+            const rel = (c.vx - b.vx) * nx + (c.vz - b.vz) * nz;
+            if (rel < 0) { const j = -rel * 0.9; b.vx -= nx * j; b.vz -= nz * j; c.vx += nx * j; c.vz += nz * j; }
+          }
+        }
+      }
+    }
+    // bumpers bounce the hero (and enemies) away with a wobble
+    for (const o of st.bumpers) {
+      o.wob = Math.max(0, (o.wob || 0) - dt * 2.5);
+      o.squash = 1 - Math.sin(o.wob * 18) * o.wob * 0.25;
+      const dx = h[0] - o.x, dz = h[2] - o.z, d = Math.hypot(dx, dz);
+      if (run && d < o.r + HERO_R + 0.1 && d > 1e-4 && o.wob < 0.6) {
+        run.vel[0] = dx / d * 11; run.vel[2] = dz / d * 11; o.wob = 1;
+        G.hero.impulse(1.5); AUDIO.play('pop', 0.7);
+        FX.ring(o.x, o.z, o.r * 2.6, [1, 0.6, 0.8], 0.3);
+      }
+      gridQuery(o.x, o.z, o.r + 1.5, e => {
+        if (e.boss) return;
+        const ex = e.x - o.x, ez = e.z - o.z, ed = Math.hypot(ex, ez) || 1;
+        if (ed < o.r + e.radius + 0.1) { e.kx += ex / ed * 9 / e.mass; e.kz += ez / ed * 9 / e.mass; o.wob = Math.max(o.wob, 0.5); }
+      });
+    }
+  },
+  blast(st, x, z, r, power) {
+    for (const b of st.balls) {
+      const dx = b.x - x, dz = b.z - z, d = Math.hypot(dx, dz);
+      if (d > r || d < 1e-4) continue;
+      const k = (1 - d / r) * 9 * power;
+      b.vx += dx / d * k; b.vz += dz / d * k; b.vy += k * 0.8;
+    }
+  },
+  emit(st) {
+    if (!R.enemyDraw.pitball) return;
+    const row = MODELS.defs.pitball.clips.still.row;
+    for (const b of st.balls) {
+      if (!onScreen(b.x, b.z, 1)) continue;
+      const sc = b.r / 0.5;
+      pushEnemy('pitball', false, b.x, b.y - (0.5 - 0.5) * sc, b.z, 0, row, sc, 1, 0, 0, 0, b.col[0], b.col[1], b.col[2]);
+      pushDecal(b.x + 0.06, b.z + 0.05, b.r * 0.85, b.r * 0.75, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4 * (1 - Math.min(1, b.y)));
+    }
+  },
+};
+
 // ---- 12-skills.js ----
 // ============================================================
 // Skills: behaviors, hero body actions, projectiles and visuals
@@ -6817,7 +7006,7 @@ function updateSkills(dt) {
     const L = SKILLS[s.id].levels[s.lvl - 1];
     SKILL_HOOKS[s.id].update(s, L, dt);
   }
-  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt); updateZaps(dt);
+  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt); updateZaps(dt); updateBouncy(dt);
   for (const b of G.bolts) b.life -= dt;
   G.bolts = G.bolts.filter(b => b.life > 0);
 }
@@ -6828,7 +7017,7 @@ function emitSkills() {
     const hook = SKILL_HOOKS[s.id];
     if (hook.emit) hook.emit(s, SKILLS[s.id].levels[s.lvl - 1]);
   }
-  emitStorms(); emitZaps();
+  emitStorms(); emitZaps(); emitBouncy();
 }
 
 // Densest cluster of enemies within range of a point -> [x, z] or null
@@ -6949,6 +7138,7 @@ function updateProjectiles(dt) {
 
 function explode(x, z, radius, dmg, colw, col) {
   const h = G.hero.pos;
+  arenaBlast(x, z, radius * 1.5, 1);
   enemiesInRadius(x, z, radius, e => {
     const dx = e.x - x, dz = e.z - z, d = Math.hypot(dx, dz) || 1;
     hurtEnemy(e, dmg, dx / d * 6, dz / d * 6, { sound: false });
@@ -7590,6 +7780,65 @@ function emitZaps() {
   }
 }
 
+// ---------- Bouncy Ball (chapter 4): rubber goo balls that ricochet between enemies ----------
+SKILL_HOOKS.bouncy = {
+  update(s, L, dt) {
+    const st = s.st, run = G.run, h = G.hero.pos;
+    run.bouncy = run.bouncy || [];
+    st.t = (st.t ?? 0.8) - dt;
+    if (st.t > 0) return;
+    const tgt = nearestEnemy(h[0], h[2], 9);
+    if (!tgt) return;
+    st.t = L.cd * cdMul();
+    const n = L.count + extraShots(), base = Math.atan2(tgt.x - h[0], tgt.z - h[2]);
+    for (let i = 0; i < n; i++) {
+      const a = base + (i - (n - 1) / 2) * 0.35;
+      run.bouncy.push({ x: h[0], z: h[2], y: 1, vx: Math.sin(a) * 10, vz: Math.cos(a) * 10, vy: 3, r: L.size * areaMul(), dmg: L.dmg, left: L.bounces, last: null, cd: 0, life: 6, sq: 1, ph: rand(0, 10) });
+    }
+    AUDIO.play('pop');
+  },
+  emit() {},
+};
+function updateBouncy(dt) {
+  const run = G.run;
+  if (!run.bouncy || !run.bouncy.length) return;
+  for (const b of run.bouncy) {
+    b.life -= dt; b.cd -= dt;
+    b.x += b.vx * dt; b.z += b.vz * dt;
+    b.vy -= 22 * dt; b.y += b.vy * dt;
+    if (b.y < b.r) { b.y = b.r; b.vy = 5.5; b.sq = 0.7; }
+    b.sq += (1 - b.sq) * Math.min(1, dt * 10);
+    const ox = b.x, oz = b.z;
+    if (resolveCircle(b, b.r)) {
+      const nx = b.x - ox, nz = b.z - oz, nl = Math.hypot(nx, nz) || 1, vn = (b.vx * nx + b.vz * nz) / nl;
+      if (vn < 0) { b.vx -= 2 * vn * nx / nl; b.vz -= 2 * vn * nz / nl; }
+      b.left--; b.sq = 0.65; AUDIO.play('pop', 1.4);
+    }
+    if (b.cd <= 0) enemiesInRadius(b.x, b.z, b.r, e => {
+      if (b.cd > 0 || e === b.last) return;
+      hurtEnemy(e, b.dmg, b.vx * 0.4, b.vz * 0.4, { sound: false });
+      FX.burst(b.x, b.y, b.z, 5, [1, 0.9, 0.5], 3, 0.08, 0.3, 1);
+      b.last = e; b.cd = 0.08; b.left--; b.sq = 0.6;
+      // ricochet toward the next closest enemy, or bounce straight back
+      const ex = new Set([e]), nxt = nearestEnemy(b.x, b.z, 7, ex), sp = Math.hypot(b.vx, b.vz);
+      if (nxt) { const dx = nxt.x - b.x, dz = nxt.z - b.z, dl = Math.hypot(dx, dz) || 1; b.vx = dx / dl * sp; b.vz = dz / dl * sp; }
+      else { b.vx = -b.vx; b.vz = -b.vz; }
+      AUDIO.play('pop', 1.2);
+    });
+    if (b.left < 0 || b.life <= 0) { b.dead = true; FX.droplets(b.x, b.y, b.z, 6, 0, 3, 0.05, null); }
+  }
+  run.bouncy = run.bouncy.filter(b => !b.dead);
+}
+function emitBouncy() {
+  const run = G.run;
+  if (!run.bouncy) return;
+  for (const b of run.bouncy) {
+    if (!onScreen(b.x, b.z, 1)) continue;
+    pushImp(b.x, b.y, b.z, b.r, b.vx, 0, b.vz, 1, 35, 0, 0.1, b.ph, b.sq, 0, 0, 1);
+    pushDecal(b.x + 0.08, b.z + 0.06, b.r * 0.9, b.r * 0.8, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4 * (1 - Math.min(1, b.y / 3)));
+  }
+}
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -7932,6 +8181,7 @@ function emitRunScene() {
       pushImp(s.x, s.y, s.z, 0.32, vx / l, vy / l, vz / l, 1.3, 1, 4, 0.5, run.t * 4, 0, 0, 0, 1);
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
+    else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
     else if (s.kind === 'sand') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.2, 33, 0, 0, s.ph + run.t * 6, 0, 0, 0, 1); pushDecal(s.x + 0.1, s.z + 0.08, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.35); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }
     else if (s.kind === 'javelin') {
@@ -8031,7 +8281,7 @@ function emitArena() {
     if (!R.enemyDraw[m]) return;
     const sc = o.scale || size / K.unit, shade = 0.86 + 0.14 * ((o.ph * 0.37 + o.yaw) % 1);
     const t = o.tint || (K.tint === 'rock' ? f.rockCol : K.tint ? (PROP_TINT[K.tint] = PROP_TINT[K.tint] || hexToRgb(K.tint)) : PROP_WHITE);
-    pushEnemy(m, false, o.x, o.y || 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, t[0] * shade, t[1] * shade, t[2] * shade, o.fade || 0);
+    pushEnemy(m, false, o.x, o.y || 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, o.squash || 1, 0, 0, 0, t[0] * shade, t[1] * shade, t[2] * shade, o.fade || 0);
     if (K.shadow !== false && o.shape !== 'box') pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
   };
   for (const o of ARENA.props) draw(o);
@@ -8346,6 +8596,97 @@ BOSS_DRAW.wreckbot = function (e) {
   }
   R.ribStrip(pts, n, 0.13, [0.22, 0.23, 0.27, 1], 1, 0, 2);
   if (!e.portrait) pushDecal(ball.x + 0.2, ball.z + 0.15, 0.7, 0.6, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.45);
+};
+
+// ---------- Big Bounce (chapter 4): a giant beach ball that hops, pinballs around and spits rubber balls ----------
+BOSS_AI.bigbounce = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, s = e.scale, rage = isRage(e);
+  if (ai.state === 'walk') { ai.state = 'hopStart'; ai.hops = 3; ai.cycle = 0; }
+  ai.sq = ai.sq ?? 1; ai.sqV = ai.sqV ?? 0;
+  e.contactDmg = e.dmg;
+  switch (ai.state) {
+    case 'hopStart': {
+      // crouch, then leap at where the hero is heading; the landing spot is telegraphed
+      const dur = rage ? 0.62 : 0.85;
+      let tx = h[0] + run.vel[0] * dur * 0.8, tz = h[2] + run.vel[2] * dur * 0.8;
+      const jx = tx - e.x, jz = tz - e.z, jl = Math.hypot(jx, jz);
+      if (jl > 8) { tx = e.x + jx / jl * 8; tz = e.z + jz / jl * 8; }
+      const o = { x: tx, z: tz }; resolveCircle(o, e.radius); ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z;
+      addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 3.1, dur: dur + 0.2 });
+      ai.state = 'crouch'; ai.t = 0.2; ai.dur = dur; ai.sqV -= 3;
+      break;
+    }
+    case 'crouch':
+      if (ai.t <= 0) { ai.state = 'hop'; ai.t = ai.dur; ai.sqV += 6; }
+      break;
+    case 'hop': {
+      const u = 1 - ai.t / ai.dur;
+      e.x = lerp(ai.sx, ai.tx, u); e.z = lerp(ai.sz, ai.tz, u); e.y = Math.sin(u * Math.PI) * 4.6;
+      e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 6));
+      if (ai.t <= 0) {
+        e.y = 0; ai.sqV -= 9;
+        if (Math.hypot(h[0] - e.x, h[2] - e.z) < 3.1 + HERO_R * 0.5) hurtHero(30 * run.info.dmgMul, e.x, e.z);
+        enemiesInRadius(e.x, e.z, 3.4, o => { if (o !== e && !o.boss) { const ox = o.x - e.x, oz = o.z - e.z, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 10 / o.mass; o.kz += oz / od * 10 / o.mass; } });
+        arenaBlast(e.x, e.z, 7, 1.6);
+        FX.ring(e.x, e.z, 7.5, [1, 0.6, 0.7], 0.5); FX.burst(e.x, 0.3, e.z, 18, [1, 0.85, 0.9], 6, 0.16, 0.6, 2);
+        G.cam.shake = Math.max(G.cam.shake, 0.2); AUDIO.play('boom');
+        ai.hops--;
+        if (ai.hops > 0) { ai.state = 'hopStart'; }
+        else { ai.cycle++; ai.state = ai.cycle % 2 || rage ? 'rollAim' : 'spitWind'; ai.t = ai.state === 'rollAim' ? 0.7 : 0.55; if (ai.state === 'rollAim') ai.tele = null; }
+      }
+      break;
+    }
+    case 'rollAim': {
+      e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
+      if (!ai.tele) ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 2.0, len: 16, rot: e.yaw, dur: 0.7 });
+      ai.tele.rot = e.yaw; ai.tele.x = e.x; ai.tele.z = e.z;
+      ai.sqV -= dt * 20;
+      if (ai.t <= 0) { ai.state = 'roll'; ai.t = rage ? 3.6 : 3; ai.dir = [Math.sin(e.yaw), Math.cos(e.yaw)]; ai.tele.done = true; AUDIO.play('throw'); }
+      break;
+    }
+    case 'roll': {
+      // pinball: full speed, ricocheting off walls and scenery
+      const sp = rage ? 15 : 12.5;
+      const ox = e.x + ai.dir[0] * sp * dt, oz = e.z + ai.dir[1] * sp * dt, p = { x: ox, z: oz };
+      e.contactDmg = 30 * run.info.dmgMul;
+      if (resolveCircle(p, e.radius)) {
+        const nx = p.x - ox, nz = p.z - oz, nl = Math.hypot(nx, nz) || 1, vn = ai.dir[0] * nx / nl + ai.dir[1] * nz / nl;
+        ai.dir[0] -= 2 * vn * nx / nl; ai.dir[1] -= 2 * vn * nz / nl;
+        // steer each bounce a little back toward the hero so it stays dangerous
+        const ha = Math.atan2(dx, dz), da = Math.atan2(ai.dir[0], ai.dir[1]), na = turnToward(da, ha, 0.5);
+        ai.dir = [Math.sin(na), Math.cos(na)];
+        ai.sqV -= 4; G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play('pop', 0.6); arenaBlast(p.x, p.z, 4, 1);
+      }
+      e.x = p.x; e.z = p.z; e.yaw = Math.atan2(ai.dir[0], ai.dir[1]);
+      e.y = Math.abs(Math.sin(run.t * 9)) * 0.5;
+      enemiesInRadius(e.x, e.z, e.radius + 0.3, o => { if (o !== e && !o.boss) { o.kx += ai.dir[1] * 9 * (Math.random() < 0.5 ? 1 : -1); o.kz -= ai.dir[0] * 9; } });
+      arenaBlast(e.x, e.z, 2.6, 0.6);
+      if (ai.t <= 0) { e.y = 0; ai.state = 'hopStart'; ai.hops = rage ? 4 : 3; }
+      break;
+    }
+    case 'spitWind':
+      ai.sqV -= dt * 30; e.yaw += dt * 4;
+      if (ai.t <= 0) {
+        // a ring of bouncing rubber balls
+        const n = rage ? 18 : 12, off = rand(0, TAU);
+        for (let i = 0; i < n; i++) {
+          const a = off + (i / n) * TAU, sp = rand(6, 8);
+          run.eShots.push({ kind: 'rball', x: e.x + Math.sin(a) * 2, y: 1.5, z: e.z + Math.cos(a) * 2, vx: Math.sin(a) * sp, vy: rand(3, 6), vz: Math.cos(a) * sp, r: 0.45, dmg: 12 * run.info.dmgMul, life: 4.5, col: BALL_COLORS[i % BALL_COLORS.length] });
+        }
+        ai.sqV += 10; AUDIO.play('pop'); FX.ring(e.x, e.z, 5, [1, 0.7, 0.8], 0.4);
+        ai.state = 'hopStart'; ai.hops = rage ? 4 : 3;
+      }
+      break;
+  }
+  // squash-and-stretch spring
+  ai.sqV += (110 * (1 - ai.sq) - 9 * ai.sqV) * dt; ai.sq = clamp(ai.sq + ai.sqV * dt, 0.55, 1.4);
+  e.phase += dt;
+};
+BOSS_DRAW.bigbounce = function (e) {
+  const s = e.scale, dead = e.dying ? clamp(e.dying, 0, 1) : 0, sq = e.ai.sq || 1, L = R.frame.lightDir;
+  const sc = s * (1 - dead * 0.8), y = (e.y || 0) + 0.9 * sc * sq;
+  pushImp(e.x, y, e.z, sc, Math.sin(e.yaw), 0, Math.cos(e.yaw), 1, 35, 0, e.flash > 0 ? 0.6 : 0, e.phase, sq, 0, 0, 1 - dead);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.95 * s, 0.85 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5 * (1 - clamp((e.y || 0) / 6, 0, 0.7)));
 };
 
 // ---- 14-ui.js ----

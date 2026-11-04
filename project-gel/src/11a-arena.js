@@ -173,5 +173,7 @@ function zoneAt(x, z) {
 // ARENA_FEATURES[id]: { init(st, rnd), update(st, dt), emit(st) } for moving parts
 const ARENA_LAYOUTS = {};
 const ARENA_FEATURES = {};
+// a blast at (x, z) shoves the theme's loose objects (the bounce house balls)
+function arenaBlast(x, z, r, power) { const F = ARENA.fx; if (F && F.def.blast) F.def.blast(F.st, x, z, r, power); }
 function updateArenaFx(dt) { const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
 function emitArenaFx() { const F = ARENA.fx; if (F && F.def.emit) F.def.emit(F.st); }

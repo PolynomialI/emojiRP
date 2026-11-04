@@ -339,6 +339,7 @@ function emitRunScene() {
       pushImp(s.x, s.y, s.z, 0.32, vx / l, vy / l, vz / l, 1.3, 1, 4, 0.5, run.t * 4, 0, 0, 0, 1);
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
+    else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
     else if (s.kind === 'sand') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.2, 33, 0, 0, s.ph + run.t * 6, 0, 0, 0, 1); pushDecal(s.x + 0.1, s.z + 0.08, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.35); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }
     else if (s.kind === 'javelin') {
@@ -438,7 +439,7 @@ function emitArena() {
     if (!R.enemyDraw[m]) return;
     const sc = o.scale || size / K.unit, shade = 0.86 + 0.14 * ((o.ph * 0.37 + o.yaw) % 1);
     const t = o.tint || (K.tint === 'rock' ? f.rockCol : K.tint ? (PROP_TINT[K.tint] = PROP_TINT[K.tint] || hexToRgb(K.tint)) : PROP_WHITE);
-    pushEnemy(m, false, o.x, o.y || 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, t[0] * shade, t[1] * shade, t[2] * shade, o.fade || 0);
+    pushEnemy(m, false, o.x, o.y || 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, o.squash || 1, 0, 0, 0, t[0] * shade, t[1] * shade, t[2] * shade, o.fade || 0);
     if (K.shadow !== false && o.shape !== 'box') pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
   };
   for (const o of ARENA.props) draw(o);

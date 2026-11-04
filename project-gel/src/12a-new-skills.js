@@ -116,3 +116,62 @@ function emitZaps() {
     R.ribStrip(pts, 2, 0.28 * k, [z.col[0], z.col[1], z.col[2], 0.35], 0, 0, 1);
   }
 }
+
+// ---------- Bouncy Ball (chapter 4): rubber goo balls that ricochet between enemies ----------
+SKILL_HOOKS.bouncy = {
+  update(s, L, dt) {
+    const st = s.st, run = G.run, h = G.hero.pos;
+    run.bouncy = run.bouncy || [];
+    st.t = (st.t ?? 0.8) - dt;
+    if (st.t > 0) return;
+    const tgt = nearestEnemy(h[0], h[2], 9);
+    if (!tgt) return;
+    st.t = L.cd * cdMul();
+    const n = L.count + extraShots(), base = Math.atan2(tgt.x - h[0], tgt.z - h[2]);
+    for (let i = 0; i < n; i++) {
+      const a = base + (i - (n - 1) / 2) * 0.35;
+      run.bouncy.push({ x: h[0], z: h[2], y: 1, vx: Math.sin(a) * 10, vz: Math.cos(a) * 10, vy: 3, r: L.size * areaMul(), dmg: L.dmg, left: L.bounces, last: null, cd: 0, life: 6, sq: 1, ph: rand(0, 10) });
+    }
+    AUDIO.play('pop');
+  },
+  emit() {},
+};
+function updateBouncy(dt) {
+  const run = G.run;
+  if (!run.bouncy || !run.bouncy.length) return;
+  for (const b of run.bouncy) {
+    b.life -= dt; b.cd -= dt;
+    b.x += b.vx * dt; b.z += b.vz * dt;
+    b.vy -= 22 * dt; b.y += b.vy * dt;
+    if (b.y < b.r) { b.y = b.r; b.vy = 5.5; b.sq = 0.7; }
+    b.sq += (1 - b.sq) * Math.min(1, dt * 10);
+    const ox = b.x, oz = b.z;
+    if (resolveCircle(b, b.r)) {
+      const nx = b.x - ox, nz = b.z - oz, nl = Math.hypot(nx, nz) || 1, vn = (b.vx * nx + b.vz * nz) / nl;
+      if (vn < 0) { b.vx -= 2 * vn * nx / nl; b.vz -= 2 * vn * nz / nl; }
+      b.left--; b.sq = 0.65; AUDIO.play('pop', 1.4);
+    }
+    if (b.cd <= 0) enemiesInRadius(b.x, b.z, b.r, e => {
+      if (b.cd > 0 || e === b.last) return;
+      hurtEnemy(e, b.dmg, b.vx * 0.4, b.vz * 0.4, { sound: false });
+      FX.burst(b.x, b.y, b.z, 5, [1, 0.9, 0.5], 3, 0.08, 0.3, 1);
+      b.last = e; b.cd = 0.08; b.left--; b.sq = 0.6;
+      // ricochet toward the next closest enemy, or bounce straight back
+      const ex = new Set([e]), nxt = nearestEnemy(b.x, b.z, 7, ex), sp = Math.hypot(b.vx, b.vz);
+      if (nxt) { const dx = nxt.x - b.x, dz = nxt.z - b.z, dl = Math.hypot(dx, dz) || 1; b.vx = dx / dl * sp; b.vz = dz / dl * sp; }
+      else { b.vx = -b.vx; b.vz = -b.vz; }
+      AUDIO.play('pop', 1.2);
+    });
+    if (b.left < 0 || b.life <= 0) { b.dead = true; FX.droplets(b.x, b.y, b.z, 6, 0, 3, 0.05, null); }
+  }
+  run.bouncy = run.bouncy.filter(b => !b.dead);
+}
+function emitBouncy() {
+  const run = G.run;
+  if (!run.bouncy) return;
+  for (const b of run.bouncy) {
+    if (!onScreen(b.x, b.z, 1)) continue;
+    pushImp(b.x, b.y, b.z, b.r, b.vx, 0, b.vz, 1, 35, 0, 0.1, b.ph, b.sq, 0, 0, 1);
+    pushDecal(b.x + 0.08, b.z + 0.06, b.r * 0.9, b.r * 0.8, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4 * (1 - Math.min(1, b.y / 3)));
+  }
+}

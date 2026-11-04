@@ -39,7 +39,7 @@
       if (e.boss && d > 6.5) { fx -= dx / d * 0.6; fz -= dz / d * 0.6; }
     }
     for (const s of run.eShots) {
-      if (s.kind === 'boulder') {
+      if (s.kind === 'boulder' || s.kind === 'rocket') {
         const dx = h[0] - s.tx, dz = h[2] - s.tz, d = Math.hypot(dx, dz) || 0.01, r = s.radius + 1.2;
         if (d < r) { fx += dx / d * 6; fz += dz / d * 6; }
       } else {

@@ -297,3 +297,94 @@ BOSS_DRAW.wreckbot = function (e) {
   R.ribStrip(pts, n, 0.13, [0.22, 0.23, 0.27, 1], 1, 0, 2);
   if (!e.portrait) pushDecal(ball.x + 0.2, ball.z + 0.15, 0.7, 0.6, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.45);
 };
+
+// ---------- Big Bounce (chapter 4): a giant beach ball that hops, pinballs around and spits rubber balls ----------
+BOSS_AI.bigbounce = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, s = e.scale, rage = isRage(e);
+  if (ai.state === 'walk') { ai.state = 'hopStart'; ai.hops = 3; ai.cycle = 0; }
+  ai.sq = ai.sq ?? 1; ai.sqV = ai.sqV ?? 0;
+  e.contactDmg = e.dmg;
+  switch (ai.state) {
+    case 'hopStart': {
+      // crouch, then leap at where the hero is heading; the landing spot is telegraphed
+      const dur = rage ? 0.62 : 0.85;
+      let tx = h[0] + run.vel[0] * dur * 0.8, tz = h[2] + run.vel[2] * dur * 0.8;
+      const jx = tx - e.x, jz = tz - e.z, jl = Math.hypot(jx, jz);
+      if (jl > 8) { tx = e.x + jx / jl * 8; tz = e.z + jz / jl * 8; }
+      const o = { x: tx, z: tz }; resolveCircle(o, e.radius); ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z;
+      addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 3.1, dur: dur + 0.2 });
+      ai.state = 'crouch'; ai.t = 0.2; ai.dur = dur; ai.sqV -= 3;
+      break;
+    }
+    case 'crouch':
+      if (ai.t <= 0) { ai.state = 'hop'; ai.t = ai.dur; ai.sqV += 6; }
+      break;
+    case 'hop': {
+      const u = 1 - ai.t / ai.dur;
+      e.x = lerp(ai.sx, ai.tx, u); e.z = lerp(ai.sz, ai.tz, u); e.y = Math.sin(u * Math.PI) * 4.6;
+      e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 6));
+      if (ai.t <= 0) {
+        e.y = 0; ai.sqV -= 9;
+        if (Math.hypot(h[0] - e.x, h[2] - e.z) < 3.1 + HERO_R * 0.5) hurtHero(30 * run.info.dmgMul, e.x, e.z);
+        enemiesInRadius(e.x, e.z, 3.4, o => { if (o !== e && !o.boss) { const ox = o.x - e.x, oz = o.z - e.z, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 10 / o.mass; o.kz += oz / od * 10 / o.mass; } });
+        arenaBlast(e.x, e.z, 7, 1.6);
+        FX.ring(e.x, e.z, 7.5, [1, 0.6, 0.7], 0.5); FX.burst(e.x, 0.3, e.z, 18, [1, 0.85, 0.9], 6, 0.16, 0.6, 2);
+        G.cam.shake = Math.max(G.cam.shake, 0.2); AUDIO.play('boom');
+        ai.hops--;
+        if (ai.hops > 0) { ai.state = 'hopStart'; }
+        else { ai.cycle++; ai.state = ai.cycle % 2 || rage ? 'rollAim' : 'spitWind'; ai.t = ai.state === 'rollAim' ? 0.7 : 0.55; if (ai.state === 'rollAim') ai.tele = null; }
+      }
+      break;
+    }
+    case 'rollAim': {
+      e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
+      if (!ai.tele) ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 2.0, len: 16, rot: e.yaw, dur: 0.7 });
+      ai.tele.rot = e.yaw; ai.tele.x = e.x; ai.tele.z = e.z;
+      ai.sqV -= dt * 20;
+      if (ai.t <= 0) { ai.state = 'roll'; ai.t = rage ? 3.6 : 3; ai.dir = [Math.sin(e.yaw), Math.cos(e.yaw)]; ai.tele.done = true; AUDIO.play('throw'); }
+      break;
+    }
+    case 'roll': {
+      // pinball: full speed, ricocheting off walls and scenery
+      const sp = rage ? 15 : 12.5;
+      const ox = e.x + ai.dir[0] * sp * dt, oz = e.z + ai.dir[1] * sp * dt, p = { x: ox, z: oz };
+      e.contactDmg = 30 * run.info.dmgMul;
+      if (resolveCircle(p, e.radius)) {
+        const nx = p.x - ox, nz = p.z - oz, nl = Math.hypot(nx, nz) || 1, vn = ai.dir[0] * nx / nl + ai.dir[1] * nz / nl;
+        ai.dir[0] -= 2 * vn * nx / nl; ai.dir[1] -= 2 * vn * nz / nl;
+        // steer each bounce a little back toward the hero so it stays dangerous
+        const ha = Math.atan2(dx, dz), da = Math.atan2(ai.dir[0], ai.dir[1]), na = turnToward(da, ha, 0.5);
+        ai.dir = [Math.sin(na), Math.cos(na)];
+        ai.sqV -= 4; G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play('pop', 0.6); arenaBlast(p.x, p.z, 4, 1);
+      }
+      e.x = p.x; e.z = p.z; e.yaw = Math.atan2(ai.dir[0], ai.dir[1]);
+      e.y = Math.abs(Math.sin(run.t * 9)) * 0.5;
+      enemiesInRadius(e.x, e.z, e.radius + 0.3, o => { if (o !== e && !o.boss) { o.kx += ai.dir[1] * 9 * (Math.random() < 0.5 ? 1 : -1); o.kz -= ai.dir[0] * 9; } });
+      arenaBlast(e.x, e.z, 2.6, 0.6);
+      if (ai.t <= 0) { e.y = 0; ai.state = 'hopStart'; ai.hops = rage ? 4 : 3; }
+      break;
+    }
+    case 'spitWind':
+      ai.sqV -= dt * 30; e.yaw += dt * 4;
+      if (ai.t <= 0) {
+        // a ring of bouncing rubber balls
+        const n = rage ? 18 : 12, off = rand(0, TAU);
+        for (let i = 0; i < n; i++) {
+          const a = off + (i / n) * TAU, sp = rand(6, 8);
+          run.eShots.push({ kind: 'rball', x: e.x + Math.sin(a) * 2, y: 1.5, z: e.z + Math.cos(a) * 2, vx: Math.sin(a) * sp, vy: rand(3, 6), vz: Math.cos(a) * sp, r: 0.45, dmg: 12 * run.info.dmgMul, life: 4.5, col: BALL_COLORS[i % BALL_COLORS.length] });
+        }
+        ai.sqV += 10; AUDIO.play('pop'); FX.ring(e.x, e.z, 5, [1, 0.7, 0.8], 0.4);
+        ai.state = 'hopStart'; ai.hops = rage ? 4 : 3;
+      }
+      break;
+  }
+  // squash-and-stretch spring
+  ai.sqV += (110 * (1 - ai.sq) - 9 * ai.sqV) * dt; ai.sq = clamp(ai.sq + ai.sqV * dt, 0.55, 1.4);
+  e.phase += dt;
+};
+BOSS_DRAW.bigbounce = function (e) {
+  const s = e.scale, dead = e.dying ? clamp(e.dying, 0, 1) : 0, sq = e.ai.sq || 1, L = R.frame.lightDir;
+  const sc = s * (1 - dead * 0.8), y = (e.y || 0) + 0.9 * sc * sq;
+  pushImp(e.x, y, e.z, sc, Math.sin(e.yaw), 0, Math.cos(e.yaw), 1, 35, 0, e.flash > 0 ? 0.6 : 0, e.phase, sq, 0, 0, 1 - dead);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.95 * s, 0.85 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5 * (1 - clamp((e.y || 0) / 6, 0, 0.7)));
+};

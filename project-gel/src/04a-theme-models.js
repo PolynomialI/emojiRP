@@ -4,10 +4,11 @@
 // ============================================================
 const THEME_CLIPS = { tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
-  'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball');
+  'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
+  'pitball', 'bumper', 'tubewall');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -163,5 +164,23 @@ function themeModels(defs) {
       { s: 'sph', c: [0, 0.5, 0], r: 0.38, col: C('#3a3f4a'), k: 0 },
       ...[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1], [0.7, 0.7, 0], [-0.7, 0.7, 0], [0, 0.7, 0.7], [0, 0.7, -0.7], [0.7, -0.7, 0], [-0.7, -0.7, 0]].map(([x, y, z]) => ({ s: 'cap', a: [x * 0.3, 0.5 + y * 0.3, z * 0.3], b: [x * 0.48, 0.5 + y * 0.48, z * 0.48], r: 0.06, r2: 0.02, col: C('#5a6170'), k: 0.01 })),
     ]);
+  }
+  // ---------- Bounce House ----------
+  {
+    const white = C('#fbfbff');
+    // a ball-pit ball, centred on the pivot; the instance tint colors it
+    P('pitball', [{ s: 'sph', c: [0, 0.5, 0], r: 0.5, k: 0 }], { ao: 0.3 });
+    // an inflatable pillar with white rings; the body takes the tint
+    P('bumper', [
+      { s: 'cyl', ax: 'y', c: [0, 0.5, 0], r: 0.42, hh: 0.5, rd: 0.2, k: 0 },
+      { s: 'sph', c: [0, 1.0, 0], r: 0.34, k: 0.12 },
+      ...[0.18, 0.5, 0.82].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.42, r: 0.06, a0: -Math.PI, a1: Math.PI, col: white, k: 0.02 })),
+    ], { ao: 1 });
+    // the bouncy wall: fat inflatable posts
+    P('tubewall', [
+      { s: 'cyl', ax: 'y', c: [0, 0.55, 0], r: 0.48, hh: 0.55, rd: 0.25, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.48, r: 0.07, a0: -Math.PI, a1: Math.PI, col: white, k: 0.03 },
+      { s: 'sph', c: [0, 1.12, 0], r: 0.2, col: white, k: 0.1 },
+    ], { ao: 1 });
   }
 }

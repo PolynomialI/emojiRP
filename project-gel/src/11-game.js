@@ -633,6 +633,18 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
+    if (s.kind === 'rball') {
+      // rubber balls: bounce on the floor and off walls and scenery, then wear out
+      s.vy -= 16 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+      if (s.y < s.r) { s.y = s.r; s.vy = Math.abs(s.vy) * 0.72; }
+      const ox = s.x, oz = s.z;
+      if (resolveCircle(s, s.r)) {
+        const nx = s.x - ox, nz = s.z - oz, nl = Math.hypot(nx, nz);
+        if (nl > 1e-5) { const vn = (s.vx * nx + s.vz * nz) / nl; if (vn < 0) { s.vx -= 2 * vn * nx / nl; s.vz -= 2 * vn * nz / nl; } }
+      }
+      if (Math.hypot(s.x - h[0], s.z - h[2]) < s.r + HERO_R && s.y < 1.4) { s.life = 0; hurtHero(s.dmg, s.x, s.z); FX.burst(s.x, s.y, s.z, 6, s.col, 3, 0.1, 0.3, 1); }
+      continue;
+    }
     if (s.kind === 'boulder' || s.kind === 'rocket') {
       // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;

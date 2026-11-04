@@ -114,3 +114,104 @@ ARENA_FEATURES.city = {
     }
   },
 };
+
+// ---------- Bounce House: ball pits full of physics balls, and bumpers that bounce you away ----------
+const BALL_COLORS = ['#ff3b4f', '#ffd23a', '#3a8cff', '#3fd06a', '#ff8a1f', '#b05cff', '#ff6fb8'].map(hexToRgb);
+ARENA_FEATURES.bounce = {
+  init(st, rnd) {
+    st.balls = [];
+    const add = (x, z) => { const r = 0.3 + rnd() * 0.12; st.balls.push({ x, z, y: rnd() * 0.3, vx: 0, vz: 0, vy: 0, r, col: BALL_COLORS[Math.floor(rnd() * BALL_COLORS.length)] }); };
+    // each pit is packed with balls; a few more roll loose around the floor
+    for (const z of ARENA.zones) if (z.kind === 'pit') {
+      const n = Math.round(z.r * z.r * 3.2);
+      for (let i = 0; i < n; i++) { const a = rnd() * TAU, r = Math.sqrt(rnd()) * (z.r - 0.4); add(z.x + Math.cos(a) * r, z.z + Math.sin(a) * r); }
+    }
+    for (let i = 0; i < 70; i++) { const x = (rnd() * 2 - 1) * (ARENA.hw - 3), z = (rnd() * 2 - 1) * (ARENA.hd - 3); if (!blockedAt(x, z, 0.5)) add(x, z); }
+    st.bumpers = ARENA.props.filter(o => o.kind === 'bumper');
+    st.cell = new Map();
+  },
+  update(st, dt) {
+    const h = G.hero.pos, run = G.run, hv = run ? run.vel : [0, 0, 0];
+    const drag = Math.exp(-1.3 * dt), cell = st.cell;
+    cell.clear();
+    for (const b of st.balls) {
+      b.x += b.vx * dt; b.z += b.vz * dt; b.vx *= drag; b.vz *= drag;
+      b.vy -= 18 * dt; b.y += b.vy * dt;
+      if (b.y < 0) { b.y = 0; b.vy = Math.abs(b.vy) > 1.2 ? -b.vy * 0.55 : 0; }
+      // bounce off scenery and the edge
+      const ox = b.x, oz = b.z;
+      if (resolveCircle(b, b.r)) {
+        const nx = b.x - ox, nz = b.z - oz, nl = Math.hypot(nx, nz);
+        if (nl > 1e-5) { const vn = (b.vx * nx + b.vz * nz) / nl; if (vn < 0) { b.vx -= 1.7 * vn * nx / nl; b.vz -= 1.7 * vn * nz / nl; } }
+      }
+      // the hero plows through: balls get shoved along and pop up
+      const dx = b.x - h[0], dz = b.z - h[2], d = Math.hypot(dx, dz), min = b.r + HERO_R;
+      if (d < min && d > 1e-4) {
+        b.x = h[0] + dx / d * min; b.z = h[2] + dz / d * min;
+        const push = 2.5 + Math.hypot(hv[0], hv[2]) * 0.9;
+        b.vx = hv[0] * 0.8 + dx / d * push; b.vz = hv[2] * 0.8 + dz / d * push;
+        if (b.y < 0.05) b.vy = 2 + Math.random() * 2.5;
+      }
+      // enemies wade through them too
+      gridQuery(b.x, b.z, 1.2, e => {
+        const ex = b.x - e.x, ez = b.z - e.z, ed = Math.hypot(ex, ez), em = b.r + e.radius;
+        if (ed < em && ed > 1e-4) { b.x = e.x + ex / ed * em; b.z = e.z + ez / ed * em; b.vx += ex / ed * 2.2; b.vz += ez / ed * 2.2; }
+      });
+      const k = gkey(Math.floor(b.x), Math.floor(b.z));
+      let a = cell.get(k); if (!a) cell.set(k, (a = [])); a.push(b);
+    }
+    // balls knock into each other
+    for (const [k, a] of cell) {
+      for (const b of a) {
+        const cx = Math.floor(b.x), cz = Math.floor(b.z);
+        for (let ix = cx - 1; ix <= cx + 1; ix++) for (let iz = cz - 1; iz <= cz + 1; iz++) {
+          const o = cell.get(gkey(ix, iz));
+          if (!o) continue;
+          for (const c of o) {
+            if (c === b || c.x < b.x || (c.x === b.x && c.z <= b.z)) continue;
+            const dx = c.x - b.x, dz = c.z - b.z, d = Math.hypot(dx, dz), min = b.r + c.r;
+            if (d >= min || d < 1e-5) continue;
+            const nx = dx / d, nz = dz / d, over = (min - d) * 0.5;
+            b.x -= nx * over; b.z -= nz * over; c.x += nx * over; c.z += nz * over;
+            const rel = (c.vx - b.vx) * nx + (c.vz - b.vz) * nz;
+            if (rel < 0) { const j = -rel * 0.9; b.vx -= nx * j; b.vz -= nz * j; c.vx += nx * j; c.vz += nz * j; }
+          }
+        }
+      }
+    }
+    // bumpers bounce the hero (and enemies) away with a wobble
+    for (const o of st.bumpers) {
+      o.wob = Math.max(0, (o.wob || 0) - dt * 2.5);
+      o.squash = 1 - Math.sin(o.wob * 18) * o.wob * 0.25;
+      const dx = h[0] - o.x, dz = h[2] - o.z, d = Math.hypot(dx, dz);
+      if (run && d < o.r + HERO_R + 0.1 && d > 1e-4 && o.wob < 0.6) {
+        run.vel[0] = dx / d * 11; run.vel[2] = dz / d * 11; o.wob = 1;
+        G.hero.impulse(1.5); AUDIO.play('pop', 0.7);
+        FX.ring(o.x, o.z, o.r * 2.6, [1, 0.6, 0.8], 0.3);
+      }
+      gridQuery(o.x, o.z, o.r + 1.5, e => {
+        if (e.boss) return;
+        const ex = e.x - o.x, ez = e.z - o.z, ed = Math.hypot(ex, ez) || 1;
+        if (ed < o.r + e.radius + 0.1) { e.kx += ex / ed * 9 / e.mass; e.kz += ez / ed * 9 / e.mass; o.wob = Math.max(o.wob, 0.5); }
+      });
+    }
+  },
+  blast(st, x, z, r, power) {
+    for (const b of st.balls) {
+      const dx = b.x - x, dz = b.z - z, d = Math.hypot(dx, dz);
+      if (d > r || d < 1e-4) continue;
+      const k = (1 - d / r) * 9 * power;
+      b.vx += dx / d * k; b.vz += dz / d * k; b.vy += k * 0.8;
+    }
+  },
+  emit(st) {
+    if (!R.enemyDraw.pitball) return;
+    const row = MODELS.defs.pitball.clips.still.row;
+    for (const b of st.balls) {
+      if (!onScreen(b.x, b.z, 1)) continue;
+      const sc = b.r / 0.5;
+      pushEnemy('pitball', false, b.x, b.y - (0.5 - 0.5) * sc, b.z, 0, row, sc, 1, 0, 0, 0, b.col[0], b.col[1], b.col[2]);
+      pushDecal(b.x + 0.06, b.z + 0.05, b.r * 0.85, b.r * 0.75, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4 * (1 - Math.min(1, b.y)));
+    }
+  },
+};
