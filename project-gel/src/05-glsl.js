@@ -135,6 +135,8 @@ uniform vec4 uShSph[14];
 uniform int uShCount;
 uniform vec3 uHeroPos;
 uniform vec3 uArenaBox; // half width, half depth, corner radius (0 = no walls)
+uniform float uFloorStyle; // the arena theme's ground (see ARENAS[].floor)
+uniform vec3 uAccent;
 
 float sdRoundRect(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 
@@ -168,24 +170,149 @@ float heroShadow(vec3 wp) {
   return s;
 }
 
+// Voronoi: x = distance to the nearest cell point, y = gap to the second nearest, z = cell hash
+vec3 voro(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  float d1 = 9.0, d2 = 9.0, h = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y)), c = i + g;
+    vec2 o = vec2(hash12(c), hash12(c + 17.3));
+    float d = length(g + o - f);
+    if (d < d1) { d2 = d1; d1 = d; h = hash12(c + 3.7); } else if (d < d2) d2 = d;
+  }
+  return vec3(d1, d2 - d1, h);
+}
+
 void main() {
   vec2 p = vW.xz;
-  vec2 bk = bricks(p);
-  // a very gentle bevel so bricks read without busy highlights
-  const float e = 0.02;
-  float hgt = smoothstep(0.0, 0.1, -bk.x);
-  float hx = smoothstep(0.0, 0.1, -bricks(p + vec2(e, 0.0)).x);
-  float hz = smoothstep(0.0, 0.1, -bricks(p + vec2(0.0, e)).x);
-  vec3 N = normalize(vec3(-(hx - hgt) / e * 0.025, 1.0, -(hz - hgt) / e * 0.025));
-
   float mott = texture(uNoise, p * 0.045).r;
-  float fine = texture(uNoise, p * 0.6 + bk.y * 5.0).g;
-  vec3 alb = mix(uStoneA, uStoneB, bk.y * 0.7 + (mott - 0.5) * 0.5);
-  alb *= 0.94 + 0.08 * mott + 0.04 * fine;
-  // seams: only slightly darker than the bricks
-  float seam = 1.0 - smoothstep(0.0, 0.035, -bk.x);
-  alb = mix(alb, alb * 0.8, seam);
-  float ao = mix(0.86, 1.0, smoothstep(0.0, 0.08, -bk.x));
+  float fine = texture(uNoise, p * 0.6).g;
+  vec3 alb, N = vec3(0.0, 1.0, 0.0), emis = vec3(0.0);
+  float ao = 1.0, gloss = 0.06, sharp = 24.0;
+  int style = int(uFloorStyle + 0.5);
+  if (style == 1) {
+    // desert: wind ripples over slow dunes
+    float warp = texture(uNoise, p * 0.04).g * 7.0;
+    vec2 dir = vec2(0.94, 0.34);
+    float ph = dot(p, dir) * 3.1 + warp;
+    float rip = sin(ph), dune = texture(uNoise, p * 0.018).r;
+    float slope = cos(ph) * 0.09;
+    N = normalize(vec3(-slope * dir.x + (texture(uNoise, p * 0.018 + 0.01).r - dune) * 4.0, 1.0, -slope * dir.y));
+    alb = mix(uStoneB, uStoneA, dune * 0.9 + rip * 0.06) * (0.94 + 0.1 * fine);
+    ao = mix(0.86, 1.0, rip * 0.5 + 0.5);
+    gloss = 0.03;
+  } else if (style == 2) {
+    // city: asphalt streets every 24 m with lane paint and crosswalks, sidewalks, paved blocks
+    vec2 g = p - 24.0 * floor(p / 24.0 + 0.5), a = abs(g);
+    float onX = step(a.x, 4.6), onZ = step(a.y, 4.6), road = max(onX, onZ);
+    float side = (1.0 - road) * max(step(a.x, 6.6), step(a.y, 6.6));
+    vec3 asphalt = uGrout * (0.9 + 0.25 * fine + 0.15 * mott);
+    vec2 tile = fract(p / 1.3);
+    float seam = 1.0 - smoothstep(0.0, 0.06, min(min(tile.x, 1.0 - tile.x), min(tile.y, 1.0 - tile.y)));
+    vec3 walk = uStoneB * (0.92 + 0.12 * hash12(floor(p / 1.3))) * (1.0 - 0.25 * seam);
+    vec2 pv = fract(p / vec2(1.6, 0.8) + vec2(0.5 * floor(p.y / 0.8), 0.0) * 0.5);
+    float pseam = 1.0 - smoothstep(0.0, 0.05, min(min(pv.x, 1.0 - pv.x), min(pv.y, 1.0 - pv.y)));
+    vec3 block = uStoneA * (0.9 + 0.15 * hash12(floor(p / vec2(1.6, 0.8)))) * (1.0 - 0.3 * pseam);
+    alb = road > 0.5 ? asphalt : side > 0.5 ? walk : block;
+    if (road > 0.5) {
+      float inter = onX * onZ;
+      // lane paint: dashed yellow centre lines, white edges; zebra crossings where streets meet
+      float cz = onX * (1.0 - inter) * step(a.x, 0.1) * step(fract(p.y / 3.0), 0.55);
+      float cx = onZ * (1.0 - inter) * step(a.y, 0.1) * step(fract(p.x / 3.0), 0.55);
+      float edge = (1.0 - inter) * (onX * step(abs(a.x - 4.2), 0.07) + onZ * step(abs(a.y - 4.2), 0.07));
+      float zebra = inter * (step(3.0, a.y) * step(fract(p.x / 1.0), 0.5) + step(3.0, a.x) * step(fract(p.y / 1.0), 0.5)) * step(max(a.x, a.y), 4.4) * step(3.0, max(a.x, a.y)) * (1.0 - step(3.0, min(a.x, a.y)));
+      alb = mix(alb, vec3(1.0, 0.82, 0.25), cz + cx);
+      alb = mix(alb, vec3(0.92), clamp(edge + zebra, 0.0, 1.0) * 0.9);
+      gloss = 0.12; sharp = 40.0;
+    }
+    // curbs: a dark lip along the road edges (not across the intersections)
+    float curb = (1.0 - onX * onZ) * (1.0 - smoothstep(0.0, 0.14, min(abs(a.x - 4.6), abs(a.y - 4.6))));
+    ao = 1.0 - 0.3 * curb;
+  } else if (style == 3) {
+    // bounce house: puffy vinyl cushions in four colors, glossy, with stitched seams
+    vec2 c = floor(p / 3.2), f = fract(p / 3.2) - 0.5;
+    float h = hash12(c);
+    vec3 pal = h < 0.25 ? uStoneA : h < 0.5 ? uStoneB : h < 0.75 ? uAccent : vec3(1.0, 0.86, 0.22);
+    vec2 d = f * 2.0;
+    N = normalize(vec3(-d.x * 0.5 * (1.0 - d.y * d.y), 1.0, -d.y * 0.5 * (1.0 - d.x * d.x)));
+    float seam = 1.0 - smoothstep(0.42, 0.5, max(abs(f.x), abs(f.y)));
+    alb = pal * (0.9 + 0.08 * fine);
+    ao = mix(0.55, 1.0, seam);
+    gloss = 0.5; sharp = 60.0;
+  } else if (style == 4) {
+    // candy land: pink and cream frosting checks with sprinkles
+    vec2 c = floor(p / 3.0);
+    float chk = mod(c.x + c.y, 2.0);
+    vec3 base = mix(uStoneA, uStoneB, chk) * (0.95 + 0.08 * texture(uNoise, p * 0.3).r);
+    vec2 sc = floor(p / 0.55), sf = fract(p / 0.55) - 0.5;
+    float sh = hash12(sc), ang = sh * 6.283;
+    vec2 q = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * sf;
+    float spr = step(0.55, sh) * (1.0 - smoothstep(0.0, 0.05, length(vec2(max(abs(q.x) - 0.13, 0.0), q.y)) - 0.045));
+    vec3 sprCol = sh < 0.7 ? vec3(1.0, 0.3, 0.45) : sh < 0.8 ? vec3(0.3, 0.75, 1.0) : sh < 0.9 ? vec3(1.0, 0.9, 0.3) : vec3(0.5, 0.9, 0.45);
+    alb = mix(base, sprCol, spr);
+    N = normalize(vec3((texture(uNoise, p * 0.3 + 0.02).r - texture(uNoise, p * 0.3).r) * 6.0, 1.0, 0.0));
+    gloss = 0.35; sharp = 50.0;
+  } else if (style == 5) {
+    // tundra: soft snow drifts with glints
+    float h1 = texture(uNoise, p * 0.06).r, h2 = texture(uNoise, p * 0.06 + vec2(0.03, 0.0)).r, h3 = texture(uNoise, p * 0.06 + vec2(0.0, 0.03)).r;
+    N = normalize(vec3((h1 - h2) * 3.0, 1.0, (h1 - h3) * 3.0));
+    alb = mix(uStoneB, uStoneA, smoothstep(0.3, 0.7, h1)) * (0.97 + 0.05 * fine);
+    float glint = step(0.993, hash12(floor(p * 9.0))) * (0.5 + 0.5 * sin(uTime * 3.0 + hash12(floor(p * 9.0)) * 40.0));
+    emis = vec3(0.9, 0.95, 1.0) * glint * 0.8;
+    gloss = 0.15; sharp = 30.0;
+  } else if (style == 6) {
+    // volcano: cracked basalt plates with glowing lava seams
+    vec3 v = voro(p / 2.4);
+    float crack = 1.0 - smoothstep(0.0, 0.06, v.y);
+    alb = mix(uStoneA, uStoneB, v.z) * (0.85 + 0.2 * fine) * (1.0 - 0.6 * crack);
+    float pulse = 0.65 + 0.35 * sin(uTime * 1.5 + v.z * 6.0 + p.x * 0.2);
+    emis = uAccent * crack * pulse * (1.6 + 1.2 * mott);
+    N = normalize(vec3((fine - 0.5) * 0.2, 1.0, (mott - 0.5) * 0.2));
+    ao = mix(0.75, 1.0, smoothstep(0.0, 0.25, v.y));
+  } else if (style == 7) {
+    // jungle: mossy grass with bare dirt patches and tiny blades
+    float patchy = smoothstep(0.55, 0.7, texture(uNoise, p * 0.035).g);
+    float blades = texture(uNoise, p * vec2(2.4, 2.9)).b;
+    alb = mix(mix(uStoneA, uStoneB, mott) * (0.8 + 0.35 * blades), uGrout * (0.9 + 0.2 * fine), patchy);
+    N = normalize(vec3((blades - 0.5) * 0.35 * (1.0 - patchy), 1.0, (fine - 0.5) * 0.35 * (1.0 - patchy)));
+    ao = mix(0.8, 1.0, blades);
+  } else if (style == 8) {
+    // beach: pale sand with darker wet streaks and the odd shell
+    float wet = smoothstep(0.55, 0.75, texture(uNoise, p * vec2(0.02, 0.05)).r);
+    float rip = sin(p.x * 2.2 + texture(uNoise, p * 0.05).g * 6.0);
+    alb = mix(uStoneA, uStoneB, wet) * (0.94 + 0.1 * fine + 0.03 * rip);
+    float shell = step(0.996, hash12(floor(p * 2.0)));
+    alb = mix(alb, vec3(1.0, 0.92, 0.88), shell);
+    N = normalize(vec3(cos(p.x * 2.2) * 0.04, 1.0, 0.0));
+    gloss = 0.05 + wet * 0.3; sharp = 40.0;
+  } else if (style == 9) {
+    // moon: grey regolith pocked with craters
+    vec2 c = floor(p / 7.0), f = fract(p / 7.0) * 7.0 - 3.5;
+    float h = hash12(c), cr = 1.2 + h * 1.8;
+    vec2 off = (vec2(hash12(c + 4.1), hash12(c + 8.3)) - 0.5) * (7.0 - cr * 2.0);
+    vec2 d = f - off;
+    float r = length(d) / cr;
+    float bowl = step(0.4, h) * (1.0 - smoothstep(0.85, 1.0, r));
+    float rim = step(0.4, h) * smoothstep(0.75, 1.0, r) * (1.0 - smoothstep(1.0, 1.25, r));
+    vec2 nd = r > 1e-3 ? d / (r * cr) : vec2(0.0), tilt = nd * (bowl * -0.6 + rim * 0.5);
+    N = normalize(vec3(tilt.x, 1.0, tilt.y));
+    alb = mix(uStoneA, uStoneB, mott) * (0.9 + 0.15 * fine) * (1.0 - 0.25 * bowl) * (1.0 + 0.15 * rim);
+    ao = 1.0 - 0.2 * bowl;
+  } else {
+    // stone plaza: large running-bond bricks
+    vec2 bk = bricks(p);
+    const float e = 0.02;
+    float hgt = smoothstep(0.0, 0.1, -bk.x);
+    float hx = smoothstep(0.0, 0.1, -bricks(p + vec2(e, 0.0)).x);
+    float hz = smoothstep(0.0, 0.1, -bricks(p + vec2(0.0, e)).x);
+    N = normalize(vec3(-(hx - hgt) / e * 0.025, 1.0, -(hz - hgt) / e * 0.025));
+    float fineB = texture(uNoise, p * 0.6 + bk.y * 5.0).g;
+    alb = mix(uStoneA, uStoneB, bk.y * 0.7 + (mott - 0.5) * 0.5);
+    alb *= 0.94 + 0.08 * mott + 0.04 * fineB;
+    float seam = 1.0 - smoothstep(0.0, 0.035, -bk.x);
+    alb = mix(alb, alb * 0.8, seam);
+    ao = mix(0.86, 1.0, smoothstep(0.0, 0.08, -bk.x));
+  }
 
   // the arena: dark outside, soft contact shading just inside the wall
   float outside = 0.0;
@@ -194,6 +321,7 @@ void main() {
     ao *= mix(1.0, 0.62, smoothstep(-1.6, 0.0, sd));
     outside = smoothstep(-0.1, 1.2, sd);
     alb = mix(alb, uGrout * (0.8 + 0.3 * mott), outside);
+    emis *= 1.0 - outside;
   }
 
   vec3 V = normalize(uCamPos - vW);
@@ -204,7 +332,8 @@ void main() {
   vec3 hemi = mix(uGroundCol, uSkyCol, N.y * 0.5 + 0.5);
   vec3 col = alb * (hemi * 0.55 + uLightCol * ndl * 0.75 * sh) * ao * contact;
   vec3 H = normalize(uLightDir + V);
-  col += uLightCol * pow(max(dot(N, H), 0.0), 24.0) * 0.06 * sh * ao * (1.0 - outside);
+  col += uLightCol * pow(max(dot(N, H), 0.0), sharp) * gloss * sh * ao * (1.0 - outside);
+  col += emis;
   fragColor = vec4(atmos(col, vW), 1.0);
 }`;
 
@@ -217,10 +346,40 @@ in vec2 vUV;
 uniform vec3 uPoolCol;
 uniform float uPoolGlow;
 uniform float uSeed;
+uniform float uStyle; // 0 liquid, 1 ice sheet, 2 quicksand
 out vec4 fragColor;
 void main() {
   float r = length(vUV);
   float ang = atan(vUV.y, vUV.x);
+  if (uStyle > 0.5) {
+    // ice and quicksand: solid patches with their own surface instead of rippling liquid
+    float edge = 0.88 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 5.0 - uSeed * 2.0);
+    float m = 1.0 - smoothstep(edge - 0.02, edge + 0.01, r);
+    if (m < 0.003) discard;
+    vec2 q = vW.xz;
+    vec3 v = normalize(uCamPos - vW);
+    vec3 col;
+    if (uStyle < 1.5) {
+      // ice: glassy and pale, with a few cracks and a sharp glint
+      float cr = texture(uNoise, q * 0.22 + uSeed).r;
+      float crack = 1.0 - smoothstep(0.0, 0.02, abs(cr - 0.5));
+      vec3 n = normalize(vec3((texture(uNoise, q * 0.15).g - 0.5) * 0.15, 1.0, (texture(uNoise, q * 0.15 + 3.1).b - 0.5) * 0.15));
+      float F = 0.04 + 0.96 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+      col = mix(uPoolCol * 0.85, uPoolCol * 1.15, smoothstep(edge, 0.0, r)) + envColor(reflect(-v, n)) * (0.18 + F * 0.5);
+      col += uLightCol * pow(max(dot(n, normalize(uLightDir + v)), 0.0), 140.0) * 1.4;
+      col = mix(col, vec3(1.0), crack * 0.5 + smoothstep(edge - 0.08, edge - 0.01, r) * 0.35);
+    } else {
+      // quicksand: a slow swirl sinking toward the middle
+      float swirl = sin(ang * 3.0 + r * 9.0 - uTime * 1.2 + uSeed) * 0.5 + 0.5;
+      float grain = texture(uNoise, q * 1.4 + vec2(uTime * 0.05, 0.0)).g;
+      col = mix(uPoolCol * 0.55, uPoolCol, smoothstep(0.0, edge, r) * 0.6 + swirl * 0.25 + grain * 0.15);
+      col *= mix(0.62, 1.0, smoothstep(0.0, 0.5, r));
+      col = mix(col, uPoolCol * 1.12, smoothstep(edge - 0.1, edge - 0.01, r) * 0.5);
+    }
+    col += uPoolCol * uPoolGlow;
+    fragColor = vec4(atmos(col, vW), m * 0.96);
+    return;
+  }
   float edge = 0.86 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 7.0 - uSeed * 2.0 + uTime * 0.6) + 0.03 * (texture(uNoise, vec2(ang * 0.25 + uSeed, uTime * 0.02)).r - 0.5);
   float m = 1.0 - smoothstep(edge - 0.02, edge + 0.01, r);
   float lip = smoothstep(edge - 0.1, edge - 0.01, r) * m;
@@ -882,6 +1041,12 @@ uniform float uOutline;
 uniform vec3 uOutlineCol;
 out vec4 fragColor;
 void main() {
+  // screen-door fade so the hero shows through tall scenery
+  if (vFx.y > 0.0) {
+    vec2 c = mod(floor(gl_FragCoord.xy), 4.0);
+    float bayer = (mod(c.x + c.y * 2.0, 4.0) * 4.0 + mod(c.y + c.x * 3.0, 4.0)) / 16.0;
+    if (bayer < vFx.y) discard;
+  }
   if (uOutline > 0.0) { fragColor = vec4(atmos(uOutlineCol, vW), 1.0); return; }
   vec3 n = normalize(vN);
   vec3 v = normalize(uCamPos - vW);

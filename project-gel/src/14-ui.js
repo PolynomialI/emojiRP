@@ -173,7 +173,7 @@ const UI = {
   renderChapters() {
     const sv = G.save, map = $('chMap');
     // boss portraits need a GPU readback, so they are drawn here, only when the map is opened
-    for (const m in BOSS_OF_MODEL) if (R.enemyDraw[m] && !ICONS.map['boss-' + BOSS_OF_MODEL[m]]) renderBossPortrait(m);
+    for (const id in BOSS_TYPES) if (!ICONS.map['boss-' + id] && bossMeshes(id).every(m => R.enemyDraw[m])) renderBossPortraitOf(id);
     const top = Math.min(sv.chapter + 4, 300);
     const nodes = [];
     for (let n = top; n >= 1; n--) {
@@ -523,8 +523,10 @@ function rollChoices() {
     const max = maxLevel(s.id);
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
-  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id)) pool.push({ id, w: many ? 0.55 : 1 });
-  if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id)) pool.push({ id, w: many ? 0.45 : 0.7 });
+  // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
+  const open = def => (def.from || 1) <= run.chapter, feat = featuredPowerup(run.chapter);
+  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
+  if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
   while (out.length < 3 && pool.length) {
     let r = Math.random() * pool.reduce((a, c) => a + c.w, 0), i = 0;
@@ -549,7 +551,7 @@ function describeChoice(c) {
   if (sk) {
     if (!lvl) {
       const f = sk.fields.slice(0, 2).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`).join(' · ');
-      return { tag: 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
+      return { tag: sk.from === G.run.chapter ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
     }
     const parts = [];
     for (const [k, label, unit] of sk.fields) {
@@ -558,7 +560,7 @@ function describeChoice(c) {
     }
     return { tag: `LV ${lvl} → ${lvl + 1}`, name: sk.name, desc: parts.join(' · '), icon: 'skill-' + c.id, kind: 'skill', isNew: false };
   }
-  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
+  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
 }
 function applyChoice(c) {
   const run = G.run;

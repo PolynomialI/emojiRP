@@ -93,6 +93,14 @@ const PASSIVES = {
   growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
+// the power-up a chapter's theme introduces (from: the first chapter it appears in)
+function featuredPowerup(chapter) {
+  const want = ((chapter - 1) % 10) + 1;
+  if (want < 2) return null;
+  for (const id in SKILLS) if (SKILLS[id].from === want) return id;
+  for (const id in PASSIVES) if (PASSIVES[id].from === want) return id;
+  return null;
+}
 // a run holds at most this many different skills and this many different passives
 const SLOT_LIMIT = { skill: 4, passive: 4 };
 
@@ -130,20 +138,34 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
+// meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
+const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
 
+// Arenas: one theme per chapter; chapters 11+ repeat them. floor: floor shader style.
+// props / zones: [kind, count per 40x40 of floor, min radius, max radius]; wall: the prop kind ringing the edge.
 const ARENAS = [
-  { name: 'Stone Plaza', stoneA: '#34536e', stoneB: '#3c5e7b', grout: '#08121c', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.5, shadowTint: '#0a1f3a', rock: '#8592a0', pool: '#1f7a9c', poolGlow: 0.05 },
-  { name: 'Slime Sewers', stoneA: '#2f4d47', stoneB: '#365750', grout: '#061210', accent: '#62ff7a', fog: '#071a16', sky: '#7cc4b0', ground: '#12302a', light: '#f2fff4', spotMin: 0.48, shadowTint: '#06281f', rock: '#74857c', pool: '#4ccf48', poolGlow: 0.35 },
-  { name: 'Toy Factory', stoneA: '#4e4772', stoneB: '#58507f', grout: '#120d22', accent: '#ff9bd1', fog: '#16122a', sky: '#c9bcf2', ground: '#2e2550', light: '#fff4ec', spotMin: 0.52, shadowTint: '#1c1238', rock: '#a297c8', pool: '#ff6fb8', poolGlow: 0.2 },
-  { name: 'Night Market', stoneA: '#58432f', stoneB: '#624b36', grout: '#160c08', accent: '#ffb35c', fog: '#170e14', sky: '#c9a07a', ground: '#2d1d18', light: '#ffe7c4', spotMin: 0.46, shadowTint: '#2a1020', rock: '#8f7f6a', pool: '#4a3322', poolGlow: 0.0 },
-  { name: 'Ice Lab', stoneA: '#46708f', stoneB: '#4f7a98', grout: '#0a1a28', accent: '#bff3ff', fog: '#0b1f33', sky: '#a6cce8', ground: '#22445f', light: '#e8f4ff', spotMin: 0.48, shadowTint: '#0a2440', rock: '#bcd8ea', pool: '#5fc8ff', poolGlow: 0.15 },
-  { name: 'Lava Foundry', stoneA: '#3a3131', stoneB: '#433838', grout: '#0b0605', accent: '#ff6a1a', fog: '#1a0c08', sky: '#a06a50', ground: '#2a1410', light: '#ffe2c8', spotMin: 0.46, shadowTint: '#2a0a04', rock: '#6e625e', pool: '#ff6a1a', poolGlow: 0.95 },
+  { id: 'plaza', name: 'Stone Plaza', floor: 0, stoneA: '#34536e', stoneB: '#3c5e7b', grout: '#08121c', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.5, shadowTint: '#0a1f3a', rock: '#8592a0', pool: '#1f7a9c', poolGlow: 0.05,
+    props: [['rock', 11, 0.8, 1.4]], zones: [['pool', 4, 1.7, 2.6]], wall: 'rock' },
 ];
+// Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
+// tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
+const PROP_KINDS = {
+  rock: { models: ['rock0', 'rock1', 'rock2'], unit: 0.45, tint: 'rock', block: true, shots: true },
+};
+// Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
+const ZONE_KINDS = {
+  pool: { block: true },
+};
 
+// Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo'];
+const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
-  const arena = Math.floor((n - 1) / 5) % ARENAS.length;
+  const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
   const k = n - 1;
-  const bosses = n % 5 === 0 ? ['conductor', BOSS_ORDER[(Math.floor(n / 5) - 1) % 4]] : [BOSS_ORDER[(n - 1) % 5]];
+  // bosses still being built fall back to the original roster
+  const main = BOSS_TYPES[CHAPTER_BOSSES[i]] ? CHAPTER_BOSSES[i] : BOSS_ORDER[i % BOSS_ORDER.length];
+  const bosses = n % 5 === 0 ? [main, GUEST_BOSSES[(n / 5 - 1) % GUEST_BOSSES.length]] : [main];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
     hpMul: 1 + 0.09 * k + 0.004 * k * k,

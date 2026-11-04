@@ -5,7 +5,7 @@ function startBoss() {
   const run = G.run, h = G.hero.pos;
   run.bossStarted = true;
   const ids = run.info.bosses;
-  for (const id of ids) { ensureMeshNow(BOSS_TYPES[id].model); if (!ICONS.map['boss-' + id]) renderBossPortrait(BOSS_TYPES[id].model); }
+  for (const id of ids) { for (const m of bossMeshes(id)) ensureMeshNow(m); if (!ICONS.map['boss-' + id]) renderBossPortraitOf(id); }
   // bosses drop in on screen, clear of the HUD: beside the hero on wide screens, below it on tall ones
   const W = R.cssW, H = R.cssH, wide = W > H;
   const spots = wide ? [[0.76, 0.6], [0.24, 0.6]] : [[0.5, 0.76], [0.28, 0.74], [0.72, 0.74]];
@@ -66,6 +66,9 @@ function bossWalk(e, dt, tx, tz, speed) {
   e.clip = 'run';
 }
 
+// New bosses register their behaviour here: BOSS_AI[id](e, dt, distToHero, dx, dz) after the drop-in,
+// and BOSS_DRAW[id](e) when they are not a single animated mesh
+const BOSS_AI = {}, BOSS_DRAW = {};
 function updateBoss(e, dt) {
   const ai = e.ai, h = G.hero.pos, run = G.run;
   ai.t -= dt;
@@ -211,6 +214,7 @@ function updateBoss(e, dt) {
       }
       break;
     }
+    default: if (BOSS_AI[e.type]) BOSS_AI[e.type](e, dt, d, dx, dz); break;
     case 'conductor': {
       e.clip = 'conduct'; e.phase += dt * 0.7;
       // the stage follows the hero, so the Conductor can't be left behind
@@ -297,6 +301,7 @@ function emitRunScene() {
   emitArena();
   for (const e of run.enemies) {
     if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
+    if (e.boss && BOSS_DRAW[e.type]) { BOSS_DRAW[e.type](e); continue; }
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;
     pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? (e.boss ? 0.55 : 0.85) : 0, e.auraTint, e.tint[0], e.tint[1], e.tint[2]);
@@ -414,21 +419,26 @@ function emitRunScene() {
   emitSkills();
 }
 
+const PROP_TINT = {};
 function emitArena() {
-  const f = R.frame, rc = f.rockCol, L = f.lightDir;
+  const f = R.frame, L = f.lightDir;
   const sdx = -L[0] * 0.55, sdz = -L[2] * 0.55;
-  SCENE.pools = ARENA.pools.filter(o => onScreen(o.x, o.z, o.r + 1.5));
-  const rock = (o, size) => {
-    if (!onScreen(o.x, o.z, size + 1.5)) return;
-    const m = 'rock' + o.v;
+  SCENE.pools = ARENA.zones.filter(o => onScreen(o.x, o.z, o.r + 1.5));
+  const draw = o => {
+    const K = PROP_KINDS[o.kind], size = o.r, reach = (o.tall || K.tall || 1) * size + 1.5;
+    if (!onScreen(o.x, o.z, reach)) return;
+    const m = o.model;
     if (!R.enemyDraw[m]) return;
-    const sc = size / 0.45, shade = 0.86 + 0.14 * ((o.v * 0.37 + o.yaw) % 1);
-    pushEnemy(m, false, o.x, 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, rc[0] * shade, rc[1] * shade, rc[2] * shade);
-    pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
+    const sc = o.scale || size / K.unit, shade = 0.86 + 0.14 * ((o.ph * 0.37 + o.yaw) % 1);
+    const t = K.tint === 'rock' ? f.rockCol : K.tint ? (PROP_TINT[K.tint] = PROP_TINT[K.tint] || hexToRgb(K.tint)) : PROP_WHITE;
+    pushEnemy(m, false, o.x, o.y || 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, t[0] * shade, t[1] * shade, t[2] * shade, o.fade || 0);
+    if (K.shadow !== false && o.shape !== 'box') pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
   };
-  for (const o of ARENA.rocks) rock(o, o.r);
-  for (const o of ARENA.wall) rock(o, o.r);
+  for (const o of ARENA.props) draw(o);
+  for (const o of ARENA.wall) draw(o);
+  emitArenaFx();
 }
+const PROP_WHITE = [1, 1, 1];
 
 function trailRibbon(trail, w, col, alpha) {
   if (trail.length < 3) return;

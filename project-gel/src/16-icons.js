@@ -142,8 +142,26 @@ function renderHeroIcons() {
 }
 
 const BOSS_OF_MODEL = { stomper: 'stomper', hurler: 'hurler', charger: 'charger', twin: 'twins', conductor: 'conductor' };
-function renderBossPortrait(model) {
-  const id = BOSS_OF_MODEL[model];
+// Portrait of any boss: custom-drawn bosses draw themselves at the origin
+function renderBossPortraitOf(id) {
+  if (!BOSS_DRAW[id]) { renderBossPortrait(BOSS_TYPES[id].model, id); return; }
+  if (!bossMeshes(id).every(m => R.enemyDraw[m])) return;
+  iconBegin();
+  R.resetStreams();
+  const B = BOSS_TYPES[id];
+  BOSS_DRAW[id](portraitBody(id));
+  const top = (B.portraitTop || 1.1) * B.scale;
+  ICONS.map['boss-' + id] = iconCapture([0.55 * B.scale / 2.6, top * 0.95, top * 1.45], [0, top * 0.62, 0], 0.62);
+  iconEnd();
+  R.resetStreams();
+}
+// a stand-in boss at the origin, facing the camera, for portraits
+function portraitBody(id) {
+  const B = BOSS_TYPES[id];
+  return { type: id, def: B, boss: true, x: 0, y: 0, z: 0, yaw: 0.45, scale: B.scale, squash: 1, flash: 0, dying: 0, phase: 0.2, tint: hexToRgb(B.tint), ai: { state: 'portrait', t: 0 }, portrait: true, hp: 1, maxHp: 1 };
+}
+function renderBossPortrait(model, bossId) {
+  const id = bossId || BOSS_OF_MODEL[model];
   if (!id || !R.enemyDraw[model]) return;
   iconBegin();
   R.resetStreams();

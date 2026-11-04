@@ -1,8 +1,9 @@
 // ============================================================
-// The arena: a walled rounded square with boulders and goo pools.
-// Boulders and pools both block movement; boulders also stop shots.
+// The arena: a walled rounded square dressed by the chapter's theme (ARENAS in 10-data.js).
+// Props are static meshes (round or box footprints); blocking ones stop movement, some also stop shots.
+// Zones are ground patches: pools block, others slow, burn or make you slide.
 // ============================================================
-const ARENA = { hw: 50, hd: 50, cr: 8, rocks: [], pools: [], wall: [], obstacles: [], grid: null, cols: 0, rows: 0 };
+const ARENA = { hw: 50, hd: 50, cr: 8, theme: null, props: [], zones: [], wall: [], obstacles: [], grid: null, cols: 0, rows: 0, fx: null };
 // obstacles are bucketed into a coarse grid; each bucket also holds obstacles within OB_PAD of it
 const OB_CELL = 4, OB_PAD = 4, NO_OBS = [];
 
@@ -21,38 +22,62 @@ function arenaNormal(x, z, out) {
 }
 
 function buildArena(chapter) {
+  const info = chapterInfo(chapter), T = ARENAS[info.arena];
   const rnd = mulberry32(chapter * 7919 + 17);
+  ARENA.theme = T;
+  ARENA.props = []; ARENA.zones = []; ARENA.wall = []; ARENA.fx = null;
   const placed = [];
-  ARENA.rocks = []; ARENA.pools = []; ARENA.wall = [];
-  const free = (x, z, r) => Math.hypot(x, z) > 7 + r && arenaSd(x, z) < -(r + 2.5)
+  const fits = (x, z, r, spawnClear = 7) => Math.hypot(x, z) > spawnClear + r && arenaSd(x, z) < -(r + 2.5)
     && placed.every(o => Math.hypot(o.x - x, o.z - z) > o.r + r + 2.4);
-  const place = (kind, n, rmin, rmax) => {
-    for (let i = 0, tries = 0; i < n && tries < 500; tries++) {
-      const r = rmin + rnd() * (rmax - rmin);
-      const x = (rnd() * 2 - 1) * ARENA.hw, z = (rnd() * 2 - 1) * ARENA.hd;
-      if (!free(x, z, r)) continue;
-      const o = { kind, x, z, r, yaw: rnd() * TAU, v: Math.floor(rnd() * 3), ph: rnd() * 10 };
-      placed.push(o);
-      (kind === 'rock' ? ARENA.rocks : ARENA.pools).push(o);
-      i++;
-    }
+  const api = {
+    rnd, fits,
+    // add one prop or zone exactly where asked (layouts use this)
+    prop(kind, x, z, r, extra = {}) {
+      const K = PROP_KINDS[kind], models = K.models;
+      const o = { kind, x, z, r, yaw: rnd() * TAU, model: models[Math.floor(rnd() * models.length)], ph: rnd() * 10, block: K.block !== false, shots: !!K.shots, ...extra };
+      if (o.shape === 'box') o.r = Math.hypot(o.hw, o.hd);
+      placed.push(o); ARENA.props.push(o);
+      return o;
+    },
+    zone(kind, x, z, r, extra = {}) {
+      const o = { kind, x, z, r, ph: rnd() * 10, block: !!ZONE_KINDS[kind].block, ...extra };
+      placed.push(o); ARENA.zones.push(o);
+      return o;
+    },
+    // scatter n of a kind wherever they fit
+    scatter(type, kind, n, rmin, rmax, test) {
+      for (let i = 0, tries = 0; i < n && tries < 600; tries++) {
+        const r = rmin + rnd() * (rmax - rmin);
+        const x = (rnd() * 2 - 1) * ARENA.hw, z = (rnd() * 2 - 1) * ARENA.hd;
+        if (!fits(x, z, r) || (test && !test(x, z, r))) continue;
+        api[type](kind, x, z, r);
+        i++;
+      }
+    },
   };
   // obstacle counts follow the floor area (the first 40x40 arenas had 4 pools and 11 boulders)
-  const area = (ARENA.hw * ARENA.hd) / 400;
-  place('pool', Math.round(4 * area * 0.8), 1.7, 2.6);
-  place('rock', Math.round(11 * area * 0.8), 0.8, 1.4);
-  ARENA.obstacles = placed;
+  const area = (ARENA.hw * ARENA.hd) / 400 * 0.8;
+  if (ARENA_LAYOUTS[T.id]) ARENA_LAYOUTS[T.id](api, area);
+  for (const [kind, n, rmin, rmax] of T.zones || []) api.scatter('zone', kind, Math.round(n * area), rmin, rmax);
+  for (const [kind, n, rmin, rmax] of T.props || []) api.scatter('prop', kind, Math.round(n * area), rmin, rmax);
+  ARENA.obstacles = placed.filter(o => o.block);
   gridObstacles();
-  // a ring of boulders just outside the edge (movement is held in by the edge itself)
-  const { hw, hd, cr } = ARENA, out = 0.9, pts = [];
-  const sx = hw - cr, sz = hd - cr, step = 1.7;
+  // a ring of props just outside the edge (movement is held in by the edge itself)
+  const W = PROP_KINDS[T.wall || 'rock'], { hw, hd, cr } = ARENA, out = 0.9, pts = [];
+  const sx = hw - cr, sz = hd - cr, step = W.wallStep || 1.7;
   for (let x = -sx; x <= sx; x += step) { pts.push([x, -hd - out]); pts.push([x, hd + out]); }
   for (let z = -sz; z <= sz; z += step) { pts.push([-hw - out, z]); pts.push([hw + out, z]); }
   for (const [cx, cz, a0] of [[sx, sz, 0], [-sx, sz, Math.PI / 2], [-sx, -sz, Math.PI], [sx, -sz, Math.PI * 1.5]]) {
     const n = Math.ceil((cr + out) * Math.PI / 2 / step);
     for (let i = 1; i < n; i++) { const a = a0 + (i / n) * Math.PI / 2; pts.push([cx + Math.cos(a) * (cr + out), cz + Math.sin(a) * (cr + out)]); }
   }
-  for (const [x, z] of pts) ARENA.wall.push({ x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: 1.0 + rnd() * 0.45, yaw: rnd() * TAU, v: Math.floor(rnd() * 3) });
+  for (const [x, z] of pts) {
+    const r = (W.wallR || [1.0, 1.45]);
+    ARENA.wall.push({ kind: T.wall || 'rock', x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: r[0] + rnd() * (r[1] - r[0]), yaw: W.faceIn ? Math.atan2(-x, -z) : rnd() * TAU, model: W.models[Math.floor(rnd() * W.models.length)], ph: rnd() * 10 });
+  }
+  // the theme's moving parts (tumbleweeds, ball pits, vents...)
+  const F = ARENA_FEATURES[T.id];
+  if (F) { ARENA.fx = { def: F, st: {} }; if (F.init) F.init(ARENA.fx.st, rnd); }
 }
 
 function gridObstacles() {
@@ -60,9 +85,9 @@ function gridObstacles() {
   const grid = ARENA.grid = Array.from({ length: cols * rows }, () => []);
   const x0 = -ARENA.hw - 4, z0 = -ARENA.hd - 4;
   for (const ob of ARENA.obstacles) {
-    const e = ob.r + OB_PAD;
-    const c0 = Math.max(0, Math.floor((ob.x - e - x0) / OB_CELL)), c1 = Math.min(cols - 1, Math.floor((ob.x + e - x0) / OB_CELL));
-    const r0 = Math.max(0, Math.floor((ob.z - e - z0) / OB_CELL)), r1 = Math.min(rows - 1, Math.floor((ob.z + e - z0) / OB_CELL));
+    const ex = (ob.shape === 'box' ? ob.hw : ob.r) + OB_PAD, ez = (ob.shape === 'box' ? ob.hd : ob.r) + OB_PAD;
+    const c0 = Math.max(0, Math.floor((ob.x - ex - x0) / OB_CELL)), c1 = Math.min(cols - 1, Math.floor((ob.x + ex - x0) / OB_CELL));
+    const r0 = Math.max(0, Math.floor((ob.z - ez - z0) / OB_CELL)), r1 = Math.min(rows - 1, Math.floor((ob.z + ez - z0) / OB_CELL));
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r * cols + c].push(ob);
   }
 }
@@ -73,17 +98,33 @@ function obsNear(x, z, r = 0) {
   if (c < 0 || w < 0 || c >= ARENA.cols || w >= ARENA.rows) return NO_OBS;
   return ARENA.grid[w * ARENA.cols + c];
 }
+// Distance from (x, z) to an obstacle's edge (negative inside); for boxes also the outward direction in _n2
+const _n2 = [0, 0];
+function obDist(ob, x, z, out) {
+  if (ob.shape === 'box') {
+    const dx = x - ob.x, dz = z - ob.z, qx = Math.abs(dx) - ob.hw, qz = Math.abs(dz) - ob.hd;
+    if (qx > 0 || qz > 0) {
+      const ox = Math.max(qx, 0) * Math.sign(dx), oz = Math.max(qz, 0) * Math.sign(dz), l = Math.hypot(ox, oz) || 1e-4;
+      if (out) { out[0] = ox / l; out[1] = oz / l; }
+      return l;
+    }
+    if (out) { if (qx > qz) { out[0] = Math.sign(dx) || 1; out[1] = 0; } else { out[0] = 0; out[1] = Math.sign(dz) || 1; } }
+    return Math.max(qx, qz);
+  }
+  const dx = x - ob.x, dz = z - ob.z, d = Math.hypot(dx, dz) || 1e-4;
+  if (out) { out[0] = dx / d; out[1] = dz / d; }
+  return d - ob.r;
+}
 
 // Push a circle (o.x, o.z, radius r) out of obstacles and back inside the arena.
 // Returns the obstacle it touched, 'wall', or null.
-const _n2 = [0, 0];
+const _n3 = [0, 0];
 function resolveCircle(o, r) {
   let hit = null;
   for (const ob of obsNear(o.x, o.z, r)) {
-    const dx = o.x - ob.x, dz = o.z - ob.z, min = ob.r + r, d2 = dx * dx + dz * dz;
-    if (d2 >= min * min) continue;
-    const d = Math.sqrt(d2) || 1e-4;
-    o.x = ob.x + dx / d * min; o.z = ob.z + dz / d * min;
+    const d = obDist(ob, o.x, o.z, _n3);
+    if (d >= r) continue;
+    o.x += _n3[0] * (r - d); o.z += _n3[1] * (r - d);
     hit = ob;
   }
   const sd = arenaSd(o.x, o.z);
@@ -94,13 +135,14 @@ function resolveCircle(o, r) {
   }
   return hit;
 }
+// Is (x, z) inside something that stops enemy shots (boulders, buildings...)?
 function inRock(x, z, pad = 0) {
-  for (const ob of obsNear(x, z, pad)) if (ob.kind === 'rock' && Math.hypot(x - ob.x, z - ob.z) < ob.r + pad) return true;
+  for (const ob of obsNear(x, z, pad)) if (ob.shots && obDist(ob, x, z) < pad) return true;
   return false;
 }
 function blockedAt(x, z, r) {
   if (arenaSd(x, z) > -r) return true;
-  for (const ob of obsNear(x, z, r)) if (Math.hypot(x - ob.x, z - ob.z) < ob.r + r) return true;
+  for (const ob of obsNear(x, z, r)) if (obDist(ob, x, z) < r) return true;
   return false;
 }
 // Bend a chase direction (dx, dz, unit) around obstacles between the walker and its goal
@@ -120,3 +162,16 @@ function steerAround(x, z, r, dx, dz, goalDist, out) {
   out[0] = dx; out[1] = dz;
   return out;
 }
+// The zone under (x, z), if any (zones never overlap)
+function zoneAt(x, z) {
+  for (const o of ARENA.zones) if (!o.block && Math.hypot(x - o.x, z - o.z) < o.r * 0.95) return o;
+  return null;
+}
+
+// ---------- theme hooks ----------
+// ARENA_LAYOUTS[id](api, area): hand-placed set pieces before the random scatter
+// ARENA_FEATURES[id]: { init(st, rnd), update(st, dt), emit(st) } for moving parts
+const ARENA_LAYOUTS = {};
+const ARENA_FEATURES = {};
+function updateArenaFx(dt) { const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
+function emitArenaFx() { const F = ARENA.fx; if (F && F.def.emit) F.def.emit(F.st); }

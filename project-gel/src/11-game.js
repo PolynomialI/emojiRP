@@ -103,7 +103,7 @@ function applyArena(i) {
   f.arena = i; f.stoneA = hexToRgb(a.stoneA); f.stoneB = hexToRgb(a.stoneB); f.grout = hexToRgb(a.grout); f.accent = hexToRgb(a.accent);
   f.fogCol = hexToRgb(a.fog); f.skyCol = hexToRgb(a.sky); f.groundCol = hexToRgb(a.ground); f.lightCol = hexToRgb(a.light);
   f.spotMin = a.spotMin; f.shadowTint = hexToRgb(a.shadowTint);
-  f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow;
+  f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow; f.floorStyle = a.floor || 0;
 }
 function applySkin(id, costume) {
   const s = SKINS.find(k => k.id === id) || SKINS[0];
@@ -366,15 +366,22 @@ function updateRun(dt) {
     }
   }
 
-  // hero movement
-  const top = hero.topSpeed * (1 - run.contactSlow);
-  const k = 1 - Math.exp(-dt / 0.045);
+  // hero movement; the ground underfoot can slow you, make you slide, or burn
+  const zone = zoneAt(h[0], h[2]), Z = zone ? ZONE_KINDS[zone.kind] : null;
+  run.zone = zone;
+  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.speedBoost || 1);
+  const k = 1 - Math.exp(-dt / (Z && Z.slide ? 0.55 : 0.045));
+  if (Z && Z.burn) {
+    run.burnT = (run.burnT || 0) - dt;
+    if (run.burnT <= 0) { run.burnT = 0.5; hurtHero(Z.burn * 0.5 * run.info.dmgMul, h[0], h[2] + 0.01); FX.burst(h[0], 0.3, h[2], 6, [1, 0.5, 0.1], 2, 0.1, 0.4, 0); }
+  }
   run.vel[0] += (G.input.x * top - run.vel[0]) * k;
   run.vel[2] += (G.input.z * top - run.vel[2]) * k;
   h[0] += run.vel[0] * dt; h[2] += run.vel[2] * dt;
   HERO_PT.x = h[0]; HERO_PT.z = h[2];
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
   hero.update(dt, run.vel, true);
+  updateArenaFx(dt);
 
   gridBuild(run.enemies);
   updateEnemies(dt);
@@ -441,6 +448,10 @@ function updateEnemies(dt) {
     e.flash = Math.max(0, e.flash - dt); e.flashCd = (e.flashCd || 0) - dt;
     e.contactCd -= dt;
     e.slowT -= dt; if (e.slowT <= 0) e.slowMul = 1;
+    if (ARENA.zones.length && !e.boss) {
+      const z = zoneAt(e.x, e.z), Z = z && ZONE_KINDS[z.kind];
+      if (Z && Z.slow) { e.slowMul = Math.min(e.slowMul, Z.slow); e.slowT = Math.max(e.slowT, 0.05); }
+    }
     e.spawnT = Math.max(0, e.spawnT - dt);
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
     if (e.boss) updateBoss(e, dt);

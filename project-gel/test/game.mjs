@@ -135,7 +135,7 @@ if (mode === 'skills') {
 }
 if (mode === 'bosses') {
   // jump straight to each boss fight and photograph its signature attack
-  for (const n of [1, 2, 3, 4, 5]) {
+  for (const n of (process.env.ONLY || '1,2,3,4,5,6,7,8,9,10').split(',').map(Number)) {
     await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); }, n);
     await page.click('#btnPlay');
     await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
@@ -238,8 +238,8 @@ if (mode === 'input') {
   console.log('key 2 picked ->', await page.evaluate(() => G.state + ' slots=' + G.run.slots.map(s => s.id + s.lvl).join(',')));
 }
 if (mode === 'arenas') {
-  // the first chapter of each arena, 40 seconds into a run with a few skills
-  for (const n of (process.env.ONLY || '1,6,11,16,21,26').split(',').map(Number)) {
+  // each chapter's map, 40 seconds into a run with a few skills, plus a wide view from high up
+  for (const n of (process.env.ONLY || '1,2,3,4,5,6,7,8,9,10').split(',').map(Number)) {
     await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); }, n);
     await page.click('#btnPlay');
     await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
@@ -250,6 +250,14 @@ if (mode === 'arenas') {
       for (let i = 0; i < 2400; i++) { G.run.invuln = 1; G.run.chestQueued = 0; if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); __frames(1); }
     });
     await render(2); await shot(`arena-run-c${n}`);
+    await page.evaluate(() => {
+      // lift the fog and widen the lit area just for this picture
+      const c = G.cam, draw = R.drawScene;
+      R.drawScene = () => { R.frame.spot[3] = 80; R.frame.fogRange = [70, 140]; draw(); };
+      R.setCamera([c.x, 30, c.z + 24], [c.x, 0, c.z - 2], 0.9); renderFrame();
+      R.drawScene = draw;
+    });
+    await shot(`arena-wide-c${n}`);
     await page.evaluate(() => finishRun(false));
     await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
     await page.click('#btnContinue');

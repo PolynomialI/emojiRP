@@ -105,7 +105,7 @@ R.addEnemyMesh = function (name, mesh) {
   }
   const up = R._upload(mesh);
   const mk = (cap) => { const stream = new InstanceStream(16, cap); return { stream, vao: R._meshVao(up.vbuf, up.ibuf, stream), ni: up.ni, itype: up.itype }; };
-  R.enemyDraw[name] = { normal: mk(ENEMY_CAPS[name] || 64), elite: mk(40), crown: null };
+  R.enemyDraw[name] = { normal: mk(ENEMY_CAPS[name] || 160), elite: mk(40), crown: null };
   R._attachCrown(name);
 };
 R._attachCrown = function (base) {
@@ -239,6 +239,7 @@ R.drawScene = function () {
     gl.uniform2f(u.uCenter, Math.round(t[0] / 4) * 4, Math.round(t[2] / 4) * 4);
     gl.uniform1f(u.uHalf, 80);
     gl.uniform3fv(u.uStoneA, f.stoneA); gl.uniform3fv(u.uStoneB, f.stoneB); gl.uniform3fv(u.uGrout, f.grout);
+    gl.uniform3fv(u.uAccent, f.accent); gl.uniform1f(u.uFloorStyle, f.floorStyle || 0);
     gl.uniform3fv(u.uArenaBox, SCENE.arenaBox || [0, 0, 0]);
     const hs = SCENE.heroShadow;
     gl.uniform1i(u.uShCount, hs ? hs.count : 0);
@@ -254,9 +255,12 @@ R.drawScene = function () {
     const p = R.progs.pool;
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(p.p); R.setFrame(p);
-    gl.uniform3fv(p.u.uPoolCol, f.poolCol); gl.uniform1f(p.u.uPoolGlow, f.poolGlow); gl.uniform1i(p.u.uBillboard, 0);
+    gl.uniform1i(p.u.uBillboard, 0);
     gl.bindVertexArray(R.vaos.quad);
     for (const o of SCENE.pools) {
+      // each zone kind brings its own color, glow and look (0 liquid, 1 ice sheet, 2 quicksand swirl)
+      const Z = ZONE_KINDS[o.kind] || {}, col = Z.rgb || (Z.col ? (Z.rgb = hexToRgb(Z.col)) : f.poolCol);
+      gl.uniform3fv(p.u.uPoolCol, col); gl.uniform1f(p.u.uPoolGlow, Z.glow ?? f.poolGlow); gl.uniform1f(p.u.uStyle, Z.style || 0);
       gl.uniform3f(p.u.uC, o.x, 0, o.z); gl.uniform1f(p.u.uR, o.r * 1.18); gl.uniform1f(p.u.uSeed, o.ph);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
@@ -527,7 +531,8 @@ function pushPart(x, y, z, size, r, g, b, a, vx, vy, vz, type) {
   d[o + 8] = vx; d[o + 9] = vy; d[o + 10] = vz; d[o + 11] = type;
 }
 // Enemy instance: model name, elite flag, position, yaw, anim row, scale, squash, dead, flash, aura tint, tint rgb
-function pushEnemy(model, elite, x, y, z, yaw, row, scale, squash, dead, flash, aura, tr, tg, tb) {
+// fade: 0 solid, up to 1 dithered away (used to see through tall buildings)
+function pushEnemy(model, elite, x, y, z, yaw, row, scale, squash, dead, flash, aura, tr, tg, tb, fade = 0) {
   const e = R.enemyDraw[model];
   if (!e) return;
   const s = elite ? e.elite.stream : e.normal.stream, o = s.push();
@@ -535,6 +540,6 @@ function pushEnemy(model, elite, x, y, z, yaw, row, scale, squash, dead, flash, 
   const d = s.data;
   d[o] = x; d[o + 1] = y; d[o + 2] = z; d[o + 3] = yaw;
   d[o + 4] = row; d[o + 5] = scale; d[o + 6] = squash; d[o + 7] = dead;
-  d[o + 8] = flash; d[o + 9] = 0; d[o + 10] = elite ? 1 : 0; d[o + 11] = aura;
+  d[o + 8] = flash; d[o + 9] = fade; d[o + 10] = elite ? 1 : 0; d[o + 11] = aura;
   d[o + 12] = tr; d[o + 13] = tg; d[o + 14] = tb; d[o + 15] = 1;
 }

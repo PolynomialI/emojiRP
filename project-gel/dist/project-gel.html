@@ -2439,6 +2439,8 @@ uniform vec4 uShSph[14];
 uniform int uShCount;
 uniform vec3 uHeroPos;
 uniform vec3 uArenaBox; // half width, half depth, corner radius (0 = no walls)
+uniform float uFloorStyle; // the arena theme's ground (see ARENAS[].floor)
+uniform vec3 uAccent;
 
 float sdRoundRect(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 
@@ -2472,24 +2474,149 @@ float heroShadow(vec3 wp) {
   return s;
 }
 
+// Voronoi: x = distance to the nearest cell point, y = gap to the second nearest, z = cell hash
+vec3 voro(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  float d1 = 9.0, d2 = 9.0, h = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 g = vec2(float(x), float(y)), c = i + g;
+    vec2 o = vec2(hash12(c), hash12(c + 17.3));
+    float d = length(g + o - f);
+    if (d < d1) { d2 = d1; d1 = d; h = hash12(c + 3.7); } else if (d < d2) d2 = d;
+  }
+  return vec3(d1, d2 - d1, h);
+}
+
 void main() {
   vec2 p = vW.xz;
-  vec2 bk = bricks(p);
-  // a very gentle bevel so bricks read without busy highlights
-  const float e = 0.02;
-  float hgt = smoothstep(0.0, 0.1, -bk.x);
-  float hx = smoothstep(0.0, 0.1, -bricks(p + vec2(e, 0.0)).x);
-  float hz = smoothstep(0.0, 0.1, -bricks(p + vec2(0.0, e)).x);
-  vec3 N = normalize(vec3(-(hx - hgt) / e * 0.025, 1.0, -(hz - hgt) / e * 0.025));
-
   float mott = texture(uNoise, p * 0.045).r;
-  float fine = texture(uNoise, p * 0.6 + bk.y * 5.0).g;
-  vec3 alb = mix(uStoneA, uStoneB, bk.y * 0.7 + (mott - 0.5) * 0.5);
-  alb *= 0.94 + 0.08 * mott + 0.04 * fine;
-  // seams: only slightly darker than the bricks
-  float seam = 1.0 - smoothstep(0.0, 0.035, -bk.x);
-  alb = mix(alb, alb * 0.8, seam);
-  float ao = mix(0.86, 1.0, smoothstep(0.0, 0.08, -bk.x));
+  float fine = texture(uNoise, p * 0.6).g;
+  vec3 alb, N = vec3(0.0, 1.0, 0.0), emis = vec3(0.0);
+  float ao = 1.0, gloss = 0.06, sharp = 24.0;
+  int style = int(uFloorStyle + 0.5);
+  if (style == 1) {
+    // desert: wind ripples over slow dunes
+    float warp = texture(uNoise, p * 0.04).g * 7.0;
+    vec2 dir = vec2(0.94, 0.34);
+    float ph = dot(p, dir) * 3.1 + warp;
+    float rip = sin(ph), dune = texture(uNoise, p * 0.018).r;
+    float slope = cos(ph) * 0.09;
+    N = normalize(vec3(-slope * dir.x + (texture(uNoise, p * 0.018 + 0.01).r - dune) * 4.0, 1.0, -slope * dir.y));
+    alb = mix(uStoneB, uStoneA, dune * 0.9 + rip * 0.06) * (0.94 + 0.1 * fine);
+    ao = mix(0.86, 1.0, rip * 0.5 + 0.5);
+    gloss = 0.03;
+  } else if (style == 2) {
+    // city: asphalt streets every 24 m with lane paint and crosswalks, sidewalks, paved blocks
+    vec2 g = p - 24.0 * floor(p / 24.0 + 0.5), a = abs(g);
+    float onX = step(a.x, 4.6), onZ = step(a.y, 4.6), road = max(onX, onZ);
+    float side = (1.0 - road) * max(step(a.x, 6.6), step(a.y, 6.6));
+    vec3 asphalt = uGrout * (0.9 + 0.25 * fine + 0.15 * mott);
+    vec2 tile = fract(p / 1.3);
+    float seam = 1.0 - smoothstep(0.0, 0.06, min(min(tile.x, 1.0 - tile.x), min(tile.y, 1.0 - tile.y)));
+    vec3 walk = uStoneB * (0.92 + 0.12 * hash12(floor(p / 1.3))) * (1.0 - 0.25 * seam);
+    vec2 pv = fract(p / vec2(1.6, 0.8) + vec2(0.5 * floor(p.y / 0.8), 0.0) * 0.5);
+    float pseam = 1.0 - smoothstep(0.0, 0.05, min(min(pv.x, 1.0 - pv.x), min(pv.y, 1.0 - pv.y)));
+    vec3 block = uStoneA * (0.9 + 0.15 * hash12(floor(p / vec2(1.6, 0.8)))) * (1.0 - 0.3 * pseam);
+    alb = road > 0.5 ? asphalt : side > 0.5 ? walk : block;
+    if (road > 0.5) {
+      float inter = onX * onZ;
+      // lane paint: dashed yellow centre lines, white edges; zebra crossings where streets meet
+      float cz = onX * (1.0 - inter) * step(a.x, 0.1) * step(fract(p.y / 3.0), 0.55);
+      float cx = onZ * (1.0 - inter) * step(a.y, 0.1) * step(fract(p.x / 3.0), 0.55);
+      float edge = (1.0 - inter) * (onX * step(abs(a.x - 4.2), 0.07) + onZ * step(abs(a.y - 4.2), 0.07));
+      float zebra = inter * (step(3.0, a.y) * step(fract(p.x / 1.0), 0.5) + step(3.0, a.x) * step(fract(p.y / 1.0), 0.5)) * step(max(a.x, a.y), 4.4) * step(3.0, max(a.x, a.y)) * (1.0 - step(3.0, min(a.x, a.y)));
+      alb = mix(alb, vec3(1.0, 0.82, 0.25), cz + cx);
+      alb = mix(alb, vec3(0.92), clamp(edge + zebra, 0.0, 1.0) * 0.9);
+      gloss = 0.12; sharp = 40.0;
+    }
+    // curbs: a dark lip along the road edges (not across the intersections)
+    float curb = (1.0 - onX * onZ) * (1.0 - smoothstep(0.0, 0.14, min(abs(a.x - 4.6), abs(a.y - 4.6))));
+    ao = 1.0 - 0.3 * curb;
+  } else if (style == 3) {
+    // bounce house: puffy vinyl cushions in four colors, glossy, with stitched seams
+    vec2 c = floor(p / 3.2), f = fract(p / 3.2) - 0.5;
+    float h = hash12(c);
+    vec3 pal = h < 0.25 ? uStoneA : h < 0.5 ? uStoneB : h < 0.75 ? uAccent : vec3(1.0, 0.86, 0.22);
+    vec2 d = f * 2.0;
+    N = normalize(vec3(-d.x * 0.5 * (1.0 - d.y * d.y), 1.0, -d.y * 0.5 * (1.0 - d.x * d.x)));
+    float seam = 1.0 - smoothstep(0.42, 0.5, max(abs(f.x), abs(f.y)));
+    alb = pal * (0.9 + 0.08 * fine);
+    ao = mix(0.55, 1.0, seam);
+    gloss = 0.5; sharp = 60.0;
+  } else if (style == 4) {
+    // candy land: pink and cream frosting checks with sprinkles
+    vec2 c = floor(p / 3.0);
+    float chk = mod(c.x + c.y, 2.0);
+    vec3 base = mix(uStoneA, uStoneB, chk) * (0.95 + 0.08 * texture(uNoise, p * 0.3).r);
+    vec2 sc = floor(p / 0.55), sf = fract(p / 0.55) - 0.5;
+    float sh = hash12(sc), ang = sh * 6.283;
+    vec2 q = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * sf;
+    float spr = step(0.55, sh) * (1.0 - smoothstep(0.0, 0.05, length(vec2(max(abs(q.x) - 0.13, 0.0), q.y)) - 0.045));
+    vec3 sprCol = sh < 0.7 ? vec3(1.0, 0.3, 0.45) : sh < 0.8 ? vec3(0.3, 0.75, 1.0) : sh < 0.9 ? vec3(1.0, 0.9, 0.3) : vec3(0.5, 0.9, 0.45);
+    alb = mix(base, sprCol, spr);
+    N = normalize(vec3((texture(uNoise, p * 0.3 + 0.02).r - texture(uNoise, p * 0.3).r) * 6.0, 1.0, 0.0));
+    gloss = 0.35; sharp = 50.0;
+  } else if (style == 5) {
+    // tundra: soft snow drifts with glints
+    float h1 = texture(uNoise, p * 0.06).r, h2 = texture(uNoise, p * 0.06 + vec2(0.03, 0.0)).r, h3 = texture(uNoise, p * 0.06 + vec2(0.0, 0.03)).r;
+    N = normalize(vec3((h1 - h2) * 3.0, 1.0, (h1 - h3) * 3.0));
+    alb = mix(uStoneB, uStoneA, smoothstep(0.3, 0.7, h1)) * (0.97 + 0.05 * fine);
+    float glint = step(0.993, hash12(floor(p * 9.0))) * (0.5 + 0.5 * sin(uTime * 3.0 + hash12(floor(p * 9.0)) * 40.0));
+    emis = vec3(0.9, 0.95, 1.0) * glint * 0.8;
+    gloss = 0.15; sharp = 30.0;
+  } else if (style == 6) {
+    // volcano: cracked basalt plates with glowing lava seams
+    vec3 v = voro(p / 2.4);
+    float crack = 1.0 - smoothstep(0.0, 0.06, v.y);
+    alb = mix(uStoneA, uStoneB, v.z) * (0.85 + 0.2 * fine) * (1.0 - 0.6 * crack);
+    float pulse = 0.65 + 0.35 * sin(uTime * 1.5 + v.z * 6.0 + p.x * 0.2);
+    emis = uAccent * crack * pulse * (1.6 + 1.2 * mott);
+    N = normalize(vec3((fine - 0.5) * 0.2, 1.0, (mott - 0.5) * 0.2));
+    ao = mix(0.75, 1.0, smoothstep(0.0, 0.25, v.y));
+  } else if (style == 7) {
+    // jungle: mossy grass with bare dirt patches and tiny blades
+    float patchy = smoothstep(0.55, 0.7, texture(uNoise, p * 0.035).g);
+    float blades = texture(uNoise, p * vec2(2.4, 2.9)).b;
+    alb = mix(mix(uStoneA, uStoneB, mott) * (0.8 + 0.35 * blades), uGrout * (0.9 + 0.2 * fine), patchy);
+    N = normalize(vec3((blades - 0.5) * 0.35 * (1.0 - patchy), 1.0, (fine - 0.5) * 0.35 * (1.0 - patchy)));
+    ao = mix(0.8, 1.0, blades);
+  } else if (style == 8) {
+    // beach: pale sand with darker wet streaks and the odd shell
+    float wet = smoothstep(0.55, 0.75, texture(uNoise, p * vec2(0.02, 0.05)).r);
+    float rip = sin(p.x * 2.2 + texture(uNoise, p * 0.05).g * 6.0);
+    alb = mix(uStoneA, uStoneB, wet) * (0.94 + 0.1 * fine + 0.03 * rip);
+    float shell = step(0.996, hash12(floor(p * 2.0)));
+    alb = mix(alb, vec3(1.0, 0.92, 0.88), shell);
+    N = normalize(vec3(cos(p.x * 2.2) * 0.04, 1.0, 0.0));
+    gloss = 0.05 + wet * 0.3; sharp = 40.0;
+  } else if (style == 9) {
+    // moon: grey regolith pocked with craters
+    vec2 c = floor(p / 7.0), f = fract(p / 7.0) * 7.0 - 3.5;
+    float h = hash12(c), cr = 1.2 + h * 1.8;
+    vec2 off = (vec2(hash12(c + 4.1), hash12(c + 8.3)) - 0.5) * (7.0 - cr * 2.0);
+    vec2 d = f - off;
+    float r = length(d) / cr;
+    float bowl = step(0.4, h) * (1.0 - smoothstep(0.85, 1.0, r));
+    float rim = step(0.4, h) * smoothstep(0.75, 1.0, r) * (1.0 - smoothstep(1.0, 1.25, r));
+    vec2 nd = r > 1e-3 ? d / (r * cr) : vec2(0.0), tilt = nd * (bowl * -0.6 + rim * 0.5);
+    N = normalize(vec3(tilt.x, 1.0, tilt.y));
+    alb = mix(uStoneA, uStoneB, mott) * (0.9 + 0.15 * fine) * (1.0 - 0.25 * bowl) * (1.0 + 0.15 * rim);
+    ao = 1.0 - 0.2 * bowl;
+  } else {
+    // stone plaza: large running-bond bricks
+    vec2 bk = bricks(p);
+    const float e = 0.02;
+    float hgt = smoothstep(0.0, 0.1, -bk.x);
+    float hx = smoothstep(0.0, 0.1, -bricks(p + vec2(e, 0.0)).x);
+    float hz = smoothstep(0.0, 0.1, -bricks(p + vec2(0.0, e)).x);
+    N = normalize(vec3(-(hx - hgt) / e * 0.025, 1.0, -(hz - hgt) / e * 0.025));
+    float fineB = texture(uNoise, p * 0.6 + bk.y * 5.0).g;
+    alb = mix(uStoneA, uStoneB, bk.y * 0.7 + (mott - 0.5) * 0.5);
+    alb *= 0.94 + 0.08 * mott + 0.04 * fineB;
+    float seam = 1.0 - smoothstep(0.0, 0.035, -bk.x);
+    alb = mix(alb, alb * 0.8, seam);
+    ao = mix(0.86, 1.0, smoothstep(0.0, 0.08, -bk.x));
+  }
 
   // the arena: dark outside, soft contact shading just inside the wall
   float outside = 0.0;
@@ -2498,6 +2625,7 @@ void main() {
     ao *= mix(1.0, 0.62, smoothstep(-1.6, 0.0, sd));
     outside = smoothstep(-0.1, 1.2, sd);
     alb = mix(alb, uGrout * (0.8 + 0.3 * mott), outside);
+    emis *= 1.0 - outside;
   }
 
   vec3 V = normalize(uCamPos - vW);
@@ -2508,7 +2636,8 @@ void main() {
   vec3 hemi = mix(uGroundCol, uSkyCol, N.y * 0.5 + 0.5);
   vec3 col = alb * (hemi * 0.55 + uLightCol * ndl * 0.75 * sh) * ao * contact;
   vec3 H = normalize(uLightDir + V);
-  col += uLightCol * pow(max(dot(N, H), 0.0), 24.0) * 0.06 * sh * ao * (1.0 - outside);
+  col += uLightCol * pow(max(dot(N, H), 0.0), sharp) * gloss * sh * ao * (1.0 - outside);
+  col += emis;
   fragColor = vec4(atmos(col, vW), 1.0);
 }`;
 
@@ -2521,10 +2650,40 @@ in vec2 vUV;
 uniform vec3 uPoolCol;
 uniform float uPoolGlow;
 uniform float uSeed;
+uniform float uStyle; // 0 liquid, 1 ice sheet, 2 quicksand
 out vec4 fragColor;
 void main() {
   float r = length(vUV);
   float ang = atan(vUV.y, vUV.x);
+  if (uStyle > 0.5) {
+    // ice and quicksand: solid patches with their own surface instead of rippling liquid
+    float edge = 0.88 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 5.0 - uSeed * 2.0);
+    float m = 1.0 - smoothstep(edge - 0.02, edge + 0.01, r);
+    if (m < 0.003) discard;
+    vec2 q = vW.xz;
+    vec3 v = normalize(uCamPos - vW);
+    vec3 col;
+    if (uStyle < 1.5) {
+      // ice: glassy and pale, with a few cracks and a sharp glint
+      float cr = texture(uNoise, q * 0.22 + uSeed).r;
+      float crack = 1.0 - smoothstep(0.0, 0.02, abs(cr - 0.5));
+      vec3 n = normalize(vec3((texture(uNoise, q * 0.15).g - 0.5) * 0.15, 1.0, (texture(uNoise, q * 0.15 + 3.1).b - 0.5) * 0.15));
+      float F = 0.04 + 0.96 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+      col = mix(uPoolCol * 0.85, uPoolCol * 1.15, smoothstep(edge, 0.0, r)) + envColor(reflect(-v, n)) * (0.18 + F * 0.5);
+      col += uLightCol * pow(max(dot(n, normalize(uLightDir + v)), 0.0), 140.0) * 1.4;
+      col = mix(col, vec3(1.0), crack * 0.5 + smoothstep(edge - 0.08, edge - 0.01, r) * 0.35);
+    } else {
+      // quicksand: a slow swirl sinking toward the middle
+      float swirl = sin(ang * 3.0 + r * 9.0 - uTime * 1.2 + uSeed) * 0.5 + 0.5;
+      float grain = texture(uNoise, q * 1.4 + vec2(uTime * 0.05, 0.0)).g;
+      col = mix(uPoolCol * 0.55, uPoolCol, smoothstep(0.0, edge, r) * 0.6 + swirl * 0.25 + grain * 0.15);
+      col *= mix(0.62, 1.0, smoothstep(0.0, 0.5, r));
+      col = mix(col, uPoolCol * 1.12, smoothstep(edge - 0.1, edge - 0.01, r) * 0.5);
+    }
+    col += uPoolCol * uPoolGlow;
+    fragColor = vec4(atmos(col, vW), m * 0.96);
+    return;
+  }
   float edge = 0.86 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 7.0 - uSeed * 2.0 + uTime * 0.6) + 0.03 * (texture(uNoise, vec2(ang * 0.25 + uSeed, uTime * 0.02)).r - 0.5);
   float m = 1.0 - smoothstep(edge - 0.02, edge + 0.01, r);
   float lip = smoothstep(edge - 0.1, edge - 0.01, r) * m;
@@ -3186,6 +3345,12 @@ uniform float uOutline;
 uniform vec3 uOutlineCol;
 out vec4 fragColor;
 void main() {
+  // screen-door fade so the hero shows through tall scenery
+  if (vFx.y > 0.0) {
+    vec2 c = mod(floor(gl_FragCoord.xy), 4.0);
+    float bayer = (mod(c.x + c.y * 2.0, 4.0) * 4.0 + mod(c.y + c.x * 3.0, 4.0)) / 16.0;
+    if (bayer < vFx.y) discard;
+  }
   if (uOutline > 0.0) { fragColor = vec4(atmos(uOutlineCol, vW), 1.0); return; }
   vec3 n = normalize(vN);
   vec3 v = normalize(uCamPos - vW);
@@ -3719,7 +3884,7 @@ R.addEnemyMesh = function (name, mesh) {
   }
   const up = R._upload(mesh);
   const mk = (cap) => { const stream = new InstanceStream(16, cap); return { stream, vao: R._meshVao(up.vbuf, up.ibuf, stream), ni: up.ni, itype: up.itype }; };
-  R.enemyDraw[name] = { normal: mk(ENEMY_CAPS[name] || 64), elite: mk(40), crown: null };
+  R.enemyDraw[name] = { normal: mk(ENEMY_CAPS[name] || 160), elite: mk(40), crown: null };
   R._attachCrown(name);
 };
 R._attachCrown = function (base) {
@@ -3853,6 +4018,7 @@ R.drawScene = function () {
     gl.uniform2f(u.uCenter, Math.round(t[0] / 4) * 4, Math.round(t[2] / 4) * 4);
     gl.uniform1f(u.uHalf, 80);
     gl.uniform3fv(u.uStoneA, f.stoneA); gl.uniform3fv(u.uStoneB, f.stoneB); gl.uniform3fv(u.uGrout, f.grout);
+    gl.uniform3fv(u.uAccent, f.accent); gl.uniform1f(u.uFloorStyle, f.floorStyle || 0);
     gl.uniform3fv(u.uArenaBox, SCENE.arenaBox || [0, 0, 0]);
     const hs = SCENE.heroShadow;
     gl.uniform1i(u.uShCount, hs ? hs.count : 0);
@@ -3868,9 +4034,12 @@ R.drawScene = function () {
     const p = R.progs.pool;
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(p.p); R.setFrame(p);
-    gl.uniform3fv(p.u.uPoolCol, f.poolCol); gl.uniform1f(p.u.uPoolGlow, f.poolGlow); gl.uniform1i(p.u.uBillboard, 0);
+    gl.uniform1i(p.u.uBillboard, 0);
     gl.bindVertexArray(R.vaos.quad);
     for (const o of SCENE.pools) {
+      // each zone kind brings its own color, glow and look (0 liquid, 1 ice sheet, 2 quicksand swirl)
+      const Z = ZONE_KINDS[o.kind] || {}, col = Z.rgb || (Z.col ? (Z.rgb = hexToRgb(Z.col)) : f.poolCol);
+      gl.uniform3fv(p.u.uPoolCol, col); gl.uniform1f(p.u.uPoolGlow, Z.glow ?? f.poolGlow); gl.uniform1f(p.u.uStyle, Z.style || 0);
       gl.uniform3f(p.u.uC, o.x, 0, o.z); gl.uniform1f(p.u.uR, o.r * 1.18); gl.uniform1f(p.u.uSeed, o.ph);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
@@ -4141,7 +4310,8 @@ function pushPart(x, y, z, size, r, g, b, a, vx, vy, vz, type) {
   d[o + 8] = vx; d[o + 9] = vy; d[o + 10] = vz; d[o + 11] = type;
 }
 // Enemy instance: model name, elite flag, position, yaw, anim row, scale, squash, dead, flash, aura tint, tint rgb
-function pushEnemy(model, elite, x, y, z, yaw, row, scale, squash, dead, flash, aura, tr, tg, tb) {
+// fade: 0 solid, up to 1 dithered away (used to see through tall buildings)
+function pushEnemy(model, elite, x, y, z, yaw, row, scale, squash, dead, flash, aura, tr, tg, tb, fade = 0) {
   const e = R.enemyDraw[model];
   if (!e) return;
   const s = elite ? e.elite.stream : e.normal.stream, o = s.push();
@@ -4149,7 +4319,7 @@ function pushEnemy(model, elite, x, y, z, yaw, row, scale, squash, dead, flash, 
   const d = s.data;
   d[o] = x; d[o + 1] = y; d[o + 2] = z; d[o + 3] = yaw;
   d[o + 4] = row; d[o + 5] = scale; d[o + 6] = squash; d[o + 7] = dead;
-  d[o + 8] = flash; d[o + 9] = 0; d[o + 10] = elite ? 1 : 0; d[o + 11] = aura;
+  d[o + 8] = flash; d[o + 9] = fade; d[o + 10] = elite ? 1 : 0; d[o + 11] = aura;
   d[o + 12] = tr; d[o + 13] = tg; d[o + 14] = tb; d[o + 15] = 1;
 }
 
@@ -4915,6 +5085,14 @@ const PASSIVES = {
   growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
+// the power-up a chapter's theme introduces (from: the first chapter it appears in)
+function featuredPowerup(chapter) {
+  const want = ((chapter - 1) % 10) + 1;
+  if (want < 2) return null;
+  for (const id in SKILLS) if (SKILLS[id].from === want) return id;
+  for (const id in PASSIVES) if (PASSIVES[id].from === want) return id;
+  return null;
+}
 // a run holds at most this many different skills and this many different passives
 const SLOT_LIMIT = { skill: 4, passive: 4 };
 
@@ -4952,20 +5130,34 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
+// meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
+const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
 
+// Arenas: one theme per chapter; chapters 11+ repeat them. floor: floor shader style.
+// props / zones: [kind, count per 40x40 of floor, min radius, max radius]; wall: the prop kind ringing the edge.
 const ARENAS = [
-  { name: 'Stone Plaza', stoneA: '#34536e', stoneB: '#3c5e7b', grout: '#08121c', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.5, shadowTint: '#0a1f3a', rock: '#8592a0', pool: '#1f7a9c', poolGlow: 0.05 },
-  { name: 'Slime Sewers', stoneA: '#2f4d47', stoneB: '#365750', grout: '#061210', accent: '#62ff7a', fog: '#071a16', sky: '#7cc4b0', ground: '#12302a', light: '#f2fff4', spotMin: 0.48, shadowTint: '#06281f', rock: '#74857c', pool: '#4ccf48', poolGlow: 0.35 },
-  { name: 'Toy Factory', stoneA: '#4e4772', stoneB: '#58507f', grout: '#120d22', accent: '#ff9bd1', fog: '#16122a', sky: '#c9bcf2', ground: '#2e2550', light: '#fff4ec', spotMin: 0.52, shadowTint: '#1c1238', rock: '#a297c8', pool: '#ff6fb8', poolGlow: 0.2 },
-  { name: 'Night Market', stoneA: '#58432f', stoneB: '#624b36', grout: '#160c08', accent: '#ffb35c', fog: '#170e14', sky: '#c9a07a', ground: '#2d1d18', light: '#ffe7c4', spotMin: 0.46, shadowTint: '#2a1020', rock: '#8f7f6a', pool: '#4a3322', poolGlow: 0.0 },
-  { name: 'Ice Lab', stoneA: '#46708f', stoneB: '#4f7a98', grout: '#0a1a28', accent: '#bff3ff', fog: '#0b1f33', sky: '#a6cce8', ground: '#22445f', light: '#e8f4ff', spotMin: 0.48, shadowTint: '#0a2440', rock: '#bcd8ea', pool: '#5fc8ff', poolGlow: 0.15 },
-  { name: 'Lava Foundry', stoneA: '#3a3131', stoneB: '#433838', grout: '#0b0605', accent: '#ff6a1a', fog: '#1a0c08', sky: '#a06a50', ground: '#2a1410', light: '#ffe2c8', spotMin: 0.46, shadowTint: '#2a0a04', rock: '#6e625e', pool: '#ff6a1a', poolGlow: 0.95 },
+  { id: 'plaza', name: 'Stone Plaza', floor: 0, stoneA: '#34536e', stoneB: '#3c5e7b', grout: '#08121c', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.5, shadowTint: '#0a1f3a', rock: '#8592a0', pool: '#1f7a9c', poolGlow: 0.05,
+    props: [['rock', 11, 0.8, 1.4]], zones: [['pool', 4, 1.7, 2.6]], wall: 'rock' },
 ];
+// Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
+// tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
+const PROP_KINDS = {
+  rock: { models: ['rock0', 'rock1', 'rock2'], unit: 0.45, tint: 'rock', block: true, shots: true },
+};
+// Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
+const ZONE_KINDS = {
+  pool: { block: true },
+};
 
+// Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo'];
+const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
-  const arena = Math.floor((n - 1) / 5) % ARENAS.length;
+  const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
   const k = n - 1;
-  const bosses = n % 5 === 0 ? ['conductor', BOSS_ORDER[(Math.floor(n / 5) - 1) % 4]] : [BOSS_ORDER[(n - 1) % 5]];
+  // bosses still being built fall back to the original roster
+  const main = BOSS_TYPES[CHAPTER_BOSSES[i]] ? CHAPTER_BOSSES[i] : BOSS_ORDER[i % BOSS_ORDER.length];
+  const bosses = n % 5 === 0 ? [main, GUEST_BOSSES[(n / 5 - 1) % GUEST_BOSSES.length]] : [main];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
     hpMul: 1 + 0.09 * k + 0.004 * k * k,
@@ -5221,7 +5413,7 @@ function applyArena(i) {
   f.arena = i; f.stoneA = hexToRgb(a.stoneA); f.stoneB = hexToRgb(a.stoneB); f.grout = hexToRgb(a.grout); f.accent = hexToRgb(a.accent);
   f.fogCol = hexToRgb(a.fog); f.skyCol = hexToRgb(a.sky); f.groundCol = hexToRgb(a.ground); f.lightCol = hexToRgb(a.light);
   f.spotMin = a.spotMin; f.shadowTint = hexToRgb(a.shadowTint);
-  f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow;
+  f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow; f.floorStyle = a.floor || 0;
 }
 function applySkin(id, costume) {
   const s = SKINS.find(k => k.id === id) || SKINS[0];
@@ -5484,15 +5676,22 @@ function updateRun(dt) {
     }
   }
 
-  // hero movement
-  const top = hero.topSpeed * (1 - run.contactSlow);
-  const k = 1 - Math.exp(-dt / 0.045);
+  // hero movement; the ground underfoot can slow you, make you slide, or burn
+  const zone = zoneAt(h[0], h[2]), Z = zone ? ZONE_KINDS[zone.kind] : null;
+  run.zone = zone;
+  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.speedBoost || 1);
+  const k = 1 - Math.exp(-dt / (Z && Z.slide ? 0.55 : 0.045));
+  if (Z && Z.burn) {
+    run.burnT = (run.burnT || 0) - dt;
+    if (run.burnT <= 0) { run.burnT = 0.5; hurtHero(Z.burn * 0.5 * run.info.dmgMul, h[0], h[2] + 0.01); FX.burst(h[0], 0.3, h[2], 6, [1, 0.5, 0.1], 2, 0.1, 0.4, 0); }
+  }
   run.vel[0] += (G.input.x * top - run.vel[0]) * k;
   run.vel[2] += (G.input.z * top - run.vel[2]) * k;
   h[0] += run.vel[0] * dt; h[2] += run.vel[2] * dt;
   HERO_PT.x = h[0]; HERO_PT.z = h[2];
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
   hero.update(dt, run.vel, true);
+  updateArenaFx(dt);
 
   gridBuild(run.enemies);
   updateEnemies(dt);
@@ -5559,6 +5758,10 @@ function updateEnemies(dt) {
     e.flash = Math.max(0, e.flash - dt); e.flashCd = (e.flashCd || 0) - dt;
     e.contactCd -= dt;
     e.slowT -= dt; if (e.slowT <= 0) e.slowMul = 1;
+    if (ARENA.zones.length && !e.boss) {
+      const z = zoneAt(e.x, e.z), Z = z && ZONE_KINDS[z.kind];
+      if (Z && Z.slow) { e.slowMul = Math.min(e.slowMul, Z.slow); e.slowT = Math.max(e.slowT, 0.05); }
+    }
     e.spawnT = Math.max(0, e.spawnT - dt);
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
     if (e.boss) updateBoss(e, dt);
@@ -5870,10 +6073,11 @@ function finishRun(won) {
 
 // ---- 11a-arena.js ----
 // ============================================================
-// The arena: a walled rounded square with boulders and goo pools.
-// Boulders and pools both block movement; boulders also stop shots.
+// The arena: a walled rounded square dressed by the chapter's theme (ARENAS in 10-data.js).
+// Props are static meshes (round or box footprints); blocking ones stop movement, some also stop shots.
+// Zones are ground patches: pools block, others slow, burn or make you slide.
 // ============================================================
-const ARENA = { hw: 50, hd: 50, cr: 8, rocks: [], pools: [], wall: [], obstacles: [], grid: null, cols: 0, rows: 0 };
+const ARENA = { hw: 50, hd: 50, cr: 8, theme: null, props: [], zones: [], wall: [], obstacles: [], grid: null, cols: 0, rows: 0, fx: null };
 // obstacles are bucketed into a coarse grid; each bucket also holds obstacles within OB_PAD of it
 const OB_CELL = 4, OB_PAD = 4, NO_OBS = [];
 
@@ -5892,38 +6096,62 @@ function arenaNormal(x, z, out) {
 }
 
 function buildArena(chapter) {
+  const info = chapterInfo(chapter), T = ARENAS[info.arena];
   const rnd = mulberry32(chapter * 7919 + 17);
+  ARENA.theme = T;
+  ARENA.props = []; ARENA.zones = []; ARENA.wall = []; ARENA.fx = null;
   const placed = [];
-  ARENA.rocks = []; ARENA.pools = []; ARENA.wall = [];
-  const free = (x, z, r) => Math.hypot(x, z) > 7 + r && arenaSd(x, z) < -(r + 2.5)
+  const fits = (x, z, r, spawnClear = 7) => Math.hypot(x, z) > spawnClear + r && arenaSd(x, z) < -(r + 2.5)
     && placed.every(o => Math.hypot(o.x - x, o.z - z) > o.r + r + 2.4);
-  const place = (kind, n, rmin, rmax) => {
-    for (let i = 0, tries = 0; i < n && tries < 500; tries++) {
-      const r = rmin + rnd() * (rmax - rmin);
-      const x = (rnd() * 2 - 1) * ARENA.hw, z = (rnd() * 2 - 1) * ARENA.hd;
-      if (!free(x, z, r)) continue;
-      const o = { kind, x, z, r, yaw: rnd() * TAU, v: Math.floor(rnd() * 3), ph: rnd() * 10 };
-      placed.push(o);
-      (kind === 'rock' ? ARENA.rocks : ARENA.pools).push(o);
-      i++;
-    }
+  const api = {
+    rnd, fits,
+    // add one prop or zone exactly where asked (layouts use this)
+    prop(kind, x, z, r, extra = {}) {
+      const K = PROP_KINDS[kind], models = K.models;
+      const o = { kind, x, z, r, yaw: rnd() * TAU, model: models[Math.floor(rnd() * models.length)], ph: rnd() * 10, block: K.block !== false, shots: !!K.shots, ...extra };
+      if (o.shape === 'box') o.r = Math.hypot(o.hw, o.hd);
+      placed.push(o); ARENA.props.push(o);
+      return o;
+    },
+    zone(kind, x, z, r, extra = {}) {
+      const o = { kind, x, z, r, ph: rnd() * 10, block: !!ZONE_KINDS[kind].block, ...extra };
+      placed.push(o); ARENA.zones.push(o);
+      return o;
+    },
+    // scatter n of a kind wherever they fit
+    scatter(type, kind, n, rmin, rmax, test) {
+      for (let i = 0, tries = 0; i < n && tries < 600; tries++) {
+        const r = rmin + rnd() * (rmax - rmin);
+        const x = (rnd() * 2 - 1) * ARENA.hw, z = (rnd() * 2 - 1) * ARENA.hd;
+        if (!fits(x, z, r) || (test && !test(x, z, r))) continue;
+        api[type](kind, x, z, r);
+        i++;
+      }
+    },
   };
   // obstacle counts follow the floor area (the first 40x40 arenas had 4 pools and 11 boulders)
-  const area = (ARENA.hw * ARENA.hd) / 400;
-  place('pool', Math.round(4 * area * 0.8), 1.7, 2.6);
-  place('rock', Math.round(11 * area * 0.8), 0.8, 1.4);
-  ARENA.obstacles = placed;
+  const area = (ARENA.hw * ARENA.hd) / 400 * 0.8;
+  if (ARENA_LAYOUTS[T.id]) ARENA_LAYOUTS[T.id](api, area);
+  for (const [kind, n, rmin, rmax] of T.zones || []) api.scatter('zone', kind, Math.round(n * area), rmin, rmax);
+  for (const [kind, n, rmin, rmax] of T.props || []) api.scatter('prop', kind, Math.round(n * area), rmin, rmax);
+  ARENA.obstacles = placed.filter(o => o.block);
   gridObstacles();
-  // a ring of boulders just outside the edge (movement is held in by the edge itself)
-  const { hw, hd, cr } = ARENA, out = 0.9, pts = [];
-  const sx = hw - cr, sz = hd - cr, step = 1.7;
+  // a ring of props just outside the edge (movement is held in by the edge itself)
+  const W = PROP_KINDS[T.wall || 'rock'], { hw, hd, cr } = ARENA, out = 0.9, pts = [];
+  const sx = hw - cr, sz = hd - cr, step = W.wallStep || 1.7;
   for (let x = -sx; x <= sx; x += step) { pts.push([x, -hd - out]); pts.push([x, hd + out]); }
   for (let z = -sz; z <= sz; z += step) { pts.push([-hw - out, z]); pts.push([hw + out, z]); }
   for (const [cx, cz, a0] of [[sx, sz, 0], [-sx, sz, Math.PI / 2], [-sx, -sz, Math.PI], [sx, -sz, Math.PI * 1.5]]) {
     const n = Math.ceil((cr + out) * Math.PI / 2 / step);
     for (let i = 1; i < n; i++) { const a = a0 + (i / n) * Math.PI / 2; pts.push([cx + Math.cos(a) * (cr + out), cz + Math.sin(a) * (cr + out)]); }
   }
-  for (const [x, z] of pts) ARENA.wall.push({ x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: 1.0 + rnd() * 0.45, yaw: rnd() * TAU, v: Math.floor(rnd() * 3) });
+  for (const [x, z] of pts) {
+    const r = (W.wallR || [1.0, 1.45]);
+    ARENA.wall.push({ kind: T.wall || 'rock', x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: r[0] + rnd() * (r[1] - r[0]), yaw: W.faceIn ? Math.atan2(-x, -z) : rnd() * TAU, model: W.models[Math.floor(rnd() * W.models.length)], ph: rnd() * 10 });
+  }
+  // the theme's moving parts (tumbleweeds, ball pits, vents...)
+  const F = ARENA_FEATURES[T.id];
+  if (F) { ARENA.fx = { def: F, st: {} }; if (F.init) F.init(ARENA.fx.st, rnd); }
 }
 
 function gridObstacles() {
@@ -5931,9 +6159,9 @@ function gridObstacles() {
   const grid = ARENA.grid = Array.from({ length: cols * rows }, () => []);
   const x0 = -ARENA.hw - 4, z0 = -ARENA.hd - 4;
   for (const ob of ARENA.obstacles) {
-    const e = ob.r + OB_PAD;
-    const c0 = Math.max(0, Math.floor((ob.x - e - x0) / OB_CELL)), c1 = Math.min(cols - 1, Math.floor((ob.x + e - x0) / OB_CELL));
-    const r0 = Math.max(0, Math.floor((ob.z - e - z0) / OB_CELL)), r1 = Math.min(rows - 1, Math.floor((ob.z + e - z0) / OB_CELL));
+    const ex = (ob.shape === 'box' ? ob.hw : ob.r) + OB_PAD, ez = (ob.shape === 'box' ? ob.hd : ob.r) + OB_PAD;
+    const c0 = Math.max(0, Math.floor((ob.x - ex - x0) / OB_CELL)), c1 = Math.min(cols - 1, Math.floor((ob.x + ex - x0) / OB_CELL));
+    const r0 = Math.max(0, Math.floor((ob.z - ez - z0) / OB_CELL)), r1 = Math.min(rows - 1, Math.floor((ob.z + ez - z0) / OB_CELL));
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r * cols + c].push(ob);
   }
 }
@@ -5944,17 +6172,33 @@ function obsNear(x, z, r = 0) {
   if (c < 0 || w < 0 || c >= ARENA.cols || w >= ARENA.rows) return NO_OBS;
   return ARENA.grid[w * ARENA.cols + c];
 }
+// Distance from (x, z) to an obstacle's edge (negative inside); for boxes also the outward direction in _n2
+const _n2 = [0, 0];
+function obDist(ob, x, z, out) {
+  if (ob.shape === 'box') {
+    const dx = x - ob.x, dz = z - ob.z, qx = Math.abs(dx) - ob.hw, qz = Math.abs(dz) - ob.hd;
+    if (qx > 0 || qz > 0) {
+      const ox = Math.max(qx, 0) * Math.sign(dx), oz = Math.max(qz, 0) * Math.sign(dz), l = Math.hypot(ox, oz) || 1e-4;
+      if (out) { out[0] = ox / l; out[1] = oz / l; }
+      return l;
+    }
+    if (out) { if (qx > qz) { out[0] = Math.sign(dx) || 1; out[1] = 0; } else { out[0] = 0; out[1] = Math.sign(dz) || 1; } }
+    return Math.max(qx, qz);
+  }
+  const dx = x - ob.x, dz = z - ob.z, d = Math.hypot(dx, dz) || 1e-4;
+  if (out) { out[0] = dx / d; out[1] = dz / d; }
+  return d - ob.r;
+}
 
 // Push a circle (o.x, o.z, radius r) out of obstacles and back inside the arena.
 // Returns the obstacle it touched, 'wall', or null.
-const _n2 = [0, 0];
+const _n3 = [0, 0];
 function resolveCircle(o, r) {
   let hit = null;
   for (const ob of obsNear(o.x, o.z, r)) {
-    const dx = o.x - ob.x, dz = o.z - ob.z, min = ob.r + r, d2 = dx * dx + dz * dz;
-    if (d2 >= min * min) continue;
-    const d = Math.sqrt(d2) || 1e-4;
-    o.x = ob.x + dx / d * min; o.z = ob.z + dz / d * min;
+    const d = obDist(ob, o.x, o.z, _n3);
+    if (d >= r) continue;
+    o.x += _n3[0] * (r - d); o.z += _n3[1] * (r - d);
     hit = ob;
   }
   const sd = arenaSd(o.x, o.z);
@@ -5965,13 +6209,14 @@ function resolveCircle(o, r) {
   }
   return hit;
 }
+// Is (x, z) inside something that stops enemy shots (boulders, buildings...)?
 function inRock(x, z, pad = 0) {
-  for (const ob of obsNear(x, z, pad)) if (ob.kind === 'rock' && Math.hypot(x - ob.x, z - ob.z) < ob.r + pad) return true;
+  for (const ob of obsNear(x, z, pad)) if (ob.shots && obDist(ob, x, z) < pad) return true;
   return false;
 }
 function blockedAt(x, z, r) {
   if (arenaSd(x, z) > -r) return true;
-  for (const ob of obsNear(x, z, r)) if (Math.hypot(x - ob.x, z - ob.z) < ob.r + r) return true;
+  for (const ob of obsNear(x, z, r)) if (obDist(ob, x, z) < r) return true;
   return false;
 }
 // Bend a chase direction (dx, dz, unit) around obstacles between the walker and its goal
@@ -5991,6 +6236,19 @@ function steerAround(x, z, r, dx, dz, goalDist, out) {
   out[0] = dx; out[1] = dz;
   return out;
 }
+// The zone under (x, z), if any (zones never overlap)
+function zoneAt(x, z) {
+  for (const o of ARENA.zones) if (!o.block && Math.hypot(x - o.x, z - o.z) < o.r * 0.95) return o;
+  return null;
+}
+
+// ---------- theme hooks ----------
+// ARENA_LAYOUTS[id](api, area): hand-placed set pieces before the random scatter
+// ARENA_FEATURES[id]: { init(st, rnd), update(st, dt), emit(st) } for moving parts
+const ARENA_LAYOUTS = {};
+const ARENA_FEATURES = {};
+function updateArenaFx(dt) { const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
+function emitArenaFx() { const F = ARENA.fx; if (F && F.def.emit) F.def.emit(F.st); }
 
 // ---- 12-skills.js ----
 // ============================================================
@@ -6669,7 +6927,7 @@ function startBoss() {
   const run = G.run, h = G.hero.pos;
   run.bossStarted = true;
   const ids = run.info.bosses;
-  for (const id of ids) { ensureMeshNow(BOSS_TYPES[id].model); if (!ICONS.map['boss-' + id]) renderBossPortrait(BOSS_TYPES[id].model); }
+  for (const id of ids) { for (const m of bossMeshes(id)) ensureMeshNow(m); if (!ICONS.map['boss-' + id]) renderBossPortraitOf(id); }
   // bosses drop in on screen, clear of the HUD: beside the hero on wide screens, below it on tall ones
   const W = R.cssW, H = R.cssH, wide = W > H;
   const spots = wide ? [[0.76, 0.6], [0.24, 0.6]] : [[0.5, 0.76], [0.28, 0.74], [0.72, 0.74]];
@@ -6730,6 +6988,9 @@ function bossWalk(e, dt, tx, tz, speed) {
   e.clip = 'run';
 }
 
+// New bosses register their behaviour here: BOSS_AI[id](e, dt, distToHero, dx, dz) after the drop-in,
+// and BOSS_DRAW[id](e) when they are not a single animated mesh
+const BOSS_AI = {}, BOSS_DRAW = {};
 function updateBoss(e, dt) {
   const ai = e.ai, h = G.hero.pos, run = G.run;
   ai.t -= dt;
@@ -6875,6 +7136,7 @@ function updateBoss(e, dt) {
       }
       break;
     }
+    default: if (BOSS_AI[e.type]) BOSS_AI[e.type](e, dt, d, dx, dz); break;
     case 'conductor': {
       e.clip = 'conduct'; e.phase += dt * 0.7;
       // the stage follows the hero, so the Conductor can't be left behind
@@ -6961,6 +7223,7 @@ function emitRunScene() {
   emitArena();
   for (const e of run.enemies) {
     if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
+    if (e.boss && BOSS_DRAW[e.type]) { BOSS_DRAW[e.type](e); continue; }
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;
     pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? (e.boss ? 0.55 : 0.85) : 0, e.auraTint, e.tint[0], e.tint[1], e.tint[2]);
@@ -7078,21 +7341,26 @@ function emitRunScene() {
   emitSkills();
 }
 
+const PROP_TINT = {};
 function emitArena() {
-  const f = R.frame, rc = f.rockCol, L = f.lightDir;
+  const f = R.frame, L = f.lightDir;
   const sdx = -L[0] * 0.55, sdz = -L[2] * 0.55;
-  SCENE.pools = ARENA.pools.filter(o => onScreen(o.x, o.z, o.r + 1.5));
-  const rock = (o, size) => {
-    if (!onScreen(o.x, o.z, size + 1.5)) return;
-    const m = 'rock' + o.v;
+  SCENE.pools = ARENA.zones.filter(o => onScreen(o.x, o.z, o.r + 1.5));
+  const draw = o => {
+    const K = PROP_KINDS[o.kind], size = o.r, reach = (o.tall || K.tall || 1) * size + 1.5;
+    if (!onScreen(o.x, o.z, reach)) return;
+    const m = o.model;
     if (!R.enemyDraw[m]) return;
-    const sc = size / 0.45, shade = 0.86 + 0.14 * ((o.v * 0.37 + o.yaw) % 1);
-    pushEnemy(m, false, o.x, 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, rc[0] * shade, rc[1] * shade, rc[2] * shade);
-    pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
+    const sc = o.scale || size / K.unit, shade = 0.86 + 0.14 * ((o.ph * 0.37 + o.yaw) % 1);
+    const t = K.tint === 'rock' ? f.rockCol : K.tint ? (PROP_TINT[K.tint] = PROP_TINT[K.tint] || hexToRgb(K.tint)) : PROP_WHITE;
+    pushEnemy(m, false, o.x, o.y || 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, t[0] * shade, t[1] * shade, t[2] * shade, o.fade || 0);
+    if (K.shadow !== false && o.shape !== 'box') pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
   };
-  for (const o of ARENA.rocks) rock(o, o.r);
-  for (const o of ARENA.wall) rock(o, o.r);
+  for (const o of ARENA.props) draw(o);
+  for (const o of ARENA.wall) draw(o);
+  emitArenaFx();
 }
+const PROP_WHITE = [1, 1, 1];
 
 function trailRibbon(trail, w, col, alpha) {
   if (trail.length < 3) return;
@@ -7277,7 +7545,7 @@ const UI = {
   renderChapters() {
     const sv = G.save, map = $('chMap');
     // boss portraits need a GPU readback, so they are drawn here, only when the map is opened
-    for (const m in BOSS_OF_MODEL) if (R.enemyDraw[m] && !ICONS.map['boss-' + BOSS_OF_MODEL[m]]) renderBossPortrait(m);
+    for (const id in BOSS_TYPES) if (!ICONS.map['boss-' + id] && bossMeshes(id).every(m => R.enemyDraw[m])) renderBossPortraitOf(id);
     const top = Math.min(sv.chapter + 4, 300);
     const nodes = [];
     for (let n = top; n >= 1; n--) {
@@ -7627,8 +7895,10 @@ function rollChoices() {
     const max = maxLevel(s.id);
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
-  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id)) pool.push({ id, w: many ? 0.55 : 1 });
-  if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id)) pool.push({ id, w: many ? 0.45 : 0.7 });
+  // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
+  const open = def => (def.from || 1) <= run.chapter, feat = featuredPowerup(run.chapter);
+  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
+  if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
   while (out.length < 3 && pool.length) {
     let r = Math.random() * pool.reduce((a, c) => a + c.w, 0), i = 0;
@@ -7653,7 +7923,7 @@ function describeChoice(c) {
   if (sk) {
     if (!lvl) {
       const f = sk.fields.slice(0, 2).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`).join(' · ');
-      return { tag: 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
+      return { tag: sk.from === G.run.chapter ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
     }
     const parts = [];
     for (const [k, label, unit] of sk.fields) {
@@ -7662,7 +7932,7 @@ function describeChoice(c) {
     }
     return { tag: `LV ${lvl} → ${lvl + 1}`, name: sk.name, desc: parts.join(' · '), icon: 'skill-' + c.id, kind: 'skill', isNew: false };
   }
-  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
+  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
 }
 function applyChoice(c) {
   const run = G.run;
@@ -8353,8 +8623,26 @@ function renderHeroIcons() {
 }
 
 const BOSS_OF_MODEL = { stomper: 'stomper', hurler: 'hurler', charger: 'charger', twin: 'twins', conductor: 'conductor' };
-function renderBossPortrait(model) {
-  const id = BOSS_OF_MODEL[model];
+// Portrait of any boss: custom-drawn bosses draw themselves at the origin
+function renderBossPortraitOf(id) {
+  if (!BOSS_DRAW[id]) { renderBossPortrait(BOSS_TYPES[id].model, id); return; }
+  if (!bossMeshes(id).every(m => R.enemyDraw[m])) return;
+  iconBegin();
+  R.resetStreams();
+  const B = BOSS_TYPES[id];
+  BOSS_DRAW[id](portraitBody(id));
+  const top = (B.portraitTop || 1.1) * B.scale;
+  ICONS.map['boss-' + id] = iconCapture([0.55 * B.scale / 2.6, top * 0.95, top * 1.45], [0, top * 0.62, 0], 0.62);
+  iconEnd();
+  R.resetStreams();
+}
+// a stand-in boss at the origin, facing the camera, for portraits
+function portraitBody(id) {
+  const B = BOSS_TYPES[id];
+  return { type: id, def: B, boss: true, x: 0, y: 0, z: 0, yaw: 0.45, scale: B.scale, squash: 1, flash: 0, dying: 0, phase: 0.2, tint: hexToRgb(B.tint), ai: { state: 'portrait', t: 0 }, portrait: true, hp: 1, maxHp: 1 };
+}
+function renderBossPortrait(model, bossId) {
+  const id = bossId || BOSS_OF_MODEL[model];
   if (!id || !R.enemyDraw[model]) return;
   iconBegin();
   R.resetStreams();
@@ -8526,14 +8814,16 @@ function adaptQuality(dt) {
 
 // ---------- game flow ----------
 function requiredMeshes(n) {
-  const has = chapterInfo(n).has, req = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2'];
+  const info = chapterInfo(n), has = info.has, T = ARENAS[info.arena], req = ['stickman', 'sprinter'];
+  // the theme's scenery: scattered props, the wall ring, and whatever its layout and features place
+  for (const kind of [...(T.props || []).map(p => p[0]), T.wall || 'rock', ...(T.kinds || [])]) for (const m of PROP_KINDS[kind].models) if (!req.includes(m)) req.push(m);
   for (const k in has) if (has[k] && !req.includes(ENEMY_TYPES[k].model)) req.push(ENEMY_TYPES[k].model);
   return req;
 }
 function beginChapter(n) {
   if (G.state !== 'home') return;
   const info = chapterInfo(n), req = requiredMeshes(n);
-  prioritizeMeshes(req.concat(info.bosses.map(b => BOSS_TYPES[b].model)));
+  prioritizeMeshes(req.concat(...info.bosses.map(bossMeshes)));
   const go = () => {
     startRun(n);
     updateCamera(0, true); updateView();
