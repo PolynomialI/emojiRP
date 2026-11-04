@@ -863,6 +863,19 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float b = sin(p.x * 7.0 + ph) * sin(p.y * 6.0) * sin(p.z * 6.5 + 1.0) * 0.1;
     return vec2(length(p) - 0.75 + b, 4.0);
   }
+  if (type == 34) {
+    // neon drone: a little saucer with a glowing goo eye in front and two rotors
+    float body = sdEllipsoid(p, vec3(0.6, 0.26, 0.6));
+    float d = smin(body, sdEllipsoid(p - vec3(0.0, 0.17, -0.05), vec3(0.3, 0.22, 0.3)), 0.08);
+    float eye = length(p - vec3(0.0, 0.02, 0.55)) - 0.18;
+    vec3 rq = vec3(abs(p.x) - 0.6, p.y - 0.14, p.z);
+    rq.xz = rot2(ph * 9.0) * rq.xz;
+    float rotor = min(sdTorus(rq, 0.24, 0.035), max(abs(rq.x) - 0.24, max(abs(rq.y) - 0.015, abs(rq.z) - 0.05)));
+    float m = 8.0;
+    if (eye < d) { d = eye; m = 0.0; }
+    if (rotor < d) { d = rotor; m = 8.0; }
+    return vec2(d, m);
+  }
   if (type == 31) {
     // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
     // (modelled standing on y = 0, drawn centred 0.65 above the floor so it fits the impostor bounds)

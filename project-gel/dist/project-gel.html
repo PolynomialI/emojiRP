@@ -1333,10 +1333,12 @@ function buildModels(progress) {
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { tumbleweed: ['roll'] };
-const THEME_CELLS = { wormhead: 0.022, wormseg: 0.03 };
+const THEME_CLIPS = { tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
+// mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
+const THEME_CELLS = { wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
 // built after everything chapter 1 needs
-MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg');
+MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
+  'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -1389,6 +1391,108 @@ function themeModels(defs) {
       { s: 'tor', ax: 'z', c: [0, 0, 0.0], R: 0.36, r: 0.05, a0: -Math.PI, a1: Math.PI, col: belly, k: 0.03 },
       { s: 'ell', c: [0, -0.2, 0.0], rr: [0.26, 0.18, 0.26], col: belly, k: 0.05 },
       { s: 'cap', a: [0, 0.32, 0], b: [0, 0.58, -0.08], r: 0.065, r2: 0.014, col: spike, k: 0.02 },
+    ]);
+  }
+  // ---------- Neon City ----------
+  {
+    const glass = C('#6fb2ff'), glassD = C('#3d6fae'), lit = C('#ffe08a'), roof = C('#3a3f4c'), neonP = C('#ff4fd8'), neonC = C('#3ff0ff'), steel = C('#8f97a6'), tire = C('#1d1f26'), lamp = C('#fff3c4'), red = C('#ff3b3b'), conc = C('#c9ccd4');
+    // office blocks: a 1x1 footprint, glass bands on every floor, a parapet and roof clutter; the body takes the tint
+    const building = (name, floors, o = {}) => {
+      const H = floors * 0.16 + 0.1, parts = [{ s: 'box', c: [0, H / 2, 0], hs: [0.48, H / 2, 0.48], rd: 0.02, k: 0.0 }];
+      for (let f = 0; f < floors; f++) {
+        const y = 0.12 + f * 0.16;
+        parts.push({ s: 'box', c: [0, y + 0.05, 0], hs: [0.49, 0.04, 0.49], rd: 0.005, col: (f * 7 + floors) % 5 === 2 ? lit : f % 2 ? glass : glassD, k: 0 });
+      }
+      parts.push({ s: 'box', c: [0, H + 0.02, 0], hs: [0.5, 0.025, 0.5], rd: 0.01, col: roof, k: 0 });
+      parts.push({ s: 'box', c: [0.15, H + 0.08, -0.12], hs: [0.1, 0.05, 0.08], rd: 0.01, col: steel, k: 0 });
+      if (o.sign) parts.push({ s: 'box', c: [0, H * 0.62, 0.5], hs: [0.22, 0.06, 0.012], rd: 0.008, col: o.sign, k: 0 });
+      if (o.tank) { parts.push({ s: 'cyl', ax: 'y', c: [-0.2, H + 0.16, 0.15], r: 0.08, hh: 0.08, rd: 0.02, col: C('#8a5a33'), k: 0 }); }
+      P(name, parts, { ao: 3 });
+    };
+    building('building0', 6, { sign: neonP, tank: true });
+    building('building1', 9, { sign: neonC });
+    building('building2', 4, { tank: true });
+    // the landmark: a stepped skyscraper with a spire and a neon crown
+    {
+      const parts = [{ s: 'box', c: [0, 0.9, 0], hs: [0.48, 0.9, 0.48], rd: 0.02 }, { s: 'box', c: [0, 1.95, 0], hs: [0.36, 0.2, 0.36], rd: 0.02 }, { s: 'box', c: [0, 2.3, 0], hs: [0.26, 0.15, 0.26], rd: 0.02 }];
+      for (let f = 0; f < 11; f++) { const y = 0.12 + f * 0.16; parts.push({ s: 'box', c: [0, y + 0.05, 0], hs: [0.49, 0.045, 0.49], rd: 0.005, col: f % 4 === 1 ? lit : f % 2 ? glass : glassD, k: 0 }); }
+      for (let f = 0; f < 2; f++) parts.push({ s: 'box', c: [0, 1.85 + f * 0.13, 0], hs: [0.37, 0.04, 0.37], rd: 0.005, col: glass, k: 0 });
+      parts.push({ s: 'box', c: [0, 2.46, 0], hs: [0.28, 0.03, 0.28], rd: 0.01, col: neonP, k: 0 });
+      parts.push({ s: 'cap', a: [0, 2.45, 0], b: [0, 2.95, 0], r: 0.03, r2: 0.01, col: steel, k: 0 });
+      parts.push({ s: 'sph', c: [0, 2.97, 0], r: 0.035, col: red, k: 0 });
+      parts.push({ s: 'box', c: [0, 1.25, 0.5], hs: [0.3, 0.08, 0.012], rd: 0.01, col: neonC, k: 0 });
+      P('tower', parts, { ao: 3 });
+    }
+    // a parked car about 1 long; the body takes the tint
+    P('car', [
+      { s: 'box', c: [0, 0.16, 0], hs: [0.22, 0.09, 0.5], rd: 0.06 },
+      { s: 'box', c: [0, 0.3, -0.04], hs: [0.19, 0.08, 0.26], rd: 0.06 },
+      { s: 'box', c: [0, 0.3, -0.04], hs: [0.2, 0.06, 0.27], rd: 0.05, col: glassD, k: 0 },
+      ...[[0.2, 0.32], [-0.2, 0.32], [0.2, -0.32], [-0.2, -0.32]].map(([x, z]) => ({ s: 'cyl', ax: 'x', c: [x, 0.09, z], r: 0.09, hh: 0.04, rd: 0.02, col: tire, k: 0 })),
+      { s: 'sph', c: [0.14, 0.17, 0.49], r: 0.035, col: lamp, k: 0 }, { s: 'sph', c: [-0.14, 0.17, 0.49], r: 0.035, col: lamp, k: 0 },
+      { s: 'sph', c: [0.15, 0.18, -0.49], r: 0.03, col: red, k: 0 }, { s: 'sph', c: [-0.15, 0.18, -0.49], r: 0.03, col: red, k: 0 },
+    ]);
+    P('streetlamp', [
+      { s: 'cyl', ax: 'y', c: [0, 0.06, 0], r: 0.07, hh: 0.06, rd: 0.02, col: steel, k: 0 },
+      { s: 'cap', a: [0, 0.1, 0], b: [0, 1.4, 0], r: 0.03, col: steel, k: 0 },
+      { s: 'cap', a: [0, 1.4, 0], b: [0, 1.46, 0.28], r: 0.025, col: steel, k: 0.02 },
+      { s: 'ell', c: [0, 1.42, 0.32], rr: [0.08, 0.04, 0.1], col: steel, k: 0.01 },
+      { s: 'ell', c: [0, 1.39, 0.32], rr: [0.06, 0.02, 0.08], col: lamp, k: 0 },
+    ]);
+    P('hydrant', [
+      { s: 'cyl', ax: 'y', c: [0, 0.16, 0], r: 0.09, hh: 0.16, rd: 0.03, col: red, k: 0 },
+      { s: 'sph', c: [0, 0.33, 0], r: 0.09, col: red, k: 0.02 },
+      { s: 'cyl', ax: 'x', c: [0, 0.22, 0], r: 0.04, hh: 0.14, rd: 0.01, col: red, k: 0.01 },
+      { s: 'cyl', ax: 'y', c: [0, 0.03, 0], r: 0.12, hh: 0.03, rd: 0.01, col: red, k: 0.01 },
+    ]);
+    P('bin', [
+      { s: 'cyl', ax: 'y', c: [0, 0.2, 0], r: 0.14, hh: 0.2, rd: 0.03, col: C('#4f8a5c'), k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 0.42, 0], r: 0.155, hh: 0.025, rd: 0.02, col: C('#3a6a46'), k: 0 },
+    ]);
+    P('barrier', [
+      { s: 'box', c: [0, 0.18, 0], hs: [0.5, 0.18, 0.12], rd: 0.04, col: conc, k: 0 },
+      { s: 'box', c: [0, 0.05, 0], hs: [0.5, 0.05, 0.2], rd: 0.03, col: conc, k: 0.02 },
+      ...[-0.3, 0, 0.3].map(x => ({ s: 'box', c: [x, 0.25, 0.121], hs: [0.06, 0.05, 0.005], rd: 0.0, col: C('#ff8a1f'), k: 0 })),
+    ]);
+    P('tree', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 0.75, 0], r: 0.07, r2: 0.05, col: C('#7a5230'), k: 0.02 },
+      { s: 'sph', c: [0, 1.0, 0], r: 0.4, col: C('#3f9a4a'), k: 0.1 }, { s: 'sph', c: [0.22, 0.86, 0.1], r: 0.26, col: C('#4fb05a'), k: 0.1 },
+      { s: 'sph', c: [-0.2, 0.9, -0.12], r: 0.28, col: C('#358a40'), k: 0.1 }, { s: 'sph', c: [0.05, 1.28, 0.05], r: 0.22, col: C('#5ac064'), k: 0.1 },
+    ]);
+  }
+  // ---------- Wrecking Bot (chapter 3 boss): a boxy construction robot; plain parts take the boss tint (yellow) ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.44, shY: 0.8, headY: 1.04, headR: 0.2, headZ: 0.02, shW: 0.25, hipW: 0.12, elOut: 0.07, upperLen: 0.17, foreLen: 0.16, pelvisR: 0.17, torsoR: 0.2, neckR: 0.1, armR: 0.085, handR: 0.11, legR: 0.11 });
+    const J = m.J, steel = C('#7c8696'), dark = C('#2b2f3a'), red = C('#ff3040'), black = C('#1c1c22'), glow = C('#7ff6ff');
+    const parts = [
+      { s: 'box', c: [0, J.pelvis[1], 0], hs: [0.21, 0.08, 0.15], rd: 0.04, col: steel, bone: 0, k: 0.02 },
+      { s: 'box', c: [0, 0.64, 0], hs: [0.29, 0.2, 0.2], rd: 0.06, bone: 1, k: 0.03 },
+      { s: 'box', c: [0, 0.55, 0.201], hs: [0.27, 0.028, 0.006], rd: 0, col: black, bone: 1, k: 0 },
+      { s: 'box', c: [0, 0.48, 0.201], hs: [0.27, 0.028, 0.006], rd: 0, col: black, bone: 1, k: 0 },
+      { s: 'sph', c: [0, 0.7, 0.2], r: 0.06, col: glow, bone: 1, k: 0 },
+      { s: 'box', c: [0, 0.86, -0.02], hs: [0.16, 0.05, 0.12], rd: 0.03, col: steel, bone: 1, k: 0.03 },
+      { s: 'box', c: [J.head[0], J.head[1], J.head[2]], hs: [0.17, 0.13, 0.15], rd: 0.05, bone: 2, k: 0.02 },
+      { s: 'box', c: [J.head[0], J.head[1] + 0.02, J.head[2] + 0.145], hs: [0.135, 0.04, 0.012], rd: 0.02, col: red, bone: 2, k: 0 },
+      { s: 'cap', a: [0.08, J.head[1] + 0.12, J.head[2]], b: [0.11, J.head[1] + 0.3, J.head[2] - 0.03], r: 0.018, col: steel, bone: 2, k: 0 },
+      { s: 'sph', c: [0.11, J.head[1] + 0.31, J.head[2] - 0.03], r: 0.035, col: red, bone: 2, k: 0 },
+    ];
+    for (const sd of ['L', 'R']) {
+      const sx = sd === 'L' ? 1 : -1, b = sd === 'L' ? 3 : 5;
+      parts.push({ s: 'sph', c: [sx * 0.29, 0.8, 0], r: 0.13, bone: 1, k: 0.03 });
+      parts.push({ s: 'cap', a: J['sh' + sd], b: J['el' + sd], r: 0.07, col: steel, bone: b, k: 0.02 });
+      parts.push({ s: 'cap', a: J['el' + sd], b: J['ha' + sd], r: 0.08, r2: 0.07, col: steel, bone: b + 1, k: 0.02 });
+      parts.push({ s: 'box', c: J['ha' + sd], hs: [0.08, 0.08, 0.08], rd: 0.04, col: dark, bone: b + 1, k: 0.02 });
+      const lb = sd === 'L' ? 7 : 9;
+      parts.push({ s: 'box', c: [(J['hi' + sd][0] + J['kn' + sd][0]) / 2, (J['hi' + sd][1] + J['kn' + sd][1]) / 2, 0], hs: [0.08, 0.12, 0.09], rd: 0.04, col: steel, bone: lb, k: 0.02 });
+      parts.push({ s: 'box', c: [(J['kn' + sd][0] + J['an' + sd][0]) / 2, (J['kn' + sd][1] + J['an' + sd][1]) / 2, 0.01], hs: [0.1, 0.12, 0.1], rd: 0.04, bone: lb + 1, k: 0.02 });
+      parts.push({ s: 'box', c: [J['an' + sd][0], 0.04, 0.05], hs: [0.11, 0.04, 0.15], rd: 0.03, col: dark, bone: lb + 1, k: 0.02 });
+    }
+    m.parts = parts; m.top = J.head[1] + 0.34; m.bmin = [-0.6, -0.03, -0.5]; m.bmax = [0.6, m.top + 0.05, 0.5]; m.name = 'wreckbot';
+    defs.wreckbot = m;
+    // the wrecking ball: dark iron with stubby studs
+    P('wreckball', [
+      { s: 'sph', c: [0, 0.5, 0], r: 0.38, col: C('#3a3f4a'), k: 0 },
+      ...[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1], [0.7, 0.7, 0], [-0.7, 0.7, 0], [0, 0.7, 0.7], [0, 0.7, -0.7], [0.7, -0.7, 0], [-0.7, -0.7, 0]].map(([x, y, z]) => ({ s: 'cap', a: [x * 0.3, 0.5 + y * 0.3, z * 0.3], b: [x * 0.48, 0.5 + y * 0.48, z * 0.48], r: 0.06, r2: 0.02, col: C('#5a6170'), k: 0.01 })),
     ]);
   }
 }
@@ -2402,10 +2506,12 @@ function buildModels(progress) {
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { tumbleweed: ['roll'] };
-const THEME_CELLS = { wormhead: 0.022, wormseg: 0.03 };
+const THEME_CLIPS = { tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
+// mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
+const THEME_CELLS = { wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
 // built after everything chapter 1 needs
-MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg');
+MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
+  'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -2458,6 +2564,108 @@ function themeModels(defs) {
       { s: 'tor', ax: 'z', c: [0, 0, 0.0], R: 0.36, r: 0.05, a0: -Math.PI, a1: Math.PI, col: belly, k: 0.03 },
       { s: 'ell', c: [0, -0.2, 0.0], rr: [0.26, 0.18, 0.26], col: belly, k: 0.05 },
       { s: 'cap', a: [0, 0.32, 0], b: [0, 0.58, -0.08], r: 0.065, r2: 0.014, col: spike, k: 0.02 },
+    ]);
+  }
+  // ---------- Neon City ----------
+  {
+    const glass = C('#6fb2ff'), glassD = C('#3d6fae'), lit = C('#ffe08a'), roof = C('#3a3f4c'), neonP = C('#ff4fd8'), neonC = C('#3ff0ff'), steel = C('#8f97a6'), tire = C('#1d1f26'), lamp = C('#fff3c4'), red = C('#ff3b3b'), conc = C('#c9ccd4');
+    // office blocks: a 1x1 footprint, glass bands on every floor, a parapet and roof clutter; the body takes the tint
+    const building = (name, floors, o = {}) => {
+      const H = floors * 0.16 + 0.1, parts = [{ s: 'box', c: [0, H / 2, 0], hs: [0.48, H / 2, 0.48], rd: 0.02, k: 0.0 }];
+      for (let f = 0; f < floors; f++) {
+        const y = 0.12 + f * 0.16;
+        parts.push({ s: 'box', c: [0, y + 0.05, 0], hs: [0.49, 0.04, 0.49], rd: 0.005, col: (f * 7 + floors) % 5 === 2 ? lit : f % 2 ? glass : glassD, k: 0 });
+      }
+      parts.push({ s: 'box', c: [0, H + 0.02, 0], hs: [0.5, 0.025, 0.5], rd: 0.01, col: roof, k: 0 });
+      parts.push({ s: 'box', c: [0.15, H + 0.08, -0.12], hs: [0.1, 0.05, 0.08], rd: 0.01, col: steel, k: 0 });
+      if (o.sign) parts.push({ s: 'box', c: [0, H * 0.62, 0.5], hs: [0.22, 0.06, 0.012], rd: 0.008, col: o.sign, k: 0 });
+      if (o.tank) { parts.push({ s: 'cyl', ax: 'y', c: [-0.2, H + 0.16, 0.15], r: 0.08, hh: 0.08, rd: 0.02, col: C('#8a5a33'), k: 0 }); }
+      P(name, parts, { ao: 3 });
+    };
+    building('building0', 6, { sign: neonP, tank: true });
+    building('building1', 9, { sign: neonC });
+    building('building2', 4, { tank: true });
+    // the landmark: a stepped skyscraper with a spire and a neon crown
+    {
+      const parts = [{ s: 'box', c: [0, 0.9, 0], hs: [0.48, 0.9, 0.48], rd: 0.02 }, { s: 'box', c: [0, 1.95, 0], hs: [0.36, 0.2, 0.36], rd: 0.02 }, { s: 'box', c: [0, 2.3, 0], hs: [0.26, 0.15, 0.26], rd: 0.02 }];
+      for (let f = 0; f < 11; f++) { const y = 0.12 + f * 0.16; parts.push({ s: 'box', c: [0, y + 0.05, 0], hs: [0.49, 0.045, 0.49], rd: 0.005, col: f % 4 === 1 ? lit : f % 2 ? glass : glassD, k: 0 }); }
+      for (let f = 0; f < 2; f++) parts.push({ s: 'box', c: [0, 1.85 + f * 0.13, 0], hs: [0.37, 0.04, 0.37], rd: 0.005, col: glass, k: 0 });
+      parts.push({ s: 'box', c: [0, 2.46, 0], hs: [0.28, 0.03, 0.28], rd: 0.01, col: neonP, k: 0 });
+      parts.push({ s: 'cap', a: [0, 2.45, 0], b: [0, 2.95, 0], r: 0.03, r2: 0.01, col: steel, k: 0 });
+      parts.push({ s: 'sph', c: [0, 2.97, 0], r: 0.035, col: red, k: 0 });
+      parts.push({ s: 'box', c: [0, 1.25, 0.5], hs: [0.3, 0.08, 0.012], rd: 0.01, col: neonC, k: 0 });
+      P('tower', parts, { ao: 3 });
+    }
+    // a parked car about 1 long; the body takes the tint
+    P('car', [
+      { s: 'box', c: [0, 0.16, 0], hs: [0.22, 0.09, 0.5], rd: 0.06 },
+      { s: 'box', c: [0, 0.3, -0.04], hs: [0.19, 0.08, 0.26], rd: 0.06 },
+      { s: 'box', c: [0, 0.3, -0.04], hs: [0.2, 0.06, 0.27], rd: 0.05, col: glassD, k: 0 },
+      ...[[0.2, 0.32], [-0.2, 0.32], [0.2, -0.32], [-0.2, -0.32]].map(([x, z]) => ({ s: 'cyl', ax: 'x', c: [x, 0.09, z], r: 0.09, hh: 0.04, rd: 0.02, col: tire, k: 0 })),
+      { s: 'sph', c: [0.14, 0.17, 0.49], r: 0.035, col: lamp, k: 0 }, { s: 'sph', c: [-0.14, 0.17, 0.49], r: 0.035, col: lamp, k: 0 },
+      { s: 'sph', c: [0.15, 0.18, -0.49], r: 0.03, col: red, k: 0 }, { s: 'sph', c: [-0.15, 0.18, -0.49], r: 0.03, col: red, k: 0 },
+    ]);
+    P('streetlamp', [
+      { s: 'cyl', ax: 'y', c: [0, 0.06, 0], r: 0.07, hh: 0.06, rd: 0.02, col: steel, k: 0 },
+      { s: 'cap', a: [0, 0.1, 0], b: [0, 1.4, 0], r: 0.03, col: steel, k: 0 },
+      { s: 'cap', a: [0, 1.4, 0], b: [0, 1.46, 0.28], r: 0.025, col: steel, k: 0.02 },
+      { s: 'ell', c: [0, 1.42, 0.32], rr: [0.08, 0.04, 0.1], col: steel, k: 0.01 },
+      { s: 'ell', c: [0, 1.39, 0.32], rr: [0.06, 0.02, 0.08], col: lamp, k: 0 },
+    ]);
+    P('hydrant', [
+      { s: 'cyl', ax: 'y', c: [0, 0.16, 0], r: 0.09, hh: 0.16, rd: 0.03, col: red, k: 0 },
+      { s: 'sph', c: [0, 0.33, 0], r: 0.09, col: red, k: 0.02 },
+      { s: 'cyl', ax: 'x', c: [0, 0.22, 0], r: 0.04, hh: 0.14, rd: 0.01, col: red, k: 0.01 },
+      { s: 'cyl', ax: 'y', c: [0, 0.03, 0], r: 0.12, hh: 0.03, rd: 0.01, col: red, k: 0.01 },
+    ]);
+    P('bin', [
+      { s: 'cyl', ax: 'y', c: [0, 0.2, 0], r: 0.14, hh: 0.2, rd: 0.03, col: C('#4f8a5c'), k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 0.42, 0], r: 0.155, hh: 0.025, rd: 0.02, col: C('#3a6a46'), k: 0 },
+    ]);
+    P('barrier', [
+      { s: 'box', c: [0, 0.18, 0], hs: [0.5, 0.18, 0.12], rd: 0.04, col: conc, k: 0 },
+      { s: 'box', c: [0, 0.05, 0], hs: [0.5, 0.05, 0.2], rd: 0.03, col: conc, k: 0.02 },
+      ...[-0.3, 0, 0.3].map(x => ({ s: 'box', c: [x, 0.25, 0.121], hs: [0.06, 0.05, 0.005], rd: 0.0, col: C('#ff8a1f'), k: 0 })),
+    ]);
+    P('tree', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 0.75, 0], r: 0.07, r2: 0.05, col: C('#7a5230'), k: 0.02 },
+      { s: 'sph', c: [0, 1.0, 0], r: 0.4, col: C('#3f9a4a'), k: 0.1 }, { s: 'sph', c: [0.22, 0.86, 0.1], r: 0.26, col: C('#4fb05a'), k: 0.1 },
+      { s: 'sph', c: [-0.2, 0.9, -0.12], r: 0.28, col: C('#358a40'), k: 0.1 }, { s: 'sph', c: [0.05, 1.28, 0.05], r: 0.22, col: C('#5ac064'), k: 0.1 },
+    ]);
+  }
+  // ---------- Wrecking Bot (chapter 3 boss): a boxy construction robot; plain parts take the boss tint (yellow) ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.44, shY: 0.8, headY: 1.04, headR: 0.2, headZ: 0.02, shW: 0.25, hipW: 0.12, elOut: 0.07, upperLen: 0.17, foreLen: 0.16, pelvisR: 0.17, torsoR: 0.2, neckR: 0.1, armR: 0.085, handR: 0.11, legR: 0.11 });
+    const J = m.J, steel = C('#7c8696'), dark = C('#2b2f3a'), red = C('#ff3040'), black = C('#1c1c22'), glow = C('#7ff6ff');
+    const parts = [
+      { s: 'box', c: [0, J.pelvis[1], 0], hs: [0.21, 0.08, 0.15], rd: 0.04, col: steel, bone: 0, k: 0.02 },
+      { s: 'box', c: [0, 0.64, 0], hs: [0.29, 0.2, 0.2], rd: 0.06, bone: 1, k: 0.03 },
+      { s: 'box', c: [0, 0.55, 0.201], hs: [0.27, 0.028, 0.006], rd: 0, col: black, bone: 1, k: 0 },
+      { s: 'box', c: [0, 0.48, 0.201], hs: [0.27, 0.028, 0.006], rd: 0, col: black, bone: 1, k: 0 },
+      { s: 'sph', c: [0, 0.7, 0.2], r: 0.06, col: glow, bone: 1, k: 0 },
+      { s: 'box', c: [0, 0.86, -0.02], hs: [0.16, 0.05, 0.12], rd: 0.03, col: steel, bone: 1, k: 0.03 },
+      { s: 'box', c: [J.head[0], J.head[1], J.head[2]], hs: [0.17, 0.13, 0.15], rd: 0.05, bone: 2, k: 0.02 },
+      { s: 'box', c: [J.head[0], J.head[1] + 0.02, J.head[2] + 0.145], hs: [0.135, 0.04, 0.012], rd: 0.02, col: red, bone: 2, k: 0 },
+      { s: 'cap', a: [0.08, J.head[1] + 0.12, J.head[2]], b: [0.11, J.head[1] + 0.3, J.head[2] - 0.03], r: 0.018, col: steel, bone: 2, k: 0 },
+      { s: 'sph', c: [0.11, J.head[1] + 0.31, J.head[2] - 0.03], r: 0.035, col: red, bone: 2, k: 0 },
+    ];
+    for (const sd of ['L', 'R']) {
+      const sx = sd === 'L' ? 1 : -1, b = sd === 'L' ? 3 : 5;
+      parts.push({ s: 'sph', c: [sx * 0.29, 0.8, 0], r: 0.13, bone: 1, k: 0.03 });
+      parts.push({ s: 'cap', a: J['sh' + sd], b: J['el' + sd], r: 0.07, col: steel, bone: b, k: 0.02 });
+      parts.push({ s: 'cap', a: J['el' + sd], b: J['ha' + sd], r: 0.08, r2: 0.07, col: steel, bone: b + 1, k: 0.02 });
+      parts.push({ s: 'box', c: J['ha' + sd], hs: [0.08, 0.08, 0.08], rd: 0.04, col: dark, bone: b + 1, k: 0.02 });
+      const lb = sd === 'L' ? 7 : 9;
+      parts.push({ s: 'box', c: [(J['hi' + sd][0] + J['kn' + sd][0]) / 2, (J['hi' + sd][1] + J['kn' + sd][1]) / 2, 0], hs: [0.08, 0.12, 0.09], rd: 0.04, col: steel, bone: lb, k: 0.02 });
+      parts.push({ s: 'box', c: [(J['kn' + sd][0] + J['an' + sd][0]) / 2, (J['kn' + sd][1] + J['an' + sd][1]) / 2, 0.01], hs: [0.1, 0.12, 0.1], rd: 0.04, bone: lb + 1, k: 0.02 });
+      parts.push({ s: 'box', c: [J['an' + sd][0], 0.04, 0.05], hs: [0.11, 0.04, 0.15], rd: 0.03, col: dark, bone: lb + 1, k: 0.02 });
+    }
+    m.parts = parts; m.top = J.head[1] + 0.34; m.bmin = [-0.6, -0.03, -0.5]; m.bmax = [0.6, m.top + 0.05, 0.5]; m.name = 'wreckbot';
+    defs.wreckbot = m;
+    // the wrecking ball: dark iron with stubby studs
+    P('wreckball', [
+      { s: 'sph', c: [0, 0.5, 0], r: 0.38, col: C('#3a3f4a'), k: 0 },
+      ...[[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1], [0.7, 0.7, 0], [-0.7, 0.7, 0], [0, 0.7, 0.7], [0, 0.7, -0.7], [0.7, -0.7, 0], [-0.7, -0.7, 0]].map(([x, y, z]) => ({ s: 'cap', a: [x * 0.3, 0.5 + y * 0.3, z * 0.3], b: [x * 0.48, 0.5 + y * 0.48, z * 0.48], r: 0.06, r2: 0.02, col: C('#5a6170'), k: 0.01 })),
     ]);
   }
 }
@@ -3327,6 +3535,19 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     // a clod of packed sand
     float b = sin(p.x * 7.0 + ph) * sin(p.y * 6.0) * sin(p.z * 6.5 + 1.0) * 0.1;
     return vec2(length(p) - 0.75 + b, 4.0);
+  }
+  if (type == 34) {
+    // neon drone: a little saucer with a glowing goo eye in front and two rotors
+    float body = sdEllipsoid(p, vec3(0.6, 0.26, 0.6));
+    float d = smin(body, sdEllipsoid(p - vec3(0.0, 0.17, -0.05), vec3(0.3, 0.22, 0.3)), 0.08);
+    float eye = length(p - vec3(0.0, 0.02, 0.55)) - 0.18;
+    vec3 rq = vec3(abs(p.x) - 0.6, p.y - 0.14, p.z);
+    rq.xz = rot2(ph * 9.0) * rq.xz;
+    float rotor = min(sdTorus(rq, 0.24, 0.035), max(abs(rq.x) - 0.24, max(abs(rq.y) - 0.015, abs(rq.z) - 0.05)));
+    float m = 8.0;
+    if (eye < d) { d = eye; m = 0.0; }
+    if (rotor < d) { d = rotor; m = 8.0; }
+    return vec2(d, m);
   }
   if (type == 31) {
     // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
@@ -5246,6 +5467,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage per tick'], ['count', 'Tornadoes'], ['radius', 'Radius', 'm'], ['life', 'Lasts', 's']],
     levels: L10({ dmg: [3, 3, 4, 4, 5, 5, 6, 7, 8, 9], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.4, 1.5, 1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], life: [3, 3.2, 3.4, 3.6, 3.8, 4, 4.3, 4.6, 5, 5.5], cd: [8, 7.8, 7.6, 7.4, 7.2, 7, 6.6, 6.3, 6, 5.5] }),
   },
+  drone: {
+    name: 'Neon Drone', from: 3, intro: 'Little neon drones orbit you and zap the closest enemies.', icon: { type: 34, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Drones'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
+    levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
+  },
   shield: {
     name: 'Bubble Shield', intro: 'A goo bubble absorbs hits, then grows back.', icon: { type: 27, colw: 0 },
     fields: [['hits', 'Hits absorbed'], ['recharge', 'Regrows in', 's'], ['pop', 'Pop damage'], ['push', 'Pop knockback', 'm']],
@@ -5312,6 +5538,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 0.8 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
@@ -5324,6 +5551,8 @@ const ARENAS = [
     props: [['rock', 11, 0.8, 1.4]], zones: [['pool', 4, 1.7, 2.6]], wall: 'rock' },
   { id: 'desert', name: 'Desert Dunes', floor: 1, stoneA: '#e8c08a', stoneB: '#d29f66', grout: '#5e3b22', accent: '#ffcf70', fog: '#4b2d18', sky: '#f6dcb0', ground: '#a87a48', light: '#fff2d8', spotMin: 0.6, shadowTint: '#5c2f10', rock: '#c4875a', pool: '#a8793f', poolGlow: 0,
     props: [['cactus', 12, 0.4, 0.62], ['rock', 6, 0.9, 1.5], ['skull', 4, 0.45, 0.55]], zones: [['quicksand', 5, 2.0, 3.2]], wall: 'rock', kinds: ['tumbleweed'] },
+  { id: 'city', name: 'Neon City', floor: 2, stoneA: '#5a6172', stoneB: '#8d95a6', grout: '#262a35', accent: '#ff4fd8', fog: '#0c0e1d', sky: '#6070b0', ground: '#1a2036', light: '#e8ecff', spotMin: 0.52, shadowTint: '#0a0e2c', rock: '#7c8292', pool: '#2f5f8f', poolGlow: 0.1,
+    props: [['hydrant', 3, 0.22, 0.26], ['bin', 3, 0.28, 0.32]], zones: [], wall: 'barrier', kinds: ['building', 'tower', 'car', 'streetlamp', 'tree'] },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -5332,11 +5561,20 @@ const PROP_KINDS = {
   cactus: { models: ['cactus0', 'cactus0', 'cactus1'], unit: 0.3, block: true, shots: true, tall: 1.6 },
   skull: { models: ['skull'], unit: 0.35, block: false },
   tumbleweed: { models: ['tumbleweed'], unit: 0.45, block: false },
+  building: { models: ['building0', 'building1', 'building2'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  tower: { models: ['tower'], unit: 0.5, block: true, shots: true, shadow: false, tall: 30 },
+  car: { models: ['car'], unit: 0.5, block: true, shots: true, shadow: false },
+  streetlamp: { models: ['streetlamp'], unit: 0.12, block: true, tall: 8 },
+  hydrant: { models: ['hydrant'], unit: 0.12, block: true },
+  bin: { models: ['bin'], unit: 0.15, block: true },
+  barrier: { models: ['barrier'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
+  tree: { models: ['tree'], unit: 0.18, block: true, tall: 3 },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
   pool: { block: true },
   quicksand: { slow: 0.5, col: '#a8793f', glow: 0, style: 2 },
+  fountain: { block: true, col: '#3fa8e8', glow: 0.15 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -6133,11 +6371,13 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
-    if (s.kind === 'boulder') {
+    if (s.kind === 'boulder' || s.kind === 'rocket') {
+      // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1);
-      s.x = lerp(s.sx, s.tx, u); s.z = lerp(s.sz, s.tz, u); s.y = lerp(s.sy, 0.4, u) + Math.sin(u * Math.PI) * 5;
+      s.x = lerp(s.sx, s.tx, u); s.z = lerp(s.sz, s.tz, u); s.y = lerp(s.sy, 0.4, u) + Math.sin(u * Math.PI) * (s.peak ?? 5);
       s.spin += dt * 6;
+      if (s.kind === 'rocket' && Math.random() < 0.8) FX.smoke(s.x, s.y, s.z, 0.35, [0.75, 0.75, 0.8], 0.6, 0.3);
       if (u >= 1) {
         s.life = 0;
         if (Math.hypot(h[0] - s.tx, h[2] - s.tz) < s.radius + HERO_R * 0.6) hurtHero(s.dmg, s.tx, s.tz);
@@ -6493,6 +6733,73 @@ ARENA_FEATURES.desert = {
   },
 };
 
+// ---------- Neon City: a street grid with office blocks, a giant tower, parked cars and lamps ----------
+// Streets run every 24 m (see the city floor style); blocks sit between them, centred at ±12 and ±36.
+const CITY_GREYS = ['#c9c2b6', '#b4bccb', '#d6c9b8', '#a9b2c4', '#c7b3b0', '#bfc8bd'];
+const CAR_COLORS = ['#e8433a', '#3a7be8', '#f2c230', '#f4f4f4', '#3ab06a', '#a24fd8', '#ff8a1f', '#2b2f3a'];
+ARENA_LAYOUTS.city = (A) => {
+  const rnd = A.rnd, pick = arr => arr[Math.floor(rnd() * arr.length)], C = hexToRgb;
+  const B = [-36, -12, 12, 36];
+  for (const bx of B) for (const bz of B) {
+    if (bx === 12 && bz === -12) {
+      // the landmark tower, right next to where you start
+      A.prop('tower', bx, bz, 0, { shape: 'box', hw: 4.7, hd: 4.7, scale: 9.6, yaw: 0, model: 'tower', tint: C('#9aa6bd'), height: 28 });
+      continue;
+    }
+    if (rnd() < 0.2) {
+      // a little park: trees around a fountain
+      A.zone('fountain', bx, bz, 2.4);
+      for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + rnd() * 0.4; A.prop('tree', bx + Math.cos(a) * 4.6, bz + Math.sin(a) * 4.6, 0.4 + rnd() * 0.15); }
+      continue;
+    }
+    const w = 3.6 + rnd() * 0.9, model = pick(['building0', 'building1', 'building2', 'building0']);
+    const H = { building0: 1.06, building1: 1.54, building2: 0.74 }[model] * w * 2;
+    A.prop('building', bx + (rnd() - 0.5) * 1.5, bz + (rnd() - 0.5) * 1.5, 0, { shape: 'box', hw: w, hd: w, scale: w * 2, yaw: Math.floor(rnd() * 4) * Math.PI / 2, model, tint: C(pick(CITY_GREYS)), height: H });
+  }
+  // parked cars along the kerbs, never in the middle of a crossing or on the start
+  for (const road of [-48, -24, 0, 24, 48]) {
+    for (let t = -46; t <= 46; t += 5.5) {
+      if (rnd() > 0.32) continue;
+      const lane = (rnd() < 0.5 ? -1 : 1) * 3.1, along = t + (rnd() - 0.5) * 2;
+      if (Math.abs(along - 24 * Math.round(along / 24)) < 6.5) continue;
+      for (const vertical of [true, false]) {
+        if (rnd() < 0.5) continue;
+        const x = vertical ? road + lane : along, z = vertical ? along : road + lane;
+        if (Math.hypot(x, z) < 9 || arenaSd(x, z) > -2) continue;
+        const s = 2.5, yaw = (vertical ? 0 : Math.PI / 2) + (lane > 0 ? Math.PI : 0);
+        A.prop('car', x, z, 0, { shape: 'box', hw: vertical ? 0.24 * s : 0.5 * s, hd: vertical ? 0.5 * s : 0.24 * s, scale: s, yaw, tint: C(pick(CAR_COLORS)) });
+      }
+    }
+  }
+  // streetlamps on the corners, facing the road
+  for (const rx of [-48, -24, 0, 24, 48]) for (const rz of [-48, -24, 0, 24, 48]) {
+    for (const [sx, sz] of [[1, 1], [-1, -1]]) {
+      const x = rx + sx * 5.6, z = rz + sz * 5.6;
+      if (rnd() < 0.35 || arenaSd(x, z) > -2) continue;
+      A.prop('streetlamp', x, z, 0.22, { scale: 1.9, yaw: sx > 0 ? -Math.PI * 0.75 : Math.PI * 0.25 });
+    }
+  }
+};
+ARENA_FEATURES.city = {
+  init(st) { st.lamps = ARENA.props.filter(o => o.kind === 'streetlamp'); st.tall = ARENA.props.filter(o => o.height); },
+  update(st, dt) {
+    // see-through: a building that hides the hero fades out (the camera looks north, so "behind" is smaller z)
+    const h = G.hero.pos;
+    for (const o of st.tall) {
+      const behind = Math.abs(h[0] - o.x) < o.hw + 1.5 && h[2] < o.z + o.hd + 0.5 && h[2] > o.z - o.hd - o.height * 0.85;
+      o.fade = clamp((o.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.72);
+    }
+  },
+  emit(st) {
+    // warm pools of light under the lamps
+    for (const o of st.lamps) {
+      if (!onScreen(o.x, o.z, 3)) continue;
+      const fx = o.x + Math.sin(o.yaw) * 0.5, fz = o.z + Math.cos(o.yaw) * 0.5;
+      pushDecal(fx, fz, 2.6, 2.6, 0, 1, 0, 0, 1.0, 0.82, 0.45, 0.32, true);
+    }
+  },
+};
+
 // ---- 12-skills.js ----
 // ============================================================
 // Skills: behaviors, hero body actions, projectiles and visuals
@@ -6510,7 +6817,7 @@ function updateSkills(dt) {
     const L = SKILLS[s.id].levels[s.lvl - 1];
     SKILL_HOOKS[s.id].update(s, L, dt);
   }
-  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt);
+  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt); updateZaps(dt);
   for (const b of G.bolts) b.life -= dt;
   G.bolts = G.bolts.filter(b => b.life > 0);
 }
@@ -6521,7 +6828,7 @@ function emitSkills() {
     const hook = SKILL_HOOKS[s.id];
     if (hook.emit) hook.emit(s, SKILLS[s.id].levels[s.lvl - 1]);
   }
-  emitStorms();
+  emitStorms(); emitZaps();
 }
 
 // Densest cluster of enemies within range of a point -> [x, z] or null
@@ -7232,6 +7539,57 @@ function emitStorms() {
   }
 }
 
+// ---------- Neon Drone (chapter 3): orbiting drones that zap the nearest enemy ----------
+const ZAP_COLS = [[1, 0.35, 0.85], [0.3, 0.95, 1]];
+SKILL_HOOKS.drone = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, run = G.run;
+    st.ang = (st.ang || 0) + dt * 1.6;
+    st.fire = st.fire || []; st.pos = st.pos || []; st.aim = st.aim || [];
+    run.zaps = run.zaps || [];
+    for (let i = 0; i < L.count; i++) {
+      const a = st.ang + i * TAU / L.count, p = st.pos[i] = [h[0] + Math.cos(a) * 1.7, 1.9 + Math.sin(st.ang * 3 + i) * 0.12, h[2] + Math.sin(a) * 1.7];
+      st.fire[i] = (st.fire[i] ?? i * 0.25) - dt;
+      if (st.fire[i] > 0) continue;
+      const e = nearestEnemy(p[0], p[2], L.range);
+      if (!e) { st.fire[i] = 0.15; continue; }
+      st.fire[i] = L.cd * cdMul();
+      const col = ZAP_COLS[i % 2], tx = e.x, ty = 0.6 * e.scale, tz = e.z;
+      st.aim[i] = Math.atan2(tx - p[0], tz - p[2]);
+      hurtEnemy(e, L.dmg, (tx - h[0]) * 0.4, (tz - h[2]) * 0.4, { sound: false, color: col });
+      run.zaps.push({ a: p.slice(), b: [tx, ty, tz], life: 0.12, col });
+      FX.glow(tx, ty, tz, 0.55, col, 0.1);
+      AUDIO.play('zap', 1.7);
+    }
+  },
+  emit(s, L) {
+    const st = s.st;
+    if (!st.pos) return;
+    for (let i = 0; i < L.count; i++) {
+      const p = st.pos[i];
+      if (!p) continue;
+      const a = st.aim[i] ?? st.ang;
+      pushImp(p[0], p[1], p[2], 0.3, Math.sin(a), 0, Math.cos(a), 1, 34, i % 2 ? 0.2 : 1.85, 0.7, st.ang * 6 + i, 0, 0, 0, 1);
+      pushDecal(p[0] + 0.15, p[2] + 0.1, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.3);
+    }
+  },
+};
+function updateZaps(dt) {
+  const run = G.run;
+  if (!run.zaps || !run.zaps.length) return;
+  for (const z of run.zaps) z.life -= dt;
+  run.zaps = run.zaps.filter(z => z.life > 0);
+}
+function emitZaps() {
+  const run = G.run;
+  if (!run.zaps) return;
+  for (const z of run.zaps) {
+    const k = z.life / 0.12, pts = [z.a[0], z.a[1], z.a[2], z.b[0], z.b[1], z.b[2]];
+    R.ribStrip(pts, 2, 0.08 * k, [z.col[0], z.col[1], z.col[2], 1], 0, 0, 1);
+    R.ribStrip(pts, 2, 0.28 * k, [z.col[0], z.col[1], z.col[2], 0.35], 0, 0, 1);
+  }
+}
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -7569,6 +7927,11 @@ function emitRunScene() {
   // enemy shots
   for (const s of run.eShots) {
     if (s.kind === 'arrow') { const sp = Math.hypot(s.vx, s.vz) || 1; pushImp(s.x, s.y, s.z, 0.32, s.vx / sp, 0, s.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); }
+    else if (s.kind === 'rocket') {
+      const u = clamp(s.t / s.dur, 0, 1), vy = (0.4 - s.sy) + Math.cos(u * Math.PI) * Math.PI * (s.peak ?? 5), vx = s.tx - s.sx, vz = s.tz - s.sz, l = Math.hypot(vx, vy, vz) || 1;
+      pushImp(s.x, s.y, s.z, 0.32, vx / l, vy / l, vz / l, 1.3, 1, 4, 0.5, run.t * 4, 0, 0, 0, 1);
+      FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
+    }
     else if (s.kind === 'sand') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.2, 33, 0, 0, s.ph + run.t * 6, 0, 0, 0, 1); pushDecal(s.x + 0.1, s.z + 0.08, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.35); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }
     else if (s.kind === 'javelin') {
@@ -7667,7 +8030,7 @@ function emitArena() {
     const m = o.model;
     if (!R.enemyDraw[m]) return;
     const sc = o.scale || size / K.unit, shade = 0.86 + 0.14 * ((o.ph * 0.37 + o.yaw) % 1);
-    const t = K.tint === 'rock' ? f.rockCol : K.tint ? (PROP_TINT[K.tint] = PROP_TINT[K.tint] || hexToRgb(K.tint)) : PROP_WHITE;
+    const t = o.tint || (K.tint === 'rock' ? f.rockCol : K.tint ? (PROP_TINT[K.tint] = PROP_TINT[K.tint] || hexToRgb(K.tint)) : PROP_WHITE);
     pushEnemy(m, false, o.x, o.y || 0, o.z, o.yaw, MODELS.defs[m].clips.still.row, sc, 1, 0, 0, 0, t[0] * shade, t[1] * shade, t[2] * shade, o.fade || 0);
     if (K.shadow !== false && o.shape !== 'box') pushDecal(o.x + sdx * size, o.z + sdz * size, size * 1.15, size * 0.9, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.02, 0.05, 0.55);
   };
@@ -7863,6 +8226,126 @@ BOSS_DRAW.sandworm = function (e) {
   }
   pushEnemy('wormhead', false, e.x, e.portrait ? 0.62 * e.scale : e.y, e.z, e.yaw, row, e.scale * e.squash, 1, dead, fl, 0, t[0], t[1], t[2]);
   if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.5 * e.scale, 0.42 * e.scale, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5 * (1 - clamp(e.y / 6, 0, 0.8)));
+};
+
+// ---------- Wrecking Bot (chapter 3): wrecking-ball spins, rocket barrages and lane slams ----------
+function botHand(e, out) {
+  // right hand, roughly, in world space (the ball's chain hangs from it)
+  const s = e.scale, c = Math.cos(e.yaw), sn = Math.sin(e.yaw), lx = -0.36 * s, lz = 0.12 * s;
+  out[0] = e.x + c * lx + sn * lz; out[1] = 0.5 * s; out[2] = e.z - sn * lx + c * lz;
+  return out;
+}
+const _hand = [0, 0, 0];
+function laneHit(x0, z0, rot, len, w, px, pz) {
+  const ax = Math.sin(rot), az = Math.cos(rot), dx = px - x0, dz = pz - z0;
+  const along = dx * ax + dz * az, perp = Math.abs(dx * az - dz * ax);
+  return along > -0.5 && along < len && perp < w;
+}
+BOSS_AI.wreckbot = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, s = e.scale, rage = isRage(e);
+  if (!ai.ball) { ai.ball = { x: e.x, z: e.z - 3, vx: 0, vz: 0, y: 0.5 }; ai.next = 0; ai.cd = 2; }
+  const ball = ai.ball;
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.25 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const kind = ['swing', 'rockets', 'slam'][ai.next++ % 3];
+        if (kind === 'swing') { ai.state = 'swingWind'; ai.t = 0.9; addTele({ kind: 'circle', x: e.x, z: e.z, r: 6, dur: 0.9 }); ai.cx = e.x; ai.cz = e.z; }
+        else if (kind === 'rockets') { ai.state = 'rockets'; ai.t = 1.5; ai.fired = 0; ai.fireT = 0; }
+        else {
+          ai.state = 'slamWind'; ai.t = 0.9; ai.lanes = [];
+          const n = rage ? 5 : 3, base = Math.atan2(dx, dz);
+          for (let i = 0; i < n; i++) {
+            const rot = base + (i - (n - 1) / 2) * 0.42;
+            ai.lanes.push(rot);
+            addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.9, len: 15, rot, dur: 0.9 });
+          }
+        }
+      }
+      break;
+    }
+    case 'swingWind':
+      e.clip = 'throw'; e.clipU = (1 - ai.t / 0.9) * 0.5; e.vx *= 0.8; e.vz *= 0.8;
+      if (ai.t <= 0) { ai.state = 'swing'; ai.t = rage ? 2.1 : 1.4; ai.swingA = Math.atan2(ball.x - e.x, ball.z - e.z); ai.hitCd = 0; AUDIO.play('throw'); }
+      break;
+    case 'swing': {
+      // the ball whips round in a ring; right next to the bot is the safe spot
+      e.clip = 'throw'; e.clipU = 0.55;
+      ai.swingA += dt * TAU * 1.45;
+      e.yaw = ai.swingA;
+      ball.x = e.x + Math.sin(ai.swingA) * 4.6; ball.z = e.z + Math.cos(ai.swingA) * 4.6; ball.y = 1.1; ball.vx = ball.vz = 0;
+      ai.hitCd -= dt;
+      if (ai.hitCd <= 0 && Math.hypot(h[0] - ball.x, h[2] - ball.z) < 1.3 + HERO_R) { ai.hitCd = 0.5; hurtHero(28 * run.info.dmgMul, ball.x, ball.z); run.vel[0] += (h[0] - e.x) * 2; run.vel[2] += (h[2] - e.z) * 2; }
+      enemiesInRadius(ball.x, ball.z, 1.3, o => { if (o !== e && !o.boss) { o.kx += (o.x - e.x) * 2 / o.mass; o.kz += (o.z - e.z) * 2 / o.mass; } });
+      if (Math.random() < 0.6) FX.smoke(ball.x, 0.3, ball.z, 0.7, [0.7, 0.7, 0.75], 0.5, 0.5);
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }
+      break;
+    }
+    case 'rockets': {
+      e.clip = 'idle'; e.phase += dt; bossFace(e, dt, 8); e.vx *= 0.8; e.vz *= 0.8;
+      const n = rage ? 11 : 7;
+      ai.fireT -= dt;
+      if (ai.fired < n && ai.fireT <= 0) {
+        ai.fireT = 0.11;
+        let tx = h[0] + run.vel[0] * 0.8, tz = h[2] + run.vel[2] * 0.8;
+        if (ai.fired) { const a = rand(0, TAU), r = rand(1.5, 5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+        const o = { x: tx, z: tz }; resolveCircle(o, 0.5);
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.4, dur: 1.15 });
+        run.eShots.push({ kind: 'rocket', sx: e.x, sy: 2.4 * s * 0.6, sz: e.z, tx: o.x, tz: o.z, x: e.x, y: 2.2, z: e.z, t: 0, dur: 1.15, radius: 1.4, dmg: 22 * run.info.dmgMul, life: 2, spin: 0, peak: 6.5 });
+        ai.fired++;
+        AUDIO.play('throw', 1.3);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+    case 'slamWind':
+      e.clip = 'slam'; e.clipU = (1 - ai.t / 0.9) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
+      if (ai.t <= 0) {
+        // shockwaves run along each lane
+        for (const rot of ai.lanes) {
+          if (laneHit(e.x, e.z, rot, 15, 0.9 + HERO_R * 0.5, h[0], h[2])) { hurtHero(32 * run.info.dmgMul, e.x, e.z); break; }
+        }
+        for (const rot of ai.lanes) for (let k = 1; k <= 7; k++) {
+          const px = e.x + Math.sin(rot) * k * 2, pz = e.z + Math.cos(rot) * k * 2;
+          FX.burst(px, 0.2, pz, 4, [0.62, 0.6, 0.58], 4, 0.14, 0.45, 2); if (k % 2) FX.crack(px, pz, 1.2, 1.4);
+          enemiesInRadius(px, pz, 1, o => { if (!o.boss) hurtEnemy(o, 15, Math.sin(rot) * 6, Math.cos(rot) * 6, { sound: false }); });
+        }
+        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom');
+        ai.state = 'recover'; ai.t = 0.55;
+      }
+      break;
+    case 'recover':
+      e.clip = 'slam'; e.clipU = 0.6 + (1 - ai.t / 0.55) * 0.399;
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+  }
+  // between swings the ball drags along behind on its chain
+  if (ai.state !== 'swing') {
+    botHand(e, _hand);
+    const bx = _hand[0] - Math.sin(e.yaw) * 2.4, bz = _hand[2] - Math.cos(e.yaw) * 2.4;
+    ball.vx += ((bx - ball.x) * 14 - ball.vx * 5) * dt; ball.vz += ((bz - ball.z) * 14 - ball.vz * 5) * dt;
+    ball.x += ball.vx * dt; ball.z += ball.vz * dt; ball.y += (0.55 - ball.y) * Math.min(1, dt * 6);
+  }
+};
+BOSS_DRAW.wreckbot = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, L = R.frame.lightDir;
+  if (R.enemyDraw.wreckbot) pushEnemy('wreckbot', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? MODELS.defs.wreckbot.clips.idle.row + 2 : enemyRow(e), e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 0.36 * e.scale, 0.5 * e.scale, -Math.atan2(L[0], L[2]), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  if (!R.enemyDraw.wreckball || dead > 0.5) return;
+  const ball = e.portrait ? { x: -0.9, y: 0.3, z: 0.7 } : e.ai.ball;
+  if (!ball) return;
+  botHand(e, _hand);
+  const bs = e.portrait ? 1.2 : 1.9;
+  pushEnemy('wreckball', false, ball.x, ball.y - 0.5 * bs, ball.z, e.phase, MODELS.defs.wreckball.clips.still.row, bs, 1, dead, 0, 0, 1, 1, 1);
+  // the chain: a sagging dark ribbon from hand to ball
+  const n = 10, pts = [];
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1);
+    pts.push(lerp(_hand[0], ball.x, u), lerp(_hand[1], ball.y + 0.3, u) - Math.sin(u * Math.PI) * 0.5, lerp(_hand[2], ball.z, u));
+  }
+  R.ribStrip(pts, n, 0.13, [0.22, 0.23, 0.27, 1], 1, 0, 2);
+  if (!e.portrait) pushDecal(ball.x + 0.2, ball.z + 0.15, 0.7, 0.6, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.45);
 };
 
 // ---- 14-ui.js ----

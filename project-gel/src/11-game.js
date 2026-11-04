@@ -633,11 +633,13 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
-    if (s.kind === 'boulder') {
+    if (s.kind === 'boulder' || s.kind === 'rocket') {
+      // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1);
-      s.x = lerp(s.sx, s.tx, u); s.z = lerp(s.sz, s.tz, u); s.y = lerp(s.sy, 0.4, u) + Math.sin(u * Math.PI) * 5;
+      s.x = lerp(s.sx, s.tx, u); s.z = lerp(s.sz, s.tz, u); s.y = lerp(s.sy, 0.4, u) + Math.sin(u * Math.PI) * (s.peak ?? 5);
       s.spin += dt * 6;
+      if (s.kind === 'rocket' && Math.random() < 0.8) FX.smoke(s.x, s.y, s.z, 0.35, [0.75, 0.75, 0.8], 0.6, 0.3);
       if (u >= 1) {
         s.life = 0;
         if (Math.hypot(h[0] - s.tx, h[2] - s.tz) < s.radius + HERO_R * 0.6) hurtHero(s.dmg, s.tx, s.tz);

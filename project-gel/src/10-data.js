@@ -78,6 +78,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage per tick'], ['count', 'Tornadoes'], ['radius', 'Radius', 'm'], ['life', 'Lasts', 's']],
     levels: L10({ dmg: [3, 3, 4, 4, 5, 5, 6, 7, 8, 9], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.4, 1.5, 1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], life: [3, 3.2, 3.4, 3.6, 3.8, 4, 4.3, 4.6, 5, 5.5], cd: [8, 7.8, 7.6, 7.4, 7.2, 7, 6.6, 6.3, 6, 5.5] }),
   },
+  drone: {
+    name: 'Neon Drone', from: 3, intro: 'Little neon drones orbit you and zap the closest enemies.', icon: { type: 34, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Drones'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
+    levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
+  },
   shield: {
     name: 'Bubble Shield', intro: 'A goo bubble absorbs hits, then grows back.', icon: { type: 27, colw: 0 },
     fields: [['hits', 'Hits absorbed'], ['recharge', 'Regrows in', 's'], ['pop', 'Pop damage'], ['push', 'Pop knockback', 'm']],
@@ -144,6 +149,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 0.8 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
@@ -156,6 +162,8 @@ const ARENAS = [
     props: [['rock', 11, 0.8, 1.4]], zones: [['pool', 4, 1.7, 2.6]], wall: 'rock' },
   { id: 'desert', name: 'Desert Dunes', floor: 1, stoneA: '#e8c08a', stoneB: '#d29f66', grout: '#5e3b22', accent: '#ffcf70', fog: '#4b2d18', sky: '#f6dcb0', ground: '#a87a48', light: '#fff2d8', spotMin: 0.6, shadowTint: '#5c2f10', rock: '#c4875a', pool: '#a8793f', poolGlow: 0,
     props: [['cactus', 12, 0.4, 0.62], ['rock', 6, 0.9, 1.5], ['skull', 4, 0.45, 0.55]], zones: [['quicksand', 5, 2.0, 3.2]], wall: 'rock', kinds: ['tumbleweed'] },
+  { id: 'city', name: 'Neon City', floor: 2, stoneA: '#5a6172', stoneB: '#8d95a6', grout: '#262a35', accent: '#ff4fd8', fog: '#0c0e1d', sky: '#6070b0', ground: '#1a2036', light: '#e8ecff', spotMin: 0.52, shadowTint: '#0a0e2c', rock: '#7c8292', pool: '#2f5f8f', poolGlow: 0.1,
+    props: [['hydrant', 3, 0.22, 0.26], ['bin', 3, 0.28, 0.32]], zones: [], wall: 'barrier', kinds: ['building', 'tower', 'car', 'streetlamp', 'tree'] },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -164,11 +172,20 @@ const PROP_KINDS = {
   cactus: { models: ['cactus0', 'cactus0', 'cactus1'], unit: 0.3, block: true, shots: true, tall: 1.6 },
   skull: { models: ['skull'], unit: 0.35, block: false },
   tumbleweed: { models: ['tumbleweed'], unit: 0.45, block: false },
+  building: { models: ['building0', 'building1', 'building2'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  tower: { models: ['tower'], unit: 0.5, block: true, shots: true, shadow: false, tall: 30 },
+  car: { models: ['car'], unit: 0.5, block: true, shots: true, shadow: false },
+  streetlamp: { models: ['streetlamp'], unit: 0.12, block: true, tall: 8 },
+  hydrant: { models: ['hydrant'], unit: 0.12, block: true },
+  bin: { models: ['bin'], unit: 0.15, block: true },
+  barrier: { models: ['barrier'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
+  tree: { models: ['tree'], unit: 0.18, block: true, tall: 3 },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
   pool: { block: true },
   quicksand: { slow: 0.5, col: '#a8793f', glow: 0, style: 2 },
+  fountain: { block: true, col: '#3fa8e8', glow: 0.15 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests

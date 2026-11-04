@@ -177,3 +177,123 @@ BOSS_DRAW.sandworm = function (e) {
   pushEnemy('wormhead', false, e.x, e.portrait ? 0.62 * e.scale : e.y, e.z, e.yaw, row, e.scale * e.squash, 1, dead, fl, 0, t[0], t[1], t[2]);
   if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.5 * e.scale, 0.42 * e.scale, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5 * (1 - clamp(e.y / 6, 0, 0.8)));
 };
+
+// ---------- Wrecking Bot (chapter 3): wrecking-ball spins, rocket barrages and lane slams ----------
+function botHand(e, out) {
+  // right hand, roughly, in world space (the ball's chain hangs from it)
+  const s = e.scale, c = Math.cos(e.yaw), sn = Math.sin(e.yaw), lx = -0.36 * s, lz = 0.12 * s;
+  out[0] = e.x + c * lx + sn * lz; out[1] = 0.5 * s; out[2] = e.z - sn * lx + c * lz;
+  return out;
+}
+const _hand = [0, 0, 0];
+function laneHit(x0, z0, rot, len, w, px, pz) {
+  const ax = Math.sin(rot), az = Math.cos(rot), dx = px - x0, dz = pz - z0;
+  const along = dx * ax + dz * az, perp = Math.abs(dx * az - dz * ax);
+  return along > -0.5 && along < len && perp < w;
+}
+BOSS_AI.wreckbot = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, s = e.scale, rage = isRage(e);
+  if (!ai.ball) { ai.ball = { x: e.x, z: e.z - 3, vx: 0, vz: 0, y: 0.5 }; ai.next = 0; ai.cd = 2; }
+  const ball = ai.ball;
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.25 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const kind = ['swing', 'rockets', 'slam'][ai.next++ % 3];
+        if (kind === 'swing') { ai.state = 'swingWind'; ai.t = 0.9; addTele({ kind: 'circle', x: e.x, z: e.z, r: 6, dur: 0.9 }); ai.cx = e.x; ai.cz = e.z; }
+        else if (kind === 'rockets') { ai.state = 'rockets'; ai.t = 1.5; ai.fired = 0; ai.fireT = 0; }
+        else {
+          ai.state = 'slamWind'; ai.t = 0.9; ai.lanes = [];
+          const n = rage ? 5 : 3, base = Math.atan2(dx, dz);
+          for (let i = 0; i < n; i++) {
+            const rot = base + (i - (n - 1) / 2) * 0.42;
+            ai.lanes.push(rot);
+            addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.9, len: 15, rot, dur: 0.9 });
+          }
+        }
+      }
+      break;
+    }
+    case 'swingWind':
+      e.clip = 'throw'; e.clipU = (1 - ai.t / 0.9) * 0.5; e.vx *= 0.8; e.vz *= 0.8;
+      if (ai.t <= 0) { ai.state = 'swing'; ai.t = rage ? 2.1 : 1.4; ai.swingA = Math.atan2(ball.x - e.x, ball.z - e.z); ai.hitCd = 0; AUDIO.play('throw'); }
+      break;
+    case 'swing': {
+      // the ball whips round in a ring; right next to the bot is the safe spot
+      e.clip = 'throw'; e.clipU = 0.55;
+      ai.swingA += dt * TAU * 1.45;
+      e.yaw = ai.swingA;
+      ball.x = e.x + Math.sin(ai.swingA) * 4.6; ball.z = e.z + Math.cos(ai.swingA) * 4.6; ball.y = 1.1; ball.vx = ball.vz = 0;
+      ai.hitCd -= dt;
+      if (ai.hitCd <= 0 && Math.hypot(h[0] - ball.x, h[2] - ball.z) < 1.3 + HERO_R) { ai.hitCd = 0.5; hurtHero(28 * run.info.dmgMul, ball.x, ball.z); run.vel[0] += (h[0] - e.x) * 2; run.vel[2] += (h[2] - e.z) * 2; }
+      enemiesInRadius(ball.x, ball.z, 1.3, o => { if (o !== e && !o.boss) { o.kx += (o.x - e.x) * 2 / o.mass; o.kz += (o.z - e.z) * 2 / o.mass; } });
+      if (Math.random() < 0.6) FX.smoke(ball.x, 0.3, ball.z, 0.7, [0.7, 0.7, 0.75], 0.5, 0.5);
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }
+      break;
+    }
+    case 'rockets': {
+      e.clip = 'idle'; e.phase += dt; bossFace(e, dt, 8); e.vx *= 0.8; e.vz *= 0.8;
+      const n = rage ? 11 : 7;
+      ai.fireT -= dt;
+      if (ai.fired < n && ai.fireT <= 0) {
+        ai.fireT = 0.11;
+        let tx = h[0] + run.vel[0] * 0.8, tz = h[2] + run.vel[2] * 0.8;
+        if (ai.fired) { const a = rand(0, TAU), r = rand(1.5, 5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+        const o = { x: tx, z: tz }; resolveCircle(o, 0.5);
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.4, dur: 1.15 });
+        run.eShots.push({ kind: 'rocket', sx: e.x, sy: 2.4 * s * 0.6, sz: e.z, tx: o.x, tz: o.z, x: e.x, y: 2.2, z: e.z, t: 0, dur: 1.15, radius: 1.4, dmg: 22 * run.info.dmgMul, life: 2, spin: 0, peak: 6.5 });
+        ai.fired++;
+        AUDIO.play('throw', 1.3);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+    case 'slamWind':
+      e.clip = 'slam'; e.clipU = (1 - ai.t / 0.9) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
+      if (ai.t <= 0) {
+        // shockwaves run along each lane
+        for (const rot of ai.lanes) {
+          if (laneHit(e.x, e.z, rot, 15, 0.9 + HERO_R * 0.5, h[0], h[2])) { hurtHero(32 * run.info.dmgMul, e.x, e.z); break; }
+        }
+        for (const rot of ai.lanes) for (let k = 1; k <= 7; k++) {
+          const px = e.x + Math.sin(rot) * k * 2, pz = e.z + Math.cos(rot) * k * 2;
+          FX.burst(px, 0.2, pz, 4, [0.62, 0.6, 0.58], 4, 0.14, 0.45, 2); if (k % 2) FX.crack(px, pz, 1.2, 1.4);
+          enemiesInRadius(px, pz, 1, o => { if (!o.boss) hurtEnemy(o, 15, Math.sin(rot) * 6, Math.cos(rot) * 6, { sound: false }); });
+        }
+        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom');
+        ai.state = 'recover'; ai.t = 0.55;
+      }
+      break;
+    case 'recover':
+      e.clip = 'slam'; e.clipU = 0.6 + (1 - ai.t / 0.55) * 0.399;
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+  }
+  // between swings the ball drags along behind on its chain
+  if (ai.state !== 'swing') {
+    botHand(e, _hand);
+    const bx = _hand[0] - Math.sin(e.yaw) * 2.4, bz = _hand[2] - Math.cos(e.yaw) * 2.4;
+    ball.vx += ((bx - ball.x) * 14 - ball.vx * 5) * dt; ball.vz += ((bz - ball.z) * 14 - ball.vz * 5) * dt;
+    ball.x += ball.vx * dt; ball.z += ball.vz * dt; ball.y += (0.55 - ball.y) * Math.min(1, dt * 6);
+  }
+};
+BOSS_DRAW.wreckbot = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, L = R.frame.lightDir;
+  if (R.enemyDraw.wreckbot) pushEnemy('wreckbot', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? MODELS.defs.wreckbot.clips.idle.row + 2 : enemyRow(e), e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 0.36 * e.scale, 0.5 * e.scale, -Math.atan2(L[0], L[2]), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  if (!R.enemyDraw.wreckball || dead > 0.5) return;
+  const ball = e.portrait ? { x: -0.9, y: 0.3, z: 0.7 } : e.ai.ball;
+  if (!ball) return;
+  botHand(e, _hand);
+  const bs = e.portrait ? 1.2 : 1.9;
+  pushEnemy('wreckball', false, ball.x, ball.y - 0.5 * bs, ball.z, e.phase, MODELS.defs.wreckball.clips.still.row, bs, 1, dead, 0, 0, 1, 1, 1);
+  // the chain: a sagging dark ribbon from hand to ball
+  const n = 10, pts = [];
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1);
+    pts.push(lerp(_hand[0], ball.x, u), lerp(_hand[1], ball.y + 0.3, u) - Math.sin(u * Math.PI) * 0.5, lerp(_hand[2], ball.z, u));
+  }
+  R.ribStrip(pts, n, 0.13, [0.22, 0.23, 0.27, 1], 1, 0, 2);
+  if (!e.portrait) pushDecal(ball.x + 0.2, ball.z + 0.15, 0.7, 0.6, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.45);
+};

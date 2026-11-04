@@ -65,3 +65,54 @@ function emitStorms() {
     pushDecal(w.x, w.z, w.r * 1.1, w.r * 1.1, w.t * 3, 3, 0, 0.3, 0.9, 0.75, 0.5, 0.35 * grow, true);
   }
 }
+
+// ---------- Neon Drone (chapter 3): orbiting drones that zap the nearest enemy ----------
+const ZAP_COLS = [[1, 0.35, 0.85], [0.3, 0.95, 1]];
+SKILL_HOOKS.drone = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, run = G.run;
+    st.ang = (st.ang || 0) + dt * 1.6;
+    st.fire = st.fire || []; st.pos = st.pos || []; st.aim = st.aim || [];
+    run.zaps = run.zaps || [];
+    for (let i = 0; i < L.count; i++) {
+      const a = st.ang + i * TAU / L.count, p = st.pos[i] = [h[0] + Math.cos(a) * 1.7, 1.9 + Math.sin(st.ang * 3 + i) * 0.12, h[2] + Math.sin(a) * 1.7];
+      st.fire[i] = (st.fire[i] ?? i * 0.25) - dt;
+      if (st.fire[i] > 0) continue;
+      const e = nearestEnemy(p[0], p[2], L.range);
+      if (!e) { st.fire[i] = 0.15; continue; }
+      st.fire[i] = L.cd * cdMul();
+      const col = ZAP_COLS[i % 2], tx = e.x, ty = 0.6 * e.scale, tz = e.z;
+      st.aim[i] = Math.atan2(tx - p[0], tz - p[2]);
+      hurtEnemy(e, L.dmg, (tx - h[0]) * 0.4, (tz - h[2]) * 0.4, { sound: false, color: col });
+      run.zaps.push({ a: p.slice(), b: [tx, ty, tz], life: 0.12, col });
+      FX.glow(tx, ty, tz, 0.55, col, 0.1);
+      AUDIO.play('zap', 1.7);
+    }
+  },
+  emit(s, L) {
+    const st = s.st;
+    if (!st.pos) return;
+    for (let i = 0; i < L.count; i++) {
+      const p = st.pos[i];
+      if (!p) continue;
+      const a = st.aim[i] ?? st.ang;
+      pushImp(p[0], p[1], p[2], 0.3, Math.sin(a), 0, Math.cos(a), 1, 34, i % 2 ? 0.2 : 1.85, 0.7, st.ang * 6 + i, 0, 0, 0, 1);
+      pushDecal(p[0] + 0.15, p[2] + 0.1, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.3);
+    }
+  },
+};
+function updateZaps(dt) {
+  const run = G.run;
+  if (!run.zaps || !run.zaps.length) return;
+  for (const z of run.zaps) z.life -= dt;
+  run.zaps = run.zaps.filter(z => z.life > 0);
+}
+function emitZaps() {
+  const run = G.run;
+  if (!run.zaps) return;
+  for (const z of run.zaps) {
+    const k = z.life / 0.12, pts = [z.a[0], z.a[1], z.a[2], z.b[0], z.b[1], z.b[2]];
+    R.ribStrip(pts, 2, 0.08 * k, [z.col[0], z.col[1], z.col[2], 1], 0, 0, 1);
+    R.ribStrip(pts, 2, 0.28 * k, [z.col[0], z.col[1], z.col[2], 0.35], 0, 0, 1);
+  }
+}
