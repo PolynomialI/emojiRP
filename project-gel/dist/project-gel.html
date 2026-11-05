@@ -1338,7 +1338,8 @@ const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 's
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
-  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03 };
+  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
+  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
@@ -1346,7 +1347,8 @@ MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormse
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
   'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
-  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg');
+  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg',
+  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -1755,6 +1757,81 @@ function themeModels(defs) {
       { s: 'cap', a: [0, 0.82, 0], b: [0, 1.0, -0.08], r: 0.06, r2: 0.01, col: thorn, k: 0 },
       { s: 'ell', c: [0.36, 0.5, 0], rr: [0.18, 0.04, 0.1], col: leaf, k: 0.03 },
     ], { ao: 0.6 });
+  }
+  // ---------- Pirate Beach ----------
+  {
+    const trunk = C('#a07a4a'), trunkD = C('#7a5a34'), frond = C('#3f9a3a'), frondD = C('#2f7a2e'), nut = C('#6a4a2a'), wood = C('#a06a38'), woodD = C('#6e4624'), iron = C('#4a4a52'), rope = C('#e8d8a8'), sail = C('#f4ecd8');
+    // a leaning palm with a crown of fronds and coconuts
+    P('palm', [
+      ...[[0, 0, 0.4], [0.06, 0.4, 0.8], [0.16, 0.8, 1.2], [0.3, 1.2, 1.55]].map(([x, y0, y1], i) => ({ s: 'cap', a: [x, y0, 0], b: [x + 0.08 + i * 0.03, y1, 0], r: 0.1 - i * 0.012, r2: 0.09 - i * 0.012, col: i % 2 ? trunk : trunkD, k: 0.02 })),
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [0.46 + x * 0.42, 1.55, z * 0.42], rr: [x ? 0.46 : 0.13, 0.04, z ? 0.46 : 0.13], col: frond, k: 0.03 })),
+      ...[[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].map(([x, z]) => ({ s: 'cap', a: [0.46, 1.6, 0], b: [0.46 + x * 0.6, 1.3, z * 0.6], r: 0.07, r2: 0.025, col: frondD, k: 0.03 })),
+      ...[[0.05, 0.08], [-0.07, 0.02], [0.02, -0.08]].map(([x, z]) => ({ s: 'sph', c: [0.46 + x, 1.45, z], r: 0.07, col: nut, k: 0.01 })),
+    ]);
+    P('barrel', [
+      { s: 'cyl', ax: 'y', c: [0, 0.36, 0], r: 0.28, hh: 0.36, rd: 0.06, col: wood, k: 0 },
+      { s: 'ell', c: [0, 0.36, 0], rr: [0.3, 0.26, 0.3], col: wood, k: 0.04 },
+      ...[0.1, 0.36, 0.62].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: y === 0.36 ? 0.3 : 0.28, r: 0.025, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 })),
+    ]);
+    P('crate', [
+      { s: 'box', c: [0, 0.32, 0], hs: [0.32, 0.32, 0.32], rd: 0.03, col: wood, k: 0 },
+      ...[[0, 0.32, 0.325, 0.3, 0.05, 0.01], [0, 0.32, -0.325, 0.3, 0.05, 0.01], [0.325, 0.32, 0, 0.01, 0.05, 0.3], [-0.325, 0.32, 0, 0.01, 0.05, 0.3]].map(([x, y, z, a, b, c]) => ({ s: 'box', c: [x, y, z], hs: [a, b, c], rd: 0.01, col: woodD, k: 0 })),
+    ]);
+    // a starfish lying on the sand; it takes the instance tint
+    P('starfish', Array.from({ length: 5 }, (_, i) => { const a = (i / 5) * TAU; return { s: 'cap', a: [0, 0.04, 0], b: [Math.cos(a) * 0.32, 0.03, Math.sin(a) * 0.32], r: 0.08, r2: 0.03, k: 0.04 }; }));
+    // pier pilings with rope for the wall
+    P('post', [
+      { s: 'cyl', ax: 'y', c: [0, 0.6, 0], r: 0.17, hh: 0.6, rd: 0.05, col: wood, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0.3, 0.4, 0.15], r: 0.13, hh: 0.4, rd: 0.04, col: woodD, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.82, 0], R: 0.18, r: 0.03, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 },
+      { s: 'cap', a: [0, 0.8, 0], b: [0.3, 0.62, 0.15], r: 0.025, col: rope, k: 0 },
+    ], { ao: 0.8 });
+    // a shipwreck lying across the sand: long hull along x, a broken mast and a torn sail
+    P('wreck', [
+      { s: 'ell', c: [0, 0.35, 0], rr: [1.0, 0.42, 0.42], col: woodD, k: 0.05 },
+      { s: 'box', c: [0, 0.55, 0], hs: [0.9, 0.08, 0.36], rd: 0.04, col: wood, k: 0.03 },
+      ...[-0.6, -0.2, 0.2, 0.6].map(x => ({ s: 'box', c: [x, 0.38, 0.4], hs: [0.08, 0.2, 0.02], rd: 0.01, col: wood, k: 0 })),
+      { s: 'cap', a: [0.1, 0.55, 0], b: [0.35, 1.45, 0.1], r: 0.06, col: woodD, k: 0.02 },
+      { s: 'box', c: [0.28, 1.15, 0.12], hs: [0.02, 0.24, 0.28], rd: 0.01, col: sail, k: 0 },
+      { s: 'cyl', ax: 'x', c: [-0.95, 0.5, 0], r: 0.14, hh: 0.08, rd: 0.03, col: wood, k: 0.02 },
+    ]);
+  }
+  // ---------- Captain Crab (chapter 9 boss): a giant crab in a tricorn hat, with an eyepatch and a cannon on its back ----------
+  {
+    const belly = C('#ffd0b0'), black = C('#1c1820'), gold = C('#ffc93a'), white = C('#fff6e6'), pupil = C('#16101a'), iron = C('#3a3a44'), tip = C('#fff0e0');
+    P('crab', [
+      { s: 'ell', c: [0, 0.45, 0], rr: [0.62, 0.3, 0.48], k: 0.06 },
+      ...[[0.25, 0.7, -0.05], [-0.25, 0.7, -0.05], [0, 0.72, 0.1], [0.4, 0.6, 0.18], [-0.4, 0.6, 0.18]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.1, k: 0.08 })),
+      { s: 'ell', c: [0, 0.3, 0.06], rr: [0.55, 0.16, 0.42], col: belly, k: 0.04 },
+      { s: 'ell', c: [0, 0.4, 0.46], rr: [0.14, 0.05, 0.04], col: C('#5a0c22'), k: 0.01 },
+      // eye stalks: the right eye looks, the left wears a patch
+      { s: 'cap', a: [0.16, 0.62, 0.3], b: [0.2, 0.98, 0.36], r: 0.05, k: 0.02 }, { s: 'cap', a: [-0.16, 0.62, 0.3], b: [-0.2, 0.98, 0.36], r: 0.05, k: 0.02 },
+      { s: 'sph', c: [0.2, 1.02, 0.37], r: 0.11, col: white, k: 0 }, { s: 'sph', c: [0.21, 1.03, 0.47], r: 0.05, col: pupil, k: 0 },
+      { s: 'sph', c: [-0.2, 1.02, 0.37], r: 0.11, col: white, k: 0 }, { s: 'ell', c: [-0.2, 1.03, 0.45], rr: [0.1, 0.1, 0.04], col: black, k: 0.01 },
+      { s: 'tor', ax: 'z', c: [-0.2, 1.03, 0.37], R: 0.115, r: 0.012, a0: 0.3, a1: 2.6, col: black, k: 0 },
+      // tricorn hat with gold trim and a skull
+      { s: 'cyl', ax: 'y', c: [0, 0.8, -0.1], r: 0.36, hh: 0.025, rd: 0.02, col: black, k: 0 },
+      { s: 'ell', c: [0, 0.9, -0.1], rr: [0.24, 0.13, 0.22], col: black, k: 0.03 },
+      { s: 'tor', ax: 'y', c: [0, 0.82, -0.1], R: 0.34, r: 0.02, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      { s: 'sph', c: [0, 0.94, 0.11], r: 0.045, col: white, k: 0 },
+      // the cannon riding on its back, aimed forward over its head
+      { s: 'cyl', ax: 'z', c: [0.3, 0.78, -0.3], r: 0.08, hh: 0.24, rd: 0.03, col: iron, k: 0.01 },
+      { s: 'tor', ax: 'z', c: [0.3, 0.78, -0.06], R: 0.085, r: 0.025, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 },
+      { s: 'sph', c: [0.3, 0.76, -0.52], r: 0.08, col: iron, k: 0.02 },
+    ]);
+    // a pincer pointing along +z from its pivot; it takes the instance tint
+    P('crabclaw', [
+      { s: 'cap', a: [0, 0.45, -0.25], b: [0, 0.45, 0.15], r: 0.09, k: 0.03 },
+      { s: 'ell', c: [0, 0.48, 0.32], rr: [0.2, 0.18, 0.26], k: 0.05 },
+      { s: 'cap', a: [0.04, 0.56, 0.48], b: [0.02, 0.54, 0.8], r: 0.085, r2: 0.03, k: 0.03 },
+      { s: 'cap', a: [-0.04, 0.4, 0.48], b: [-0.03, 0.42, 0.74], r: 0.07, r2: 0.03, k: 0.03 },
+      { s: 'sph', c: [0.02, 0.54, 0.82], r: 0.03, col: tip, k: 0.01 }, { s: 'sph', c: [-0.03, 0.42, 0.76], r: 0.028, col: tip, k: 0.01 },
+    ]);
+    // a jointed leg reaching out along +z from its pivot
+    P('crableg', [
+      { s: 'cap', a: [0, 0.4, 0], b: [0, 0.58, 0.35], r: 0.06, k: 0.02 },
+      { s: 'cap', a: [0, 0.58, 0.35], b: [0, 0.02, 0.62], r: 0.05, r2: 0.02, k: 0.02 },
+    ]);
   }
 }
 </script>
@@ -2772,7 +2849,8 @@ const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 's
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
-  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03 };
+  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
+  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
@@ -2780,7 +2858,8 @@ MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormse
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
   'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
-  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg');
+  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg',
+  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -3189,6 +3268,81 @@ function themeModels(defs) {
       { s: 'cap', a: [0, 0.82, 0], b: [0, 1.0, -0.08], r: 0.06, r2: 0.01, col: thorn, k: 0 },
       { s: 'ell', c: [0.36, 0.5, 0], rr: [0.18, 0.04, 0.1], col: leaf, k: 0.03 },
     ], { ao: 0.6 });
+  }
+  // ---------- Pirate Beach ----------
+  {
+    const trunk = C('#a07a4a'), trunkD = C('#7a5a34'), frond = C('#3f9a3a'), frondD = C('#2f7a2e'), nut = C('#6a4a2a'), wood = C('#a06a38'), woodD = C('#6e4624'), iron = C('#4a4a52'), rope = C('#e8d8a8'), sail = C('#f4ecd8');
+    // a leaning palm with a crown of fronds and coconuts
+    P('palm', [
+      ...[[0, 0, 0.4], [0.06, 0.4, 0.8], [0.16, 0.8, 1.2], [0.3, 1.2, 1.55]].map(([x, y0, y1], i) => ({ s: 'cap', a: [x, y0, 0], b: [x + 0.08 + i * 0.03, y1, 0], r: 0.1 - i * 0.012, r2: 0.09 - i * 0.012, col: i % 2 ? trunk : trunkD, k: 0.02 })),
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [0.46 + x * 0.42, 1.55, z * 0.42], rr: [x ? 0.46 : 0.13, 0.04, z ? 0.46 : 0.13], col: frond, k: 0.03 })),
+      ...[[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].map(([x, z]) => ({ s: 'cap', a: [0.46, 1.6, 0], b: [0.46 + x * 0.6, 1.3, z * 0.6], r: 0.07, r2: 0.025, col: frondD, k: 0.03 })),
+      ...[[0.05, 0.08], [-0.07, 0.02], [0.02, -0.08]].map(([x, z]) => ({ s: 'sph', c: [0.46 + x, 1.45, z], r: 0.07, col: nut, k: 0.01 })),
+    ]);
+    P('barrel', [
+      { s: 'cyl', ax: 'y', c: [0, 0.36, 0], r: 0.28, hh: 0.36, rd: 0.06, col: wood, k: 0 },
+      { s: 'ell', c: [0, 0.36, 0], rr: [0.3, 0.26, 0.3], col: wood, k: 0.04 },
+      ...[0.1, 0.36, 0.62].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: y === 0.36 ? 0.3 : 0.28, r: 0.025, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 })),
+    ]);
+    P('crate', [
+      { s: 'box', c: [0, 0.32, 0], hs: [0.32, 0.32, 0.32], rd: 0.03, col: wood, k: 0 },
+      ...[[0, 0.32, 0.325, 0.3, 0.05, 0.01], [0, 0.32, -0.325, 0.3, 0.05, 0.01], [0.325, 0.32, 0, 0.01, 0.05, 0.3], [-0.325, 0.32, 0, 0.01, 0.05, 0.3]].map(([x, y, z, a, b, c]) => ({ s: 'box', c: [x, y, z], hs: [a, b, c], rd: 0.01, col: woodD, k: 0 })),
+    ]);
+    // a starfish lying on the sand; it takes the instance tint
+    P('starfish', Array.from({ length: 5 }, (_, i) => { const a = (i / 5) * TAU; return { s: 'cap', a: [0, 0.04, 0], b: [Math.cos(a) * 0.32, 0.03, Math.sin(a) * 0.32], r: 0.08, r2: 0.03, k: 0.04 }; }));
+    // pier pilings with rope for the wall
+    P('post', [
+      { s: 'cyl', ax: 'y', c: [0, 0.6, 0], r: 0.17, hh: 0.6, rd: 0.05, col: wood, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0.3, 0.4, 0.15], r: 0.13, hh: 0.4, rd: 0.04, col: woodD, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.82, 0], R: 0.18, r: 0.03, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 },
+      { s: 'cap', a: [0, 0.8, 0], b: [0.3, 0.62, 0.15], r: 0.025, col: rope, k: 0 },
+    ], { ao: 0.8 });
+    // a shipwreck lying across the sand: long hull along x, a broken mast and a torn sail
+    P('wreck', [
+      { s: 'ell', c: [0, 0.35, 0], rr: [1.0, 0.42, 0.42], col: woodD, k: 0.05 },
+      { s: 'box', c: [0, 0.55, 0], hs: [0.9, 0.08, 0.36], rd: 0.04, col: wood, k: 0.03 },
+      ...[-0.6, -0.2, 0.2, 0.6].map(x => ({ s: 'box', c: [x, 0.38, 0.4], hs: [0.08, 0.2, 0.02], rd: 0.01, col: wood, k: 0 })),
+      { s: 'cap', a: [0.1, 0.55, 0], b: [0.35, 1.45, 0.1], r: 0.06, col: woodD, k: 0.02 },
+      { s: 'box', c: [0.28, 1.15, 0.12], hs: [0.02, 0.24, 0.28], rd: 0.01, col: sail, k: 0 },
+      { s: 'cyl', ax: 'x', c: [-0.95, 0.5, 0], r: 0.14, hh: 0.08, rd: 0.03, col: wood, k: 0.02 },
+    ]);
+  }
+  // ---------- Captain Crab (chapter 9 boss): a giant crab in a tricorn hat, with an eyepatch and a cannon on its back ----------
+  {
+    const belly = C('#ffd0b0'), black = C('#1c1820'), gold = C('#ffc93a'), white = C('#fff6e6'), pupil = C('#16101a'), iron = C('#3a3a44'), tip = C('#fff0e0');
+    P('crab', [
+      { s: 'ell', c: [0, 0.45, 0], rr: [0.62, 0.3, 0.48], k: 0.06 },
+      ...[[0.25, 0.7, -0.05], [-0.25, 0.7, -0.05], [0, 0.72, 0.1], [0.4, 0.6, 0.18], [-0.4, 0.6, 0.18]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.1, k: 0.08 })),
+      { s: 'ell', c: [0, 0.3, 0.06], rr: [0.55, 0.16, 0.42], col: belly, k: 0.04 },
+      { s: 'ell', c: [0, 0.4, 0.46], rr: [0.14, 0.05, 0.04], col: C('#5a0c22'), k: 0.01 },
+      // eye stalks: the right eye looks, the left wears a patch
+      { s: 'cap', a: [0.16, 0.62, 0.3], b: [0.2, 0.98, 0.36], r: 0.05, k: 0.02 }, { s: 'cap', a: [-0.16, 0.62, 0.3], b: [-0.2, 0.98, 0.36], r: 0.05, k: 0.02 },
+      { s: 'sph', c: [0.2, 1.02, 0.37], r: 0.11, col: white, k: 0 }, { s: 'sph', c: [0.21, 1.03, 0.47], r: 0.05, col: pupil, k: 0 },
+      { s: 'sph', c: [-0.2, 1.02, 0.37], r: 0.11, col: white, k: 0 }, { s: 'ell', c: [-0.2, 1.03, 0.45], rr: [0.1, 0.1, 0.04], col: black, k: 0.01 },
+      { s: 'tor', ax: 'z', c: [-0.2, 1.03, 0.37], R: 0.115, r: 0.012, a0: 0.3, a1: 2.6, col: black, k: 0 },
+      // tricorn hat with gold trim and a skull
+      { s: 'cyl', ax: 'y', c: [0, 0.8, -0.1], r: 0.36, hh: 0.025, rd: 0.02, col: black, k: 0 },
+      { s: 'ell', c: [0, 0.9, -0.1], rr: [0.24, 0.13, 0.22], col: black, k: 0.03 },
+      { s: 'tor', ax: 'y', c: [0, 0.82, -0.1], R: 0.34, r: 0.02, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      { s: 'sph', c: [0, 0.94, 0.11], r: 0.045, col: white, k: 0 },
+      // the cannon riding on its back, aimed forward over its head
+      { s: 'cyl', ax: 'z', c: [0.3, 0.78, -0.3], r: 0.08, hh: 0.24, rd: 0.03, col: iron, k: 0.01 },
+      { s: 'tor', ax: 'z', c: [0.3, 0.78, -0.06], R: 0.085, r: 0.025, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 },
+      { s: 'sph', c: [0.3, 0.76, -0.52], r: 0.08, col: iron, k: 0.02 },
+    ]);
+    // a pincer pointing along +z from its pivot; it takes the instance tint
+    P('crabclaw', [
+      { s: 'cap', a: [0, 0.45, -0.25], b: [0, 0.45, 0.15], r: 0.09, k: 0.03 },
+      { s: 'ell', c: [0, 0.48, 0.32], rr: [0.2, 0.18, 0.26], k: 0.05 },
+      { s: 'cap', a: [0.04, 0.56, 0.48], b: [0.02, 0.54, 0.8], r: 0.085, r2: 0.03, k: 0.03 },
+      { s: 'cap', a: [-0.04, 0.4, 0.48], b: [-0.03, 0.42, 0.74], r: 0.07, r2: 0.03, k: 0.03 },
+      { s: 'sph', c: [0.02, 0.54, 0.82], r: 0.03, col: tip, k: 0.01 }, { s: 'sph', c: [-0.03, 0.42, 0.76], r: 0.028, col: tip, k: 0.01 },
+    ]);
+    // a jointed leg reaching out along +z from its pivot
+    P('crableg', [
+      { s: 'cap', a: [0, 0.4, 0], b: [0, 0.58, 0.35], r: 0.06, k: 0.02 },
+      { s: 'cap', a: [0, 0.58, 0.35], b: [0, 0.02, 0.62], r: 0.05, r2: 0.02, k: 0.02 },
+    ]);
   }
 }
 
@@ -4108,6 +4262,18 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 41) {
+    // a curling wave seen side on: a low swell rising into a hooked crest with a foam cap, extruded along z
+    vec2 q = p.xy;
+    float swell = length((q - vec2(0.0, -0.42)) / vec2(0.85, 0.3)) - 1.0;
+    swell *= 0.3;
+    vec2 c = q - vec2(-0.05, 0.12);
+    float ring = abs(length(c) - 0.4) - 0.15;
+    ring = max(ring, min(-0.05 - c.y, -c.x));
+    float d2 = smin(swell, ring, 0.12);
+    d2 = min(d2, length(q - vec2(0.38, 0.0)) - 0.09);
+    return vec2(extrude(d2, p.z, 0.45, 0.08), c.y > 0.36 || (c.x > 0.2 && c.y > -0.05) ? 7.0 : 0.0);
   }
   if (type == 40) {
     // thorn pod: a round goo seed bristling with brown spikes (three rings of seven, plus top and bottom)
@@ -6099,6 +6265,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Meteors'], ['radius', 'Radius', 'm'], ['cd', 'Cooldown', 's']],
     levels: L10({ dmg: [30, 34, 38, 42, 48, 54, 60, 68, 76, 86], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.7, 2.9], cd: [6, 5.8, 5.6, 5.4, 5.2, 5.0, 4.8, 4.6, 4.3, 4.0] }),
   },
+  wave: {
+    name: 'Tidal Wave', from: 9, intro: 'Sends a wall of goo surf rolling out at the nearest crowd, sweeping enemies along and battering them.', icon: { type: 41, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Waves'], ['width', 'Width', 'm'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [16, 18, 20, 23, 26, 29, 32, 36, 40, 46], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], width: [2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.3, 4.6], cd: [5.5, 5.4, 5.2, 5.0, 4.8, 4.6, 4.4, 4.2, 4.0, 3.7] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -6173,6 +6344,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 8000, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 7400, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
 BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 6800, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.yeti = { name: 'Frost Yeti', model: 'yeti', meshes: ['yeti', 'icicle', 'icespike'], hp: 6100, speed: 2.1, dmg: 18, scale: 2.8, radius: 1.2, tint: '#6fa8f2', mass: 60, portraitTop: 1.05 };
@@ -6203,6 +6375,8 @@ const ARENAS = [
     props: [['obsidian', 4, 0.6, 0.9], ['vent', 2.2, 0.55, 0.65], ['deadtree', 3, 0.4, 0.55], ['rock', 5, 0.8, 1.3]], zones: [['lava', 2.4, 2.4, 3.6]], wall: 'basalt' },
   { id: 'jungle', name: 'Jungle Swamp', floor: 7, stoneA: '#5a9a40', stoneB: '#3f7a2e', grout: '#6e5034', accent: '#c8ff5a', fog: '#0c2212', sky: '#b0e8a0', ground: '#2c4c22', light: '#fff2d6', spotMin: 0.52, shadowTint: '#0a2a10', rock: '#7a866a', pool: '#4a5e2a', poolGlow: 0.04,
     props: [['jtree', 6, 0.45, 0.6], ['mushroom', 4, 0.5, 0.75], ['fern', 6, 0.6, 0.9], ['rock', 3, 0.8, 1.2]], zones: [['swamp', 3, 2.8, 4.2]], wall: 'bamboo' },
+  { id: 'beach', name: 'Pirate Beach', floor: 8, stoneA: '#f2dcae', stoneB: '#d6b480', grout: '#8a6a44', accent: '#4fd8ff', fog: '#123a4a', sky: '#bfe8ff', ground: '#c8a878', light: '#fff6e4', spotMin: 0.62, shadowTint: '#3a4a6a', rock: '#9a8a7a', pool: '#2fb0d8', poolGlow: 0.1,
+    props: [['palm', 6, 0.42, 0.55], ['barrel', 3, 0.3, 0.36], ['crate', 3, 0.34, 0.4], ['rock', 3, 0.8, 1.2], ['starfish', 4, 0.3, 0.4]], zones: [['tidepool', 3, 2.0, 3.0]], wall: 'post' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -6239,6 +6413,12 @@ const PROP_KINDS = {
   fern: { models: ['fern'], unit: 0.5, block: false },
   bamboo: { models: ['bamboo'], unit: 0.4, block: true, shots: true, tints: ['#7ab84a', '#5e9a3a', '#8cc858'], wallR: [1.0, 1.2] },
   roots: { models: ['roots'], unit: 0.4, block: false, tint: '#7a5a34', shadow: false },
+  palm: { models: ['palm'], unit: 0.15, block: true, shots: true, tall: 3 },
+  barrel: { models: ['barrel'], unit: 0.3, block: true, shots: true },
+  crate: { models: ['crate'], unit: 0.35, block: true, shots: true },
+  starfish: { models: ['starfish'], unit: 0.35, block: false, tints: ['#ff7a5a', '#ffb03a', '#c860ff', '#ff5a8a'], shadow: false },
+  post: { models: ['post'], unit: 0.4, block: true, shots: true, wallR: [0.9, 1.05] },
+  wreck: { models: ['wreck'], unit: 0.5, block: true, shots: true, shadow: false, tall: 3 },
   basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
@@ -6252,6 +6432,7 @@ const ZONE_KINDS = {
   ice: { slide: true, col: '#7cc4f0', glow: 0.04, style: 1 },
   lava: { burn: 16, slow: 0.85, col: '#f04a0c', glow: 0.3 },
   swamp: { slow: 0.6, col: '#56702c', glow: 0.03 },
+  tidepool: { block: true, col: '#2fb8e0', glow: 0.12 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -7086,13 +7267,13 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
-    if (s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma') {
+    if (s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma' || s.kind === 'cannon') {
       // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1);
       s.x = lerp(s.sx, s.tx, u); s.z = lerp(s.sz, s.tz, u); s.y = lerp(s.sy, 0.4, u) + Math.sin(u * Math.PI) * (s.peak ?? 5);
       s.spin += dt * 6;
-      if (s.kind === 'rocket' && Math.random() < 0.8) FX.smoke(s.x, s.y, s.z, 0.35, [0.75, 0.75, 0.8], 0.6, 0.3);
+      if ((s.kind === 'rocket' || s.kind === 'cannon') && Math.random() < 0.8) FX.smoke(s.x, s.y, s.z, 0.35, [0.75, 0.75, 0.8], 0.6, 0.3);
       if (u >= 1) {
         s.life = 0;
         if (Math.hypot(h[0] - s.tx, h[2] - s.tz) < s.radius + HERO_R * 0.6) hurtHero(s.dmg, s.tx, s.tz);
@@ -7105,6 +7286,12 @@ function updateEnemyShots(dt) {
         AUDIO.play('boom');
       }
       continue;
+    }
+    // bubbles drift toward the hero and bob as they go
+    if (s.home) {
+      const hx = h[0] - s.x, hz = h[2] - s.z, hl = Math.hypot(hx, hz) || 1, sp = Math.hypot(s.vx, s.vz);
+      s.vx += (hx / hl * sp - s.vx) * s.home * dt; s.vz += (hz / hl * sp - s.vz) * s.home * dt;
+      s.y = 0.9 + Math.sin(s.life * 3 + s.ph) * 0.25;
     }
     s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
     if (inRock(s.x, s.z) || arenaSd(s.x, s.z) > 0.5) { s.life = 0; FX.burst(s.x, s.y, s.z, 4, [0.8, 0.7, 0.6], 2.5, 0.07, 0.3, 1); continue; }
@@ -7399,7 +7586,19 @@ const ARENA_LAYOUTS = {};
 const ARENA_FEATURES = {};
 // a blast at (x, z) shoves the theme's loose objects (the bounce house balls)
 function arenaBlast(x, z, r, power) { const F = ARENA.fx; if (F && F.def.blast) F.def.blast(F.st, x, z, r, power); }
-function updateArenaFx(dt) { const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
+function updateArenaFx(dt) { fadeOccluders(dt); const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
+// tall scenery (trees, palms...) between the camera and the hero fades out; the camera looks north, so "behind" is smaller z
+// (the city's buildings do their own fading)
+function fadeOccluders(dt) {
+  const h = G.hero.pos;
+  for (const o of ARENA.props) {
+    const K = PROP_KINDS[o.kind], m = MODELS.defs[o.model];
+    if (!(K.tall >= 2) || o.height || !m) continue;
+    const sc = o.scale || o.r / K.unit, w = m.bmax[0] * sc + 0.6, top = m.top * sc;
+    const behind = Math.abs(h[0] - o.x) < w && h[2] < o.z + w * 0.5 && h[2] > o.z - top * 0.8 - w;
+    if (behind || o.fade) o.fade = clamp((o.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.72);
+  }
+}
 function emitArenaFx() { const F = ARENA.fx; if (F && F.def.emit) F.def.emit(F.st); }
 
 // ---- 11b-themes.js ----
@@ -7688,6 +7887,27 @@ ARENA_FEATURES.jungle = {
     const h = G.hero.pos;
     st.acc += dt * (FX.reduced ? 3 : 9);
     for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.4, 2), h[2] + rand(-11, 8), rand(-0.6, 0.6), rand(-0.2, 0.3), rand(-0.6, 0.6), rand(0.08, 0.13), 0.02, rand(1.5, 3), [0.8, 1, 0.35], 1, 0, 0, 0.3);
+  },
+};
+
+// ---------- Pirate Beach: a shipwreck lying on the sand, gull shadows sweeping over ----------
+ARENA_LAYOUTS.beach = function (A) {
+  const rnd = A.rnd, a = rnd() * TAU, r = 16 + rnd() * 8, x = Math.cos(a) * r, z = Math.sin(a) * r, s = 3.2, turn = rnd() < 0.5;
+  // the hull runs along x in the mesh; turned a quarter it runs along z (obstacle boxes stay axis-aligned)
+  A.prop('wreck', x, z, 0, { shape: 'box', hw: (turn ? 0.45 : 1.0) * s, hd: (turn ? 1.0 : 0.45) * s, scale: s, yaw: turn ? Math.PI / 2 : 0 });
+  for (let i = 0; i < 4; i++) { const b = rnd() * TAU, d = 4.6 + rnd() * 1.2; if (A.fits(x + Math.cos(b) * d, z + Math.sin(b) * d, 0.35)) A.prop(rnd() < 0.5 ? 'barrel' : 'crate', x + Math.cos(b) * d, z + Math.sin(b) * d, 0.34); }
+};
+ARENA_FEATURES.beach = {
+  init(st, rnd) { st.gulls = Array.from({ length: 3 }, () => ({ a: rnd() * TAU, r: 6 + rnd() * 6, w: (rnd() < 0.5 ? -1 : 1) * (0.3 + rnd() * 0.25), cx: 0, cz: 0 })); },
+  update(st, dt) {
+    const h = G.hero.pos;
+    for (const g of st.gulls) { g.a += g.w * dt; g.cx += (h[0] - g.cx) * dt * 0.3; g.cz += (h[2] - g.cz) * dt * 0.3; }
+  },
+  emit(st) {
+    for (const g of st.gulls) {
+      const x = g.cx + Math.cos(g.a) * g.r, z = g.cz + Math.sin(g.a) * g.r, flap = 0.8 + 0.2 * Math.sin(G.run ? G.run.t * 7 + g.r : 0);
+      pushDecal(x, z, 0.9 * flap, 0.32, -(g.a + (g.w > 0 ? Math.PI / 2 : -Math.PI / 2)) + Math.PI / 2, 1, 0, 0, 0.05, 0.08, 0.15, 0.22);
+    }
   },
 };
 
@@ -8657,6 +8877,53 @@ function thornsTouch(e, dx, dz, d) {
   FX.burst(e.x - dx / l * e.radius, 0.6, e.z - dz / l * e.radius, 4, [0.55, 0.85, 0.3], 3, 0.08, 0.3, 1);
 }
 
+// ---------- Tidal Wave (chapter 9): walls of goo surf roll out and sweep enemies along ----------
+const WAVE = { speed: 9, life: 1.1 };
+SKILL_HOOKS.wave = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, run = G.run, w = L.width * areaMul();
+    st.waves = st.waves || [];
+    st.t = (st.t ?? 1.2) - dt;
+    const tgt = st.t <= 0 && nearestEnemy(h[0], h[2], 9);
+    if (tgt) {
+      st.t = L.cd * cdMul();
+      const base = Math.atan2(tgt.x - h[0], tgt.z - h[2]);
+      for (let i = 0; i < L.count; i++) {
+        const a = base + (i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * TAU / (L.count + 1));
+        st.waves.push({ x: h[0] - Math.sin(a) * 0.5, z: h[2] - Math.cos(a) * 0.5, dx: Math.sin(a), dz: Math.cos(a), w, t: 0, id: Math.random() });
+      }
+      AUDIO.play('split', 0.6);
+    }
+    for (const v of st.waves) {
+      v.t += dt;
+      v.x += v.dx * WAVE.speed * dt; v.z += v.dz * WAVE.speed * dt;
+      // anything in the curl takes a hit once and gets carried along while the wave passes
+      enemiesInRadius(v.x, v.z, v.w + 1, e => {
+        const ox = e.x - v.x, oz = e.z - v.z, along = ox * v.dx + oz * v.dz, perp = Math.abs(ox * v.dz - oz * v.dx);
+        if (along < -1.2 || along > 0.6 || perp > v.w) return;
+        if (e.waveHit !== v.id) { e.waveHit = v.id; hurtEnemy(e, L.dmg, 0, 0, { sound: false, color: [0.5, 0.85, 1] }); }
+        if (!e.boss) { e.kx += (v.dx * WAVE.speed * 1.2 - e.kx) * Math.min(1, dt * 8); e.kz += (v.dz * WAVE.speed * 1.2 - e.kz) * Math.min(1, dt * 8); }
+      });
+      if (Math.random() < 0.8) { const u = rand(-1, 1) * v.w; FX.part(v.x + v.dz * u, 0.5, v.z - v.dx * u, v.dx * 3 + rand(-1, 1), rand(1, 3), v.dz * 3 + rand(-1, 1), 0.12, 0.03, 0.5, [0.9, 0.97, 1], 1, 1, -8, 1); }
+    }
+    st.waves = st.waves.filter(v => v.t < WAVE.life && arenaSd(v.x, v.z) < 0);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.waves) return;
+    for (const v of st.waves) {
+      const fade = Math.min(1, v.t / 0.12) * Math.min(1, (WAVE.life - v.t) / 0.25), n = Math.max(4, Math.round(v.w * 2.2));
+      // a row of stretched goo humps along the front, tallest in the middle
+      for (let i = 0; i < n; i++) {
+        const u = (i / (n - 1)) * 2 - 1, x = v.x + v.dz * u * v.w, z = v.z - v.dx * u * v.w, hgt = (1 - u * u * 0.6) * 0.75 * fade;
+        if (hgt < 0.05) continue;
+        pushImp(x, hgt * 0.6, z, hgt, v.dx, 0, v.dz, 1.25, 0, 0, 0.12, G.run.t * 3 + i, 0, 0, 0, 0.85);
+      }
+      pushDecal(v.x - v.dx * 0.8, v.z - v.dz * 0.8, v.w, 1.0, -Math.atan2(v.dx, v.dz), 1, 0, 0, 0.6, 0.9, 1, 0.35 * fade, true);
+    }
+  },
+};
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -9003,6 +9270,8 @@ function emitRunScene() {
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
     else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
+    else if (s.kind === 'cannon') { pushImp(s.x, s.y, s.z, 0.4, Math.sin(s.spin), Math.cos(s.spin), 0.3, 1, 13, 0, 0, 0, 0, 0, 0, 1); pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.35, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4); }
+    else if (s.kind === 'bubble') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 27, 4, 0.1, s.ph, 0, 0, 0, 0.85); pushDecal(s.x + 0.08, s.z + 0.06, s.r * 0.8, s.r * 0.7, 0, 1, 0, 0, 0.02, 0.04, 0.08, 0.25); }
     else if (s.kind === 'seed') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.3, 0, 4, 0.05, s.ph + run.t * 4, 0, 0, 0, 1); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.04, 0.02, 0.35); }
     else if (s.kind === 'magma') { pushImp(s.x, s.y, s.z, 0.5, 0, 1, 0, 1, 15, 0, 0.5, s.spin, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.9, [1, 0.5, 0.15], 0.05, 0.6); pushDecal(s.x + 0.15, s.z + 0.1, 0.5, 0.4, 0, 1, 0, 0, 0.02, 0.01, 0.0, 0.4); }
     else if (s.kind === 'icicle') {
@@ -10006,6 +10275,125 @@ BOSS_DRAW.hydra = function (e) {
     pushEnemy('hydrahead', false, hd.x, hd.y - 0.5 * hs, hd.z, hd.yaw, D.hydrahead.clips.still.row, hs, 1, dead, fl, 0, t[0], t[1], t[2]);
     if (!e.portrait) pushDecal(hd.x - L[0] * 0.4, hd.z - L[2] * 0.4, 0.6 * s, 0.5 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.35);
   }
+};
+
+// ---------- Captain Crab (chapter 9): sidesteps around you, double claw snaps, a line of cannon fire, drifting bubbles ----------
+BOSS_AI.crab = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.4; ai.side = 1; }
+  ai.claw = Math.max(0, (ai.claw || 0) - dt * 3);
+  switch (ai.state) {
+    case 'walk': {
+      // circle the hero sideways at a few metres, now and then switching direction
+      const a = Math.atan2(e.x - h[0], e.z - h[2]) + ai.side * 0.55;
+      bossWalk(e, dt, h[0] + Math.sin(a) * 6.5, h[2] + Math.cos(a) * 6.5, e.speed * (rage ? 1.3 : 1)); bossFace(e, dt, 6);
+      if (Math.random() < dt * 0.25) ai.side = -ai.side;
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const seq = rage ? ['snap', 'cannons', 'scuttle', 'bubbles', 'cannons', 'scuttle'] : ['snap', 'cannons', 'bubbles'];
+        const k = seq[ai.next++ % seq.length];
+        if (k === 'snap') { ai.state = 'rush'; ai.t = 0.8; ai.snaps = 2; }
+        else if (k === 'cannons') { ai.state = 'aimCannon'; ai.t = 0.6; }
+        else if (k === 'bubbles') { ai.state = 'bubbles'; ai.t = 0.7; ai.blown = false; }
+        else {
+          // a sideways dash right across the sand
+          ai.rot = e.yaw + (Math.random() < 0.5 ? 1 : -1) * Math.PI / 2;
+          ai.state = 'scuttleWind'; ai.t = ai.dur = 0.7;
+          addTele({ kind: 'lane', x: e.x, z: e.z, r: 1.6, len: 15, rot: ai.rot, dur: ai.dur });
+        }
+      }
+      break;
+    }
+    case 'rush':
+      // scuttle in close, then snap
+      bossFace(e, dt, 8);
+      if (d > 3.4) { e.x += dx / d * 9 * dt; e.z += dz / d * 9 * dt; e.phase += dt * 4; }
+      if (d <= 3.4 || ai.t <= 0) crabSnapWind(e, ai, dx, dz, rage);
+      break;
+    case 'snapWind':
+      e.vx *= 0.7; e.vz *= 0.7;
+      e.yaw = angleLerp(e.yaw, ai.rot, Math.min(1, dt * 10));
+      if (ai.t <= 0) {
+        ai.claw = 1;
+        const inCone = (x, z) => { const ox = x - e.x, oz = z - e.z; return Math.hypot(ox, oz) < 4.8 && Math.abs(angleDiff(Math.atan2(ox, oz), ai.rot)) < 0.75; };
+        if (inCone(h[0], h[2])) { hurtHero(28 * run.info.dmgMul, e.x, e.z); run.vel[0] += Math.sin(ai.rot) * 9; run.vel[2] += Math.cos(ai.rot) * 9; }
+        enemiesInRadius(e.x, e.z, 4.8, o => { if (!o.boss && inCone(o.x, o.z)) hurtEnemy(o, 20, Math.sin(ai.rot) * 6, Math.cos(ai.rot) * 6, { sound: false }); });
+        FX.burst(e.x + Math.sin(ai.rot) * 3, 0.6, e.z + Math.cos(ai.rot) * 3, 10, [1, 0.85, 0.7], 5, 0.1, 0.4, 1);
+        G.cam.shake = Math.max(G.cam.shake, 0.12); AUDIO.play('hit', 0.5);
+        const dl = Math.hypot(h[0] - e.x, h[2] - e.z) || 1;
+        if (--ai.snaps > 0) crabSnapWind(e, ai, (h[0] - e.x) / dl, (h[2] - e.z) / dl, rage);
+        else { ai.state = 'walk'; ai.cd = rage ? 1.2 : 2; }
+      }
+      break;
+    case 'aimCannon':
+      bossFace(e, dt, 8); e.vx *= 0.8; e.vz *= 0.8;
+      if (ai.t <= 0) {
+        // a line of shells lands one after another, walking toward the hero and past them
+        const n = rage ? 10 : 7, rot = Math.atan2(dx, dz), start = Math.max(2.5, d - 4.5);
+        for (let i = 0; i < n; i++) {
+          const dist = start + i * 1.7, x = e.x + Math.sin(rot) * dist, z = e.z + Math.cos(rot) * dist;
+          if (arenaSd(x, z) > -1) break;
+          const dur = 0.85 + i * (rage ? 0.1 : 0.13);
+          addTele({ kind: 'circle', x, z, r: 1.3, dur });
+          run.eShots.push({ kind: 'cannon', sx: e.x, sy: 2.2, sz: e.z, tx: x, tz: z, x: e.x, y: 2.2, z: e.z, t: 0, dur, radius: 1.3, dmg: 22 * run.info.dmgMul, life: dur + 1, spin: 0, peak: 4 + i * 0.3 });
+        }
+        FX.smoke(e.x, 2.2, e.z, 1.2, [0.8, 0.8, 0.8], 0.8, 1); AUDIO.play('boom', 0.6); e.squashV -= 3;
+        ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4;
+      }
+      break;
+    case 'bubbles':
+      bossFace(e, dt, 6); e.vx *= 0.8; e.vz *= 0.8;
+      if (!ai.blown && ai.t <= 0.35) {
+        // a slow fan of bubbles that drift after the hero
+        ai.blown = true;
+        const n = rage ? 11 : 8, base = Math.atan2(dx, dz);
+        for (let i = 0; i < n; i++) {
+          const a = base + (i - (n - 1) / 2) * (1.9 / (n - 1));
+          run.eShots.push({ kind: 'bubble', x: e.x + Math.sin(a) * 1.8, y: 1, z: e.z + Math.cos(a) * 1.8, vx: Math.sin(a) * 2.6, vy: 0, vz: Math.cos(a) * 2.6, dmg: 14 * run.info.dmgMul, r: 0.5, life: 6, home: 0.5, ph: rand(0, 10) });
+        }
+        AUDIO.play('split', 1.4);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.2 : 2; }
+      break;
+    case 'scuttleWind':
+      e.vx *= 0.7; e.vz *= 0.7; e.phase += dt * 2;
+      if (ai.t <= 0) { ai.state = 'scuttle'; ai.t = 15 / 17; ai.hit = false; }
+      break;
+    case 'scuttle': {
+      e.x += Math.sin(ai.rot) * 17 * dt; e.z += Math.cos(ai.rot) * 17 * dt; e.phase += dt * 8;
+      const o = { x: e.x, z: e.z };
+      if (resolveCircle(o, e.radius)) { e.x = o.x; e.z = o.z; ai.t = 0; G.cam.shake = Math.max(G.cam.shake, 0.15); }
+      if (!ai.hit && Math.hypot(h[0] - e.x, h[2] - e.z) < e.radius + HERO_R + 0.4) { ai.hit = true; hurtHero(30 * run.info.dmgMul, e.x, e.z); run.vel[0] += Math.sin(ai.rot) * 10; run.vel[2] += Math.cos(ai.rot) * 10; }
+      enemiesInRadius(e.x, e.z, e.radius + 0.4, o2 => { if (!o2.boss) hurtEnemy(o2, 20, Math.sin(ai.rot) * 8, Math.cos(ai.rot) * 8, { sound: false }); });
+      if (Math.random() < 0.7) FX.burst(e.x, 0.2, e.z, 3, [0.9, 0.8, 0.6], 3, 0.1, 0.4, 2);
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = 1.4; }
+      break;
+    }
+  }
+};
+function crabSnapWind(e, ai, dx, dz, rage) {
+  ai.state = 'snapWind'; ai.t = ai.dur = rage ? 0.42 : 0.55; ai.rot = Math.atan2(dx, dz);
+  addTele({ kind: 'cone', x: e.x, z: e.z, r: 4.8, rot: ai.rot, half: 0.7, dur: ai.dur });
+}
+BOSS_DRAW.crab = function (e) {
+  const D = MODELS.defs;
+  if (!R.enemyDraw.crab || !R.enemyDraw.crabclaw || !R.enemyDraw.crableg) return;
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, s = e.scale, ai = e.ai, L = R.frame.lightDir;
+  const ph = e.phase * TAU, bob = Math.abs(Math.sin(ph)) * 0.04 * s;
+  const fx = Math.sin(e.yaw), fz = Math.cos(e.yaw), rx = Math.cos(e.yaw), rz = -Math.sin(e.yaw);
+  pushEnemy('crab', false, e.x, bob, e.z, e.yaw, D.crab.clips.still.row, s, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  // three legs a side, stepping in turn
+  for (const side of [1, -1]) for (let k = 0; k < 3; k++) {
+    const a = e.yaw + side * (Math.PI / 2 + (k - 1) * 0.55), lift = Math.max(0, Math.sin(ph + k * 2.1 + (side > 0 ? 0 : Math.PI))) * 0.1 * s;
+    pushEnemy('crableg', false, e.x + Math.sin(a) * 0.42 * s, lift, e.z + Math.cos(a) * 0.42 * s, a + Math.sin(ph + k) * 0.12, D.crableg.clips.still.row, s * 0.9, 1, dead, fl, 0, t[0] * 0.9, t[1] * 0.9, t[2] * 0.9);
+  }
+  // the claws pull back before a snap and lunge with it
+  const back = ai.state === 'snapWind' ? 1 - Math.max(ai.t, 0) / ai.dur : 0, lunge = ai.claw || 0;
+  for (const side of [1, -1]) {
+    const off = (0.5 - back * 0.25 + lunge * 0.55) * s, x = e.x + fx * off + rx * side * 0.48 * s, z = e.z + fz * off + rz * side * 0.48 * s;
+    pushEnemy('crabclaw', false, x, bob, z, e.yaw - side * (0.3 - lunge * 0.25), D.crabclaw.clips.still.row, s * 1.1, 1, dead, fl, 0, t[0], t[1], t[2]);
+  }
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.75 * s, 0.6 * s, -e.yaw, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
 };
 
 // ---- 14-ui.js ----
@@ -11229,6 +11617,7 @@ function renderAllIcons() {
     shield: { scale: 0.62, emissive: 0.15 },
     frostnova: { scale: 0.62, emissive: 0.25 },
     meteor: { scale: 0.66, ax: -0.75, ay: -0.6, az: 0.25, emissive: 0.1 },
+    wave: { scale: 0.64, emissive: 0.15 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

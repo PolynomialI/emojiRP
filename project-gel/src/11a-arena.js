@@ -176,5 +176,17 @@ const ARENA_LAYOUTS = {};
 const ARENA_FEATURES = {};
 // a blast at (x, z) shoves the theme's loose objects (the bounce house balls)
 function arenaBlast(x, z, r, power) { const F = ARENA.fx; if (F && F.def.blast) F.def.blast(F.st, x, z, r, power); }
-function updateArenaFx(dt) { const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
+function updateArenaFx(dt) { fadeOccluders(dt); const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
+// tall scenery (trees, palms...) between the camera and the hero fades out; the camera looks north, so "behind" is smaller z
+// (the city's buildings do their own fading)
+function fadeOccluders(dt) {
+  const h = G.hero.pos;
+  for (const o of ARENA.props) {
+    const K = PROP_KINDS[o.kind], m = MODELS.defs[o.model];
+    if (!(K.tall >= 2) || o.height || !m) continue;
+    const sc = o.scale || o.r / K.unit, w = m.bmax[0] * sc + 0.6, top = m.top * sc;
+    const behind = Math.abs(h[0] - o.x) < w && h[2] < o.z + w * 0.5 && h[2] > o.z - top * 0.8 - w;
+    if (behind || o.fade) o.fade = clamp((o.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.72);
+  }
+}
 function emitArenaFx() { const F = ARENA.fx; if (F && F.def.emit) F.def.emit(F.st); }

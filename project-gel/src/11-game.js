@@ -671,13 +671,13 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
-    if (s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma') {
+    if (s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma' || s.kind === 'cannon') {
       // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1);
       s.x = lerp(s.sx, s.tx, u); s.z = lerp(s.sz, s.tz, u); s.y = lerp(s.sy, 0.4, u) + Math.sin(u * Math.PI) * (s.peak ?? 5);
       s.spin += dt * 6;
-      if (s.kind === 'rocket' && Math.random() < 0.8) FX.smoke(s.x, s.y, s.z, 0.35, [0.75, 0.75, 0.8], 0.6, 0.3);
+      if ((s.kind === 'rocket' || s.kind === 'cannon') && Math.random() < 0.8) FX.smoke(s.x, s.y, s.z, 0.35, [0.75, 0.75, 0.8], 0.6, 0.3);
       if (u >= 1) {
         s.life = 0;
         if (Math.hypot(h[0] - s.tx, h[2] - s.tz) < s.radius + HERO_R * 0.6) hurtHero(s.dmg, s.tx, s.tz);
@@ -690,6 +690,12 @@ function updateEnemyShots(dt) {
         AUDIO.play('boom');
       }
       continue;
+    }
+    // bubbles drift toward the hero and bob as they go
+    if (s.home) {
+      const hx = h[0] - s.x, hz = h[2] - s.z, hl = Math.hypot(hx, hz) || 1, sp = Math.hypot(s.vx, s.vz);
+      s.vx += (hx / hl * sp - s.vx) * s.home * dt; s.vz += (hz / hl * sp - s.vz) * s.home * dt;
+      s.y = 0.9 + Math.sin(s.life * 3 + s.ph) * 0.25;
     }
     s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
     if (inRock(s.x, s.z) || arenaSd(s.x, s.z) > 0.5) { s.life = 0; FX.burst(s.x, s.y, s.z, 4, [0.8, 0.7, 0.6], 2.5, 0.07, 0.3, 1); continue; }

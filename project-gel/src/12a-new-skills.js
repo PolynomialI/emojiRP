@@ -290,3 +290,50 @@ function thornsTouch(e, dx, dz, d) {
   hurtEnemy(e, 10 + 5 * (lv - 1), dx / l * 7, dz / l * 7, { sound: false, color: [0.6, 1, 0.4] });
   FX.burst(e.x - dx / l * e.radius, 0.6, e.z - dz / l * e.radius, 4, [0.55, 0.85, 0.3], 3, 0.08, 0.3, 1);
 }
+
+// ---------- Tidal Wave (chapter 9): walls of goo surf roll out and sweep enemies along ----------
+const WAVE = { speed: 9, life: 1.1 };
+SKILL_HOOKS.wave = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, run = G.run, w = L.width * areaMul();
+    st.waves = st.waves || [];
+    st.t = (st.t ?? 1.2) - dt;
+    const tgt = st.t <= 0 && nearestEnemy(h[0], h[2], 9);
+    if (tgt) {
+      st.t = L.cd * cdMul();
+      const base = Math.atan2(tgt.x - h[0], tgt.z - h[2]);
+      for (let i = 0; i < L.count; i++) {
+        const a = base + (i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * TAU / (L.count + 1));
+        st.waves.push({ x: h[0] - Math.sin(a) * 0.5, z: h[2] - Math.cos(a) * 0.5, dx: Math.sin(a), dz: Math.cos(a), w, t: 0, id: Math.random() });
+      }
+      AUDIO.play('split', 0.6);
+    }
+    for (const v of st.waves) {
+      v.t += dt;
+      v.x += v.dx * WAVE.speed * dt; v.z += v.dz * WAVE.speed * dt;
+      // anything in the curl takes a hit once and gets carried along while the wave passes
+      enemiesInRadius(v.x, v.z, v.w + 1, e => {
+        const ox = e.x - v.x, oz = e.z - v.z, along = ox * v.dx + oz * v.dz, perp = Math.abs(ox * v.dz - oz * v.dx);
+        if (along < -1.2 || along > 0.6 || perp > v.w) return;
+        if (e.waveHit !== v.id) { e.waveHit = v.id; hurtEnemy(e, L.dmg, 0, 0, { sound: false, color: [0.5, 0.85, 1] }); }
+        if (!e.boss) { e.kx += (v.dx * WAVE.speed * 1.2 - e.kx) * Math.min(1, dt * 8); e.kz += (v.dz * WAVE.speed * 1.2 - e.kz) * Math.min(1, dt * 8); }
+      });
+      if (Math.random() < 0.8) { const u = rand(-1, 1) * v.w; FX.part(v.x + v.dz * u, 0.5, v.z - v.dx * u, v.dx * 3 + rand(-1, 1), rand(1, 3), v.dz * 3 + rand(-1, 1), 0.12, 0.03, 0.5, [0.9, 0.97, 1], 1, 1, -8, 1); }
+    }
+    st.waves = st.waves.filter(v => v.t < WAVE.life && arenaSd(v.x, v.z) < 0);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.waves) return;
+    for (const v of st.waves) {
+      const fade = Math.min(1, v.t / 0.12) * Math.min(1, (WAVE.life - v.t) / 0.25), n = Math.max(4, Math.round(v.w * 2.2));
+      // a row of stretched goo humps along the front, tallest in the middle
+      for (let i = 0; i < n; i++) {
+        const u = (i / (n - 1)) * 2 - 1, x = v.x + v.dz * u * v.w, z = v.z - v.dx * u * v.w, hgt = (1 - u * u * 0.6) * 0.75 * fade;
+        if (hgt < 0.05) continue;
+        pushImp(x, hgt * 0.6, z, hgt, v.dx, 0, v.dz, 1.25, 0, 0, 0.12, G.run.t * 3 + i, 0, 0, 0, 0.85);
+      }
+      pushDecal(v.x - v.dx * 0.8, v.z - v.dz * 0.8, v.w, 1.0, -Math.atan2(v.dx, v.dz), 1, 0, 0, 0.6, 0.9, 1, 0.35 * fade, true);
+    }
+  },
+};

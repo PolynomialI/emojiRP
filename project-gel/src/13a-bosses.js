@@ -879,3 +879,122 @@ BOSS_DRAW.hydra = function (e) {
     if (!e.portrait) pushDecal(hd.x - L[0] * 0.4, hd.z - L[2] * 0.4, 0.6 * s, 0.5 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.35);
   }
 };
+
+// ---------- Captain Crab (chapter 9): sidesteps around you, double claw snaps, a line of cannon fire, drifting bubbles ----------
+BOSS_AI.crab = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.4; ai.side = 1; }
+  ai.claw = Math.max(0, (ai.claw || 0) - dt * 3);
+  switch (ai.state) {
+    case 'walk': {
+      // circle the hero sideways at a few metres, now and then switching direction
+      const a = Math.atan2(e.x - h[0], e.z - h[2]) + ai.side * 0.55;
+      bossWalk(e, dt, h[0] + Math.sin(a) * 6.5, h[2] + Math.cos(a) * 6.5, e.speed * (rage ? 1.3 : 1)); bossFace(e, dt, 6);
+      if (Math.random() < dt * 0.25) ai.side = -ai.side;
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const seq = rage ? ['snap', 'cannons', 'scuttle', 'bubbles', 'cannons', 'scuttle'] : ['snap', 'cannons', 'bubbles'];
+        const k = seq[ai.next++ % seq.length];
+        if (k === 'snap') { ai.state = 'rush'; ai.t = 0.8; ai.snaps = 2; }
+        else if (k === 'cannons') { ai.state = 'aimCannon'; ai.t = 0.6; }
+        else if (k === 'bubbles') { ai.state = 'bubbles'; ai.t = 0.7; ai.blown = false; }
+        else {
+          // a sideways dash right across the sand
+          ai.rot = e.yaw + (Math.random() < 0.5 ? 1 : -1) * Math.PI / 2;
+          ai.state = 'scuttleWind'; ai.t = ai.dur = 0.7;
+          addTele({ kind: 'lane', x: e.x, z: e.z, r: 1.6, len: 15, rot: ai.rot, dur: ai.dur });
+        }
+      }
+      break;
+    }
+    case 'rush':
+      // scuttle in close, then snap
+      bossFace(e, dt, 8);
+      if (d > 3.4) { e.x += dx / d * 9 * dt; e.z += dz / d * 9 * dt; e.phase += dt * 4; }
+      if (d <= 3.4 || ai.t <= 0) crabSnapWind(e, ai, dx, dz, rage);
+      break;
+    case 'snapWind':
+      e.vx *= 0.7; e.vz *= 0.7;
+      e.yaw = angleLerp(e.yaw, ai.rot, Math.min(1, dt * 10));
+      if (ai.t <= 0) {
+        ai.claw = 1;
+        const inCone = (x, z) => { const ox = x - e.x, oz = z - e.z; return Math.hypot(ox, oz) < 4.8 && Math.abs(angleDiff(Math.atan2(ox, oz), ai.rot)) < 0.75; };
+        if (inCone(h[0], h[2])) { hurtHero(28 * run.info.dmgMul, e.x, e.z); run.vel[0] += Math.sin(ai.rot) * 9; run.vel[2] += Math.cos(ai.rot) * 9; }
+        enemiesInRadius(e.x, e.z, 4.8, o => { if (!o.boss && inCone(o.x, o.z)) hurtEnemy(o, 20, Math.sin(ai.rot) * 6, Math.cos(ai.rot) * 6, { sound: false }); });
+        FX.burst(e.x + Math.sin(ai.rot) * 3, 0.6, e.z + Math.cos(ai.rot) * 3, 10, [1, 0.85, 0.7], 5, 0.1, 0.4, 1);
+        G.cam.shake = Math.max(G.cam.shake, 0.12); AUDIO.play('hit', 0.5);
+        const dl = Math.hypot(h[0] - e.x, h[2] - e.z) || 1;
+        if (--ai.snaps > 0) crabSnapWind(e, ai, (h[0] - e.x) / dl, (h[2] - e.z) / dl, rage);
+        else { ai.state = 'walk'; ai.cd = rage ? 1.2 : 2; }
+      }
+      break;
+    case 'aimCannon':
+      bossFace(e, dt, 8); e.vx *= 0.8; e.vz *= 0.8;
+      if (ai.t <= 0) {
+        // a line of shells lands one after another, walking toward the hero and past them
+        const n = rage ? 10 : 7, rot = Math.atan2(dx, dz), start = Math.max(2.5, d - 4.5);
+        for (let i = 0; i < n; i++) {
+          const dist = start + i * 1.7, x = e.x + Math.sin(rot) * dist, z = e.z + Math.cos(rot) * dist;
+          if (arenaSd(x, z) > -1) break;
+          const dur = 0.85 + i * (rage ? 0.1 : 0.13);
+          addTele({ kind: 'circle', x, z, r: 1.3, dur });
+          run.eShots.push({ kind: 'cannon', sx: e.x, sy: 2.2, sz: e.z, tx: x, tz: z, x: e.x, y: 2.2, z: e.z, t: 0, dur, radius: 1.3, dmg: 22 * run.info.dmgMul, life: dur + 1, spin: 0, peak: 4 + i * 0.3 });
+        }
+        FX.smoke(e.x, 2.2, e.z, 1.2, [0.8, 0.8, 0.8], 0.8, 1); AUDIO.play('boom', 0.6); e.squashV -= 3;
+        ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4;
+      }
+      break;
+    case 'bubbles':
+      bossFace(e, dt, 6); e.vx *= 0.8; e.vz *= 0.8;
+      if (!ai.blown && ai.t <= 0.35) {
+        // a slow fan of bubbles that drift after the hero
+        ai.blown = true;
+        const n = rage ? 11 : 8, base = Math.atan2(dx, dz);
+        for (let i = 0; i < n; i++) {
+          const a = base + (i - (n - 1) / 2) * (1.9 / (n - 1));
+          run.eShots.push({ kind: 'bubble', x: e.x + Math.sin(a) * 1.8, y: 1, z: e.z + Math.cos(a) * 1.8, vx: Math.sin(a) * 2.6, vy: 0, vz: Math.cos(a) * 2.6, dmg: 14 * run.info.dmgMul, r: 0.5, life: 6, home: 0.5, ph: rand(0, 10) });
+        }
+        AUDIO.play('split', 1.4);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.2 : 2; }
+      break;
+    case 'scuttleWind':
+      e.vx *= 0.7; e.vz *= 0.7; e.phase += dt * 2;
+      if (ai.t <= 0) { ai.state = 'scuttle'; ai.t = 15 / 17; ai.hit = false; }
+      break;
+    case 'scuttle': {
+      e.x += Math.sin(ai.rot) * 17 * dt; e.z += Math.cos(ai.rot) * 17 * dt; e.phase += dt * 8;
+      const o = { x: e.x, z: e.z };
+      if (resolveCircle(o, e.radius)) { e.x = o.x; e.z = o.z; ai.t = 0; G.cam.shake = Math.max(G.cam.shake, 0.15); }
+      if (!ai.hit && Math.hypot(h[0] - e.x, h[2] - e.z) < e.radius + HERO_R + 0.4) { ai.hit = true; hurtHero(30 * run.info.dmgMul, e.x, e.z); run.vel[0] += Math.sin(ai.rot) * 10; run.vel[2] += Math.cos(ai.rot) * 10; }
+      enemiesInRadius(e.x, e.z, e.radius + 0.4, o2 => { if (!o2.boss) hurtEnemy(o2, 20, Math.sin(ai.rot) * 8, Math.cos(ai.rot) * 8, { sound: false }); });
+      if (Math.random() < 0.7) FX.burst(e.x, 0.2, e.z, 3, [0.9, 0.8, 0.6], 3, 0.1, 0.4, 2);
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = 1.4; }
+      break;
+    }
+  }
+};
+function crabSnapWind(e, ai, dx, dz, rage) {
+  ai.state = 'snapWind'; ai.t = ai.dur = rage ? 0.42 : 0.55; ai.rot = Math.atan2(dx, dz);
+  addTele({ kind: 'cone', x: e.x, z: e.z, r: 4.8, rot: ai.rot, half: 0.7, dur: ai.dur });
+}
+BOSS_DRAW.crab = function (e) {
+  const D = MODELS.defs;
+  if (!R.enemyDraw.crab || !R.enemyDraw.crabclaw || !R.enemyDraw.crableg) return;
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, s = e.scale, ai = e.ai, L = R.frame.lightDir;
+  const ph = e.phase * TAU, bob = Math.abs(Math.sin(ph)) * 0.04 * s;
+  const fx = Math.sin(e.yaw), fz = Math.cos(e.yaw), rx = Math.cos(e.yaw), rz = -Math.sin(e.yaw);
+  pushEnemy('crab', false, e.x, bob, e.z, e.yaw, D.crab.clips.still.row, s, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  // three legs a side, stepping in turn
+  for (const side of [1, -1]) for (let k = 0; k < 3; k++) {
+    const a = e.yaw + side * (Math.PI / 2 + (k - 1) * 0.55), lift = Math.max(0, Math.sin(ph + k * 2.1 + (side > 0 ? 0 : Math.PI))) * 0.1 * s;
+    pushEnemy('crableg', false, e.x + Math.sin(a) * 0.42 * s, lift, e.z + Math.cos(a) * 0.42 * s, a + Math.sin(ph + k) * 0.12, D.crableg.clips.still.row, s * 0.9, 1, dead, fl, 0, t[0] * 0.9, t[1] * 0.9, t[2] * 0.9);
+  }
+  // the claws pull back before a snap and lunge with it
+  const back = ai.state === 'snapWind' ? 1 - Math.max(ai.t, 0) / ai.dur : 0, lunge = ai.claw || 0;
+  for (const side of [1, -1]) {
+    const off = (0.5 - back * 0.25 + lunge * 0.55) * s, x = e.x + fx * off + rx * side * 0.48 * s, z = e.z + fz * off + rz * side * 0.48 * s;
+    pushEnemy('crabclaw', false, x, bob, z, e.yaw - side * (0.3 - lunge * 0.25), D.crabclaw.clips.still.row, s * 1.1, 1, dead, fl, 0, t[0], t[1], t[2]);
+  }
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.75 * s, 0.6 * s, -e.yaw, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+};

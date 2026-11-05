@@ -285,3 +285,24 @@ ARENA_FEATURES.jungle = {
     for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.4, 2), h[2] + rand(-11, 8), rand(-0.6, 0.6), rand(-0.2, 0.3), rand(-0.6, 0.6), rand(0.08, 0.13), 0.02, rand(1.5, 3), [0.8, 1, 0.35], 1, 0, 0, 0.3);
   },
 };
+
+// ---------- Pirate Beach: a shipwreck lying on the sand, gull shadows sweeping over ----------
+ARENA_LAYOUTS.beach = function (A) {
+  const rnd = A.rnd, a = rnd() * TAU, r = 16 + rnd() * 8, x = Math.cos(a) * r, z = Math.sin(a) * r, s = 3.2, turn = rnd() < 0.5;
+  // the hull runs along x in the mesh; turned a quarter it runs along z (obstacle boxes stay axis-aligned)
+  A.prop('wreck', x, z, 0, { shape: 'box', hw: (turn ? 0.45 : 1.0) * s, hd: (turn ? 1.0 : 0.45) * s, scale: s, yaw: turn ? Math.PI / 2 : 0 });
+  for (let i = 0; i < 4; i++) { const b = rnd() * TAU, d = 4.6 + rnd() * 1.2; if (A.fits(x + Math.cos(b) * d, z + Math.sin(b) * d, 0.35)) A.prop(rnd() < 0.5 ? 'barrel' : 'crate', x + Math.cos(b) * d, z + Math.sin(b) * d, 0.34); }
+};
+ARENA_FEATURES.beach = {
+  init(st, rnd) { st.gulls = Array.from({ length: 3 }, () => ({ a: rnd() * TAU, r: 6 + rnd() * 6, w: (rnd() < 0.5 ? -1 : 1) * (0.3 + rnd() * 0.25), cx: 0, cz: 0 })); },
+  update(st, dt) {
+    const h = G.hero.pos;
+    for (const g of st.gulls) { g.a += g.w * dt; g.cx += (h[0] - g.cx) * dt * 0.3; g.cz += (h[2] - g.cz) * dt * 0.3; }
+  },
+  emit(st) {
+    for (const g of st.gulls) {
+      const x = g.cx + Math.cos(g.a) * g.r, z = g.cz + Math.sin(g.a) * g.r, flap = 0.8 + 0.2 * Math.sin(G.run ? G.run.t * 7 + g.r : 0);
+      pushDecal(x, z, 0.9 * flap, 0.32, -(g.a + (g.w > 0 ? Math.PI / 2 : -Math.PI / 2)) + Math.PI / 2, 1, 0, 0, 0.05, 0.08, 0.15, 0.22);
+    }
+  },
+};

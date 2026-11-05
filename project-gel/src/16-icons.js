@@ -109,6 +109,7 @@ function renderAllIcons() {
     shield: { scale: 0.62, emissive: 0.15 },
     frostnova: { scale: 0.62, emissive: 0.25 },
     meteor: { scale: 0.66, ax: -0.75, ay: -0.6, az: 0.25, emissive: 0.1 },
+    wave: { scale: 0.64, emissive: 0.15 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

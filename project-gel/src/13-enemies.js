@@ -343,6 +343,8 @@ function emitRunScene() {
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
     else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
+    else if (s.kind === 'cannon') { pushImp(s.x, s.y, s.z, 0.4, Math.sin(s.spin), Math.cos(s.spin), 0.3, 1, 13, 0, 0, 0, 0, 0, 0, 1); pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.35, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4); }
+    else if (s.kind === 'bubble') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 27, 4, 0.1, s.ph, 0, 0, 0, 0.85); pushDecal(s.x + 0.08, s.z + 0.06, s.r * 0.8, s.r * 0.7, 0, 1, 0, 0, 0.02, 0.04, 0.08, 0.25); }
     else if (s.kind === 'seed') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.3, 0, 4, 0.05, s.ph + run.t * 4, 0, 0, 0, 1); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.04, 0.02, 0.35); }
     else if (s.kind === 'magma') { pushImp(s.x, s.y, s.z, 0.5, 0, 1, 0, 1, 15, 0, 0.5, s.spin, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.9, [1, 0.5, 0.15], 0.05, 0.6); pushDecal(s.x + 0.15, s.z + 0.1, 0.5, 0.4, 0, 1, 0, 0, 0.02, 0.01, 0.0, 0.4); }
     else if (s.kind === 'icicle') {

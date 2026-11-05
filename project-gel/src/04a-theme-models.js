@@ -7,7 +7,8 @@ const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 's
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
-  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03 };
+  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
+  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
@@ -15,7 +16,8 @@ MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormse
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
   'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
-  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg');
+  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg',
+  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -424,5 +426,80 @@ function themeModels(defs) {
       { s: 'cap', a: [0, 0.82, 0], b: [0, 1.0, -0.08], r: 0.06, r2: 0.01, col: thorn, k: 0 },
       { s: 'ell', c: [0.36, 0.5, 0], rr: [0.18, 0.04, 0.1], col: leaf, k: 0.03 },
     ], { ao: 0.6 });
+  }
+  // ---------- Pirate Beach ----------
+  {
+    const trunk = C('#a07a4a'), trunkD = C('#7a5a34'), frond = C('#3f9a3a'), frondD = C('#2f7a2e'), nut = C('#6a4a2a'), wood = C('#a06a38'), woodD = C('#6e4624'), iron = C('#4a4a52'), rope = C('#e8d8a8'), sail = C('#f4ecd8');
+    // a leaning palm with a crown of fronds and coconuts
+    P('palm', [
+      ...[[0, 0, 0.4], [0.06, 0.4, 0.8], [0.16, 0.8, 1.2], [0.3, 1.2, 1.55]].map(([x, y0, y1], i) => ({ s: 'cap', a: [x, y0, 0], b: [x + 0.08 + i * 0.03, y1, 0], r: 0.1 - i * 0.012, r2: 0.09 - i * 0.012, col: i % 2 ? trunk : trunkD, k: 0.02 })),
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [0.46 + x * 0.42, 1.55, z * 0.42], rr: [x ? 0.46 : 0.13, 0.04, z ? 0.46 : 0.13], col: frond, k: 0.03 })),
+      ...[[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].map(([x, z]) => ({ s: 'cap', a: [0.46, 1.6, 0], b: [0.46 + x * 0.6, 1.3, z * 0.6], r: 0.07, r2: 0.025, col: frondD, k: 0.03 })),
+      ...[[0.05, 0.08], [-0.07, 0.02], [0.02, -0.08]].map(([x, z]) => ({ s: 'sph', c: [0.46 + x, 1.45, z], r: 0.07, col: nut, k: 0.01 })),
+    ]);
+    P('barrel', [
+      { s: 'cyl', ax: 'y', c: [0, 0.36, 0], r: 0.28, hh: 0.36, rd: 0.06, col: wood, k: 0 },
+      { s: 'ell', c: [0, 0.36, 0], rr: [0.3, 0.26, 0.3], col: wood, k: 0.04 },
+      ...[0.1, 0.36, 0.62].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: y === 0.36 ? 0.3 : 0.28, r: 0.025, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 })),
+    ]);
+    P('crate', [
+      { s: 'box', c: [0, 0.32, 0], hs: [0.32, 0.32, 0.32], rd: 0.03, col: wood, k: 0 },
+      ...[[0, 0.32, 0.325, 0.3, 0.05, 0.01], [0, 0.32, -0.325, 0.3, 0.05, 0.01], [0.325, 0.32, 0, 0.01, 0.05, 0.3], [-0.325, 0.32, 0, 0.01, 0.05, 0.3]].map(([x, y, z, a, b, c]) => ({ s: 'box', c: [x, y, z], hs: [a, b, c], rd: 0.01, col: woodD, k: 0 })),
+    ]);
+    // a starfish lying on the sand; it takes the instance tint
+    P('starfish', Array.from({ length: 5 }, (_, i) => { const a = (i / 5) * TAU; return { s: 'cap', a: [0, 0.04, 0], b: [Math.cos(a) * 0.32, 0.03, Math.sin(a) * 0.32], r: 0.08, r2: 0.03, k: 0.04 }; }));
+    // pier pilings with rope for the wall
+    P('post', [
+      { s: 'cyl', ax: 'y', c: [0, 0.6, 0], r: 0.17, hh: 0.6, rd: 0.05, col: wood, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0.3, 0.4, 0.15], r: 0.13, hh: 0.4, rd: 0.04, col: woodD, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.82, 0], R: 0.18, r: 0.03, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 },
+      { s: 'cap', a: [0, 0.8, 0], b: [0.3, 0.62, 0.15], r: 0.025, col: rope, k: 0 },
+    ], { ao: 0.8 });
+    // a shipwreck lying across the sand: long hull along x, a broken mast and a torn sail
+    P('wreck', [
+      { s: 'ell', c: [0, 0.35, 0], rr: [1.0, 0.42, 0.42], col: woodD, k: 0.05 },
+      { s: 'box', c: [0, 0.55, 0], hs: [0.9, 0.08, 0.36], rd: 0.04, col: wood, k: 0.03 },
+      ...[-0.6, -0.2, 0.2, 0.6].map(x => ({ s: 'box', c: [x, 0.38, 0.4], hs: [0.08, 0.2, 0.02], rd: 0.01, col: wood, k: 0 })),
+      { s: 'cap', a: [0.1, 0.55, 0], b: [0.35, 1.45, 0.1], r: 0.06, col: woodD, k: 0.02 },
+      { s: 'box', c: [0.28, 1.15, 0.12], hs: [0.02, 0.24, 0.28], rd: 0.01, col: sail, k: 0 },
+      { s: 'cyl', ax: 'x', c: [-0.95, 0.5, 0], r: 0.14, hh: 0.08, rd: 0.03, col: wood, k: 0.02 },
+    ]);
+  }
+  // ---------- Captain Crab (chapter 9 boss): a giant crab in a tricorn hat, with an eyepatch and a cannon on its back ----------
+  {
+    const belly = C('#ffd0b0'), black = C('#1c1820'), gold = C('#ffc93a'), white = C('#fff6e6'), pupil = C('#16101a'), iron = C('#3a3a44'), tip = C('#fff0e0');
+    P('crab', [
+      { s: 'ell', c: [0, 0.45, 0], rr: [0.62, 0.3, 0.48], k: 0.06 },
+      ...[[0.25, 0.7, -0.05], [-0.25, 0.7, -0.05], [0, 0.72, 0.1], [0.4, 0.6, 0.18], [-0.4, 0.6, 0.18]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.1, k: 0.08 })),
+      { s: 'ell', c: [0, 0.3, 0.06], rr: [0.55, 0.16, 0.42], col: belly, k: 0.04 },
+      { s: 'ell', c: [0, 0.4, 0.46], rr: [0.14, 0.05, 0.04], col: C('#5a0c22'), k: 0.01 },
+      // eye stalks: the right eye looks, the left wears a patch
+      { s: 'cap', a: [0.16, 0.62, 0.3], b: [0.2, 0.98, 0.36], r: 0.05, k: 0.02 }, { s: 'cap', a: [-0.16, 0.62, 0.3], b: [-0.2, 0.98, 0.36], r: 0.05, k: 0.02 },
+      { s: 'sph', c: [0.2, 1.02, 0.37], r: 0.11, col: white, k: 0 }, { s: 'sph', c: [0.21, 1.03, 0.47], r: 0.05, col: pupil, k: 0 },
+      { s: 'sph', c: [-0.2, 1.02, 0.37], r: 0.11, col: white, k: 0 }, { s: 'ell', c: [-0.2, 1.03, 0.45], rr: [0.1, 0.1, 0.04], col: black, k: 0.01 },
+      { s: 'tor', ax: 'z', c: [-0.2, 1.03, 0.37], R: 0.115, r: 0.012, a0: 0.3, a1: 2.6, col: black, k: 0 },
+      // tricorn hat with gold trim and a skull
+      { s: 'cyl', ax: 'y', c: [0, 0.8, -0.1], r: 0.36, hh: 0.025, rd: 0.02, col: black, k: 0 },
+      { s: 'ell', c: [0, 0.9, -0.1], rr: [0.24, 0.13, 0.22], col: black, k: 0.03 },
+      { s: 'tor', ax: 'y', c: [0, 0.82, -0.1], R: 0.34, r: 0.02, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      { s: 'sph', c: [0, 0.94, 0.11], r: 0.045, col: white, k: 0 },
+      // the cannon riding on its back, aimed forward over its head
+      { s: 'cyl', ax: 'z', c: [0.3, 0.78, -0.3], r: 0.08, hh: 0.24, rd: 0.03, col: iron, k: 0.01 },
+      { s: 'tor', ax: 'z', c: [0.3, 0.78, -0.06], R: 0.085, r: 0.025, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 },
+      { s: 'sph', c: [0.3, 0.76, -0.52], r: 0.08, col: iron, k: 0.02 },
+    ]);
+    // a pincer pointing along +z from its pivot; it takes the instance tint
+    P('crabclaw', [
+      { s: 'cap', a: [0, 0.45, -0.25], b: [0, 0.45, 0.15], r: 0.09, k: 0.03 },
+      { s: 'ell', c: [0, 0.48, 0.32], rr: [0.2, 0.18, 0.26], k: 0.05 },
+      { s: 'cap', a: [0.04, 0.56, 0.48], b: [0.02, 0.54, 0.8], r: 0.085, r2: 0.03, k: 0.03 },
+      { s: 'cap', a: [-0.04, 0.4, 0.48], b: [-0.03, 0.42, 0.74], r: 0.07, r2: 0.03, k: 0.03 },
+      { s: 'sph', c: [0.02, 0.54, 0.82], r: 0.03, col: tip, k: 0.01 }, { s: 'sph', c: [-0.03, 0.42, 0.76], r: 0.028, col: tip, k: 0.01 },
+    ]);
+    // a jointed leg reaching out along +z from its pivot
+    P('crableg', [
+      { s: 'cap', a: [0, 0.4, 0], b: [0, 0.58, 0.35], r: 0.06, k: 0.02 },
+      { s: 'cap', a: [0, 0.58, 0.35], b: [0, 0.02, 0.62], r: 0.05, r2: 0.02, k: 0.02 },
+    ]);
   }
 }

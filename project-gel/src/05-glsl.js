@@ -914,6 +914,18 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
   }
+  if (type == 41) {
+    // a curling wave seen side on: a low swell rising into a hooked crest with a foam cap, extruded along z
+    vec2 q = p.xy;
+    float swell = length((q - vec2(0.0, -0.42)) / vec2(0.85, 0.3)) - 1.0;
+    swell *= 0.3;
+    vec2 c = q - vec2(-0.05, 0.12);
+    float ring = abs(length(c) - 0.4) - 0.15;
+    ring = max(ring, min(-0.05 - c.y, -c.x));
+    float d2 = smin(swell, ring, 0.12);
+    d2 = min(d2, length(q - vec2(0.38, 0.0)) - 0.09);
+    return vec2(extrude(d2, p.z, 0.45, 0.08), c.y > 0.36 || (c.x > 0.2 && c.y > -0.05) ? 7.0 : 0.0);
+  }
   if (type == 40) {
     // thorn pod: a round goo seed bristling with brown spikes (three rings of seven, plus top and bottom)
     float rr = length(p), pod = rr - 0.44;
