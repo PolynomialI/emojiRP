@@ -215,3 +215,17 @@ ARENA_FEATURES.bounce = {
     }
   },
 };
+
+// ---------- Frozen Tundra: snow drifting down around the hero ----------
+ARENA_FEATURES.tundra = {
+  init(st) { st.acc = 0; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 12 : 40);
+    for (; st.acc >= 1; st.acc--) {
+      // each flake lives just long enough to reach the ground
+      const x = h[0] + rand(-16, 16), z = h[2] + rand(-13, 9), y = rand(5, 9), vy = rand(-1.7, -1.1);
+      FX.part(x, y, z, rand(0.3, 0.9), vy, rand(-0.2, 0.2), rand(0.05, 0.09), 0.06, y / -vy, [1, 1, 1], 0.85, 2, 0, 0);
+    }
+  },
+};

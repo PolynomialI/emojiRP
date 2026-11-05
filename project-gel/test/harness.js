@@ -39,7 +39,7 @@
       if (e.boss && d > 6.5) { fx -= dx / d * 0.6; fz -= dz / d * 0.6; }
     }
     for (const s of run.eShots) {
-      if (s.kind === 'boulder' || s.kind === 'rocket') {
+      if (s.tx !== undefined) {
         const dx = h[0] - s.tx, dz = h[2] - s.tz, d = Math.hypot(dx, dz) || 0.01, r = s.radius + 1.2;
         if (d < r) { fx += dx / d * 6; fz += dz / d * 6; }
       } else {
@@ -51,6 +51,10 @@
       if (t.kind === 'circle') {
         const dx = h[0] - t.x, dz = h[2] - t.z, d = Math.hypot(dx, dz) || 0.01;
         if (d < t.r + 1) { fx += dx / d * 8; fz += dz / d * 8; }
+      } else if (t.kind === 'cone') {
+        // step sideways out of the slice
+        const dx = h[0] - t.x, dz = h[2] - t.z, d = Math.hypot(dx, dz) || 0.01, off = angleDiff(t.rot, Math.atan2(dx, dz));
+        if (d < t.r + 1 && Math.abs(off) < t.half + 0.25) { const s = Math.sign(off) || 1; fx += Math.cos(t.rot) * s * 8; fz += -Math.sin(t.rot) * s * 8; }
       } else {
         const ax = Math.sin(t.rot), az = Math.cos(t.rot), dx = h[0] - t.x, dz = h[2] - t.z;
         const along = dx * ax + dz * az, perp = dx * az - dz * ax;

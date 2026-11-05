@@ -88,6 +88,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Drones'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
     levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
   },
+  frostnova: {
+    name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
+    fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [12, 14, 16, 18, 21, 24, 27, 31, 35, 40], radius: [2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.3, 4.6], freeze: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.9, 2.1, 2.4], cd: [5, 4.9, 4.8, 4.6, 4.4, 4.2, 4.0, 3.8, 3.6, 3.3] }),
+  },
   shield: {
     name: 'Bubble Shield', intro: 'A goo bubble absorbs hits, then grows back.', icon: { type: 27, colw: 0 },
     fields: [['hits', 'Hits absorbed'], ['recharge', 'Regrows in', 's'], ['pop', 'Pop damage'], ['push', 'Pop knockback', 'm']],
@@ -156,6 +161,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.yeti = { name: 'Frost Yeti', model: 'yeti', meshes: ['yeti', 'icicle', 'icespike'], hp: 6100, speed: 2.1, dmg: 18, scale: 2.8, radius: 1.2, tint: '#6fa8f2', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
@@ -177,6 +183,8 @@ const ARENAS = [
     props: [['bumper', 6, 0.8, 1.1]], zones: [['pit', 1.6, 3.0, 4.2]], wall: 'tubewall', kinds: ['pitball'] },
   { id: 'candy', name: 'Candy Land', floor: 4, stoneA: '#ffb6d2', stoneB: '#fff0dc', grout: '#6a3048', accent: '#ff4f9a', fog: '#4a2242', sky: '#ffe4f2', ground: '#e8a2c2', light: '#fff8fb', spotMin: 0.7, shadowTint: '#6a2a52', rock: '#ff7fb0', pool: '#5a2e1a', poolGlow: 0,
     props: [['lollipop', 5, 0.32, 0.4], ['candycane', 5, 0.3, 0.36], ['gumdrop', 7, 0.8, 1.3], ['cupcake', 3, 0.7, 0.9]], zones: [['chocolate', 4, 2.0, 3.0]], wall: 'gumdrop' },
+  { id: 'tundra', name: 'Frozen Tundra', floor: 5, stoneA: '#eef5fc', stoneB: '#c2d6ec', grout: '#7a93b0', accent: '#7fd8ff', fog: '#1a2a46', sky: '#e2f1ff', ground: '#b4c8de', light: '#e6eff9', spotMin: 0.62, shadowTint: '#28487a', rock: '#a9bccf', pool: '#bfe6ff', poolGlow: 0.04,
+    props: [['pine', 8, 0.42, 0.6], ['icecrystal', 4, 0.6, 0.9], ['snowman', 2, 0.5, 0.6], ['rock', 3, 0.8, 1.2]], zones: [['ice', 3, 3.0, 4.6]], wall: 'iceblock' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -200,6 +208,11 @@ const PROP_KINDS = {
   candycane: { models: ['candycane'], unit: 0.11, block: true, tall: 4 },
   gumdrop: { models: ['gumdrop'], unit: 0.42, block: true, shots: true, tints: ['#ff4f6a', '#ffd23a', '#4fc8ff', '#5fe08a', '#b56bff', '#ff8a3a'], wallR: [1.0, 1.4] },
   cupcake: { models: ['cupcake'], unit: 0.32, block: true, shots: true },
+  pine: { models: ['pine'], unit: 0.3, block: true, shots: true, tall: 2.4 },
+  snowman: { models: ['snowman'], unit: 0.3, block: true, shots: true, tall: 2 },
+  icecrystal: { models: ['icecrystal'], unit: 0.35, block: true, shots: true, tints: ['#9fdcff', '#bfe8ff', '#8fc8ff'], tall: 2 },
+  iceblock: { models: ['iceblock'], unit: 0.45, block: true, shots: true, tints: ['#a8dcff', '#c6eaff', '#92ceff'], wallR: [1.0, 1.15] },
+  icespike: { models: ['icespike'], unit: 0.3, block: true, shots: false, tint: '#86c8ff', shadow: false },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -209,6 +222,7 @@ const ZONE_KINDS = {
   pit: { slow: 0.82, col: '#3b2d6e', glow: 0, style: 2 },
   chocolate: { slow: 0.55, col: '#5e3018', glow: 0.02 },
   jelly: { slow: 0.45, col: '#ff5f8a', glow: 0.12 },
+  ice: { slide: true, col: '#7cc4f0', glow: 0.04, style: 1 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests

@@ -617,6 +617,7 @@ float sdStar5(vec2 p, float r, float rf) {
 }
 float extrude(float d2, float z, float hz, float rd) { vec2 w = vec2(d2 + rd, abs(z) - hz + rd); return min(max(w.x, w.y), 0.0) + length(max(w, 0.0)) - rd; }
 mat2 rot2(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+float sdSeg2(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }
 
 vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
   float ph = P0.w;
@@ -912,6 +913,17 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 38) {
+    // snowflake: six arms with side branches, flat in the xy plane
+    float rr = length(p.xy), sector = 6.2832 / 6.0;
+    float a = mod(atan(p.y, p.x) + sector * 0.5, sector) - sector * 0.5;
+    vec2 f = vec2(cos(a), abs(sin(a))) * rr;
+    float d2 = sdSeg2(f, vec2(0.0), vec2(0.8, 0.0)) - 0.075;
+    d2 = min(d2, sdSeg2(f, vec2(0.36, 0.0), vec2(0.55, 0.19)) - 0.055);
+    d2 = min(d2, sdSeg2(f, vec2(0.58, 0.0), vec2(0.72, 0.13)) - 0.045);
+    d2 = min(d2, rr - 0.2);
+    return vec2(extrude(d2, p.z, 0.07, 0.04), 1.0);
   }
   if (type == 37) {
     // wrapped candy: a striped sweet with twisted ends
@@ -1264,6 +1276,14 @@ void main() {
   } else if (type == 9) {
     float line = 1.0 - smoothstep(0.0, 0.5, abs(q.x));
     a = line * step(abs(q.y), 1.0) * fC.a;
+  } else if (type == 10) {
+    // cone telegraph: a pie slice of half-angle seed along +y, filling outward with t
+    float ang = abs(atan(q.x, q.y));
+    float inside = step(ang, seed) * step(r, 1.0);
+    float rim = 1.0 - smoothstep(0.0, 0.04, abs(r - 0.97));
+    float side = 1.0 - smoothstep(0.0, 0.025, abs(ang - seed) * r);
+    float fill = 1.0 - smoothstep(t - 0.02, t + 0.02, r);
+    a = inside * clamp(max(max(rim, side) * 0.8, max(fill * 0.45, 0.18)), 0.0, 1.0) * fC.a;
   }
   if (a < 0.003) discard;
   fragColor = vec4(atmos(col, vW), a);

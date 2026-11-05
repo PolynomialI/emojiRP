@@ -305,7 +305,9 @@ function emitRunScene() {
     if (e.boss && BOSS_DRAW[e.type]) { BOSS_DRAW[e.type](e); continue; }
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;
-    pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? (e.boss ? 0.55 : 0.85) : 0, e.auraTint, e.tint[0], e.tint[1], e.tint[2]);
+    const ic = e.frozen > 0 ? 0.7 : 0, tn = e.tint;
+    pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? (e.boss ? 0.55 : 0.85) : 0, e.auraTint,
+      lerp(tn[0], 0.42, ic), lerp(tn[1], 0.74, ic), lerp(tn[2], 1.15, ic));
     const ss = e.scale * (1 - dead * 0.5) * (1 - clamp((e.y || 0) / 6, 0, 0.5));
     pushDecal(e.x + sdx * ss, e.z + sdz * ss, 0.3 * ss, 0.45 * ss, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   }
@@ -326,6 +328,7 @@ function emitRunScene() {
   if (run.tele) for (const t of run.tele) {
     const p = clamp(t.t / t.dur, 0, 1);
     if (t.kind === 'circle') pushDecal(t.x, t.z, t.r, t.r, 0, 4, 0, p, 1, 0.22, 0.18, 0.9);
+    else if (t.kind === 'cone') pushDecal(t.x, t.z, t.r, t.r, -t.rot, 10, t.half, p, 1, 0.22, 0.18, 0.8);
     else {
       const cx = t.x + Math.sin(t.rot) * t.len / 2, cz = t.z + Math.cos(t.rot) * t.len / 2;
       pushDecal(cx, cz, t.r, t.len / 2, -t.rot, 5, 0, p, 1, 0.22, 0.18, 0.85);
@@ -340,6 +343,10 @@ function emitRunScene() {
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
     else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
+    else if (s.kind === 'icicle') {
+      if (R.enemyDraw.icicle) pushEnemy('icicle', false, s.x, s.y - 0.5 * 1.7, s.z, s.spin, MODELS.defs.icicle.clips.still.row, 1.7, 1, 0, 0, 0, 1, 1, 1);
+      const g = 1 - s.y / s.sy; pushDecal(s.x, s.z, 0.25 + g * 0.45, 0.25 + g * 0.45, 0, 1, 0, 0, 0.02, 0.05, 0.12, 0.2 + g * 0.4);
+    }
     else if (s.kind === 'jelly') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.15, 0, 4, 0.06, s.ph + run.t * 3, 0, 0, 0, 1); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.8, 0, 1, 0, 0, 0.05, 0.01, 0.03, 0.3); }
     else if (s.kind === 'sand') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.2, 33, 0, 0, s.ph + run.t * 6, 0, 0, 0, 1); pushDecal(s.x + 0.1, s.z + 0.08, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.35); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }

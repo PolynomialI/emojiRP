@@ -107,6 +107,7 @@ function renderAllIcons() {
     axe: { scale: 0.7, phase: 0.8, eye: [0, 1.4, 1.9] },
     laser: { scale: 0.62, emissive: 0.3 },
     shield: { scale: 0.62, emissive: 0.15 },
+    frostnova: { scale: 0.62, emissive: 0.25 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

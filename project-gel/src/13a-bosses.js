@@ -15,10 +15,31 @@ function tempZone(kind, x, z, r, life) {
   ARENA.zones.push(o);
   return o;
 }
+// a short-lived prop (the ice spikes icicles leave): pops out of the ground, blocks, then sinks away
+function tempProp(kind, x, z, r, life) {
+  const K = PROP_KINDS[kind];
+  const o = { kind, x, z, r, yaw: rand(0, TAU), model: K.models[0], ph: rand(0, 10), block: K.block !== false, shots: !!K.shots, life, age: 0, y: -r * 3 };
+  ARENA.props.push(o);
+  if (o.block) { ARENA.obstacles.push(o); gridObstacles(); }
+  return o;
+}
 function updateTempZones(dt) {
   let any = false;
   for (const o of ARENA.zones) if (o.life !== undefined) { o.life -= dt; any = true; }
   if (any) ARENA.zones = ARENA.zones.filter(o => o.life === undefined || o.life > 0);
+  let gone = false;
+  for (const o of ARENA.props) {
+    if (o.life === undefined) continue;
+    o.life -= dt; o.age += dt;
+    const sink = o.r * 3.2;
+    o.y = -sink * (1 - clamp(o.age / 0.12, 0, 1)) - sink * (1 - clamp(o.life / 0.35, 0, 1));
+    if (o.life <= 0) gone = true;
+  }
+  if (gone) {
+    ARENA.props = ARENA.props.filter(o => o.life === undefined || o.life > 0);
+    ARENA.obstacles = ARENA.obstacles.filter(o => o.life === undefined || o.life > 0);
+    gridObstacles();
+  }
 }
 
 // ---------- Sand Worm (chapter 2): burrows, breaches under you in big arcs, slithers and spits sand ----------
@@ -463,4 +484,145 @@ BOSS_DRAW.jellyqueen = function (e) {
   const sc = s * (1 - dead * 0.6), y = (e.y || 0) + 0.85 * sc * sq;
   pushImp(e.x, y, e.z, sc, Math.sin(e.yaw), 0, Math.cos(e.yaw), 1, 36, 4, e.flash > 0 ? 0.7 : 0.08, e.phase, sq, 0, 0, 1 - dead);
   if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.95 * s, 0.85 * s, 0, 1, 0, 0, 0.05, 0.01, 0.03, 0.5 * (1 - clamp((e.y || 0) / 7, 0, 0.7)));
+};
+
+// ---------- Frost Yeti (chapter 6): sweeping frost breath, icicle rain and a ring of ice spikes with gaps ----------
+const YETI = { range: 9.5, half: 0.4, waveMax: 17 };
+// a frost cloud puff rolling out of the yeti's mouth
+function frostPuff(x, z, dir, k) {
+  const sp = rand(7, 10), a = dir + rand(-0.25, 0.25);
+  FX.part(x + Math.sin(a) * 1.2, rand(1.2, 1.9), z + Math.cos(a) * 1.2, Math.sin(a) * sp, rand(-0.6, 0.2), Math.cos(a) * sp, 0.35 * k, 1.3 * k, 0.9, [0.45, 0.78, 1], 0.8, 2, 0, 0.9);
+}
+BOSS_AI.yeti = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, s = e.scale, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; }
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.3 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['breath', 'icicles', 'slam'][ai.next++ % 3];
+        if (k === 'breath') {
+          // the whole swept slice is telegraphed; the breath then rakes across it from one side
+          const mid = Math.atan2(dx, dz), sweep = rage ? 1.7 : 1.15, dir = Math.random() < 0.5 ? 1 : -1;
+          ai.state = 'breathWind'; ai.t = ai.dur = rage ? 0.7 : 0.85;
+          ai.ang = mid - dir * sweep / 2; ai.angV = dir * sweep / (rage ? 1.9 : 1.6);
+          addTele({ kind: 'cone', x: e.x, z: e.z, r: YETI.range, rot: mid, half: YETI.half + sweep / 2, dur: ai.dur });
+        } else if (k === 'icicles') { ai.state = 'summon'; ai.t = 0.7; ai.waves = rage ? 4 : 3; }
+        else {
+          // spikes erupt in a ring rolling outward; a few slices stay clear
+          ai.state = 'slamWind'; ai.t = ai.dur = 0.9; ai.rings = rage ? 2 : 1;
+          yetiGaps(ai, rage ? 2 : 3, rand(0, TAU));
+          for (const g of ai.danger) addTele({ kind: 'cone', x: e.x, z: e.z, r: 12, rot: g[0], half: g[1], dur: ai.dur });
+        }
+      }
+      break;
+    }
+    case 'breathWind':
+      e.clip = 'idle'; e.phase += dt * 2; e.vx *= 0.8; e.vz *= 0.8;
+      e.yaw = angleLerp(e.yaw, ai.ang, Math.min(1, dt * 8));
+      if (Math.random() < 0.5) FX.part(e.x + Math.sin(e.yaw) * 1.1, 1.7, e.z + Math.cos(e.yaw) * 1.1, rand(-0.5, 0.5), 0.3, rand(-0.5, 0.5), 0.15, 0.5, 0.5, [0.8, 0.94, 1], 0.6, 2, 0, 1);
+      if (ai.t <= 0) { ai.state = 'breath'; ai.t = rage ? 1.9 : 1.6; ai.tick = 0; AUDIO.play('zap', 0.6); }
+      break;
+    case 'breath': {
+      e.clip = 'idle'; e.vx *= 0.8; e.vz *= 0.8;
+      ai.ang += ai.angV * dt; e.yaw = ai.ang;
+      for (let i = 0; i < 3; i++) frostPuff(e.x, e.z, ai.ang, 1);
+      const inCone = (x, z) => { const ox = x - e.x, oz = z - e.z; return Math.hypot(ox, oz) < YETI.range && Math.abs(angleDiff(Math.atan2(ox, oz), ai.ang)) < YETI.half; };
+      ai.tick -= dt;
+      if (ai.tick <= 0 && inCone(h[0], h[2])) { ai.tick = 0.25; hurtHero(8 * run.info.dmgMul, e.x, e.z); run.chillT = 1.4; }
+      // its own minions get frozen solid in the blast
+      enemiesInRadius(e.x, e.z, YETI.range, o => { if (o !== e && !o.boss && inCone(o.x, o.z)) o.frozen = Math.max(o.frozen || 0, 2.5); });
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.1; }
+      break;
+    }
+    case 'summon':
+      // roars at the sky; icicles rain down in waves around the hero
+      e.clip = 'conduct'; e.phase += dt * 1.5; e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      if (ai.t <= 0) {
+        const n = rage ? 7 : 5;
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.9, tz = h[2] + run.vel[2] * 0.9;
+          if (i) { const a = rand(0, TAU), r = rand(1.6, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.6);
+          const dur = 1.0 + i * 0.05;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.1, dur });
+          run.eShots.push({ kind: 'icicle', x: o.x, y: 13, z: o.z, sx: o.x, sy: 13, sz: o.z, tx: o.x, tz: o.z, t: 0, dur, radius: 1.1, dmg: 24 * run.info.dmgMul, life: dur + 1, spin: rand(0, TAU), stay: rage ? 5 : 4 });
+        }
+        AUDIO.play('throw', 0.7);
+        if (--ai.waves > 0) ai.t = 0.65;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4; }
+      }
+      break;
+    case 'slamWind':
+      e.clip = 'slam'; e.clipU = (1 - ai.t / ai.dur) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
+      if (ai.t <= 0) {
+        ai.state = 'wave'; ai.waveR = e.radius; ai.hit = false; ai.cx = e.x; ai.cz = e.z; ai.t = 0.6;
+        FX.ring(e.x, e.z, 4, [0.7, 0.9, 1], 0.5); FX.crack(e.x, e.z, 3, 1.6);
+        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom');
+      }
+      break;
+    case 'wave': {
+      e.clip = 'slam'; e.clipU = Math.min(0.999, 0.6 + (0.6 - Math.max(ai.t, 0)) * 0.66);
+      const prev = ai.waveR;
+      ai.waveR += (rage ? 11 : 9) * dt;
+      // the hero is hit when the front passes them, unless they stand in a gap
+      const hd = Math.hypot(h[0] - ai.cx, h[2] - ai.cz);
+      if (!ai.hit && hd > prev - 0.6 && hd < ai.waveR + 0.4 && !yetiInGap(ai, Math.atan2(h[0] - ai.cx, h[2] - ai.cz))) {
+        ai.hit = true; hurtHero(30 * run.info.dmgMul, ai.cx, ai.cz);
+        const l = hd || 1; run.vel[0] += (h[0] - ai.cx) / l * 9; run.vel[2] += (h[2] - ai.cz) / l * 9;
+      }
+      enemiesInRadius(ai.cx, ai.cz, ai.waveR + 0.4, o => {
+        if (o.boss || o.waveHit === ai.waveId) return;
+        const od = Math.hypot(o.x - ai.cx, o.z - ai.cz);
+        if (od > prev - 0.6 && !yetiInGap(ai, Math.atan2(o.x - ai.cx, o.z - ai.cz))) { o.waveHit = ai.waveId; hurtEnemy(o, 18, 0, 0, { sound: false }); }
+      });
+      if (Math.random() < 0.8) {
+        const a = rand(0, TAU);
+        if (!yetiInGap(ai, a)) FX.burst(ai.cx + Math.sin(a) * ai.waveR, 0.3, ai.cz + Math.cos(a) * ai.waveR, 2, [0.85, 0.95, 1], 3, 0.08, 0.4, 1);
+      }
+      if (ai.waveR > YETI.waveMax) {
+        if (--ai.rings > 0) {
+          // a second ring with the gaps moved: find the new ones
+          ai.state = 'slamWind'; ai.t = ai.dur = 0.55;
+          yetiGaps(ai, 2, ai.gap0 + Math.PI / 2 + rand(-0.3, 0.3));
+          for (const g of ai.danger) addTele({ kind: 'cone', x: e.x, z: e.z, r: 12, rot: g[0], half: g[1], dur: ai.dur });
+        } else { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.2; }
+      }
+      break;
+    }
+  }
+};
+// n evenly spaced clear slices, the first at angle a0; ai.danger holds the [centre, half-angle] of the slices between
+const YETI_GAP = 0.3;
+function yetiGaps(ai, n, a0) {
+  ai.gap0 = a0; ai.gaps = n; ai.waveId = (ai.waveId || 0) + 1; ai.danger = [];
+  const step = TAU / n;
+  for (let i = 0; i < n; i++) ai.danger.push([a0 + step * (i + 0.5), step / 2 - YETI_GAP]);
+}
+function yetiInGap(ai, a) {
+  const step = TAU / ai.gaps, u = ((a - ai.gap0) % step + step * 1.5) % step - step / 2;
+  return Math.abs(u) < YETI_GAP;
+}
+BOSS_DRAW.yeti = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, L = R.frame.lightDir, ai = e.ai;
+  if (R.enemyDraw.yeti) pushEnemy('yeti', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? MODELS.defs.yeti.clips.idle.row + 2 : enemyRow(e), e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (e.portrait) return;
+  pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 0.4 * e.scale, 0.52 * e.scale, -Math.atan2(L[0], L[2]), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  // the spike ring: shards burst up along the front and sink behind it
+  if (ai.state === 'wave' && R.enemyDraw.icespike && !dead) {
+    const row = MODELS.defs.icespike.clips.still.row;
+    for (const back of [0, 1.3]) {
+      const r = ai.waveR - back;
+      if (r < e.radius) continue;
+      const n = Math.max(6, Math.floor(TAU * r / 1.15)), sc = back ? 1.1 : 1.6, sink = back ? -0.8 : -0.15;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * TAU + ai.waveId;
+        if (yetiInGap(ai, a)) continue;
+        const x = ai.cx + Math.sin(a) * r, z = ai.cz + Math.cos(a) * r;
+        if (!onScreen(x, z, 2)) continue;
+        pushEnemy('icespike', false, x, sink, z, a * 3.7, row, sc, 1, 0, 0, 0, 0.5, 0.78, 1);
+      }
+    }
+  }
 };

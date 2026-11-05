@@ -2,14 +2,16 @@
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
+  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
-  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime');
+  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
+  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -220,5 +222,80 @@ function themeModels(defs) {
       { s: 'sph', c: [0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 }, { s: 'sph', c: [-0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 },
       { s: 'sph', c: [0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 }, { s: 'sph', c: [-0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 },
     ]);
+  }
+  // ---------- Frozen Tundra ----------
+  {
+    const snow = C('#f8fcff'), pineG = C('#2f6e58'), pineD = C('#245846'), bark = C('#6a4a32'), coal = C('#1d1f26'), carrot = C('#ff8a2a'), scarf = C('#e8344a'), ice = C('#a8e2ff'), iceHi = C('#e4f7ff');
+    // snowy pine: three tiers, each with a cap of snow
+    P('pine', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 0.4, 0], r: 0.07, col: bark, k: 0 },
+      ...[[0.3, 0.86, 0.44], [0.76, 1.28, 0.34], [1.16, 1.66, 0.24]].map(([y0, y1, r]) => ({ s: 'cap', a: [0, y0, 0], b: [0, y1, 0], r, r2: 0.03, col: pineG, k: 0.02 })),
+      ...[[0.3, 0.86, 0.44], [0.76, 1.28, 0.34], [1.16, 1.66, 0.24]].map(([y0, y1, r]) => ({ s: 'cap', a: [0, y0 + 0.22, 0], b: [0, y1 + 0.05, 0], r: r * 0.62, r2: 0.03, col: snow, k: 0.04 })),
+      { s: 'sph', c: [0.22, 0.42, 0.25], r: 0.08, col: pineD, k: 0.04 }, { s: 'sph', c: [-0.25, 0.86, -0.12], r: 0.06, col: pineD, k: 0.04 },
+    ]);
+    P('snowman', [
+      { s: 'sph', c: [0, 0.3, 0], r: 0.3, col: snow, k: 0.06 },
+      { s: 'sph', c: [0, 0.72, 0], r: 0.22, col: snow, k: 0.06 },
+      { s: 'sph', c: [0, 1.04, 0], r: 0.16, col: snow, k: 0.05 },
+      { s: 'tor', ax: 'y', c: [0, 0.9, 0], R: 0.13, r: 0.045, a0: -Math.PI, a1: Math.PI, col: scarf, k: 0.02 },
+      { s: 'cap', a: [0.06, 0.88, 0.12], b: [0.1, 0.66, 0.2], r: 0.04, r2: 0.03, col: scarf, k: 0.02 },
+      { s: 'cap', a: [0, 1.03, 0.14], b: [0, 1.01, 0.34], r: 0.035, r2: 0.006, col: carrot, k: 0.01 },
+      { s: 'sph', c: [0.06, 1.09, 0.13], r: 0.022, col: coal, k: 0 }, { s: 'sph', c: [-0.06, 1.09, 0.13], r: 0.022, col: coal, k: 0 },
+      ...[0.82, 0.7, 0.58].map(y => ({ s: 'sph', c: [0, y, 0.215], r: 0.022, col: coal, k: 0 })),
+      { s: 'cap', a: [0.18, 0.76, 0], b: [0.46, 0.92, 0.04], r: 0.018, col: bark, k: 0 }, { s: 'cap', a: [0.38, 0.87, 0.03], b: [0.44, 1.0, 0.02], r: 0.014, col: bark, k: 0 },
+      { s: 'cap', a: [-0.18, 0.76, 0], b: [-0.46, 0.86, 0.06], r: 0.018, col: bark, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.18, 0], r: 0.17, hh: 0.015, rd: 0.01, col: coal, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.29, 0], r: 0.11, hh: 0.11, rd: 0.02, col: coal, k: 0 },
+    ]);
+    // a cluster of ice shards; the shards take the instance tint, the tips are frosty white
+    P('icecrystal', [
+      ...[[0, 0, 1.15, 0.2], [0.24, 0.3, 0.75, 0.13], [-0.26, 0.1, 0.8, 0.14], [0.05, -0.28, 0.65, 0.12], [-0.12, 0.3, 0.55, 0.1]].map(([x, z, hgt, r]) => ({ s: 'cap', a: [x * 0.4, 0, z * 0.4], b: [x, hgt, z], r, r2: 0.02, k: 0.01 })),
+      { s: 'ell', c: [0, 0.05, 0], rr: [0.4, 0.1, 0.4], col: snow, k: 0.06 },
+    ], { ao: 0.6 });
+    // the wall: chunky blocks of ice with a lid of snow
+    P('iceblock', [
+      { s: 'box', c: [0, 0.42, 0], hs: [0.44, 0.42, 0.44], rd: 0.09, k: 0 },
+      { s: 'box', c: [0, 0.86, 0], hs: [0.4, 0.05, 0.4], rd: 0.05, col: snow, k: 0.04 },
+      { s: 'box', c: [0.12, 0.5, 0.42], hs: [0.12, 0.2, 0.03], rd: 0.03, col: iceHi, k: 0.02 },
+    ], { ao: 0.8 });
+    // a falling icicle (point down) and the spike it leaves (point up)
+    P('icicle', [
+      { s: 'cap', a: [0, 1.5, 0], b: [0, 0.02, 0], r: 0.2, r2: 0.012, col: ice, k: 0 },
+      { s: 'cap', a: [0.1, 1.45, 0.06], b: [0.12, 0.75, 0.08], r: 0.1, r2: 0.01, col: iceHi, k: 0.02 },
+      { s: 'cap', a: [-0.1, 1.45, -0.04], b: [-0.12, 0.9, -0.06], r: 0.09, r2: 0.01, col: ice, k: 0.02 },
+    ], { ao: 0.5 });
+    P('icespike', [
+      { s: 'cap', a: [0, -0.1, 0], b: [0, 1.15, 0], r: 0.22, r2: 0.014, k: 0 },
+      { s: 'cap', a: [0.1, -0.1, 0.05], b: [0.3, 0.62, 0.12], r: 0.13, r2: 0.012, col: iceHi, k: 0.02 },
+      { s: 'cap', a: [-0.08, -0.1, -0.06], b: [-0.28, 0.5, -0.14], r: 0.12, r2: 0.012, k: 0.02 },
+    ], { ao: 0.5 });
+  }
+  // ---------- Frost Yeti (chapter 6 boss): a shaggy snow beast; plain fur takes the boss tint ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.4, shY: 0.76, headY: 0.98, headR: 0.22, headZ: 0.06, shW: 0.25, hipW: 0.12, elOut: 0.08, upperLen: 0.2, foreLen: 0.2,
+      pelvisR: 0.2, torso: 'ell', torsoRR: [0.31, 0.3, 0.25], neckR: 0.14, armR: 0.1, handR: 0.14, legR: 0.12, k: 0.08 });
+    const J = m.J, hd = J.head, hr = 0.22, skin = C('#e4f3ff'), skinD = C('#34557e'), hornCol = C('#f4fbff'), ice = C('#c8f4ff'), claw = C('#ffffff');
+    // face patch and belly in pale blue skin
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - 0.03, hd[2] + hr * 0.6], rr: [hr * 0.72, hr * 0.62, hr * 0.42], col: skin, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'ell', c: [0, 0.56, 0.17], rr: [0.2, 0.2, 0.09], col: skin, bone: 1, k: 0.05 });
+    face(m, { eyeCol: C('#fff6e6'), mouth: 'fangs', eyeY: 0.18 });
+    for (const sx of [1, -1]) horn(m, [hd[0] + sx * hr * 0.75, hd[1] + hr * 0.55, hd[2] - 0.02], [sx * 0.13, 0.08, -0.04], [sx * 0.02, 0.15, 0.06], 0.05, hornCol);
+    // shaggy tufts on the shoulders, head and back
+    for (const [x, y, z, r, b] of [[0.27, 0.86, 0, 0.12, 1], [-0.27, 0.86, 0, 0.12, 1], [0.16, 0.92, -0.12, 0.1, 1], [-0.16, 0.92, -0.12, 0.1, 1], [0, 0.94, -0.16, 0.11, 1],
+      [0.2, 0.42, 0.06, 0.1, 0], [-0.2, 0.42, 0.06, 0.1, 0]]) m.parts.push({ s: 'sph', c: [x, y, z], r, bone: b, k: 0.08 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + hr * 0.75, hd[2] - 0.04], r: 0.12, bone: 2, k: 0.08 });
+    // ice crystals growing out of its back
+    for (const [x, y, l, r] of [[0, 0.78, 0.3, 0.07], [0.12, 0.66, 0.22, 0.05], [-0.13, 0.7, 0.24, 0.055], [0.05, 0.52, 0.17, 0.045]])
+      m.parts.push({ s: 'cap', a: [x, y, -0.18], b: [x * 1.6, y + l * 0.55, -0.18 - l], r, r2: 0.01, col: ice, bone: 1, k: 0.01 });
+    // big furry fists with icy claws, and dark soles
+    for (const sd of ['L', 'R']) {
+      const ha = J['ha' + sd], b = sd === 'L' ? 4 : 6;
+      m.parts.push({ s: 'sph', c: [ha[0], ha[1] - 0.04, ha[2] + 0.02], r: 0.15, bone: b, k: 0.05 });
+      for (const dx of [-0.06, 0, 0.06]) m.parts.push({ s: 'cap', a: [ha[0] + dx, ha[1] - 0.1, ha[2] + 0.1], b: [ha[0] + dx, ha[1] - 0.17, ha[2] + 0.16], r: 0.025, r2: 0.008, col: claw, bone: b, k: 0 });
+      const an = J['an' + sd], lb = sd === 'L' ? 8 : 10;
+      m.parts.push({ s: 'ell', c: [an[0], 0.03, an[2] + 0.06], rr: [0.13, 0.05, 0.18], col: skinD, bone: lb, k: 0.03 });
+    }
+    m.top = hd[1] + hr + 0.2; m.bmin = [-0.7, -0.03, -0.65]; m.bmax = [0.7, m.top + 0.05, 0.6]; m.name = 'yeti'; m.runAmp = 0.7;
+    defs.yeti = m;
   }
 }

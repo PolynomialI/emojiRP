@@ -1333,14 +1333,16 @@ function buildModels(progress) {
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
+  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
-  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime');
+  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
+  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -1551,6 +1553,81 @@ function themeModels(defs) {
       { s: 'sph', c: [0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 }, { s: 'sph', c: [-0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 },
       { s: 'sph', c: [0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 }, { s: 'sph', c: [-0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 },
     ]);
+  }
+  // ---------- Frozen Tundra ----------
+  {
+    const snow = C('#f8fcff'), pineG = C('#2f6e58'), pineD = C('#245846'), bark = C('#6a4a32'), coal = C('#1d1f26'), carrot = C('#ff8a2a'), scarf = C('#e8344a'), ice = C('#a8e2ff'), iceHi = C('#e4f7ff');
+    // snowy pine: three tiers, each with a cap of snow
+    P('pine', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 0.4, 0], r: 0.07, col: bark, k: 0 },
+      ...[[0.3, 0.86, 0.44], [0.76, 1.28, 0.34], [1.16, 1.66, 0.24]].map(([y0, y1, r]) => ({ s: 'cap', a: [0, y0, 0], b: [0, y1, 0], r, r2: 0.03, col: pineG, k: 0.02 })),
+      ...[[0.3, 0.86, 0.44], [0.76, 1.28, 0.34], [1.16, 1.66, 0.24]].map(([y0, y1, r]) => ({ s: 'cap', a: [0, y0 + 0.22, 0], b: [0, y1 + 0.05, 0], r: r * 0.62, r2: 0.03, col: snow, k: 0.04 })),
+      { s: 'sph', c: [0.22, 0.42, 0.25], r: 0.08, col: pineD, k: 0.04 }, { s: 'sph', c: [-0.25, 0.86, -0.12], r: 0.06, col: pineD, k: 0.04 },
+    ]);
+    P('snowman', [
+      { s: 'sph', c: [0, 0.3, 0], r: 0.3, col: snow, k: 0.06 },
+      { s: 'sph', c: [0, 0.72, 0], r: 0.22, col: snow, k: 0.06 },
+      { s: 'sph', c: [0, 1.04, 0], r: 0.16, col: snow, k: 0.05 },
+      { s: 'tor', ax: 'y', c: [0, 0.9, 0], R: 0.13, r: 0.045, a0: -Math.PI, a1: Math.PI, col: scarf, k: 0.02 },
+      { s: 'cap', a: [0.06, 0.88, 0.12], b: [0.1, 0.66, 0.2], r: 0.04, r2: 0.03, col: scarf, k: 0.02 },
+      { s: 'cap', a: [0, 1.03, 0.14], b: [0, 1.01, 0.34], r: 0.035, r2: 0.006, col: carrot, k: 0.01 },
+      { s: 'sph', c: [0.06, 1.09, 0.13], r: 0.022, col: coal, k: 0 }, { s: 'sph', c: [-0.06, 1.09, 0.13], r: 0.022, col: coal, k: 0 },
+      ...[0.82, 0.7, 0.58].map(y => ({ s: 'sph', c: [0, y, 0.215], r: 0.022, col: coal, k: 0 })),
+      { s: 'cap', a: [0.18, 0.76, 0], b: [0.46, 0.92, 0.04], r: 0.018, col: bark, k: 0 }, { s: 'cap', a: [0.38, 0.87, 0.03], b: [0.44, 1.0, 0.02], r: 0.014, col: bark, k: 0 },
+      { s: 'cap', a: [-0.18, 0.76, 0], b: [-0.46, 0.86, 0.06], r: 0.018, col: bark, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.18, 0], r: 0.17, hh: 0.015, rd: 0.01, col: coal, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.29, 0], r: 0.11, hh: 0.11, rd: 0.02, col: coal, k: 0 },
+    ]);
+    // a cluster of ice shards; the shards take the instance tint, the tips are frosty white
+    P('icecrystal', [
+      ...[[0, 0, 1.15, 0.2], [0.24, 0.3, 0.75, 0.13], [-0.26, 0.1, 0.8, 0.14], [0.05, -0.28, 0.65, 0.12], [-0.12, 0.3, 0.55, 0.1]].map(([x, z, hgt, r]) => ({ s: 'cap', a: [x * 0.4, 0, z * 0.4], b: [x, hgt, z], r, r2: 0.02, k: 0.01 })),
+      { s: 'ell', c: [0, 0.05, 0], rr: [0.4, 0.1, 0.4], col: snow, k: 0.06 },
+    ], { ao: 0.6 });
+    // the wall: chunky blocks of ice with a lid of snow
+    P('iceblock', [
+      { s: 'box', c: [0, 0.42, 0], hs: [0.44, 0.42, 0.44], rd: 0.09, k: 0 },
+      { s: 'box', c: [0, 0.86, 0], hs: [0.4, 0.05, 0.4], rd: 0.05, col: snow, k: 0.04 },
+      { s: 'box', c: [0.12, 0.5, 0.42], hs: [0.12, 0.2, 0.03], rd: 0.03, col: iceHi, k: 0.02 },
+    ], { ao: 0.8 });
+    // a falling icicle (point down) and the spike it leaves (point up)
+    P('icicle', [
+      { s: 'cap', a: [0, 1.5, 0], b: [0, 0.02, 0], r: 0.2, r2: 0.012, col: ice, k: 0 },
+      { s: 'cap', a: [0.1, 1.45, 0.06], b: [0.12, 0.75, 0.08], r: 0.1, r2: 0.01, col: iceHi, k: 0.02 },
+      { s: 'cap', a: [-0.1, 1.45, -0.04], b: [-0.12, 0.9, -0.06], r: 0.09, r2: 0.01, col: ice, k: 0.02 },
+    ], { ao: 0.5 });
+    P('icespike', [
+      { s: 'cap', a: [0, -0.1, 0], b: [0, 1.15, 0], r: 0.22, r2: 0.014, k: 0 },
+      { s: 'cap', a: [0.1, -0.1, 0.05], b: [0.3, 0.62, 0.12], r: 0.13, r2: 0.012, col: iceHi, k: 0.02 },
+      { s: 'cap', a: [-0.08, -0.1, -0.06], b: [-0.28, 0.5, -0.14], r: 0.12, r2: 0.012, k: 0.02 },
+    ], { ao: 0.5 });
+  }
+  // ---------- Frost Yeti (chapter 6 boss): a shaggy snow beast; plain fur takes the boss tint ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.4, shY: 0.76, headY: 0.98, headR: 0.22, headZ: 0.06, shW: 0.25, hipW: 0.12, elOut: 0.08, upperLen: 0.2, foreLen: 0.2,
+      pelvisR: 0.2, torso: 'ell', torsoRR: [0.31, 0.3, 0.25], neckR: 0.14, armR: 0.1, handR: 0.14, legR: 0.12, k: 0.08 });
+    const J = m.J, hd = J.head, hr = 0.22, skin = C('#e4f3ff'), skinD = C('#34557e'), hornCol = C('#f4fbff'), ice = C('#c8f4ff'), claw = C('#ffffff');
+    // face patch and belly in pale blue skin
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - 0.03, hd[2] + hr * 0.6], rr: [hr * 0.72, hr * 0.62, hr * 0.42], col: skin, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'ell', c: [0, 0.56, 0.17], rr: [0.2, 0.2, 0.09], col: skin, bone: 1, k: 0.05 });
+    face(m, { eyeCol: C('#fff6e6'), mouth: 'fangs', eyeY: 0.18 });
+    for (const sx of [1, -1]) horn(m, [hd[0] + sx * hr * 0.75, hd[1] + hr * 0.55, hd[2] - 0.02], [sx * 0.13, 0.08, -0.04], [sx * 0.02, 0.15, 0.06], 0.05, hornCol);
+    // shaggy tufts on the shoulders, head and back
+    for (const [x, y, z, r, b] of [[0.27, 0.86, 0, 0.12, 1], [-0.27, 0.86, 0, 0.12, 1], [0.16, 0.92, -0.12, 0.1, 1], [-0.16, 0.92, -0.12, 0.1, 1], [0, 0.94, -0.16, 0.11, 1],
+      [0.2, 0.42, 0.06, 0.1, 0], [-0.2, 0.42, 0.06, 0.1, 0]]) m.parts.push({ s: 'sph', c: [x, y, z], r, bone: b, k: 0.08 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + hr * 0.75, hd[2] - 0.04], r: 0.12, bone: 2, k: 0.08 });
+    // ice crystals growing out of its back
+    for (const [x, y, l, r] of [[0, 0.78, 0.3, 0.07], [0.12, 0.66, 0.22, 0.05], [-0.13, 0.7, 0.24, 0.055], [0.05, 0.52, 0.17, 0.045]])
+      m.parts.push({ s: 'cap', a: [x, y, -0.18], b: [x * 1.6, y + l * 0.55, -0.18 - l], r, r2: 0.01, col: ice, bone: 1, k: 0.01 });
+    // big furry fists with icy claws, and dark soles
+    for (const sd of ['L', 'R']) {
+      const ha = J['ha' + sd], b = sd === 'L' ? 4 : 6;
+      m.parts.push({ s: 'sph', c: [ha[0], ha[1] - 0.04, ha[2] + 0.02], r: 0.15, bone: b, k: 0.05 });
+      for (const dx of [-0.06, 0, 0.06]) m.parts.push({ s: 'cap', a: [ha[0] + dx, ha[1] - 0.1, ha[2] + 0.1], b: [ha[0] + dx, ha[1] - 0.17, ha[2] + 0.16], r: 0.025, r2: 0.008, col: claw, bone: b, k: 0 });
+      const an = J['an' + sd], lb = sd === 'L' ? 8 : 10;
+      m.parts.push({ s: 'ell', c: [an[0], 0.03, an[2] + 0.06], rr: [0.13, 0.05, 0.18], col: skinD, bone: lb, k: 0.03 });
+    }
+    m.top = hd[1] + hr + 0.2; m.bmin = [-0.7, -0.03, -0.65]; m.bmax = [0.7, m.top + 0.05, 0.6]; m.name = 'yeti'; m.runAmp = 0.7;
+    defs.yeti = m;
   }
 }
 </script>
@@ -2563,14 +2640,16 @@ function buildModels(progress) {
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
+  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
-  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime');
+  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
+  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -2781,6 +2860,81 @@ function themeModels(defs) {
       { s: 'sph', c: [0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 }, { s: 'sph', c: [-0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 },
       { s: 'sph', c: [0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 }, { s: 'sph', c: [-0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 },
     ]);
+  }
+  // ---------- Frozen Tundra ----------
+  {
+    const snow = C('#f8fcff'), pineG = C('#2f6e58'), pineD = C('#245846'), bark = C('#6a4a32'), coal = C('#1d1f26'), carrot = C('#ff8a2a'), scarf = C('#e8344a'), ice = C('#a8e2ff'), iceHi = C('#e4f7ff');
+    // snowy pine: three tiers, each with a cap of snow
+    P('pine', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 0.4, 0], r: 0.07, col: bark, k: 0 },
+      ...[[0.3, 0.86, 0.44], [0.76, 1.28, 0.34], [1.16, 1.66, 0.24]].map(([y0, y1, r]) => ({ s: 'cap', a: [0, y0, 0], b: [0, y1, 0], r, r2: 0.03, col: pineG, k: 0.02 })),
+      ...[[0.3, 0.86, 0.44], [0.76, 1.28, 0.34], [1.16, 1.66, 0.24]].map(([y0, y1, r]) => ({ s: 'cap', a: [0, y0 + 0.22, 0], b: [0, y1 + 0.05, 0], r: r * 0.62, r2: 0.03, col: snow, k: 0.04 })),
+      { s: 'sph', c: [0.22, 0.42, 0.25], r: 0.08, col: pineD, k: 0.04 }, { s: 'sph', c: [-0.25, 0.86, -0.12], r: 0.06, col: pineD, k: 0.04 },
+    ]);
+    P('snowman', [
+      { s: 'sph', c: [0, 0.3, 0], r: 0.3, col: snow, k: 0.06 },
+      { s: 'sph', c: [0, 0.72, 0], r: 0.22, col: snow, k: 0.06 },
+      { s: 'sph', c: [0, 1.04, 0], r: 0.16, col: snow, k: 0.05 },
+      { s: 'tor', ax: 'y', c: [0, 0.9, 0], R: 0.13, r: 0.045, a0: -Math.PI, a1: Math.PI, col: scarf, k: 0.02 },
+      { s: 'cap', a: [0.06, 0.88, 0.12], b: [0.1, 0.66, 0.2], r: 0.04, r2: 0.03, col: scarf, k: 0.02 },
+      { s: 'cap', a: [0, 1.03, 0.14], b: [0, 1.01, 0.34], r: 0.035, r2: 0.006, col: carrot, k: 0.01 },
+      { s: 'sph', c: [0.06, 1.09, 0.13], r: 0.022, col: coal, k: 0 }, { s: 'sph', c: [-0.06, 1.09, 0.13], r: 0.022, col: coal, k: 0 },
+      ...[0.82, 0.7, 0.58].map(y => ({ s: 'sph', c: [0, y, 0.215], r: 0.022, col: coal, k: 0 })),
+      { s: 'cap', a: [0.18, 0.76, 0], b: [0.46, 0.92, 0.04], r: 0.018, col: bark, k: 0 }, { s: 'cap', a: [0.38, 0.87, 0.03], b: [0.44, 1.0, 0.02], r: 0.014, col: bark, k: 0 },
+      { s: 'cap', a: [-0.18, 0.76, 0], b: [-0.46, 0.86, 0.06], r: 0.018, col: bark, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.18, 0], r: 0.17, hh: 0.015, rd: 0.01, col: coal, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.29, 0], r: 0.11, hh: 0.11, rd: 0.02, col: coal, k: 0 },
+    ]);
+    // a cluster of ice shards; the shards take the instance tint, the tips are frosty white
+    P('icecrystal', [
+      ...[[0, 0, 1.15, 0.2], [0.24, 0.3, 0.75, 0.13], [-0.26, 0.1, 0.8, 0.14], [0.05, -0.28, 0.65, 0.12], [-0.12, 0.3, 0.55, 0.1]].map(([x, z, hgt, r]) => ({ s: 'cap', a: [x * 0.4, 0, z * 0.4], b: [x, hgt, z], r, r2: 0.02, k: 0.01 })),
+      { s: 'ell', c: [0, 0.05, 0], rr: [0.4, 0.1, 0.4], col: snow, k: 0.06 },
+    ], { ao: 0.6 });
+    // the wall: chunky blocks of ice with a lid of snow
+    P('iceblock', [
+      { s: 'box', c: [0, 0.42, 0], hs: [0.44, 0.42, 0.44], rd: 0.09, k: 0 },
+      { s: 'box', c: [0, 0.86, 0], hs: [0.4, 0.05, 0.4], rd: 0.05, col: snow, k: 0.04 },
+      { s: 'box', c: [0.12, 0.5, 0.42], hs: [0.12, 0.2, 0.03], rd: 0.03, col: iceHi, k: 0.02 },
+    ], { ao: 0.8 });
+    // a falling icicle (point down) and the spike it leaves (point up)
+    P('icicle', [
+      { s: 'cap', a: [0, 1.5, 0], b: [0, 0.02, 0], r: 0.2, r2: 0.012, col: ice, k: 0 },
+      { s: 'cap', a: [0.1, 1.45, 0.06], b: [0.12, 0.75, 0.08], r: 0.1, r2: 0.01, col: iceHi, k: 0.02 },
+      { s: 'cap', a: [-0.1, 1.45, -0.04], b: [-0.12, 0.9, -0.06], r: 0.09, r2: 0.01, col: ice, k: 0.02 },
+    ], { ao: 0.5 });
+    P('icespike', [
+      { s: 'cap', a: [0, -0.1, 0], b: [0, 1.15, 0], r: 0.22, r2: 0.014, k: 0 },
+      { s: 'cap', a: [0.1, -0.1, 0.05], b: [0.3, 0.62, 0.12], r: 0.13, r2: 0.012, col: iceHi, k: 0.02 },
+      { s: 'cap', a: [-0.08, -0.1, -0.06], b: [-0.28, 0.5, -0.14], r: 0.12, r2: 0.012, k: 0.02 },
+    ], { ao: 0.5 });
+  }
+  // ---------- Frost Yeti (chapter 6 boss): a shaggy snow beast; plain fur takes the boss tint ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.4, shY: 0.76, headY: 0.98, headR: 0.22, headZ: 0.06, shW: 0.25, hipW: 0.12, elOut: 0.08, upperLen: 0.2, foreLen: 0.2,
+      pelvisR: 0.2, torso: 'ell', torsoRR: [0.31, 0.3, 0.25], neckR: 0.14, armR: 0.1, handR: 0.14, legR: 0.12, k: 0.08 });
+    const J = m.J, hd = J.head, hr = 0.22, skin = C('#e4f3ff'), skinD = C('#34557e'), hornCol = C('#f4fbff'), ice = C('#c8f4ff'), claw = C('#ffffff');
+    // face patch and belly in pale blue skin
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - 0.03, hd[2] + hr * 0.6], rr: [hr * 0.72, hr * 0.62, hr * 0.42], col: skin, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'ell', c: [0, 0.56, 0.17], rr: [0.2, 0.2, 0.09], col: skin, bone: 1, k: 0.05 });
+    face(m, { eyeCol: C('#fff6e6'), mouth: 'fangs', eyeY: 0.18 });
+    for (const sx of [1, -1]) horn(m, [hd[0] + sx * hr * 0.75, hd[1] + hr * 0.55, hd[2] - 0.02], [sx * 0.13, 0.08, -0.04], [sx * 0.02, 0.15, 0.06], 0.05, hornCol);
+    // shaggy tufts on the shoulders, head and back
+    for (const [x, y, z, r, b] of [[0.27, 0.86, 0, 0.12, 1], [-0.27, 0.86, 0, 0.12, 1], [0.16, 0.92, -0.12, 0.1, 1], [-0.16, 0.92, -0.12, 0.1, 1], [0, 0.94, -0.16, 0.11, 1],
+      [0.2, 0.42, 0.06, 0.1, 0], [-0.2, 0.42, 0.06, 0.1, 0]]) m.parts.push({ s: 'sph', c: [x, y, z], r, bone: b, k: 0.08 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + hr * 0.75, hd[2] - 0.04], r: 0.12, bone: 2, k: 0.08 });
+    // ice crystals growing out of its back
+    for (const [x, y, l, r] of [[0, 0.78, 0.3, 0.07], [0.12, 0.66, 0.22, 0.05], [-0.13, 0.7, 0.24, 0.055], [0.05, 0.52, 0.17, 0.045]])
+      m.parts.push({ s: 'cap', a: [x, y, -0.18], b: [x * 1.6, y + l * 0.55, -0.18 - l], r, r2: 0.01, col: ice, bone: 1, k: 0.01 });
+    // big furry fists with icy claws, and dark soles
+    for (const sd of ['L', 'R']) {
+      const ha = J['ha' + sd], b = sd === 'L' ? 4 : 6;
+      m.parts.push({ s: 'sph', c: [ha[0], ha[1] - 0.04, ha[2] + 0.02], r: 0.15, bone: b, k: 0.05 });
+      for (const dx of [-0.06, 0, 0.06]) m.parts.push({ s: 'cap', a: [ha[0] + dx, ha[1] - 0.1, ha[2] + 0.1], b: [ha[0] + dx, ha[1] - 0.17, ha[2] + 0.16], r: 0.025, r2: 0.008, col: claw, bone: b, k: 0 });
+      const an = J['an' + sd], lb = sd === 'L' ? 8 : 10;
+      m.parts.push({ s: 'ell', c: [an[0], 0.03, an[2] + 0.06], rr: [0.13, 0.05, 0.18], col: skinD, bone: lb, k: 0.03 });
+    }
+    m.top = hd[1] + hr + 0.2; m.bmin = [-0.7, -0.03, -0.65]; m.bmax = [0.7, m.top + 0.05, 0.6]; m.name = 'yeti'; m.runAmp = 0.7;
+    defs.yeti = m;
   }
 }
 
@@ -3404,6 +3558,7 @@ float sdStar5(vec2 p, float r, float rf) {
 }
 float extrude(float d2, float z, float hz, float rd) { vec2 w = vec2(d2 + rd, abs(z) - hz + rd); return min(max(w.x, w.y), 0.0) + length(max(w, 0.0)) - rd; }
 mat2 rot2(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+float sdSeg2(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }
 
 vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
   float ph = P0.w;
@@ -3699,6 +3854,17 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 38) {
+    // snowflake: six arms with side branches, flat in the xy plane
+    float rr = length(p.xy), sector = 6.2832 / 6.0;
+    float a = mod(atan(p.y, p.x) + sector * 0.5, sector) - sector * 0.5;
+    vec2 f = vec2(cos(a), abs(sin(a))) * rr;
+    float d2 = sdSeg2(f, vec2(0.0), vec2(0.8, 0.0)) - 0.075;
+    d2 = min(d2, sdSeg2(f, vec2(0.36, 0.0), vec2(0.55, 0.19)) - 0.055);
+    d2 = min(d2, sdSeg2(f, vec2(0.58, 0.0), vec2(0.72, 0.13)) - 0.045);
+    d2 = min(d2, rr - 0.2);
+    return vec2(extrude(d2, p.z, 0.07, 0.04), 1.0);
   }
   if (type == 37) {
     // wrapped candy: a striped sweet with twisted ends
@@ -4051,6 +4217,14 @@ void main() {
   } else if (type == 9) {
     float line = 1.0 - smoothstep(0.0, 0.5, abs(q.x));
     a = line * step(abs(q.y), 1.0) * fC.a;
+  } else if (type == 10) {
+    // cone telegraph: a pie slice of half-angle seed along +y, filling outward with t
+    float ang = abs(atan(q.x, q.y));
+    float inside = step(ang, seed) * step(r, 1.0);
+    float rim = 1.0 - smoothstep(0.0, 0.04, abs(r - 0.97));
+    float side = 1.0 - smoothstep(0.0, 0.025, abs(ang - seed) * r);
+    float fill = 1.0 - smoothstep(t - 0.02, t + 0.02, r);
+    a = inside * clamp(max(max(rim, side) * 0.8, max(fill * 0.45, 0.18)), 0.0, 1.0) * fC.a;
   }
   if (a < 0.003) discard;
   fragColor = vec4(atmos(col, vW), a);
@@ -5645,6 +5819,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Drones'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
     levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
   },
+  frostnova: {
+    name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
+    fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [12, 14, 16, 18, 21, 24, 27, 31, 35, 40], radius: [2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.3, 4.6], freeze: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.9, 2.1, 2.4], cd: [5, 4.9, 4.8, 4.6, 4.4, 4.2, 4.0, 3.8, 3.6, 3.3] }),
+  },
   shield: {
     name: 'Bubble Shield', intro: 'A goo bubble absorbs hits, then grows back.', icon: { type: 27, colw: 0 },
     fields: [['hits', 'Hits absorbed'], ['recharge', 'Regrows in', 's'], ['pop', 'Pop damage'], ['push', 'Pop knockback', 'm']],
@@ -5713,6 +5892,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.yeti = { name: 'Frost Yeti', model: 'yeti', meshes: ['yeti', 'icicle', 'icespike'], hp: 6100, speed: 2.1, dmg: 18, scale: 2.8, radius: 1.2, tint: '#6fa8f2', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
@@ -5734,6 +5914,8 @@ const ARENAS = [
     props: [['bumper', 6, 0.8, 1.1]], zones: [['pit', 1.6, 3.0, 4.2]], wall: 'tubewall', kinds: ['pitball'] },
   { id: 'candy', name: 'Candy Land', floor: 4, stoneA: '#ffb6d2', stoneB: '#fff0dc', grout: '#6a3048', accent: '#ff4f9a', fog: '#4a2242', sky: '#ffe4f2', ground: '#e8a2c2', light: '#fff8fb', spotMin: 0.7, shadowTint: '#6a2a52', rock: '#ff7fb0', pool: '#5a2e1a', poolGlow: 0,
     props: [['lollipop', 5, 0.32, 0.4], ['candycane', 5, 0.3, 0.36], ['gumdrop', 7, 0.8, 1.3], ['cupcake', 3, 0.7, 0.9]], zones: [['chocolate', 4, 2.0, 3.0]], wall: 'gumdrop' },
+  { id: 'tundra', name: 'Frozen Tundra', floor: 5, stoneA: '#eef5fc', stoneB: '#c2d6ec', grout: '#7a93b0', accent: '#7fd8ff', fog: '#1a2a46', sky: '#e2f1ff', ground: '#b4c8de', light: '#e6eff9', spotMin: 0.62, shadowTint: '#28487a', rock: '#a9bccf', pool: '#bfe6ff', poolGlow: 0.04,
+    props: [['pine', 8, 0.42, 0.6], ['icecrystal', 4, 0.6, 0.9], ['snowman', 2, 0.5, 0.6], ['rock', 3, 0.8, 1.2]], zones: [['ice', 3, 3.0, 4.6]], wall: 'iceblock' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -5757,6 +5939,11 @@ const PROP_KINDS = {
   candycane: { models: ['candycane'], unit: 0.11, block: true, tall: 4 },
   gumdrop: { models: ['gumdrop'], unit: 0.42, block: true, shots: true, tints: ['#ff4f6a', '#ffd23a', '#4fc8ff', '#5fe08a', '#b56bff', '#ff8a3a'], wallR: [1.0, 1.4] },
   cupcake: { models: ['cupcake'], unit: 0.32, block: true, shots: true },
+  pine: { models: ['pine'], unit: 0.3, block: true, shots: true, tall: 2.4 },
+  snowman: { models: ['snowman'], unit: 0.3, block: true, shots: true, tall: 2 },
+  icecrystal: { models: ['icecrystal'], unit: 0.35, block: true, shots: true, tints: ['#9fdcff', '#bfe8ff', '#8fc8ff'], tall: 2 },
+  iceblock: { models: ['iceblock'], unit: 0.45, block: true, shots: true, tints: ['#a8dcff', '#c6eaff', '#92ceff'], wallR: [1.0, 1.15] },
+  icespike: { models: ['icespike'], unit: 0.3, block: true, shots: false, tint: '#86c8ff', shadow: false },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -5766,6 +5953,7 @@ const ZONE_KINDS = {
   pit: { slow: 0.82, col: '#3b2d6e', glow: 0, style: 2 },
   chocolate: { slow: 0.55, col: '#5e3018', glow: 0.02 },
   jelly: { slow: 0.45, col: '#ff5f8a', glow: 0.12 },
+  ice: { slide: true, col: '#7cc4f0', glow: 0.04, style: 1 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -6301,7 +6489,9 @@ function updateRun(dt) {
   const zone = zoneAt(h[0], h[2]), Z = zone ? ZONE_KINDS[zone.kind] : null;
   run.zone = zone;
   updateSugar(run, dt);
-  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1);
+  // chilled by frost breath: slower for a moment
+  if (run.chillT > 0) { run.chillT -= dt; if (Math.random() < 0.3) FX.part(h[0] + rand(-0.4, 0.4), rand(0.3, 1.2), h[2] + rand(-0.4, 0.4), 0, 0.4, 0, 0.1, 0.02, 0.6, [0.75, 0.92, 1], 0.9, 3); }
+  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1) * (run.chillT > 0 ? 0.6 : 1);
   const k = 1 - Math.exp(-dt / (Z && Z.slide ? 0.55 : 0.045));
   if (Z && Z.burn) {
     run.burnT = (run.burnT || 0) - dt;
@@ -6387,7 +6577,9 @@ function updateEnemies(dt) {
     }
     e.spawnT = Math.max(0, e.spawnT - dt);
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
-    if (e.boss) updateBoss(e, dt);
+    // frozen enemies (Frost Nova, the yeti's breath) stand still and do no harm until they thaw
+    if (e.frozen > 0) { e.frozen -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
+    else if (e.boss) updateBoss(e, dt);
     else updateEnemyAI(e, dt);
     // knockback
     e.x += e.kx * dt; e.z += e.kz * dt;
@@ -6397,7 +6589,7 @@ function updateEnemies(dt) {
     e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
     // hero contact
     const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz), rr = e.radius + HERO_R;
-    if (d < rr && G.hero.melt < 0.5 && !e.hidden) {
+    if (d < rr && G.hero.melt < 0.5 && !e.hidden && !(e.frozen > 0)) {
       touching++;
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }
@@ -6574,6 +6766,23 @@ function updateEnemyShots(dt) {
         if (nl > 1e-5) { const vn = (s.vx * nx + s.vz * nz) / nl; if (vn < 0) { s.vx -= 2 * vn * nx / nl; s.vz -= 2 * vn * nz / nl; } }
       }
       if (Math.hypot(s.x - h[0], s.z - h[2]) < s.r + HERO_R && s.y < 1.4) { s.life = 0; hurtHero(s.dmg, s.x, s.z); FX.burst(s.x, s.y, s.z, 6, s.col, 3, 0.1, 0.3, 1); }
+      continue;
+    }
+    if (s.kind === 'icicle') {
+      // icicles drop straight onto a telegraphed spot and stay stuck in the ground for a while
+      s.t += dt;
+      const u = clamp(s.t / s.dur, 0, 1);
+      s.y = s.sy * (1 - u * u);
+      if (u >= 1) {
+        s.life = 0;
+        if (Math.hypot(h[0] - s.x, h[2] - s.z) < s.radius + HERO_R * 0.6) hurtHero(s.dmg, s.x, s.z);
+        enemiesInRadius(s.x, s.z, s.radius, o => { if (!o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+        FX.burst(s.x, 0.4, s.z, 12, [0.8, 0.94, 1], 4.5, 0.1, 0.5, 1);
+        FX.ring(s.x, s.z, s.radius * 1.6, [0.7, 0.9, 1], 0.35);
+        tempProp('icespike', s.x, s.z, 0.5, s.stay);
+        G.cam.shake = Math.max(G.cam.shake, 0.06);
+        AUDIO.play('hit', 0.7);
+      }
       continue;
     }
     if (s.kind === 'boulder' || s.kind === 'rocket') {
@@ -7105,6 +7314,20 @@ ARENA_FEATURES.bounce = {
       const sc = b.r / 0.5;
       pushEnemy('pitball', false, b.x, b.y - (0.5 - 0.5) * sc, b.z, 0, row, sc, 1, 0, 0, 0, b.col[0], b.col[1], b.col[2]);
       pushDecal(b.x + 0.06, b.z + 0.05, b.r * 0.85, b.r * 0.75, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4 * (1 - Math.min(1, b.y)));
+    }
+  },
+};
+
+// ---------- Frozen Tundra: snow drifting down around the hero ----------
+ARENA_FEATURES.tundra = {
+  init(st) { st.acc = 0; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 12 : 40);
+    for (; st.acc >= 1; st.acc--) {
+      // each flake lives just long enough to reach the ground
+      const x = h[0] + rand(-16, 16), z = h[2] + rand(-13, 9), y = rand(5, 9), vy = rand(-1.7, -1.1);
+      FX.part(x, y, z, rand(0.3, 0.9), vy, rand(-0.2, 0.2), rand(0.05, 0.09), 0.06, y / -vy, [1, 1, 1], 0.85, 2, 0, 0);
     }
   },
 };
@@ -7982,6 +8205,37 @@ function updateSugar(run, dt) {
   if (Math.random() < 0.6) { const h = G.hero.pos; FX.star(h[0] + rand(-0.6, 0.6), rand(0.3, 1.6), h[2] + rand(-0.6, 0.6), 0.22, [[1, 0.4, 0.7], [0.5, 0.9, 1], [1, 0.9, 0.4]][Math.floor(Math.random() * 3)], 0.4); }
 }
 
+// ---------- Frost Nova (chapter 6): a ring of frost bursts out, hurting and freezing what it touches ----------
+SKILL_HOOKS.frostnova = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, r = L.radius * areaMul();
+    st.t = (st.t ?? 1) - dt;
+    if (st.t <= 0 && nearestEnemy(h[0], h[2], r)) {
+      st.t = L.cd * cdMul();
+      st.nova = { x: h[0], z: h[2], R: r, t: 0, id: (st.nova ? st.nova.id : 0) + 1 };
+      FX.ring(h[0], h[2], r, [0.62, 0.9, 1], 0.4, 1);
+      FX.ring(h[0], h[2], r * 0.7, [0.9, 0.97, 1], 0.3, 0.7);
+      for (let i = 0; i < 26; i++) { const a = (i / 26) * TAU, sp = r / 0.35; FX.part(h[0] + Math.cos(a) * 0.4, rand(0.3, 0.9), h[2] + Math.sin(a) * 0.4, Math.cos(a) * sp, rand(0, 1), Math.sin(a) * sp, 0.12, 0.04, 0.4, [0.8, 0.95, 1], 1, 1, 0, 1.5); }
+      AUDIO.play('zap', 0.8);
+    }
+    // the ring grows over a third of a second, catching each enemy once as it passes
+    const n = st.nova;
+    if (!n || n.t > 0.35) return;
+    n.t += dt;
+    const cur = n.R * Math.min(1, n.t / 0.35);
+    enemiesInRadius(n.x, n.z, cur, e => {
+      if (e.novaHit === n.id) return;
+      e.novaHit = n.id;
+      const ex = e.x - n.x, ez = e.z - n.z, ed = Math.hypot(ex, ez) || 1;
+      hurtEnemy(e, L.dmg, ex / ed * 3, ez / ed * 3, { sound: false, color: [0.6, 0.9, 1] });
+      if (e.boss) { e.slowMul = Math.min(e.slowMul, 0.65); e.slowT = Math.max(e.slowT, L.freeze); }
+      else if (!e.dying) e.frozen = Math.max(e.frozen || 0, L.freeze);
+      FX.burst(e.x, 0.6, e.z, 3, [0.8, 0.95, 1], 2.5, 0.07, 0.35, 1);
+    });
+  },
+  emit() {},
+};
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -8290,7 +8544,9 @@ function emitRunScene() {
     if (e.boss && BOSS_DRAW[e.type]) { BOSS_DRAW[e.type](e); continue; }
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;
-    pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? (e.boss ? 0.55 : 0.85) : 0, e.auraTint, e.tint[0], e.tint[1], e.tint[2]);
+    const ic = e.frozen > 0 ? 0.7 : 0, tn = e.tint;
+    pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? (e.boss ? 0.55 : 0.85) : 0, e.auraTint,
+      lerp(tn[0], 0.42, ic), lerp(tn[1], 0.74, ic), lerp(tn[2], 1.15, ic));
     const ss = e.scale * (1 - dead * 0.5) * (1 - clamp((e.y || 0) / 6, 0, 0.5));
     pushDecal(e.x + sdx * ss, e.z + sdz * ss, 0.3 * ss, 0.45 * ss, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   }
@@ -8311,6 +8567,7 @@ function emitRunScene() {
   if (run.tele) for (const t of run.tele) {
     const p = clamp(t.t / t.dur, 0, 1);
     if (t.kind === 'circle') pushDecal(t.x, t.z, t.r, t.r, 0, 4, 0, p, 1, 0.22, 0.18, 0.9);
+    else if (t.kind === 'cone') pushDecal(t.x, t.z, t.r, t.r, -t.rot, 10, t.half, p, 1, 0.22, 0.18, 0.8);
     else {
       const cx = t.x + Math.sin(t.rot) * t.len / 2, cz = t.z + Math.cos(t.rot) * t.len / 2;
       pushDecal(cx, cz, t.r, t.len / 2, -t.rot, 5, 0, p, 1, 0.22, 0.18, 0.85);
@@ -8325,6 +8582,10 @@ function emitRunScene() {
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
     else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
+    else if (s.kind === 'icicle') {
+      if (R.enemyDraw.icicle) pushEnemy('icicle', false, s.x, s.y - 0.5 * 1.7, s.z, s.spin, MODELS.defs.icicle.clips.still.row, 1.7, 1, 0, 0, 0, 1, 1, 1);
+      const g = 1 - s.y / s.sy; pushDecal(s.x, s.z, 0.25 + g * 0.45, 0.25 + g * 0.45, 0, 1, 0, 0, 0.02, 0.05, 0.12, 0.2 + g * 0.4);
+    }
     else if (s.kind === 'jelly') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.15, 0, 4, 0.06, s.ph + run.t * 3, 0, 0, 0, 1); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.8, 0, 1, 0, 0, 0.05, 0.01, 0.03, 0.3); }
     else if (s.kind === 'sand') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.2, 33, 0, 0, s.ph + run.t * 6, 0, 0, 0, 1); pushDecal(s.x + 0.1, s.z + 0.08, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.35); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }
@@ -8459,10 +8720,31 @@ function tempZone(kind, x, z, r, life) {
   ARENA.zones.push(o);
   return o;
 }
+// a short-lived prop (the ice spikes icicles leave): pops out of the ground, blocks, then sinks away
+function tempProp(kind, x, z, r, life) {
+  const K = PROP_KINDS[kind];
+  const o = { kind, x, z, r, yaw: rand(0, TAU), model: K.models[0], ph: rand(0, 10), block: K.block !== false, shots: !!K.shots, life, age: 0, y: -r * 3 };
+  ARENA.props.push(o);
+  if (o.block) { ARENA.obstacles.push(o); gridObstacles(); }
+  return o;
+}
 function updateTempZones(dt) {
   let any = false;
   for (const o of ARENA.zones) if (o.life !== undefined) { o.life -= dt; any = true; }
   if (any) ARENA.zones = ARENA.zones.filter(o => o.life === undefined || o.life > 0);
+  let gone = false;
+  for (const o of ARENA.props) {
+    if (o.life === undefined) continue;
+    o.life -= dt; o.age += dt;
+    const sink = o.r * 3.2;
+    o.y = -sink * (1 - clamp(o.age / 0.12, 0, 1)) - sink * (1 - clamp(o.life / 0.35, 0, 1));
+    if (o.life <= 0) gone = true;
+  }
+  if (gone) {
+    ARENA.props = ARENA.props.filter(o => o.life === undefined || o.life > 0);
+    ARENA.obstacles = ARENA.obstacles.filter(o => o.life === undefined || o.life > 0);
+    gridObstacles();
+  }
 }
 
 // ---------- Sand Worm (chapter 2): burrows, breaches under you in big arcs, slithers and spits sand ----------
@@ -8907,6 +9189,147 @@ BOSS_DRAW.jellyqueen = function (e) {
   const sc = s * (1 - dead * 0.6), y = (e.y || 0) + 0.85 * sc * sq;
   pushImp(e.x, y, e.z, sc, Math.sin(e.yaw), 0, Math.cos(e.yaw), 1, 36, 4, e.flash > 0 ? 0.7 : 0.08, e.phase, sq, 0, 0, 1 - dead);
   if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.95 * s, 0.85 * s, 0, 1, 0, 0, 0.05, 0.01, 0.03, 0.5 * (1 - clamp((e.y || 0) / 7, 0, 0.7)));
+};
+
+// ---------- Frost Yeti (chapter 6): sweeping frost breath, icicle rain and a ring of ice spikes with gaps ----------
+const YETI = { range: 9.5, half: 0.4, waveMax: 17 };
+// a frost cloud puff rolling out of the yeti's mouth
+function frostPuff(x, z, dir, k) {
+  const sp = rand(7, 10), a = dir + rand(-0.25, 0.25);
+  FX.part(x + Math.sin(a) * 1.2, rand(1.2, 1.9), z + Math.cos(a) * 1.2, Math.sin(a) * sp, rand(-0.6, 0.2), Math.cos(a) * sp, 0.35 * k, 1.3 * k, 0.9, [0.45, 0.78, 1], 0.8, 2, 0, 0.9);
+}
+BOSS_AI.yeti = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, s = e.scale, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; }
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.3 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['breath', 'icicles', 'slam'][ai.next++ % 3];
+        if (k === 'breath') {
+          // the whole swept slice is telegraphed; the breath then rakes across it from one side
+          const mid = Math.atan2(dx, dz), sweep = rage ? 1.7 : 1.15, dir = Math.random() < 0.5 ? 1 : -1;
+          ai.state = 'breathWind'; ai.t = ai.dur = rage ? 0.7 : 0.85;
+          ai.ang = mid - dir * sweep / 2; ai.angV = dir * sweep / (rage ? 1.9 : 1.6);
+          addTele({ kind: 'cone', x: e.x, z: e.z, r: YETI.range, rot: mid, half: YETI.half + sweep / 2, dur: ai.dur });
+        } else if (k === 'icicles') { ai.state = 'summon'; ai.t = 0.7; ai.waves = rage ? 4 : 3; }
+        else {
+          // spikes erupt in a ring rolling outward; a few slices stay clear
+          ai.state = 'slamWind'; ai.t = ai.dur = 0.9; ai.rings = rage ? 2 : 1;
+          yetiGaps(ai, rage ? 2 : 3, rand(0, TAU));
+          for (const g of ai.danger) addTele({ kind: 'cone', x: e.x, z: e.z, r: 12, rot: g[0], half: g[1], dur: ai.dur });
+        }
+      }
+      break;
+    }
+    case 'breathWind':
+      e.clip = 'idle'; e.phase += dt * 2; e.vx *= 0.8; e.vz *= 0.8;
+      e.yaw = angleLerp(e.yaw, ai.ang, Math.min(1, dt * 8));
+      if (Math.random() < 0.5) FX.part(e.x + Math.sin(e.yaw) * 1.1, 1.7, e.z + Math.cos(e.yaw) * 1.1, rand(-0.5, 0.5), 0.3, rand(-0.5, 0.5), 0.15, 0.5, 0.5, [0.8, 0.94, 1], 0.6, 2, 0, 1);
+      if (ai.t <= 0) { ai.state = 'breath'; ai.t = rage ? 1.9 : 1.6; ai.tick = 0; AUDIO.play('zap', 0.6); }
+      break;
+    case 'breath': {
+      e.clip = 'idle'; e.vx *= 0.8; e.vz *= 0.8;
+      ai.ang += ai.angV * dt; e.yaw = ai.ang;
+      for (let i = 0; i < 3; i++) frostPuff(e.x, e.z, ai.ang, 1);
+      const inCone = (x, z) => { const ox = x - e.x, oz = z - e.z; return Math.hypot(ox, oz) < YETI.range && Math.abs(angleDiff(Math.atan2(ox, oz), ai.ang)) < YETI.half; };
+      ai.tick -= dt;
+      if (ai.tick <= 0 && inCone(h[0], h[2])) { ai.tick = 0.25; hurtHero(8 * run.info.dmgMul, e.x, e.z); run.chillT = 1.4; }
+      // its own minions get frozen solid in the blast
+      enemiesInRadius(e.x, e.z, YETI.range, o => { if (o !== e && !o.boss && inCone(o.x, o.z)) o.frozen = Math.max(o.frozen || 0, 2.5); });
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.1; }
+      break;
+    }
+    case 'summon':
+      // roars at the sky; icicles rain down in waves around the hero
+      e.clip = 'conduct'; e.phase += dt * 1.5; e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      if (ai.t <= 0) {
+        const n = rage ? 7 : 5;
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.9, tz = h[2] + run.vel[2] * 0.9;
+          if (i) { const a = rand(0, TAU), r = rand(1.6, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.6);
+          const dur = 1.0 + i * 0.05;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.1, dur });
+          run.eShots.push({ kind: 'icicle', x: o.x, y: 13, z: o.z, sx: o.x, sy: 13, sz: o.z, tx: o.x, tz: o.z, t: 0, dur, radius: 1.1, dmg: 24 * run.info.dmgMul, life: dur + 1, spin: rand(0, TAU), stay: rage ? 5 : 4 });
+        }
+        AUDIO.play('throw', 0.7);
+        if (--ai.waves > 0) ai.t = 0.65;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4; }
+      }
+      break;
+    case 'slamWind':
+      e.clip = 'slam'; e.clipU = (1 - ai.t / ai.dur) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
+      if (ai.t <= 0) {
+        ai.state = 'wave'; ai.waveR = e.radius; ai.hit = false; ai.cx = e.x; ai.cz = e.z; ai.t = 0.6;
+        FX.ring(e.x, e.z, 4, [0.7, 0.9, 1], 0.5); FX.crack(e.x, e.z, 3, 1.6);
+        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom');
+      }
+      break;
+    case 'wave': {
+      e.clip = 'slam'; e.clipU = Math.min(0.999, 0.6 + (0.6 - Math.max(ai.t, 0)) * 0.66);
+      const prev = ai.waveR;
+      ai.waveR += (rage ? 11 : 9) * dt;
+      // the hero is hit when the front passes them, unless they stand in a gap
+      const hd = Math.hypot(h[0] - ai.cx, h[2] - ai.cz);
+      if (!ai.hit && hd > prev - 0.6 && hd < ai.waveR + 0.4 && !yetiInGap(ai, Math.atan2(h[0] - ai.cx, h[2] - ai.cz))) {
+        ai.hit = true; hurtHero(30 * run.info.dmgMul, ai.cx, ai.cz);
+        const l = hd || 1; run.vel[0] += (h[0] - ai.cx) / l * 9; run.vel[2] += (h[2] - ai.cz) / l * 9;
+      }
+      enemiesInRadius(ai.cx, ai.cz, ai.waveR + 0.4, o => {
+        if (o.boss || o.waveHit === ai.waveId) return;
+        const od = Math.hypot(o.x - ai.cx, o.z - ai.cz);
+        if (od > prev - 0.6 && !yetiInGap(ai, Math.atan2(o.x - ai.cx, o.z - ai.cz))) { o.waveHit = ai.waveId; hurtEnemy(o, 18, 0, 0, { sound: false }); }
+      });
+      if (Math.random() < 0.8) {
+        const a = rand(0, TAU);
+        if (!yetiInGap(ai, a)) FX.burst(ai.cx + Math.sin(a) * ai.waveR, 0.3, ai.cz + Math.cos(a) * ai.waveR, 2, [0.85, 0.95, 1], 3, 0.08, 0.4, 1);
+      }
+      if (ai.waveR > YETI.waveMax) {
+        if (--ai.rings > 0) {
+          // a second ring with the gaps moved: find the new ones
+          ai.state = 'slamWind'; ai.t = ai.dur = 0.55;
+          yetiGaps(ai, 2, ai.gap0 + Math.PI / 2 + rand(-0.3, 0.3));
+          for (const g of ai.danger) addTele({ kind: 'cone', x: e.x, z: e.z, r: 12, rot: g[0], half: g[1], dur: ai.dur });
+        } else { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.2; }
+      }
+      break;
+    }
+  }
+};
+// n evenly spaced clear slices, the first at angle a0; ai.danger holds the [centre, half-angle] of the slices between
+const YETI_GAP = 0.3;
+function yetiGaps(ai, n, a0) {
+  ai.gap0 = a0; ai.gaps = n; ai.waveId = (ai.waveId || 0) + 1; ai.danger = [];
+  const step = TAU / n;
+  for (let i = 0; i < n; i++) ai.danger.push([a0 + step * (i + 0.5), step / 2 - YETI_GAP]);
+}
+function yetiInGap(ai, a) {
+  const step = TAU / ai.gaps, u = ((a - ai.gap0) % step + step * 1.5) % step - step / 2;
+  return Math.abs(u) < YETI_GAP;
+}
+BOSS_DRAW.yeti = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, L = R.frame.lightDir, ai = e.ai;
+  if (R.enemyDraw.yeti) pushEnemy('yeti', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? MODELS.defs.yeti.clips.idle.row + 2 : enemyRow(e), e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (e.portrait) return;
+  pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 0.4 * e.scale, 0.52 * e.scale, -Math.atan2(L[0], L[2]), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  // the spike ring: shards burst up along the front and sink behind it
+  if (ai.state === 'wave' && R.enemyDraw.icespike && !dead) {
+    const row = MODELS.defs.icespike.clips.still.row;
+    for (const back of [0, 1.3]) {
+      const r = ai.waveR - back;
+      if (r < e.radius) continue;
+      const n = Math.max(6, Math.floor(TAU * r / 1.15)), sc = back ? 1.1 : 1.6, sink = back ? -0.8 : -0.15;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * TAU + ai.waveId;
+        if (yetiInGap(ai, a)) continue;
+        const x = ai.cx + Math.sin(a) * r, z = ai.cz + Math.cos(a) * r;
+        if (!onScreen(x, z, 2)) continue;
+        pushEnemy('icespike', false, x, sink, z, a * 3.7, row, sc, 1, 0, 0, 0, 0.5, 0.78, 1);
+      }
+    }
+  }
 };
 
 // ---- 14-ui.js ----
@@ -10128,6 +10551,7 @@ function renderAllIcons() {
     axe: { scale: 0.7, phase: 0.8, eye: [0, 1.4, 1.9] },
     laser: { scale: 0.62, emissive: 0.3 },
     shield: { scale: 0.62, emissive: 0.15 },
+    frostnova: { scale: 0.62, emissive: 0.25 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

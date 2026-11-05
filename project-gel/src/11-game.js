@@ -372,7 +372,9 @@ function updateRun(dt) {
   const zone = zoneAt(h[0], h[2]), Z = zone ? ZONE_KINDS[zone.kind] : null;
   run.zone = zone;
   updateSugar(run, dt);
-  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1);
+  // chilled by frost breath: slower for a moment
+  if (run.chillT > 0) { run.chillT -= dt; if (Math.random() < 0.3) FX.part(h[0] + rand(-0.4, 0.4), rand(0.3, 1.2), h[2] + rand(-0.4, 0.4), 0, 0.4, 0, 0.1, 0.02, 0.6, [0.75, 0.92, 1], 0.9, 3); }
+  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1) * (run.chillT > 0 ? 0.6 : 1);
   const k = 1 - Math.exp(-dt / (Z && Z.slide ? 0.55 : 0.045));
   if (Z && Z.burn) {
     run.burnT = (run.burnT || 0) - dt;
@@ -458,7 +460,9 @@ function updateEnemies(dt) {
     }
     e.spawnT = Math.max(0, e.spawnT - dt);
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
-    if (e.boss) updateBoss(e, dt);
+    // frozen enemies (Frost Nova, the yeti's breath) stand still and do no harm until they thaw
+    if (e.frozen > 0) { e.frozen -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
+    else if (e.boss) updateBoss(e, dt);
     else updateEnemyAI(e, dt);
     // knockback
     e.x += e.kx * dt; e.z += e.kz * dt;
@@ -468,7 +472,7 @@ function updateEnemies(dt) {
     e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
     // hero contact
     const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz), rr = e.radius + HERO_R;
-    if (d < rr && G.hero.melt < 0.5 && !e.hidden) {
+    if (d < rr && G.hero.melt < 0.5 && !e.hidden && !(e.frozen > 0)) {
       touching++;
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }
@@ -645,6 +649,23 @@ function updateEnemyShots(dt) {
         if (nl > 1e-5) { const vn = (s.vx * nx + s.vz * nz) / nl; if (vn < 0) { s.vx -= 2 * vn * nx / nl; s.vz -= 2 * vn * nz / nl; } }
       }
       if (Math.hypot(s.x - h[0], s.z - h[2]) < s.r + HERO_R && s.y < 1.4) { s.life = 0; hurtHero(s.dmg, s.x, s.z); FX.burst(s.x, s.y, s.z, 6, s.col, 3, 0.1, 0.3, 1); }
+      continue;
+    }
+    if (s.kind === 'icicle') {
+      // icicles drop straight onto a telegraphed spot and stay stuck in the ground for a while
+      s.t += dt;
+      const u = clamp(s.t / s.dur, 0, 1);
+      s.y = s.sy * (1 - u * u);
+      if (u >= 1) {
+        s.life = 0;
+        if (Math.hypot(h[0] - s.x, h[2] - s.z) < s.radius + HERO_R * 0.6) hurtHero(s.dmg, s.x, s.z);
+        enemiesInRadius(s.x, s.z, s.radius, o => { if (!o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+        FX.burst(s.x, 0.4, s.z, 12, [0.8, 0.94, 1], 4.5, 0.1, 0.5, 1);
+        FX.ring(s.x, s.z, s.radius * 1.6, [0.7, 0.9, 1], 0.35);
+        tempProp('icespike', s.x, s.z, 0.5, s.stay);
+        G.cam.shake = Math.max(G.cam.shake, 0.06);
+        AUDIO.play('hit', 0.7);
+      }
       continue;
     }
     if (s.kind === 'boulder' || s.kind === 'rocket') {

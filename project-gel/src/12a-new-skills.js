@@ -197,3 +197,34 @@ function updateSugar(run, dt) {
   // candy sparkles while it lasts
   if (Math.random() < 0.6) { const h = G.hero.pos; FX.star(h[0] + rand(-0.6, 0.6), rand(0.3, 1.6), h[2] + rand(-0.6, 0.6), 0.22, [[1, 0.4, 0.7], [0.5, 0.9, 1], [1, 0.9, 0.4]][Math.floor(Math.random() * 3)], 0.4); }
 }
+
+// ---------- Frost Nova (chapter 6): a ring of frost bursts out, hurting and freezing what it touches ----------
+SKILL_HOOKS.frostnova = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, r = L.radius * areaMul();
+    st.t = (st.t ?? 1) - dt;
+    if (st.t <= 0 && nearestEnemy(h[0], h[2], r)) {
+      st.t = L.cd * cdMul();
+      st.nova = { x: h[0], z: h[2], R: r, t: 0, id: (st.nova ? st.nova.id : 0) + 1 };
+      FX.ring(h[0], h[2], r, [0.62, 0.9, 1], 0.4, 1);
+      FX.ring(h[0], h[2], r * 0.7, [0.9, 0.97, 1], 0.3, 0.7);
+      for (let i = 0; i < 26; i++) { const a = (i / 26) * TAU, sp = r / 0.35; FX.part(h[0] + Math.cos(a) * 0.4, rand(0.3, 0.9), h[2] + Math.sin(a) * 0.4, Math.cos(a) * sp, rand(0, 1), Math.sin(a) * sp, 0.12, 0.04, 0.4, [0.8, 0.95, 1], 1, 1, 0, 1.5); }
+      AUDIO.play('zap', 0.8);
+    }
+    // the ring grows over a third of a second, catching each enemy once as it passes
+    const n = st.nova;
+    if (!n || n.t > 0.35) return;
+    n.t += dt;
+    const cur = n.R * Math.min(1, n.t / 0.35);
+    enemiesInRadius(n.x, n.z, cur, e => {
+      if (e.novaHit === n.id) return;
+      e.novaHit = n.id;
+      const ex = e.x - n.x, ez = e.z - n.z, ed = Math.hypot(ex, ez) || 1;
+      hurtEnemy(e, L.dmg, ex / ed * 3, ez / ed * 3, { sound: false, color: [0.6, 0.9, 1] });
+      if (e.boss) { e.slowMul = Math.min(e.slowMul, 0.65); e.slowT = Math.max(e.slowT, L.freeze); }
+      else if (!e.dying) e.frozen = Math.max(e.frozen || 0, L.freeze);
+      FX.burst(e.x, 0.6, e.z, 3, [0.8, 0.95, 1], 2.5, 0.07, 0.35, 1);
+    });
+  },
+  emit() {},
+};
