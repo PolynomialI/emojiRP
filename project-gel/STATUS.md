@@ -72,6 +72,35 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   - Chapter map, offline earnings, settings and saving.
 - **Verified in headless Chromium:** every test mode below runs with no script errors and nothing invalid sent to the GPU.
 
+## Chapter themes (in progress)
+Each chapter of a 10-chapter cycle gets its own map, boss and power-up; chapters 11+ repeat them with stronger stats.
+Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Conductor) as a second boss.
+
+| Ch | Map | Boss | New power-up (offered from this chapter on) | State |
+|---|---|---|---|---|
+| 1 | Stone Plaza | Big Stomper | — | done |
+| 2 | Desert Dunes (quicksand, tumbleweeds) | Sand Worm | Sandstorm (skill) | done |
+| 3 | Neon City (blocks, a huge tower that fades when you're behind it) | Wrecking Bot | Neon Drone (skill) | done |
+| 4 | Bounce House (ball pits with ball physics, bumpers) | Big Bounce | Bouncy Ball (skill) | done |
+| 5 | Candy Land (chocolate puddles) | Jelly Queen + Hurler | Sugar Rush (ability) | done |
+| 6 | Frozen Tundra (slippery ice, snowfall) | Frost Yeti | Frost Nova (skill) | done |
+| 7 | Volcano (lava burns, erupting vents) | Magma Golem | Meteor (skill) | done |
+| 8 | Jungle Swamp (floor style 7) | Vine Hydra | Thorns (ability) | to do |
+| 9 | Pirate Beach (floor style 8) | Captain Crab | Tidal Wave (skill) | to do |
+| 10 | Moon Base (floor style 9) | UFO Overlord + Charger | Black Hole (skill) | to do |
+
+Until a chapter's boss exists, `chapterInfo()` falls back to the original roster and the arena wraps around `ARENAS`.
+
+Where things live:
+- Data: `ARENAS`, `PROP_KINDS`, `ZONE_KINDS`, `BOSS_TYPES`, `CHAPTER_BOSSES`, and `from:` on `SKILLS`/`PASSIVES` in `src/10-data.js`.
+- Scenery and boss meshes: `src/04a-theme-models.js`.
+- Arena building, obstacles and zones: `src/11a-arena.js`.
+- Per-theme set pieces and moving parts (`ARENA_LAYOUTS`, `ARENA_FEATURES`): `src/11b-themes.js`.
+- New power-ups: `src/12a-new-skills.js`.
+- Boss AI and drawing (`BOSS_AI`, `BOSS_DRAW`), plus `tempZone`/`tempProp`: `src/13a-bosses.js`.
+- Floor styles 0-9, the zone shader, and impostors 32-39: `src/05-glsl.js`.
+- Telegraph kinds: `circle`, `lane`, and `cone` (decal type 10).
+
 ## Balance (bot results; the bot is a mediocre player who dodges poorly)
 
 Measured after the 100x100 arena, emeralds and long legs:
@@ -95,7 +124,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
 
 ## Build and test
 - **Build:**
-  - `node build.mjs` writes `dist/project-gel.html`, the single playable file. It also injects `00-util.js`, `03-sdfmesh.js` and `04-models.js` as the mesh worker source.
+  - `node build.mjs` writes `dist/project-gel.html`, the single playable file. It also injects `00-util.js`, `03-sdfmesh.js`, `04-models.js` and `04a-theme-models.js` as the mesh worker source.
   - `node build.mjs visual` writes `test/visual.html`, an engine-only test scene. Screenshot it with `node test/visual.mjs [scene|close|punch|bosses|items|arenas]`.
 - **Game tests:** `node test/game.mjs <mode> ...` (Playwright from `/opt/node22/lib/node_modules/playwright`, headless Chromium with SwiftShader).
   - `boot [--phone]`: the home screen and each menu.
@@ -104,7 +133,8 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
     - `NOREVIVE=1` skips the revive.
     - `MAP=<size>` sets the arena width for the runs (default 100).
   - `skills [--group=a,b] [--phone]`: every skill at max level against a crowd.
-  - `bosses`: each boss fight.
+  - `bosses` (`ONLY=6` limits it): each chapter's boss fight, chapters 1-10.
+  - `powerups` (`IDS=frostnova,meteor`): each chapter power-up at max level in its own chapter, with a crowd.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.
   - `roster`: every enemy type in a row, plain and elite.
@@ -116,7 +146,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `perf`: frame cost with the GPU work included, on the menus and in a crowded run, with the hero, bloom, MSAA and gems switched off one at a time. The test GPU is software, so compare builds with it rather than reading the numbers as real-GPU timings.
   - `SOFTGL=1` before any mode makes the game treat the test browser as a machine without a GPU; normally the tests skip that check.
   - `play` also accepts `PREFER=<skill>`: the bot favors that skill and logs kills per blast.
-  - `arenas` (`ONLY=21` limits it to one chapter): the first chapter of each arena, mid-run.
+  - `arenas` (`ONLY=5` limits it to one chapter): each chapter's map mid-run, plus a wide view from high up.
 - Screenshots go to `test/shots/`, and logs to `test/*.log`; git ignores both. Combine screenshots with `node test/montage.mjs out.png <cols> a.png b.png ...`.
 - **Harness notes (`test/harness.js`):**
   - It replaces `requestAnimationFrame` so `__frames(n, dt, render)` can step the real game loop.
