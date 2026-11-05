@@ -236,6 +236,7 @@ function killEnemy(e) {
   const run = G.run;
   e.dying = 0.0001;
   run.kills++;
+  sugarKill(run);
   const s = e.scale;
   FX.droplets(e.x, 0.55 * s, e.z, e.boss ? 30 : 5, 5, e.boss ? 7 : 3.2, 0.05 * Math.min(s, 2), null);
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
@@ -370,7 +371,8 @@ function updateRun(dt) {
   // hero movement; the ground underfoot can slow you, make you slide, or burn
   const zone = zoneAt(h[0], h[2]), Z = zone ? ZONE_KINDS[zone.kind] : null;
   run.zone = zone;
-  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.speedBoost || 1);
+  updateSugar(run, dt);
+  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1);
   const k = 1 - Math.exp(-dt / (Z && Z.slide ? 0.55 : 0.045));
   if (Z && Z.burn) {
     run.burnT = (run.burnT || 0) - dt;

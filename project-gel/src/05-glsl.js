@@ -892,6 +892,36 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (mouth < 0.0 && q.z > 0.5 && d < 0.04) m = 12.0;
     return vec2(d, m);
   }
+  if (type == 36) {
+    // jelly queen: a wobbling jelly dome with a gold crown and a face; P1.x squashes it
+    float sq = P1.x > 0.05 ? P1.x : 1.0;
+    vec3 q = vec3(p.x * sqrt(sq), p.y / sq, p.z * sqrt(sq));
+    float wob = 0.035 * sin(q.x * 6.0 + ph * 5.0) * sin(q.y * 5.0 + ph * 4.0);
+    float d = max(sdEllipsoid(q - vec3(0.0, -0.12, 0.0), vec3(0.86, 0.72, 0.82)), -(q.y + 0.8)) + wob;
+    d *= min(1.0, sq);
+    vec3 c = q - vec3(0.0, 0.62, -0.05);
+    float ring = abs(length(c.xz) - 0.3) - 0.045;
+    float ang = atan(c.z, c.x);
+    float crown = max(ring, max(-c.y, c.y - 0.09 - 0.15 * pow(max(0.0, cos(ang * 5.0)), 4.0)));
+    crown = min(crown, length(c - vec3(0.0, 0.26, 0.3)) - 0.055);
+    float m = 0.0;
+    if (crown < d) { d = crown; m = 2.0; }
+    vec3 e = vec3(abs(q.x) - 0.27, q.y - 0.14, q.z - 0.66);
+    float eye = length(e) - 0.15;
+    if (eye < d) { d = eye; m = length(e - vec3(-0.02, 0.0, 0.11)) < 0.085 ? 12.0 : 7.0; }
+    float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
+    if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
+  if (type == 37) {
+    // wrapped candy: a striped sweet with twisted ends
+    float d = sdEllipsoid(p, vec3(0.5, 0.36, 0.36));
+    vec3 q = vec3(abs(p.x) - 0.62, p.yz);
+    q.yz = rot2(q.x * 6.0) * q.yz;
+    float tip = max(max(abs(q.y) - 0.3 * (0.3 + q.x * 1.6), abs(q.z) - 0.06), abs(q.x) - 0.2);
+    d = smin(d, tip, 0.06);
+    return vec2(d, abs(p.x) < 0.5 && fract(p.x * 4.0 + p.y * 2.0) < 0.5 ? 10.0 : 7.0);
+  }
   if (type == 31) {
     // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
     // (modelled standing on y = 0, drawn centred 0.65 above the floor so it fits the impostor bounds)

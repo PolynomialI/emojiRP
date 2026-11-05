@@ -35,6 +35,7 @@ function buildArena(chapter) {
     prop(kind, x, z, r, extra = {}) {
       const K = PROP_KINDS[kind], models = K.models;
       const o = { kind, x, z, r, yaw: rnd() * TAU, model: models[Math.floor(rnd() * models.length)], ph: rnd() * 10, block: K.block !== false, shots: !!K.shots, ...extra };
+      if (K.tints && !o.tint) o.tint = hexToRgb(K.tints[Math.floor(rnd() * K.tints.length)]);
       if (o.shape === 'box') o.r = Math.hypot(o.hw, o.hd);
       placed.push(o); ARENA.props.push(o);
       return o;
@@ -73,7 +74,7 @@ function buildArena(chapter) {
   }
   for (const [x, z] of pts) {
     const r = (W.wallR || [1.0, 1.45]);
-    ARENA.wall.push({ kind: T.wall || 'rock', x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: r[0] + rnd() * (r[1] - r[0]), yaw: W.faceIn ? Math.atan2(-x, -z) : rnd() * TAU, model: W.models[Math.floor(rnd() * W.models.length)], ph: rnd() * 10 });
+    ARENA.wall.push({ kind: T.wall || 'rock', x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: r[0] + rnd() * (r[1] - r[0]), yaw: W.faceIn ? Math.atan2(-x, -z) : rnd() * TAU, model: W.models[Math.floor(rnd() * W.models.length)], ph: rnd() * 10, tint: W.tints ? hexToRgb(W.tints[Math.floor(rnd() * W.tints.length)]) : undefined });
   }
   // the theme's moving parts (tumbleweeds, ball pits, vents...)
   const F = ARENA_FEATURES[T.id];

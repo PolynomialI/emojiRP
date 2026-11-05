@@ -388,3 +388,79 @@ BOSS_DRAW.bigbounce = function (e) {
   pushImp(e.x, y, e.z, sc, Math.sin(e.yaw), 0, Math.cos(e.yaw), 1, 35, 0, e.flash > 0 ? 0.6 : 0, e.phase, sq, 0, 0, 1 - dead);
   if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.95 * s, 0.85 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5 * (1 - clamp((e.y || 0) / 6, 0, 0.7)));
 };
+
+// ---------- Jelly Queen (chapter 5): spiral jelly volleys, slime summons and belly flops that leave sticky jelly ----------
+BOSS_AI.jellyqueen = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.5; }
+  ai.sq = ai.sq ?? 1; ai.sqV = ai.sqV ?? 0;
+  switch (ai.state) {
+    case 'walk':
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.3 : 1)); bossFace(e, dt, 4);
+      ai.sqV += Math.sin(run.t * 8) * dt * 6;
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const seq = rage ? ['spiral', 'slam', 'summon', 'slam'] : ['spiral', 'summon', 'slam'];
+        const k = seq[ai.next++ % seq.length];
+        if (k === 'spiral') { ai.state = 'spiral'; ai.t = rage ? 3 : 2.6; ai.emitT = 0; ai.spin = rand(0, TAU); }
+        else if (k === 'summon') { ai.state = 'summon'; ai.t = 0.8; }
+        else {
+          const o = { x: h[0] + run.vel[0] * 0.6, z: h[2] + run.vel[2] * 0.6 }; resolveCircle(o, e.radius);
+          ai.state = 'flop'; ai.t = ai.dur = rage ? 0.95 : 1.15; ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z; ai.sqV += 5;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 3.2, dur: ai.dur });
+        }
+      }
+      break;
+    case 'spiral': {
+      // spinning arms of jelly blobs: walk along the gaps
+      e.vx *= 0.85; e.vz *= 0.85;
+      const arms = rage ? 6 : 4;
+      ai.spin += dt * (rage ? 1.9 : 1.4);
+      ai.emitT -= dt;
+      if (ai.emitT <= 0) {
+        ai.emitT = 0.14;
+        for (let k = 0; k < arms; k++) {
+          const a = ai.spin + k * TAU / arms;
+          run.eShots.push({ kind: 'jelly', x: e.x + Math.sin(a) * 1.6, y: 1.0, z: e.z + Math.cos(a) * 1.6, vx: Math.sin(a) * 4.4, vy: 0, vz: Math.cos(a) * 4.4, dmg: 11 * run.info.dmgMul, r: 0.34, life: 6, ph: rand(0, 10) });
+        }
+        ai.sqV -= 1.2;
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+    case 'summon':
+      ai.sqV -= dt * 25;
+      if (ai.t <= 0) {
+        const n = rage ? 8 : 5;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * TAU, m = spawnEnemy('slime', e.x + Math.sin(a) * 2.8, e.z + Math.cos(a) * 2.8);
+          m.spawnT = 0.4; m.kx = Math.sin(a) * 5; m.kz = Math.cos(a) * 5;
+        }
+        FX.droplets(e.x, 1.2, e.z, 18, 4, 5, 0.09, null); AUDIO.play('split'); ai.sqV += 8;
+        ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4;
+      }
+      break;
+    case 'flop': {
+      const u = 1 - ai.t / ai.dur;
+      e.x = lerp(ai.sx, ai.tx, u); e.z = lerp(ai.sz, ai.tz, u); e.y = Math.sin(u * Math.PI) * 6;
+      if (ai.t <= 0) {
+        e.y = 0; ai.sqV -= 10;
+        if (Math.hypot(h[0] - e.x, h[2] - e.z) < 3.2 + HERO_R * 0.5) hurtHero(34 * run.info.dmgMul, e.x, e.z);
+        enemiesInRadius(e.x, e.z, 3.4, o => { if (o !== e && !o.boss) { const ox = o.x - e.x, oz = o.z - e.z, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 9 / o.mass; o.kz += oz / od * 9 / o.mass; } });
+        tempZone('jelly', e.x, e.z, rage ? 3.6 : 2.9, 7);
+        FX.droplets(e.x, 0.8, e.z, 30, 4, 7, 0.1, null); FX.ring(e.x, e.z, 7, [1, 0.5, 0.65], 0.5);
+        G.cam.shake = Math.max(G.cam.shake, 0.24); AUDIO.play('boom');
+        ai.state = 'walk'; ai.cd = rage ? 1.2 : 2;
+      }
+      break;
+    }
+  }
+  ai.sqV += (90 * (1 - ai.sq) - 7 * ai.sqV) * dt; ai.sq = clamp(ai.sq + ai.sqV * dt, 0.6, 1.4);
+  e.phase += dt;
+};
+BOSS_DRAW.jellyqueen = function (e) {
+  const s = e.scale, dead = e.dying ? clamp(e.dying, 0, 1) : 0, sq = e.ai.sq || 1, L = R.frame.lightDir;
+  const sc = s * (1 - dead * 0.6), y = (e.y || 0) + 0.85 * sc * sq;
+  pushImp(e.x, y, e.z, sc, Math.sin(e.yaw), 0, Math.cos(e.yaw), 1, 36, 4, e.flash > 0 ? 0.7 : 0.08, e.phase, sq, 0, 0, 1 - dead);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.95 * s, 0.85 * s, 0, 1, 0, 0, 0.05, 0.01, 0.03, 0.5 * (1 - clamp((e.y || 0) / 7, 0, 0.7)));
+};

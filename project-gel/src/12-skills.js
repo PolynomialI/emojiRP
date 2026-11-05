@@ -3,7 +3,8 @@
 // ============================================================
 const SKILL_HOOKS = {};
 const areaMul = () => G.run.stats.areaMul;
-const cdMul = () => G.run.stats.cdMul;
+// a sugar rush (Sugar Rush ability) makes skills recharge faster while it lasts
+const cdMul = () => G.run.stats.cdMul * (G.run.rushT > 0 ? 1 - G.run.rushPower : 1);
 const extraShots = () => G.run.stats.extra;
 
 function updateSkills(dt) {

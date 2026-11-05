@@ -252,10 +252,11 @@ if (mode === 'arenas') {
     await render(2); await shot(`arena-run-c${n}`);
     await page.evaluate(() => {
       // lift the fog and widen the lit area just for this picture
-      const c = G.cam, draw = R.drawScene;
+      const c = G.cam, draw = R.drawScene, cull = window.onScreen;
       R.drawScene = () => { R.frame.spot[3] = 80; R.frame.fogRange = [70, 140]; draw(); };
+      window.onScreen = () => true;
       R.setCamera([c.x, 30, c.z + 24], [c.x, 0, c.z - 2], 0.9); renderFrame();
-      R.drawScene = draw;
+      R.drawScene = draw; window.onScreen = cull;
     });
     await shot(`arena-wide-c${n}`);
     await page.evaluate(() => finishRun(false));
@@ -471,6 +472,9 @@ if (mode === 'powerups') {
       const run = G.run;
       run.slots.length = 0; run.events = run.events.filter(e => e.kind === 'boss'); run.t = 150;
       for (let i = 0; i < maxLevel(id); i++) addOrLevel(id);
+      // an ability needs something doing the killing
+      if (PASSIVES[id]) for (const k of ['ball', 'aura']) for (let i = 0; i < 4; i++) addOrLevel(k);
+      if (id === 'sugar') run.sugar = 22; // the rush starts after a few kills
       const h = G.hero.pos;
       for (let i = 0; i < 60; i++) { const a = i / 60 * TAU, r = 3 + (i % 4) * 1.3; spawnEnemy(i % 6 ? 'stickman' : 'brute', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }
     }, id);
@@ -478,7 +482,7 @@ if (mode === 'powerups') {
       await page.evaluate(() => { for (let i = 0; i < 75; i++) { G.run.invuln = 1; __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); } });
       await render(2); await shot(`power-${id}-${k}`);
     }
-    console.log(id, 'kills', await page.evaluate(() => G.run.kills));
+    console.log(id, await page.evaluate(() => JSON.stringify({ kills: G.run.kills, rushT: G.run.rushT })));
     await page.evaluate(() => finishRun(false));
     await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
     await page.click('#btnContinue');

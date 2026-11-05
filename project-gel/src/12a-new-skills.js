@@ -175,3 +175,25 @@ function emitBouncy() {
     pushDecal(b.x + 0.08, b.z + 0.06, b.r * 0.9, b.r * 0.8, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4 * (1 - Math.min(1, b.y / 3)));
   }
 }
+
+// ---------- Sugar Rush (chapter 5 ability): every 25 kills, a burst of speed and faster skills ----------
+function sugarKill(run) {
+  const lv = lvlOf('sugar');
+  if (!lv) return;
+  run.sugar = (run.sugar || 0) + 1;
+  if (run.sugar >= 25) {
+    run.sugar = 0;
+    run.rushT = 4; run.rushPower = 0.12 + 0.03 * (lv - 1);
+    const h = G.hero.pos;
+    FX.ring(h[0], h[2], 3.5, [1, 0.5, 0.8], 0.5);
+    for (let i = 0; i < 14; i++) FX.star(h[0] + rand(-1, 1), rand(0.4, 1.8), h[2] + rand(-1, 1), 0.3, [[1, 0.4, 0.7], [0.5, 0.9, 1], [1, 0.9, 0.4], [0.6, 1, 0.6]][i % 4], 0.6);
+    AUDIO.play('levelup', 1.3);
+    G.hero.impulse(1.6);
+  }
+}
+function updateSugar(run, dt) {
+  if (!(run.rushT > 0)) return;
+  run.rushT -= dt;
+  // candy sparkles while it lasts
+  if (Math.random() < 0.6) { const h = G.hero.pos; FX.star(h[0] + rand(-0.6, 0.6), rand(0.3, 1.6), h[2] + rand(-0.6, 0.6), 0.22, [[1, 0.4, 0.7], [0.5, 0.9, 1], [1, 0.9, 0.4]][Math.floor(Math.random() * 3)], 0.4); }
+}

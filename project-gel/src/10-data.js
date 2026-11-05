@@ -106,6 +106,7 @@ const PASSIVES = {
   haste: { name: 'Haste', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
   reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
   multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
+  sugar: { name: 'Sugar Rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
   growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
@@ -136,6 +137,7 @@ const ENEMY_TYPES = {
   mini: { model: 'stickman', hp: 7, speed: 2.6, dmg: 3, xp: 1, radius: 0.28, scale: 0.85, tint: '#ffb85a', mass: 0.5 },
   shield: { model: 'shield', hp: 45, speed: 1.8, dmg: 8, xp: 3, radius: 0.44, scale: 1.4, tint: '#f5891f', mass: 1.6, shield: true },
   bomber: { model: 'bomber', hp: 10, speed: 3.0, dmg: 4, xp: 2, radius: 0.4, scale: 1.35, tint: '#ffb02e', mass: 0.9, ai: 'bomb', hit: 18 },
+  slime: { model: 'slime', hp: 22, speed: 2.6, dmg: 6, xp: 2, radius: 0.45, scale: 1.5, tint: '#ff6f96', mass: 0.9 },
   knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
 };
 // When each type starts showing up: [first chapter, seconds into the run, spawn weight]
@@ -154,6 +156,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 0.8 };
@@ -172,6 +175,8 @@ const ARENAS = [
     props: [['hydrant', 3, 0.22, 0.26], ['bin', 3, 0.28, 0.32]], zones: [], wall: 'barrier', kinds: ['building', 'tower', 'car', 'streetlamp', 'tree'] },
   { id: 'bounce', name: 'Bounce House', floor: 3, stoneA: '#f27a9c', stoneB: '#62aef0', grout: '#4b2f73', accent: '#6fd49a', fog: '#2a2458', sky: '#cfe8ff', ground: '#e88aa8', light: '#ffffff', spotMin: 0.7, shadowTint: '#3a1f66', rock: '#ff9f40', pool: '#5a4a9a', poolGlow: 0,
     props: [['bumper', 6, 0.8, 1.1]], zones: [['pit', 1.6, 3.0, 4.2]], wall: 'tubewall', kinds: ['pitball'] },
+  { id: 'candy', name: 'Candy Land', floor: 4, stoneA: '#ffb6d2', stoneB: '#fff0dc', grout: '#6a3048', accent: '#ff4f9a', fog: '#4a2242', sky: '#ffe4f2', ground: '#e8a2c2', light: '#fff8fb', spotMin: 0.7, shadowTint: '#6a2a52', rock: '#ff7fb0', pool: '#5a2e1a', poolGlow: 0,
+    props: [['lollipop', 5, 0.32, 0.4], ['candycane', 5, 0.3, 0.36], ['gumdrop', 7, 0.8, 1.3], ['cupcake', 3, 0.7, 0.9]], zones: [['chocolate', 4, 2.0, 3.0]], wall: 'gumdrop' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -191,6 +196,10 @@ const PROP_KINDS = {
   bumper: { models: ['bumper'], unit: 0.45, block: true, shots: false, tint: '#ff4f9a', tall: 2 },
   tubewall: { models: ['tubewall'], unit: 0.5, block: true, shots: true, tint: '#ffd23a', wallStep: 1.7, wallR: [0.95, 1.05] },
   pitball: { models: ['pitball'], unit: 0.5, block: false },
+  lollipop: { models: ['lollipop'], unit: 0.12, block: true, tall: 4 },
+  candycane: { models: ['candycane'], unit: 0.11, block: true, tall: 4 },
+  gumdrop: { models: ['gumdrop'], unit: 0.42, block: true, shots: true, tints: ['#ff4f6a', '#ffd23a', '#4fc8ff', '#5fe08a', '#b56bff', '#ff8a3a'], wallR: [1.0, 1.4] },
+  cupcake: { models: ['cupcake'], unit: 0.32, block: true, shots: true },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -198,6 +207,8 @@ const ZONE_KINDS = {
   quicksand: { slow: 0.5, col: '#a8793f', glow: 0, style: 2 },
   fountain: { block: true, col: '#3fa8e8', glow: 0.15 },
   pit: { slow: 0.82, col: '#3b2d6e', glow: 0, style: 2 },
+  chocolate: { slow: 0.55, col: '#5e3018', glow: 0.02 },
+  jelly: { slow: 0.45, col: '#ff5f8a', glow: 0.12 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests

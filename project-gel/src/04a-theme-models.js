@@ -2,13 +2,14 @@
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
-  'pitball', 'bumper', 'tubewall');
+  'pitball', 'bumper', 'tubewall',
+  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -182,5 +183,42 @@ function themeModels(defs) {
       { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.48, r: 0.07, a0: -Math.PI, a1: Math.PI, col: white, k: 0.03 },
       { s: 'sph', c: [0, 1.12, 0], r: 0.2, col: white, k: 0.1 },
     ], { ao: 1 });
+  }
+  // ---------- Candy Land ----------
+  {
+    const white = C('#fffaf4'), red = C('#ff3b5c'), pink = C('#ff7ab8'), mint = C('#7ff0c8'), yel = C('#ffe066'), choc = C('#6a3a22'), cream = C('#fff0f6'), cherry = C('#e8203a');
+    P('lollipop', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 1.0, 0], r: 0.035, col: white, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 1.25, 0], r: 0.36, hh: 0.06, rd: 0.05, col: pink, k: 0 },
+      ...[0.28, 0.19, 0.1].map((R, i) => ({ s: 'tor', ax: 'z', c: [0, 1.25, 0.03], R, r: 0.035, a0: -Math.PI, a1: Math.PI, col: [white, yel, white][i], k: 0 })),
+      { s: 'tor', ax: 'z', c: [0, 1.25, -0.03], R: 0.22, r: 0.035, a0: -Math.PI, a1: Math.PI, col: white, k: 0 },
+    ]);
+    // candy cane: alternating stripes up the shaft and round the hook
+    {
+      const parts = [];
+      for (let i = 0; i < 8; i++) parts.push({ s: 'cap', a: [0, i * 0.14, 0], b: [0, (i + 1) * 0.14, 0], r: 0.075, col: i % 2 ? white : red, k: 0.0 });
+      for (let i = 0; i < 6; i++) { const a0 = Math.PI - (i / 6) * Math.PI, a1 = Math.PI - ((i + 1) / 6) * Math.PI; parts.push({ s: 'cap', a: [0.18 + Math.cos(a0) * 0.18, 1.12 + Math.sin(a0) * 0.18, 0], b: [0.18 + Math.cos(a1) * 0.18, 1.12 + Math.sin(a1) * 0.18, 0], r: 0.075, col: i % 2 ? red : white, k: 0 }); }
+      P('candycane', parts);
+    }
+    // gumdrop: a sugared dome, colored by the instance tint
+    P('gumdrop', [
+      { s: 'ell', c: [0, 0.2, 0], rr: [0.42, 0.28, 0.42], k: 0.1 },
+      { s: 'sph', c: [0, 0.42, 0], r: 0.24, k: 0.15 },
+    ]);
+    P('cupcake', [
+      { s: 'cyl', ax: 'y', c: [0, 0.18, 0], r: 0.3, hh: 0.18, rd: 0.03, col: C('#8fd3ff'), k: 0 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * TAU; return { s: 'cap', a: [Math.cos(a) * 0.3, 0.02, Math.sin(a) * 0.3], b: [Math.cos(a) * 0.32, 0.34, Math.sin(a) * 0.32], r: 0.03, col: C('#6ab8f0'), k: 0.02 }; }),
+      { s: 'tor', ax: 'y', c: [0, 0.42, 0], R: 0.24, r: 0.1, a0: -Math.PI, a1: Math.PI, col: cream, k: 0.06 },
+      { s: 'tor', ax: 'y', c: [0, 0.54, 0], R: 0.15, r: 0.09, a0: -Math.PI, a1: Math.PI, col: cream, k: 0.06 },
+      { s: 'sph', c: [0, 0.66, 0], r: 0.1, col: cream, k: 0.06 },
+      { s: 'sph', c: [0, 0.8, 0], r: 0.075, col: cherry, k: 0.01 },
+      ...[[0.15, 0.48, 0.12, pink], [-0.12, 0.5, 0.14, mint], [0.05, 0.6, -0.12, yel], [-0.16, 0.45, -0.08, choc]].map(([x, y, z, c]) => ({ s: 'sph', c: [x, y, z], r: 0.025, col: c, k: 0 })),
+    ]);
+    // jelly slime minion: a squishy dome with eyes; the body takes the tint
+    P('slime', [
+      { s: 'ell', c: [0, 0.24, 0], rr: [0.34, 0.26, 0.34], k: 0.08 },
+      { s: 'sph', c: [0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 }, { s: 'sph', c: [-0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 },
+      { s: 'sph', c: [0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 }, { s: 'sph', c: [-0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 },
+    ]);
   }
 }

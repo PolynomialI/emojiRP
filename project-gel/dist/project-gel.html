@@ -1333,13 +1333,14 @@ function buildModels(progress) {
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
-  'pitball', 'bumper', 'tubewall');
+  'pitball', 'bumper', 'tubewall',
+  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -1513,6 +1514,43 @@ function themeModels(defs) {
       { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.48, r: 0.07, a0: -Math.PI, a1: Math.PI, col: white, k: 0.03 },
       { s: 'sph', c: [0, 1.12, 0], r: 0.2, col: white, k: 0.1 },
     ], { ao: 1 });
+  }
+  // ---------- Candy Land ----------
+  {
+    const white = C('#fffaf4'), red = C('#ff3b5c'), pink = C('#ff7ab8'), mint = C('#7ff0c8'), yel = C('#ffe066'), choc = C('#6a3a22'), cream = C('#fff0f6'), cherry = C('#e8203a');
+    P('lollipop', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 1.0, 0], r: 0.035, col: white, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 1.25, 0], r: 0.36, hh: 0.06, rd: 0.05, col: pink, k: 0 },
+      ...[0.28, 0.19, 0.1].map((R, i) => ({ s: 'tor', ax: 'z', c: [0, 1.25, 0.03], R, r: 0.035, a0: -Math.PI, a1: Math.PI, col: [white, yel, white][i], k: 0 })),
+      { s: 'tor', ax: 'z', c: [0, 1.25, -0.03], R: 0.22, r: 0.035, a0: -Math.PI, a1: Math.PI, col: white, k: 0 },
+    ]);
+    // candy cane: alternating stripes up the shaft and round the hook
+    {
+      const parts = [];
+      for (let i = 0; i < 8; i++) parts.push({ s: 'cap', a: [0, i * 0.14, 0], b: [0, (i + 1) * 0.14, 0], r: 0.075, col: i % 2 ? white : red, k: 0.0 });
+      for (let i = 0; i < 6; i++) { const a0 = Math.PI - (i / 6) * Math.PI, a1 = Math.PI - ((i + 1) / 6) * Math.PI; parts.push({ s: 'cap', a: [0.18 + Math.cos(a0) * 0.18, 1.12 + Math.sin(a0) * 0.18, 0], b: [0.18 + Math.cos(a1) * 0.18, 1.12 + Math.sin(a1) * 0.18, 0], r: 0.075, col: i % 2 ? red : white, k: 0 }); }
+      P('candycane', parts);
+    }
+    // gumdrop: a sugared dome, colored by the instance tint
+    P('gumdrop', [
+      { s: 'ell', c: [0, 0.2, 0], rr: [0.42, 0.28, 0.42], k: 0.1 },
+      { s: 'sph', c: [0, 0.42, 0], r: 0.24, k: 0.15 },
+    ]);
+    P('cupcake', [
+      { s: 'cyl', ax: 'y', c: [0, 0.18, 0], r: 0.3, hh: 0.18, rd: 0.03, col: C('#8fd3ff'), k: 0 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * TAU; return { s: 'cap', a: [Math.cos(a) * 0.3, 0.02, Math.sin(a) * 0.3], b: [Math.cos(a) * 0.32, 0.34, Math.sin(a) * 0.32], r: 0.03, col: C('#6ab8f0'), k: 0.02 }; }),
+      { s: 'tor', ax: 'y', c: [0, 0.42, 0], R: 0.24, r: 0.1, a0: -Math.PI, a1: Math.PI, col: cream, k: 0.06 },
+      { s: 'tor', ax: 'y', c: [0, 0.54, 0], R: 0.15, r: 0.09, a0: -Math.PI, a1: Math.PI, col: cream, k: 0.06 },
+      { s: 'sph', c: [0, 0.66, 0], r: 0.1, col: cream, k: 0.06 },
+      { s: 'sph', c: [0, 0.8, 0], r: 0.075, col: cherry, k: 0.01 },
+      ...[[0.15, 0.48, 0.12, pink], [-0.12, 0.5, 0.14, mint], [0.05, 0.6, -0.12, yel], [-0.16, 0.45, -0.08, choc]].map(([x, y, z, c]) => ({ s: 'sph', c: [x, y, z], r: 0.025, col: c, k: 0 })),
+    ]);
+    // jelly slime minion: a squishy dome with eyes; the body takes the tint
+    P('slime', [
+      { s: 'ell', c: [0, 0.24, 0], rr: [0.34, 0.26, 0.34], k: 0.08 },
+      { s: 'sph', c: [0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 }, { s: 'sph', c: [-0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 },
+      { s: 'sph', c: [0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 }, { s: 'sph', c: [-0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 },
+    ]);
   }
 }
 </script>
@@ -2525,13 +2563,14 @@ function buildModels(progress) {
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
+const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
-  'pitball', 'bumper', 'tubewall');
+  'pitball', 'bumper', 'tubewall',
+  'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -2705,6 +2744,43 @@ function themeModels(defs) {
       { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.48, r: 0.07, a0: -Math.PI, a1: Math.PI, col: white, k: 0.03 },
       { s: 'sph', c: [0, 1.12, 0], r: 0.2, col: white, k: 0.1 },
     ], { ao: 1 });
+  }
+  // ---------- Candy Land ----------
+  {
+    const white = C('#fffaf4'), red = C('#ff3b5c'), pink = C('#ff7ab8'), mint = C('#7ff0c8'), yel = C('#ffe066'), choc = C('#6a3a22'), cream = C('#fff0f6'), cherry = C('#e8203a');
+    P('lollipop', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 1.0, 0], r: 0.035, col: white, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 1.25, 0], r: 0.36, hh: 0.06, rd: 0.05, col: pink, k: 0 },
+      ...[0.28, 0.19, 0.1].map((R, i) => ({ s: 'tor', ax: 'z', c: [0, 1.25, 0.03], R, r: 0.035, a0: -Math.PI, a1: Math.PI, col: [white, yel, white][i], k: 0 })),
+      { s: 'tor', ax: 'z', c: [0, 1.25, -0.03], R: 0.22, r: 0.035, a0: -Math.PI, a1: Math.PI, col: white, k: 0 },
+    ]);
+    // candy cane: alternating stripes up the shaft and round the hook
+    {
+      const parts = [];
+      for (let i = 0; i < 8; i++) parts.push({ s: 'cap', a: [0, i * 0.14, 0], b: [0, (i + 1) * 0.14, 0], r: 0.075, col: i % 2 ? white : red, k: 0.0 });
+      for (let i = 0; i < 6; i++) { const a0 = Math.PI - (i / 6) * Math.PI, a1 = Math.PI - ((i + 1) / 6) * Math.PI; parts.push({ s: 'cap', a: [0.18 + Math.cos(a0) * 0.18, 1.12 + Math.sin(a0) * 0.18, 0], b: [0.18 + Math.cos(a1) * 0.18, 1.12 + Math.sin(a1) * 0.18, 0], r: 0.075, col: i % 2 ? red : white, k: 0 }); }
+      P('candycane', parts);
+    }
+    // gumdrop: a sugared dome, colored by the instance tint
+    P('gumdrop', [
+      { s: 'ell', c: [0, 0.2, 0], rr: [0.42, 0.28, 0.42], k: 0.1 },
+      { s: 'sph', c: [0, 0.42, 0], r: 0.24, k: 0.15 },
+    ]);
+    P('cupcake', [
+      { s: 'cyl', ax: 'y', c: [0, 0.18, 0], r: 0.3, hh: 0.18, rd: 0.03, col: C('#8fd3ff'), k: 0 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * TAU; return { s: 'cap', a: [Math.cos(a) * 0.3, 0.02, Math.sin(a) * 0.3], b: [Math.cos(a) * 0.32, 0.34, Math.sin(a) * 0.32], r: 0.03, col: C('#6ab8f0'), k: 0.02 }; }),
+      { s: 'tor', ax: 'y', c: [0, 0.42, 0], R: 0.24, r: 0.1, a0: -Math.PI, a1: Math.PI, col: cream, k: 0.06 },
+      { s: 'tor', ax: 'y', c: [0, 0.54, 0], R: 0.15, r: 0.09, a0: -Math.PI, a1: Math.PI, col: cream, k: 0.06 },
+      { s: 'sph', c: [0, 0.66, 0], r: 0.1, col: cream, k: 0.06 },
+      { s: 'sph', c: [0, 0.8, 0], r: 0.075, col: cherry, k: 0.01 },
+      ...[[0.15, 0.48, 0.12, pink], [-0.12, 0.5, 0.14, mint], [0.05, 0.6, -0.12, yel], [-0.16, 0.45, -0.08, choc]].map(([x, y, z, c]) => ({ s: 'sph', c: [x, y, z], r: 0.025, col: c, k: 0 })),
+    ]);
+    // jelly slime minion: a squishy dome with eyes; the body takes the tint
+    P('slime', [
+      { s: 'ell', c: [0, 0.24, 0], rr: [0.34, 0.26, 0.34], k: 0.08 },
+      { s: 'sph', c: [0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 }, { s: 'sph', c: [-0.1, 0.32, 0.27], r: 0.07, col: white, k: 0 },
+      { s: 'sph', c: [0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 }, { s: 'sph', c: [-0.1, 0.33, 0.33], r: 0.035, col: C('#16101a'), k: 0 },
+    ]);
   }
 }
 
@@ -3602,6 +3678,36 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = max(length(vec2(q.x * 0.9, q.y + 0.2)) - 0.3, -(q.y + 0.2));
     if (mouth < 0.0 && q.z > 0.5 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 36) {
+    // jelly queen: a wobbling jelly dome with a gold crown and a face; P1.x squashes it
+    float sq = P1.x > 0.05 ? P1.x : 1.0;
+    vec3 q = vec3(p.x * sqrt(sq), p.y / sq, p.z * sqrt(sq));
+    float wob = 0.035 * sin(q.x * 6.0 + ph * 5.0) * sin(q.y * 5.0 + ph * 4.0);
+    float d = max(sdEllipsoid(q - vec3(0.0, -0.12, 0.0), vec3(0.86, 0.72, 0.82)), -(q.y + 0.8)) + wob;
+    d *= min(1.0, sq);
+    vec3 c = q - vec3(0.0, 0.62, -0.05);
+    float ring = abs(length(c.xz) - 0.3) - 0.045;
+    float ang = atan(c.z, c.x);
+    float crown = max(ring, max(-c.y, c.y - 0.09 - 0.15 * pow(max(0.0, cos(ang * 5.0)), 4.0)));
+    crown = min(crown, length(c - vec3(0.0, 0.26, 0.3)) - 0.055);
+    float m = 0.0;
+    if (crown < d) { d = crown; m = 2.0; }
+    vec3 e = vec3(abs(q.x) - 0.27, q.y - 0.14, q.z - 0.66);
+    float eye = length(e) - 0.15;
+    if (eye < d) { d = eye; m = length(e - vec3(-0.02, 0.0, 0.11)) < 0.085 ? 12.0 : 7.0; }
+    float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
+    if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
+  if (type == 37) {
+    // wrapped candy: a striped sweet with twisted ends
+    float d = sdEllipsoid(p, vec3(0.5, 0.36, 0.36));
+    vec3 q = vec3(abs(p.x) - 0.62, p.yz);
+    q.yz = rot2(q.x * 6.0) * q.yz;
+    float tip = max(max(abs(q.y) - 0.3 * (0.3 + q.x * 1.6), abs(q.z) - 0.06), abs(q.x) - 0.2);
+    d = smin(d, tip, 0.06);
+    return vec2(d, abs(p.x) < 0.5 && fract(p.x * 4.0 + p.y * 2.0) < 0.5 ? 10.0 : 7.0);
   }
   if (type == 31) {
     // blob mine: a squat jelly blob with two eyes and a fuse sprout, jiggling in place
@@ -5557,6 +5663,7 @@ const PASSIVES = {
   haste: { name: 'Haste', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
   reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
   multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
+  sugar: { name: 'Sugar Rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
   growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
@@ -5587,6 +5694,7 @@ const ENEMY_TYPES = {
   mini: { model: 'stickman', hp: 7, speed: 2.6, dmg: 3, xp: 1, radius: 0.28, scale: 0.85, tint: '#ffb85a', mass: 0.5 },
   shield: { model: 'shield', hp: 45, speed: 1.8, dmg: 8, xp: 3, radius: 0.44, scale: 1.4, tint: '#f5891f', mass: 1.6, shield: true },
   bomber: { model: 'bomber', hp: 10, speed: 3.0, dmg: 4, xp: 2, radius: 0.4, scale: 1.35, tint: '#ffb02e', mass: 0.9, ai: 'bomb', hit: 18 },
+  slime: { model: 'slime', hp: 22, speed: 2.6, dmg: 6, xp: 2, radius: 0.45, scale: 1.5, tint: '#ff6f96', mass: 0.9 },
   knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
 };
 // When each type starts showing up: [first chapter, seconds into the run, spawn weight]
@@ -5605,6 +5713,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 0.8 };
@@ -5623,6 +5732,8 @@ const ARENAS = [
     props: [['hydrant', 3, 0.22, 0.26], ['bin', 3, 0.28, 0.32]], zones: [], wall: 'barrier', kinds: ['building', 'tower', 'car', 'streetlamp', 'tree'] },
   { id: 'bounce', name: 'Bounce House', floor: 3, stoneA: '#f27a9c', stoneB: '#62aef0', grout: '#4b2f73', accent: '#6fd49a', fog: '#2a2458', sky: '#cfe8ff', ground: '#e88aa8', light: '#ffffff', spotMin: 0.7, shadowTint: '#3a1f66', rock: '#ff9f40', pool: '#5a4a9a', poolGlow: 0,
     props: [['bumper', 6, 0.8, 1.1]], zones: [['pit', 1.6, 3.0, 4.2]], wall: 'tubewall', kinds: ['pitball'] },
+  { id: 'candy', name: 'Candy Land', floor: 4, stoneA: '#ffb6d2', stoneB: '#fff0dc', grout: '#6a3048', accent: '#ff4f9a', fog: '#4a2242', sky: '#ffe4f2', ground: '#e8a2c2', light: '#fff8fb', spotMin: 0.7, shadowTint: '#6a2a52', rock: '#ff7fb0', pool: '#5a2e1a', poolGlow: 0,
+    props: [['lollipop', 5, 0.32, 0.4], ['candycane', 5, 0.3, 0.36], ['gumdrop', 7, 0.8, 1.3], ['cupcake', 3, 0.7, 0.9]], zones: [['chocolate', 4, 2.0, 3.0]], wall: 'gumdrop' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -5642,6 +5753,10 @@ const PROP_KINDS = {
   bumper: { models: ['bumper'], unit: 0.45, block: true, shots: false, tint: '#ff4f9a', tall: 2 },
   tubewall: { models: ['tubewall'], unit: 0.5, block: true, shots: true, tint: '#ffd23a', wallStep: 1.7, wallR: [0.95, 1.05] },
   pitball: { models: ['pitball'], unit: 0.5, block: false },
+  lollipop: { models: ['lollipop'], unit: 0.12, block: true, tall: 4 },
+  candycane: { models: ['candycane'], unit: 0.11, block: true, tall: 4 },
+  gumdrop: { models: ['gumdrop'], unit: 0.42, block: true, shots: true, tints: ['#ff4f6a', '#ffd23a', '#4fc8ff', '#5fe08a', '#b56bff', '#ff8a3a'], wallR: [1.0, 1.4] },
+  cupcake: { models: ['cupcake'], unit: 0.32, block: true, shots: true },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -5649,6 +5764,8 @@ const ZONE_KINDS = {
   quicksand: { slow: 0.5, col: '#a8793f', glow: 0, style: 2 },
   fountain: { block: true, col: '#3fa8e8', glow: 0.15 },
   pit: { slow: 0.82, col: '#3b2d6e', glow: 0, style: 2 },
+  chocolate: { slow: 0.55, col: '#5e3018', glow: 0.02 },
+  jelly: { slow: 0.45, col: '#ff5f8a', glow: 0.12 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -6048,6 +6165,7 @@ function killEnemy(e) {
   const run = G.run;
   e.dying = 0.0001;
   run.kills++;
+  sugarKill(run);
   const s = e.scale;
   FX.droplets(e.x, 0.55 * s, e.z, e.boss ? 30 : 5, 5, e.boss ? 7 : 3.2, 0.05 * Math.min(s, 2), null);
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
@@ -6182,7 +6300,8 @@ function updateRun(dt) {
   // hero movement; the ground underfoot can slow you, make you slide, or burn
   const zone = zoneAt(h[0], h[2]), Z = zone ? ZONE_KINDS[zone.kind] : null;
   run.zone = zone;
-  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.speedBoost || 1);
+  updateSugar(run, dt);
+  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1);
   const k = 1 - Math.exp(-dt / (Z && Z.slide ? 0.55 : 0.045));
   if (Z && Z.burn) {
     run.burnT = (run.burnT || 0) - dt;
@@ -6627,6 +6746,7 @@ function buildArena(chapter) {
     prop(kind, x, z, r, extra = {}) {
       const K = PROP_KINDS[kind], models = K.models;
       const o = { kind, x, z, r, yaw: rnd() * TAU, model: models[Math.floor(rnd() * models.length)], ph: rnd() * 10, block: K.block !== false, shots: !!K.shots, ...extra };
+      if (K.tints && !o.tint) o.tint = hexToRgb(K.tints[Math.floor(rnd() * K.tints.length)]);
       if (o.shape === 'box') o.r = Math.hypot(o.hw, o.hd);
       placed.push(o); ARENA.props.push(o);
       return o;
@@ -6665,7 +6785,7 @@ function buildArena(chapter) {
   }
   for (const [x, z] of pts) {
     const r = (W.wallR || [1.0, 1.45]);
-    ARENA.wall.push({ kind: T.wall || 'rock', x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: r[0] + rnd() * (r[1] - r[0]), yaw: W.faceIn ? Math.atan2(-x, -z) : rnd() * TAU, model: W.models[Math.floor(rnd() * W.models.length)], ph: rnd() * 10 });
+    ARENA.wall.push({ kind: T.wall || 'rock', x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: r[0] + rnd() * (r[1] - r[0]), yaw: W.faceIn ? Math.atan2(-x, -z) : rnd() * TAU, model: W.models[Math.floor(rnd() * W.models.length)], ph: rnd() * 10, tint: W.tints ? hexToRgb(W.tints[Math.floor(rnd() * W.tints.length)]) : undefined });
   }
   // the theme's moving parts (tumbleweeds, ball pits, vents...)
   const F = ARENA_FEATURES[T.id];
@@ -6995,7 +7115,8 @@ ARENA_FEATURES.bounce = {
 // ============================================================
 const SKILL_HOOKS = {};
 const areaMul = () => G.run.stats.areaMul;
-const cdMul = () => G.run.stats.cdMul;
+// a sugar rush (Sugar Rush ability) makes skills recharge faster while it lasts
+const cdMul = () => G.run.stats.cdMul * (G.run.rushT > 0 ? 1 - G.run.rushPower : 1);
 const extraShots = () => G.run.stats.extra;
 
 function updateSkills(dt) {
@@ -7839,6 +7960,28 @@ function emitBouncy() {
   }
 }
 
+// ---------- Sugar Rush (chapter 5 ability): every 25 kills, a burst of speed and faster skills ----------
+function sugarKill(run) {
+  const lv = lvlOf('sugar');
+  if (!lv) return;
+  run.sugar = (run.sugar || 0) + 1;
+  if (run.sugar >= 25) {
+    run.sugar = 0;
+    run.rushT = 4; run.rushPower = 0.12 + 0.03 * (lv - 1);
+    const h = G.hero.pos;
+    FX.ring(h[0], h[2], 3.5, [1, 0.5, 0.8], 0.5);
+    for (let i = 0; i < 14; i++) FX.star(h[0] + rand(-1, 1), rand(0.4, 1.8), h[2] + rand(-1, 1), 0.3, [[1, 0.4, 0.7], [0.5, 0.9, 1], [1, 0.9, 0.4], [0.6, 1, 0.6]][i % 4], 0.6);
+    AUDIO.play('levelup', 1.3);
+    G.hero.impulse(1.6);
+  }
+}
+function updateSugar(run, dt) {
+  if (!(run.rushT > 0)) return;
+  run.rushT -= dt;
+  // candy sparkles while it lasts
+  if (Math.random() < 0.6) { const h = G.hero.pos; FX.star(h[0] + rand(-0.6, 0.6), rand(0.3, 1.6), h[2] + rand(-0.6, 0.6), 0.22, [[1, 0.4, 0.7], [0.5, 0.9, 1], [1, 0.9, 0.4]][Math.floor(Math.random() * 3)], 0.4); }
+}
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -8182,6 +8325,7 @@ function emitRunScene() {
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
     else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
+    else if (s.kind === 'jelly') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.15, 0, 4, 0.06, s.ph + run.t * 3, 0, 0, 0, 1); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.8, 0, 1, 0, 0, 0.05, 0.01, 0.03, 0.3); }
     else if (s.kind === 'sand') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.2, 33, 0, 0, s.ph + run.t * 6, 0, 0, 0, 1); pushDecal(s.x + 0.1, s.z + 0.08, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.35); }
     else if (s.kind === 'orb') { pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 15, 0, 0.6, s.ph + run.t, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.7, [1, 0.55, 0.15], 0.05, 0.5); }
     else if (s.kind === 'javelin') {
@@ -8687,6 +8831,82 @@ BOSS_DRAW.bigbounce = function (e) {
   const sc = s * (1 - dead * 0.8), y = (e.y || 0) + 0.9 * sc * sq;
   pushImp(e.x, y, e.z, sc, Math.sin(e.yaw), 0, Math.cos(e.yaw), 1, 35, 0, e.flash > 0 ? 0.6 : 0, e.phase, sq, 0, 0, 1 - dead);
   if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.95 * s, 0.85 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5 * (1 - clamp((e.y || 0) / 6, 0, 0.7)));
+};
+
+// ---------- Jelly Queen (chapter 5): spiral jelly volleys, slime summons and belly flops that leave sticky jelly ----------
+BOSS_AI.jellyqueen = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.5; }
+  ai.sq = ai.sq ?? 1; ai.sqV = ai.sqV ?? 0;
+  switch (ai.state) {
+    case 'walk':
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.3 : 1)); bossFace(e, dt, 4);
+      ai.sqV += Math.sin(run.t * 8) * dt * 6;
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const seq = rage ? ['spiral', 'slam', 'summon', 'slam'] : ['spiral', 'summon', 'slam'];
+        const k = seq[ai.next++ % seq.length];
+        if (k === 'spiral') { ai.state = 'spiral'; ai.t = rage ? 3 : 2.6; ai.emitT = 0; ai.spin = rand(0, TAU); }
+        else if (k === 'summon') { ai.state = 'summon'; ai.t = 0.8; }
+        else {
+          const o = { x: h[0] + run.vel[0] * 0.6, z: h[2] + run.vel[2] * 0.6 }; resolveCircle(o, e.radius);
+          ai.state = 'flop'; ai.t = ai.dur = rage ? 0.95 : 1.15; ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z; ai.sqV += 5;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 3.2, dur: ai.dur });
+        }
+      }
+      break;
+    case 'spiral': {
+      // spinning arms of jelly blobs: walk along the gaps
+      e.vx *= 0.85; e.vz *= 0.85;
+      const arms = rage ? 6 : 4;
+      ai.spin += dt * (rage ? 1.9 : 1.4);
+      ai.emitT -= dt;
+      if (ai.emitT <= 0) {
+        ai.emitT = 0.14;
+        for (let k = 0; k < arms; k++) {
+          const a = ai.spin + k * TAU / arms;
+          run.eShots.push({ kind: 'jelly', x: e.x + Math.sin(a) * 1.6, y: 1.0, z: e.z + Math.cos(a) * 1.6, vx: Math.sin(a) * 4.4, vy: 0, vz: Math.cos(a) * 4.4, dmg: 11 * run.info.dmgMul, r: 0.34, life: 6, ph: rand(0, 10) });
+        }
+        ai.sqV -= 1.2;
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+    case 'summon':
+      ai.sqV -= dt * 25;
+      if (ai.t <= 0) {
+        const n = rage ? 8 : 5;
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * TAU, m = spawnEnemy('slime', e.x + Math.sin(a) * 2.8, e.z + Math.cos(a) * 2.8);
+          m.spawnT = 0.4; m.kx = Math.sin(a) * 5; m.kz = Math.cos(a) * 5;
+        }
+        FX.droplets(e.x, 1.2, e.z, 18, 4, 5, 0.09, null); AUDIO.play('split'); ai.sqV += 8;
+        ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4;
+      }
+      break;
+    case 'flop': {
+      const u = 1 - ai.t / ai.dur;
+      e.x = lerp(ai.sx, ai.tx, u); e.z = lerp(ai.sz, ai.tz, u); e.y = Math.sin(u * Math.PI) * 6;
+      if (ai.t <= 0) {
+        e.y = 0; ai.sqV -= 10;
+        if (Math.hypot(h[0] - e.x, h[2] - e.z) < 3.2 + HERO_R * 0.5) hurtHero(34 * run.info.dmgMul, e.x, e.z);
+        enemiesInRadius(e.x, e.z, 3.4, o => { if (o !== e && !o.boss) { const ox = o.x - e.x, oz = o.z - e.z, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 9 / o.mass; o.kz += oz / od * 9 / o.mass; } });
+        tempZone('jelly', e.x, e.z, rage ? 3.6 : 2.9, 7);
+        FX.droplets(e.x, 0.8, e.z, 30, 4, 7, 0.1, null); FX.ring(e.x, e.z, 7, [1, 0.5, 0.65], 0.5);
+        G.cam.shake = Math.max(G.cam.shake, 0.24); AUDIO.play('boom');
+        ai.state = 'walk'; ai.cd = rage ? 1.2 : 2;
+      }
+      break;
+    }
+  }
+  ai.sqV += (90 * (1 - ai.sq) - 7 * ai.sqV) * dt; ai.sq = clamp(ai.sq + ai.sqV * dt, 0.6, 1.4);
+  e.phase += dt;
+};
+BOSS_DRAW.jellyqueen = function (e) {
+  const s = e.scale, dead = e.dying ? clamp(e.dying, 0, 1) : 0, sq = e.ai.sq || 1, L = R.frame.lightDir;
+  const sc = s * (1 - dead * 0.6), y = (e.y || 0) + 0.85 * sc * sq;
+  pushImp(e.x, y, e.z, sc, Math.sin(e.yaw), 0, Math.cos(e.yaw), 1, 36, 4, e.flash > 0 ? 0.7 : 0.08, e.phase, sq, 0, 0, 1 - dead);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.95 * s, 0.85 * s, 0, 1, 0, 0, 0.05, 0.01, 0.03, 0.5 * (1 - clamp((e.y || 0) / 7, 0, 0.7)));
 };
 
 // ---- 14-ui.js ----
@@ -9912,7 +10132,7 @@ function renderAllIcons() {
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {
     thick: { scale: 0.62 }, regen: { scale: 0.6, emissive: 0.15 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 },
-    power: { scale: 0.62, emissive: 0.2 }, armor: { scale: 0.62 }, haste: { scale: 0.6 }, reach: { scale: 0.68, eye: [0, 1.6, 1.8] }, multishot: { scale: 0.62 }, growth: { scale: 0.55, p1: 0, emissive: 0.3 },
+    power: { scale: 0.62, emissive: 0.2 }, armor: { scale: 0.62 }, haste: { scale: 0.6 }, reach: { scale: 0.68, eye: [0, 1.6, 1.8] }, multishot: { scale: 0.62 }, growth: { scale: 0.55, p1: 0, emissive: 0.3 }, sugar: { scale: 0.6, emissive: 0.2, eye: [0, 1.2, 2.1] },
   };
   for (const id in PASSIVES) { const ic = PASSIVES[id].icon; renderIcon('passive-' + id, ic.type, ic.colw, pspecial[id] || {}); }
   const mspecial = { damage: { scale: 0.62 }, health: { scale: 0.6, emissive: 0.15 }, offline: { scale: 0.62 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 } };
