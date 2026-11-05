@@ -6,14 +6,16 @@ const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 's
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
-  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016 };
+  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
+  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
-  'obsidian', 'vent', 'deadtree', 'basalt', 'golem');
+  'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
+  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -355,5 +357,72 @@ function themeModels(defs) {
     }
     m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.6]; m.bmax = [0.72, m.top + 0.05, 0.6]; m.name = 'golem'; m.runAmp = 0.65;
     defs.golem = m;
+  }
+  // ---------- Jungle Swamp ----------
+  {
+    const bark = C('#6a4a2e'), leaf = C('#2f7a32'), leafD = C('#24602a'), leafL = C('#4f9a3a'), vine = C('#3f8a34'), white = C('#fff8ee'), stem = C('#f0e6d0');
+    P('jtree', [
+      { s: 'cap', a: [0, -0.05, 0], b: [0.04, 1.35, 0], r: 0.13, r2: 0.08, col: bark, k: 0.03 },
+      ...[[0.12, -0.05, 0.1], [-0.12, -0.05, 0.05], [0.02, -0.05, -0.14]].map(([x, y, z]) => ({ s: 'cap', a: [0, 0.3, 0], b: [x * 2.2, y, z * 2.2], r: 0.06, r2: 0.03, col: bark, k: 0.04 })),
+      ...[[0, 1.55, 0, 0.5, leaf], [0.38, 1.4, 0.15, 0.36, leafD], [-0.36, 1.45, -0.1, 0.38, leafL], [0.08, 1.42, -0.38, 0.34, leafD], [-0.1, 1.38, 0.38, 0.32, leafL]]
+        .map(([x, y, z, r, col]) => ({ s: 'sph', c: [x, y, z], r, col, k: 0.12 })),
+      ...[[0.45, 0.7], [-0.4, 0.85], [0.1, 0.75]].map(([x, y], i) => ({ s: 'cap', a: [x, 1.3, i * 0.2 - 0.2], b: [x * 1.05, y, i * 0.2 - 0.2], r: 0.018, col: vine, k: 0 })),
+    ]);
+    // giant spotted mushroom; the cap takes the instance tint
+    P('mushroom', [
+      { s: 'cyl', ax: 'y', c: [0, 0.35, 0], r: 0.11, hh: 0.35, rd: 0.05, col: stem, k: 0.03 },
+      { s: 'ell', c: [0, 0.78, 0], rr: [0.46, 0.24, 0.46], k: 0.05 },
+      ...[[0.2, 0.92, 0.12, 0.07], [-0.18, 0.9, -0.1, 0.06], [0.04, 1.0, -0.06, 0.05], [-0.1, 0.86, 0.26, 0.05], [0.3, 0.8, -0.2, 0.05]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: white, k: 0 })),
+    ]);
+    // a fern: broad leaves fanning out low
+    P('fern', [
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [x * 0.32, 0.12, z * 0.32], rr: [x ? 0.34 : 0.12, 0.04, z ? 0.34 : 0.12], col: leafL, k: 0.04 })),
+      ...[[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].map(([x, z]) => ({ s: 'cap', a: [0, 0.18, 0], b: [x * 0.5, 0.06, z * 0.5], r: 0.07, r2: 0.03, col: leaf, k: 0.03 })),
+      { s: 'sph', c: [0, 0.12, 0], r: 0.1, col: leafD, k: 0.05 },
+    ], { ao: 0.6 });
+    // bamboo stalks for the wall; the stalks take the instance tint
+    P('bamboo', [
+      ...[[0, 0, 1.5], [0.24, 0.1, 1.15], [-0.22, 0.14, 1.3], [0.06, -0.24, 1.0], [-0.1, 0.3, 0.9]].flatMap(([x, z, hgt]) => [
+        { s: 'cap', a: [x, 0, z], b: [x, hgt, z], r: 0.075, k: 0 },
+        ...[0.35, 0.7, 1.05].filter(y => y < hgt).map(y => ({ s: 'tor', ax: 'y', c: [x, y, z], R: 0.075, r: 0.02, a0: -Math.PI, a1: Math.PI, col: C('#4a7a2a'), k: 0 })),
+      ]),
+      { s: 'ell', c: [0.12, 1.2, 0.1], rr: [0.2, 0.03, 0.06], col: leaf, k: 0.02 },
+    ], { ao: 0.8 });
+    // roots bursting out of the ground (the hydra's snare); the roots take the instance tint
+    P('roots', [
+      ...[[1, 0.2], [-0.7, 0.7], [-0.3, -0.9], [0.5, -0.8]].flatMap(([x, z]) => [
+        { s: 'cap', a: [x * 0.1, -0.1, z * 0.1], b: [x * 0.3, 0.55, z * 0.3], r: 0.11, r2: 0.07, k: 0.03 },
+        { s: 'cap', a: [x * 0.3, 0.55, z * 0.3], b: [x * 0.12, 0.95, z * 0.12], r: 0.07, r2: 0.02, k: 0.03 },
+        { s: 'sph', c: [x * 0.3, 0.6, z * 0.3], r: 0.05, col: leafL, k: 0.02 },
+      ]),
+    ]);
+  }
+  // ---------- Vine Hydra (chapter 8 boss): a bulb rooted in the mud with snapping flower heads on vine necks ----------
+  {
+    const leaf = C('#2f7a32'), root = C('#6a4a2e'), spot = C('#d8f070'), thorn = C('#fff0c8'), petal = C('#ff5fa8'), petalL = C('#ffa0d0'), mouth = C('#5a0c22'), eyeW = C('#fff6e6'), pupil = C('#16101a');
+    P('hydrabody', [
+      { s: 'ell', c: [0, 0.42, 0], rr: [0.5, 0.42, 0.5], k: 0.06 },
+      { s: 'sph', c: [0, 0.78, 0], r: 0.24, k: 0.08 },
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [x * 0.55, 0.06, z * 0.55], rr: [x ? 0.38 : 0.16, 0.05, z ? 0.38 : 0.16], col: leaf, k: 0.05 })),
+      ...[0.4, 1.4, 2.6, 3.7, 5.0].map(a => ({ s: 'cap', a: [Math.cos(a) * 0.35, 0.15, Math.sin(a) * 0.35], b: [Math.cos(a) * 0.75, -0.05, Math.sin(a) * 0.75], r: 0.07, r2: 0.03, col: root, k: 0.04 })),
+      ...[[0.3, 0.55, 0.3], [-0.35, 0.45, 0.25], [0.1, 0.7, -0.38], [-0.2, 0.3, -0.42], [0.44, 0.3, -0.1]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.06, col: spot, k: 0.02 })),
+      ...[[0.42, 0.5, 0.0], [-0.42, 0.55, 0.05], [0.0, 0.55, 0.45], [0.05, 0.6, -0.44]].map(([x, y, z]) => ({ s: 'cap', a: [x * 0.9, y, z * 0.9], b: [x * 1.3, y + 0.1, z * 1.3], r: 0.04, r2: 0.008, col: thorn, k: 0 })),
+    ]);
+    // a flower head: green snout, a frill of petals, a toothy mouth and eyes; faces +z, centred on the pivot
+    P('hydrahead', [
+      { s: 'ell', c: [0, 0.5, 0.06], rr: [0.3, 0.26, 0.4], k: 0.05 },
+      { s: 'tor', ax: 'z', c: [0, 0.52, -0.2], R: 0.32, r: 0.1, a0: -Math.PI, a1: Math.PI, col: petal, k: 0.03 },
+      ...Array.from({ length: 7 }, (_, i) => { const a = (i / 7) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.44, 0.52 + Math.sin(a) * 0.44, -0.24], r: 0.12, col: i % 2 ? petal : petalL, k: 0.04 }; }),
+      { s: 'ell', c: [0, 0.42, 0.42], rr: [0.2, 0.08, 0.06], col: mouth, k: 0.01 },
+      ...[-0.12, -0.04, 0.04, 0.12].map(x => ({ s: 'cap', a: [x, 0.49, 0.44], b: [x, 0.4, 0.47], r: 0.025, r2: 0.006, col: thorn, k: 0 })),
+      { s: 'sph', c: [0.14, 0.68, 0.24], r: 0.085, col: eyeW, k: 0 }, { s: 'sph', c: [-0.14, 0.68, 0.24], r: 0.085, col: eyeW, k: 0 },
+      { s: 'sph', c: [0.15, 0.69, 0.31], r: 0.04, col: pupil, k: 0 }, { s: 'sph', c: [-0.15, 0.69, 0.31], r: 0.04, col: pupil, k: 0 },
+    ]);
+    // one piece of a vine neck, centred on the pivot
+    P('vineseg', [
+      { s: 'sph', c: [0, 0.5, 0], r: 0.4, k: 0.05 },
+      { s: 'cap', a: [0, 0.82, 0], b: [0, 1.0, -0.08], r: 0.06, r2: 0.01, col: thorn, k: 0 },
+      { s: 'ell', c: [0.36, 0.5, 0], rr: [0.18, 0.04, 0.1], col: leaf, k: 0.03 },
+    ], { ao: 0.6 });
   }
 }

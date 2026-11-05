@@ -275,3 +275,13 @@ ARENA_FEATURES.volcano = {
     }
   },
 };
+
+// ---------- Jungle Swamp: fireflies drifting over the grass ----------
+ARENA_FEATURES.jungle = {
+  init(st) { st.acc = 0; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 3 : 9);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.4, 2), h[2] + rand(-11, 8), rand(-0.6, 0.6), rand(-0.2, 0.3), rand(-0.6, 0.6), rand(0.08, 0.13), 0.02, rand(1.5, 3), [0.8, 1, 0.35], 1, 0, 0, 0.3);
+  },
+};

@@ -280,3 +280,13 @@ SKILL_HOOKS.meteor = {
     for (const f of st.fires) pushDecal(f.x, f.z, f.r * 1.2, f.r * 1.2, 0, 1, 0, 0, 1, 0.45, 0.1, 0.5 * Math.min(1, f.life) * (0.85 + 0.15 * Math.sin(G.run.t * 20 + f.x)), true);
   },
 };
+
+// ---------- Thorns (chapter 8): enemies touching you get pricked and shoved away ----------
+function thornsTouch(e, dx, dz, d) {
+  const lv = lvlOf('thorns'), run = G.run;
+  if (!lv || e.thornAt > run.t || G.state !== 'run') return;
+  e.thornAt = run.t + 0.5;
+  const l = d || 1;
+  hurtEnemy(e, 10 + 5 * (lv - 1), dx / l * 7, dz / l * 7, { sound: false, color: [0.6, 1, 0.4] });
+  FX.burst(e.x - dx / l * e.radius, 0.6, e.z - dz / l * e.radius, 4, [0.55, 0.85, 0.3], 3, 0.08, 0.3, 1);
+}

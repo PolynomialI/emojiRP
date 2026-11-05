@@ -113,7 +113,7 @@ function renderAllIcons() {
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {
     thick: { scale: 0.62 }, regen: { scale: 0.6, emissive: 0.15 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 },
-    power: { scale: 0.62, emissive: 0.2 }, armor: { scale: 0.62 }, haste: { scale: 0.6 }, reach: { scale: 0.68, eye: [0, 1.6, 1.8] }, multishot: { scale: 0.62 }, growth: { scale: 0.55, p1: 0, emissive: 0.3 }, sugar: { scale: 0.6, emissive: 0.2, eye: [0, 1.2, 2.1] },
+    power: { scale: 0.62, emissive: 0.2 }, armor: { scale: 0.62 }, haste: { scale: 0.6 }, reach: { scale: 0.68, eye: [0, 1.6, 1.8] }, multishot: { scale: 0.62 }, growth: { scale: 0.55, p1: 0, emissive: 0.3 }, sugar: { scale: 0.6, emissive: 0.2, eye: [0, 1.2, 2.1] }, thorns: { scale: 0.62, emissive: 0.15 },
   };
   for (const id in PASSIVES) { const ic = PASSIVES[id].icon; renderIcon('passive-' + id, ic.type, ic.colw, pspecial[id] || {}); }
   const mspecial = { damage: { scale: 0.62 }, health: { scale: 0.6, emissive: 0.15 }, offline: { scale: 0.62 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 } };

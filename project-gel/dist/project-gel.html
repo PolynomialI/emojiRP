@@ -1337,14 +1337,16 @@ const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 's
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
-  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016 };
+  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
+  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
-  'obsidian', 'vent', 'deadtree', 'basalt', 'golem');
+  'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
+  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -1686,6 +1688,73 @@ function themeModels(defs) {
     }
     m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.6]; m.bmax = [0.72, m.top + 0.05, 0.6]; m.name = 'golem'; m.runAmp = 0.65;
     defs.golem = m;
+  }
+  // ---------- Jungle Swamp ----------
+  {
+    const bark = C('#6a4a2e'), leaf = C('#2f7a32'), leafD = C('#24602a'), leafL = C('#4f9a3a'), vine = C('#3f8a34'), white = C('#fff8ee'), stem = C('#f0e6d0');
+    P('jtree', [
+      { s: 'cap', a: [0, -0.05, 0], b: [0.04, 1.35, 0], r: 0.13, r2: 0.08, col: bark, k: 0.03 },
+      ...[[0.12, -0.05, 0.1], [-0.12, -0.05, 0.05], [0.02, -0.05, -0.14]].map(([x, y, z]) => ({ s: 'cap', a: [0, 0.3, 0], b: [x * 2.2, y, z * 2.2], r: 0.06, r2: 0.03, col: bark, k: 0.04 })),
+      ...[[0, 1.55, 0, 0.5, leaf], [0.38, 1.4, 0.15, 0.36, leafD], [-0.36, 1.45, -0.1, 0.38, leafL], [0.08, 1.42, -0.38, 0.34, leafD], [-0.1, 1.38, 0.38, 0.32, leafL]]
+        .map(([x, y, z, r, col]) => ({ s: 'sph', c: [x, y, z], r, col, k: 0.12 })),
+      ...[[0.45, 0.7], [-0.4, 0.85], [0.1, 0.75]].map(([x, y], i) => ({ s: 'cap', a: [x, 1.3, i * 0.2 - 0.2], b: [x * 1.05, y, i * 0.2 - 0.2], r: 0.018, col: vine, k: 0 })),
+    ]);
+    // giant spotted mushroom; the cap takes the instance tint
+    P('mushroom', [
+      { s: 'cyl', ax: 'y', c: [0, 0.35, 0], r: 0.11, hh: 0.35, rd: 0.05, col: stem, k: 0.03 },
+      { s: 'ell', c: [0, 0.78, 0], rr: [0.46, 0.24, 0.46], k: 0.05 },
+      ...[[0.2, 0.92, 0.12, 0.07], [-0.18, 0.9, -0.1, 0.06], [0.04, 1.0, -0.06, 0.05], [-0.1, 0.86, 0.26, 0.05], [0.3, 0.8, -0.2, 0.05]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: white, k: 0 })),
+    ]);
+    // a fern: broad leaves fanning out low
+    P('fern', [
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [x * 0.32, 0.12, z * 0.32], rr: [x ? 0.34 : 0.12, 0.04, z ? 0.34 : 0.12], col: leafL, k: 0.04 })),
+      ...[[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].map(([x, z]) => ({ s: 'cap', a: [0, 0.18, 0], b: [x * 0.5, 0.06, z * 0.5], r: 0.07, r2: 0.03, col: leaf, k: 0.03 })),
+      { s: 'sph', c: [0, 0.12, 0], r: 0.1, col: leafD, k: 0.05 },
+    ], { ao: 0.6 });
+    // bamboo stalks for the wall; the stalks take the instance tint
+    P('bamboo', [
+      ...[[0, 0, 1.5], [0.24, 0.1, 1.15], [-0.22, 0.14, 1.3], [0.06, -0.24, 1.0], [-0.1, 0.3, 0.9]].flatMap(([x, z, hgt]) => [
+        { s: 'cap', a: [x, 0, z], b: [x, hgt, z], r: 0.075, k: 0 },
+        ...[0.35, 0.7, 1.05].filter(y => y < hgt).map(y => ({ s: 'tor', ax: 'y', c: [x, y, z], R: 0.075, r: 0.02, a0: -Math.PI, a1: Math.PI, col: C('#4a7a2a'), k: 0 })),
+      ]),
+      { s: 'ell', c: [0.12, 1.2, 0.1], rr: [0.2, 0.03, 0.06], col: leaf, k: 0.02 },
+    ], { ao: 0.8 });
+    // roots bursting out of the ground (the hydra's snare); the roots take the instance tint
+    P('roots', [
+      ...[[1, 0.2], [-0.7, 0.7], [-0.3, -0.9], [0.5, -0.8]].flatMap(([x, z]) => [
+        { s: 'cap', a: [x * 0.1, -0.1, z * 0.1], b: [x * 0.3, 0.55, z * 0.3], r: 0.11, r2: 0.07, k: 0.03 },
+        { s: 'cap', a: [x * 0.3, 0.55, z * 0.3], b: [x * 0.12, 0.95, z * 0.12], r: 0.07, r2: 0.02, k: 0.03 },
+        { s: 'sph', c: [x * 0.3, 0.6, z * 0.3], r: 0.05, col: leafL, k: 0.02 },
+      ]),
+    ]);
+  }
+  // ---------- Vine Hydra (chapter 8 boss): a bulb rooted in the mud with snapping flower heads on vine necks ----------
+  {
+    const leaf = C('#2f7a32'), root = C('#6a4a2e'), spot = C('#d8f070'), thorn = C('#fff0c8'), petal = C('#ff5fa8'), petalL = C('#ffa0d0'), mouth = C('#5a0c22'), eyeW = C('#fff6e6'), pupil = C('#16101a');
+    P('hydrabody', [
+      { s: 'ell', c: [0, 0.42, 0], rr: [0.5, 0.42, 0.5], k: 0.06 },
+      { s: 'sph', c: [0, 0.78, 0], r: 0.24, k: 0.08 },
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [x * 0.55, 0.06, z * 0.55], rr: [x ? 0.38 : 0.16, 0.05, z ? 0.38 : 0.16], col: leaf, k: 0.05 })),
+      ...[0.4, 1.4, 2.6, 3.7, 5.0].map(a => ({ s: 'cap', a: [Math.cos(a) * 0.35, 0.15, Math.sin(a) * 0.35], b: [Math.cos(a) * 0.75, -0.05, Math.sin(a) * 0.75], r: 0.07, r2: 0.03, col: root, k: 0.04 })),
+      ...[[0.3, 0.55, 0.3], [-0.35, 0.45, 0.25], [0.1, 0.7, -0.38], [-0.2, 0.3, -0.42], [0.44, 0.3, -0.1]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.06, col: spot, k: 0.02 })),
+      ...[[0.42, 0.5, 0.0], [-0.42, 0.55, 0.05], [0.0, 0.55, 0.45], [0.05, 0.6, -0.44]].map(([x, y, z]) => ({ s: 'cap', a: [x * 0.9, y, z * 0.9], b: [x * 1.3, y + 0.1, z * 1.3], r: 0.04, r2: 0.008, col: thorn, k: 0 })),
+    ]);
+    // a flower head: green snout, a frill of petals, a toothy mouth and eyes; faces +z, centred on the pivot
+    P('hydrahead', [
+      { s: 'ell', c: [0, 0.5, 0.06], rr: [0.3, 0.26, 0.4], k: 0.05 },
+      { s: 'tor', ax: 'z', c: [0, 0.52, -0.2], R: 0.32, r: 0.1, a0: -Math.PI, a1: Math.PI, col: petal, k: 0.03 },
+      ...Array.from({ length: 7 }, (_, i) => { const a = (i / 7) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.44, 0.52 + Math.sin(a) * 0.44, -0.24], r: 0.12, col: i % 2 ? petal : petalL, k: 0.04 }; }),
+      { s: 'ell', c: [0, 0.42, 0.42], rr: [0.2, 0.08, 0.06], col: mouth, k: 0.01 },
+      ...[-0.12, -0.04, 0.04, 0.12].map(x => ({ s: 'cap', a: [x, 0.49, 0.44], b: [x, 0.4, 0.47], r: 0.025, r2: 0.006, col: thorn, k: 0 })),
+      { s: 'sph', c: [0.14, 0.68, 0.24], r: 0.085, col: eyeW, k: 0 }, { s: 'sph', c: [-0.14, 0.68, 0.24], r: 0.085, col: eyeW, k: 0 },
+      { s: 'sph', c: [0.15, 0.69, 0.31], r: 0.04, col: pupil, k: 0 }, { s: 'sph', c: [-0.15, 0.69, 0.31], r: 0.04, col: pupil, k: 0 },
+    ]);
+    // one piece of a vine neck, centred on the pivot
+    P('vineseg', [
+      { s: 'sph', c: [0, 0.5, 0], r: 0.4, k: 0.05 },
+      { s: 'cap', a: [0, 0.82, 0], b: [0, 1.0, -0.08], r: 0.06, r2: 0.01, col: thorn, k: 0 },
+      { s: 'ell', c: [0.36, 0.5, 0], rr: [0.18, 0.04, 0.1], col: leaf, k: 0.03 },
+    ], { ao: 0.6 });
   }
 }
 </script>
@@ -2702,14 +2771,16 @@ const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 's
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
-  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016 };
+  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
+  jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
-  'obsidian', 'vent', 'deadtree', 'basalt', 'golem');
+  'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
+  'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -3051,6 +3122,73 @@ function themeModels(defs) {
     }
     m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.6]; m.bmax = [0.72, m.top + 0.05, 0.6]; m.name = 'golem'; m.runAmp = 0.65;
     defs.golem = m;
+  }
+  // ---------- Jungle Swamp ----------
+  {
+    const bark = C('#6a4a2e'), leaf = C('#2f7a32'), leafD = C('#24602a'), leafL = C('#4f9a3a'), vine = C('#3f8a34'), white = C('#fff8ee'), stem = C('#f0e6d0');
+    P('jtree', [
+      { s: 'cap', a: [0, -0.05, 0], b: [0.04, 1.35, 0], r: 0.13, r2: 0.08, col: bark, k: 0.03 },
+      ...[[0.12, -0.05, 0.1], [-0.12, -0.05, 0.05], [0.02, -0.05, -0.14]].map(([x, y, z]) => ({ s: 'cap', a: [0, 0.3, 0], b: [x * 2.2, y, z * 2.2], r: 0.06, r2: 0.03, col: bark, k: 0.04 })),
+      ...[[0, 1.55, 0, 0.5, leaf], [0.38, 1.4, 0.15, 0.36, leafD], [-0.36, 1.45, -0.1, 0.38, leafL], [0.08, 1.42, -0.38, 0.34, leafD], [-0.1, 1.38, 0.38, 0.32, leafL]]
+        .map(([x, y, z, r, col]) => ({ s: 'sph', c: [x, y, z], r, col, k: 0.12 })),
+      ...[[0.45, 0.7], [-0.4, 0.85], [0.1, 0.75]].map(([x, y], i) => ({ s: 'cap', a: [x, 1.3, i * 0.2 - 0.2], b: [x * 1.05, y, i * 0.2 - 0.2], r: 0.018, col: vine, k: 0 })),
+    ]);
+    // giant spotted mushroom; the cap takes the instance tint
+    P('mushroom', [
+      { s: 'cyl', ax: 'y', c: [0, 0.35, 0], r: 0.11, hh: 0.35, rd: 0.05, col: stem, k: 0.03 },
+      { s: 'ell', c: [0, 0.78, 0], rr: [0.46, 0.24, 0.46], k: 0.05 },
+      ...[[0.2, 0.92, 0.12, 0.07], [-0.18, 0.9, -0.1, 0.06], [0.04, 1.0, -0.06, 0.05], [-0.1, 0.86, 0.26, 0.05], [0.3, 0.8, -0.2, 0.05]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: white, k: 0 })),
+    ]);
+    // a fern: broad leaves fanning out low
+    P('fern', [
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [x * 0.32, 0.12, z * 0.32], rr: [x ? 0.34 : 0.12, 0.04, z ? 0.34 : 0.12], col: leafL, k: 0.04 })),
+      ...[[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].map(([x, z]) => ({ s: 'cap', a: [0, 0.18, 0], b: [x * 0.5, 0.06, z * 0.5], r: 0.07, r2: 0.03, col: leaf, k: 0.03 })),
+      { s: 'sph', c: [0, 0.12, 0], r: 0.1, col: leafD, k: 0.05 },
+    ], { ao: 0.6 });
+    // bamboo stalks for the wall; the stalks take the instance tint
+    P('bamboo', [
+      ...[[0, 0, 1.5], [0.24, 0.1, 1.15], [-0.22, 0.14, 1.3], [0.06, -0.24, 1.0], [-0.1, 0.3, 0.9]].flatMap(([x, z, hgt]) => [
+        { s: 'cap', a: [x, 0, z], b: [x, hgt, z], r: 0.075, k: 0 },
+        ...[0.35, 0.7, 1.05].filter(y => y < hgt).map(y => ({ s: 'tor', ax: 'y', c: [x, y, z], R: 0.075, r: 0.02, a0: -Math.PI, a1: Math.PI, col: C('#4a7a2a'), k: 0 })),
+      ]),
+      { s: 'ell', c: [0.12, 1.2, 0.1], rr: [0.2, 0.03, 0.06], col: leaf, k: 0.02 },
+    ], { ao: 0.8 });
+    // roots bursting out of the ground (the hydra's snare); the roots take the instance tint
+    P('roots', [
+      ...[[1, 0.2], [-0.7, 0.7], [-0.3, -0.9], [0.5, -0.8]].flatMap(([x, z]) => [
+        { s: 'cap', a: [x * 0.1, -0.1, z * 0.1], b: [x * 0.3, 0.55, z * 0.3], r: 0.11, r2: 0.07, k: 0.03 },
+        { s: 'cap', a: [x * 0.3, 0.55, z * 0.3], b: [x * 0.12, 0.95, z * 0.12], r: 0.07, r2: 0.02, k: 0.03 },
+        { s: 'sph', c: [x * 0.3, 0.6, z * 0.3], r: 0.05, col: leafL, k: 0.02 },
+      ]),
+    ]);
+  }
+  // ---------- Vine Hydra (chapter 8 boss): a bulb rooted in the mud with snapping flower heads on vine necks ----------
+  {
+    const leaf = C('#2f7a32'), root = C('#6a4a2e'), spot = C('#d8f070'), thorn = C('#fff0c8'), petal = C('#ff5fa8'), petalL = C('#ffa0d0'), mouth = C('#5a0c22'), eyeW = C('#fff6e6'), pupil = C('#16101a');
+    P('hydrabody', [
+      { s: 'ell', c: [0, 0.42, 0], rr: [0.5, 0.42, 0.5], k: 0.06 },
+      { s: 'sph', c: [0, 0.78, 0], r: 0.24, k: 0.08 },
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([x, z]) => ({ s: 'ell', c: [x * 0.55, 0.06, z * 0.55], rr: [x ? 0.38 : 0.16, 0.05, z ? 0.38 : 0.16], col: leaf, k: 0.05 })),
+      ...[0.4, 1.4, 2.6, 3.7, 5.0].map(a => ({ s: 'cap', a: [Math.cos(a) * 0.35, 0.15, Math.sin(a) * 0.35], b: [Math.cos(a) * 0.75, -0.05, Math.sin(a) * 0.75], r: 0.07, r2: 0.03, col: root, k: 0.04 })),
+      ...[[0.3, 0.55, 0.3], [-0.35, 0.45, 0.25], [0.1, 0.7, -0.38], [-0.2, 0.3, -0.42], [0.44, 0.3, -0.1]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.06, col: spot, k: 0.02 })),
+      ...[[0.42, 0.5, 0.0], [-0.42, 0.55, 0.05], [0.0, 0.55, 0.45], [0.05, 0.6, -0.44]].map(([x, y, z]) => ({ s: 'cap', a: [x * 0.9, y, z * 0.9], b: [x * 1.3, y + 0.1, z * 1.3], r: 0.04, r2: 0.008, col: thorn, k: 0 })),
+    ]);
+    // a flower head: green snout, a frill of petals, a toothy mouth and eyes; faces +z, centred on the pivot
+    P('hydrahead', [
+      { s: 'ell', c: [0, 0.5, 0.06], rr: [0.3, 0.26, 0.4], k: 0.05 },
+      { s: 'tor', ax: 'z', c: [0, 0.52, -0.2], R: 0.32, r: 0.1, a0: -Math.PI, a1: Math.PI, col: petal, k: 0.03 },
+      ...Array.from({ length: 7 }, (_, i) => { const a = (i / 7) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.44, 0.52 + Math.sin(a) * 0.44, -0.24], r: 0.12, col: i % 2 ? petal : petalL, k: 0.04 }; }),
+      { s: 'ell', c: [0, 0.42, 0.42], rr: [0.2, 0.08, 0.06], col: mouth, k: 0.01 },
+      ...[-0.12, -0.04, 0.04, 0.12].map(x => ({ s: 'cap', a: [x, 0.49, 0.44], b: [x, 0.4, 0.47], r: 0.025, r2: 0.006, col: thorn, k: 0 })),
+      { s: 'sph', c: [0.14, 0.68, 0.24], r: 0.085, col: eyeW, k: 0 }, { s: 'sph', c: [-0.14, 0.68, 0.24], r: 0.085, col: eyeW, k: 0 },
+      { s: 'sph', c: [0.15, 0.69, 0.31], r: 0.04, col: pupil, k: 0 }, { s: 'sph', c: [-0.15, 0.69, 0.31], r: 0.04, col: pupil, k: 0 },
+    ]);
+    // one piece of a vine neck, centred on the pivot
+    P('vineseg', [
+      { s: 'sph', c: [0, 0.5, 0], r: 0.4, k: 0.05 },
+      { s: 'cap', a: [0, 0.82, 0], b: [0, 1.0, -0.08], r: 0.06, r2: 0.01, col: thorn, k: 0 },
+      { s: 'ell', c: [0.36, 0.5, 0], rr: [0.18, 0.04, 0.1], col: leaf, k: 0.03 },
+    ], { ao: 0.6 });
   }
 }
 
@@ -3970,6 +4108,18 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 40) {
+    // thorn pod: a round goo seed bristling with brown spikes (three rings of seven, plus top and bottom)
+    float rr = length(p), pod = rr - 0.44;
+    float az = atan(p.z, p.x), el = asin(clamp(p.y / max(rr, 1e-4), -1.0, 1.0));
+    float ca = 6.2832 / 7.0, ce = 0.75;
+    float ei = clamp(floor(el / ce + 0.5), -1.0, 1.0);
+    float ai = floor(az / ca + 0.5 - ei * 0.5) + ei * 0.5;
+    vec3 dir = vec3(cos(ei * ce) * cos(ai * ca), sin(ei * ce), cos(ei * ce) * sin(ai * ca));
+    float sp = sdRoundCone(p, dir * 0.3, dir * 0.82, 0.12, 0.012);
+    sp = min(sp, min(sdRoundCone(p, vec3(0.0, 0.3, 0.0), vec3(0.0, 0.82, 0.0), 0.12, 0.012), sdRoundCone(p, vec3(0.0, -0.3, 0.0), vec3(0.0, -0.82, 0.0), 0.12, 0.012)));
+    return vec2(min(pod, sp), sp < pod ? 4.0 : 0.0);
   }
   if (type == 39) {
     // meteor: a lumpy rock with glowing veins, trailing a flickering flame tail along -z
@@ -5973,6 +6123,7 @@ const PASSIVES = {
   reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
   multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
   sugar: { name: 'Sugar Rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
+  thorns: { name: 'Thorns', from: 8, desc: 'Enemies that touch you take 10 damage and get shoved away, +5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
   growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
@@ -6022,6 +6173,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 7400, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
 BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 6800, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.yeti = { name: 'Frost Yeti', model: 'yeti', meshes: ['yeti', 'icicle', 'icespike'], hp: 6100, speed: 2.1, dmg: 18, scale: 2.8, radius: 1.2, tint: '#6fa8f2', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 1.75 };
@@ -6049,6 +6201,8 @@ const ARENAS = [
     props: [['pine', 8, 0.42, 0.6], ['icecrystal', 4, 0.6, 0.9], ['snowman', 2, 0.5, 0.6], ['rock', 3, 0.8, 1.2]], zones: [['ice', 3, 3.0, 4.6]], wall: 'iceblock' },
   { id: 'volcano', name: 'Volcano', floor: 6, stoneA: '#3d3230', stoneB: '#2b2321', grout: '#140c0a', accent: '#ff6a1a', fog: '#1c0b06', sky: '#ffa060', ground: '#2c1c16', light: '#ffe2c8', spotMin: 0.55, shadowTint: '#1c0804', rock: '#54443f', pool: '#f04a0c', poolGlow: 0.3,
     props: [['obsidian', 4, 0.6, 0.9], ['vent', 2.2, 0.55, 0.65], ['deadtree', 3, 0.4, 0.55], ['rock', 5, 0.8, 1.3]], zones: [['lava', 2.4, 2.4, 3.6]], wall: 'basalt' },
+  { id: 'jungle', name: 'Jungle Swamp', floor: 7, stoneA: '#5a9a40', stoneB: '#3f7a2e', grout: '#6e5034', accent: '#c8ff5a', fog: '#0c2212', sky: '#b0e8a0', ground: '#2c4c22', light: '#fff2d6', spotMin: 0.52, shadowTint: '#0a2a10', rock: '#7a866a', pool: '#4a5e2a', poolGlow: 0.04,
+    props: [['jtree', 6, 0.45, 0.6], ['mushroom', 4, 0.5, 0.75], ['fern', 6, 0.6, 0.9], ['rock', 3, 0.8, 1.2]], zones: [['swamp', 3, 2.8, 4.2]], wall: 'bamboo' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -6080,6 +6234,11 @@ const PROP_KINDS = {
   obsidian: { models: ['obsidian'], unit: 0.35, block: true, shots: true, tall: 2 },
   vent: { models: ['vent'], unit: 0.5, block: true, shots: false },
   deadtree: { models: ['deadtree'], unit: 0.15, block: true, tall: 2.5 },
+  jtree: { models: ['jtree'], unit: 0.18, block: true, shots: true, tall: 2.6 },
+  mushroom: { models: ['mushroom'], unit: 0.3, block: true, shots: true, tints: ['#ff4a4a', '#ff8a2a', '#c45aff'], tall: 1.6 },
+  fern: { models: ['fern'], unit: 0.5, block: false },
+  bamboo: { models: ['bamboo'], unit: 0.4, block: true, shots: true, tints: ['#7ab84a', '#5e9a3a', '#8cc858'], wallR: [1.0, 1.2] },
+  roots: { models: ['roots'], unit: 0.4, block: false, tint: '#7a5a34', shadow: false },
   basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
@@ -6092,6 +6251,7 @@ const ZONE_KINDS = {
   jelly: { slow: 0.45, col: '#ff5f8a', glow: 0.12 },
   ice: { slide: true, col: '#7cc4f0', glow: 0.04, style: 1 },
   lava: { burn: 16, slow: 0.85, col: '#f04a0c', glow: 0.3 },
+  swamp: { slow: 0.6, col: '#56702c', glow: 0.03 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -6629,7 +6789,9 @@ function updateRun(dt) {
   updateSugar(run, dt);
   // chilled by frost breath: slower for a moment
   if (run.chillT > 0) { run.chillT -= dt; if (Math.random() < 0.3) FX.part(h[0] + rand(-0.4, 0.4), rand(0.3, 1.2), h[2] + rand(-0.4, 0.4), 0, 0.4, 0, 0.1, 0.02, 0.6, [0.75, 0.92, 1], 0.9, 3); }
-  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1) * (run.chillT > 0 ? 0.6 : 1);
+  // snared by roots: can't move at all for a moment
+  if (run.rootT > 0) run.rootT -= dt;
+  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1) * (run.chillT > 0 ? 0.6 : 1) * (run.rootT > 0 ? 0 : 1);
   const k = 1 - Math.exp(-dt / (Z && Z.slide ? 0.55 : 0.045));
   if (Z && Z.burn) {
     run.burnT = (run.burnT || 0) - dt;
@@ -6732,6 +6894,7 @@ function updateEnemies(dt) {
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }
       if (e.contactCd <= 0 && G.state === 'run' && e.spawnT <= 0) { hurtHero(e.contactDmg || e.dmg, e.x, e.z); e.contactCd = 0.75; }
+      thornsTouch(e, dx, dz, d);
     }
   }
   run.contactSlow = Math.min(0.3, touching * 0.05);
@@ -7515,6 +7678,16 @@ ARENA_FEATURES.volcano = {
       if (v.state === 'warn') pushDecal(v.o.x, v.o.z, VENT_R, VENT_R, 0, 4, 0, p, 1, 0.45, 0.1, 0.8);
       else pushDecal(v.o.x, v.o.z, VENT_R * 1.3, VENT_R * 1.3, 0, 1, 0, 0, 1, 0.5, 0.15, 0.55, true);
     }
+  },
+};
+
+// ---------- Jungle Swamp: fireflies drifting over the grass ----------
+ARENA_FEATURES.jungle = {
+  init(st) { st.acc = 0; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 3 : 9);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.4, 2), h[2] + rand(-11, 8), rand(-0.6, 0.6), rand(-0.2, 0.3), rand(-0.6, 0.6), rand(0.08, 0.13), 0.02, rand(1.5, 3), [0.8, 1, 0.35], 1, 0, 0, 0.3);
   },
 };
 
@@ -8474,6 +8647,16 @@ SKILL_HOOKS.meteor = {
   },
 };
 
+// ---------- Thorns (chapter 8): enemies touching you get pricked and shoved away ----------
+function thornsTouch(e, dx, dz, d) {
+  const lv = lvlOf('thorns'), run = G.run;
+  if (!lv || e.thornAt > run.t || G.state !== 'run') return;
+  e.thornAt = run.t + 0.5;
+  const l = d || 1;
+  hurtEnemy(e, 10 + 5 * (lv - 1), dx / l * 7, dz / l * 7, { sound: false, color: [0.6, 1, 0.4] });
+  FX.burst(e.x - dx / l * e.radius, 0.6, e.z - dz / l * e.radius, 4, [0.55, 0.85, 0.3], 3, 0.08, 0.3, 1);
+}
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -8820,6 +9003,7 @@ function emitRunScene() {
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
     else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
+    else if (s.kind === 'seed') { pushImp(s.x, s.y, s.z, s.r, s.vx, 0, s.vz, 1.3, 0, 4, 0.05, s.ph + run.t * 4, 0, 0, 0, 1); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.8, 0, 1, 0, 0, 0.01, 0.04, 0.02, 0.35); }
     else if (s.kind === 'magma') { pushImp(s.x, s.y, s.z, 0.5, 0, 1, 0, 1, 15, 0, 0.5, s.spin, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.9, [1, 0.5, 0.15], 0.05, 0.6); pushDecal(s.x + 0.15, s.z + 0.1, 0.5, 0.4, 0, 1, 0, 0, 0.02, 0.01, 0.0, 0.4); }
     else if (s.kind === 'icicle') {
       if (R.enemyDraw.icicle) pushEnemy('icicle', false, s.x, s.y - 0.5 * 1.7, s.z, s.spin, MODELS.defs.icicle.clips.still.row, 1.7, 1, 0, 0, 0, 1, 1, 1);
@@ -9669,6 +9853,159 @@ BOSS_DRAW.magma = function (e) {
   pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 0.42 * e.scale, 0.55 * e.scale, -Math.atan2(L[0], L[2]), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   const s = e.scale, h = ai.heat || 0;
   FX.glow(e.x + Math.sin(e.yaw) * 0.3 * s, 0.66 * s, e.z + Math.cos(e.yaw) * 0.3 * s, (0.5 + h * 1.4) * (1 - cool), [1, 0.55, 0.15], 0.05, 0.5 + h * 0.5);
+};
+
+// ---------- Vine Hydra (chapter 8): flower heads on vine necks that snap and spit seeds, and roots that snare ----------
+const HYDRA = { reach: 7 };
+// where head i of n sways when it isn't attacking: a fan in front of the bulb
+function hydraRest(e, i, n, out) {
+  const s = e.scale / 2.6, spread = n > 3 ? 0.72 : 1.05, a = e.yaw + (i - (n - 1) / 2) * spread, t = (G.run && G.run.t) || 0;
+  out.x = e.x + Math.sin(a) * 2.7 * s + Math.sin(t * 1.3 + i * 2) * 0.25;
+  out.z = e.z + Math.cos(a) * 2.7 * s + Math.cos(t * 1.1 + i * 2) * 0.25;
+  out.y = 3.0 * s + Math.sin(t * 1.7 + i) * 0.2;
+  return out;
+}
+function hydraHead(e, i, n) { const o = hydraRest(e, i, n, {}); return { x: o.x, y: o.y, z: o.z, yaw: e.yaw, st: 'idle', t: 0, grow: 1, recoil: 0 }; }
+const _rest = {};
+function updateHydraHead(e, hd, i, n, dt, rage) {
+  const h = G.hero.pos, run = G.run, ease = k => { const f = Math.min(1, dt * k); hd.x += (_rest.x - hd.x) * f; hd.z += (_rest.z - hd.z) * f; hd.y += (_rest.y - hd.y) * f; };
+  hydraRest(e, i, n, _rest);
+  hd.grow = Math.min(1, hd.grow + dt * 1.5);
+  hd.recoil = Math.max(0, hd.recoil - dt * 4);
+  hd.t -= dt;
+  switch (hd.st) {
+    case 'wait':
+      ease(6); hd.yaw = angleLerp(hd.yaw, Math.atan2(h[0] - hd.x, h[2] - hd.z), Math.min(1, dt * 6));
+      if (hd.t <= 0) {
+        // rear back and telegraph the lane it will strike along
+        hd.st = 'aim'; hd.t = hd.dur = rage ? 0.55 : 0.7;
+        hd.sx = _rest.x; hd.sz = _rest.z; hd.rot = Math.atan2(h[0] + run.vel[0] * 0.25 - hd.sx, h[2] + run.vel[2] * 0.25 - hd.sz);
+        addTele({ kind: 'lane', x: hd.sx, z: hd.sz, r: 0.9, len: HYDRA.reach, rot: hd.rot, dur: hd.dur });
+      }
+      break;
+    case 'aim': {
+      const f = Math.min(1, dt * 8);
+      hd.x += (hd.sx - Math.sin(hd.rot) * 0.9 - hd.x) * f; hd.z += (hd.sz - Math.cos(hd.rot) * 0.9 - hd.z) * f; hd.y += (_rest.y + 0.5 - hd.y) * f;
+      hd.yaw = hd.rot;
+      if (hd.t <= 0) { hd.st = 'strike'; hd.t = 0.16; hd.hit = false; AUDIO.play('throw', 0.8); }
+      break;
+    }
+    case 'strike': {
+      const u = 1 - Math.max(hd.t, 0) / 0.16;
+      hd.x = hd.sx + Math.sin(hd.rot) * HYDRA.reach * u; hd.z = hd.sz + Math.cos(hd.rot) * HYDRA.reach * u; hd.y = lerp(_rest.y, 0.8, u);
+      if (!hd.hit && Math.hypot(h[0] - hd.x, h[2] - hd.z) < 1.0 + HERO_R) { hd.hit = true; hurtHero(24 * run.info.dmgMul, hd.x, hd.z); run.vel[0] += Math.sin(hd.rot) * 8; run.vel[2] += Math.cos(hd.rot) * 8; }
+      enemiesInRadius(hd.x, hd.z, 1.0, o => { if (!o.boss && o.snapId !== hd) { o.snapId = hd; hurtEnemy(o, 18, Math.sin(hd.rot) * 6, Math.cos(hd.rot) * 6, { sound: false }); } });
+      if (hd.t <= 0) {
+        hd.st = 'back'; hd.t = 0.5;
+        FX.burst(hd.x, 0.3, hd.z, 8, [0.45, 0.35, 0.22], 4, 0.12, 0.45, 2); FX.crack(hd.x, hd.z, 1.1, 1.2);
+        G.cam.shake = Math.max(G.cam.shake, 0.1);
+      }
+      break;
+    }
+    case 'back':
+      ease(5); hd.yaw = angleLerp(hd.yaw, Math.atan2(h[0] - hd.x, h[2] - hd.z), Math.min(1, dt * 4));
+      if (hd.t <= 0) hd.st = 'idle';
+      break;
+    default:
+      ease(4); hd.yaw = angleLerp(hd.yaw, Math.atan2(h[0] - hd.x, h[2] - hd.z), Math.min(1, dt * 4));
+  }
+}
+BOSS_AI.hydra = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (!ai.heads) { ai.heads = [0, 1, 2].map(i => hydraHead(e, i, 3)); ai.next = 0; ai.cd = 1.6; ai.roots = []; }
+  // enraged, it sprouts two more heads
+  if (rage && ai.heads.length < 5) {
+    while (ai.heads.length < 5) { const hd = hydraHead(e, ai.heads.length, 5); hd.grow = 0; ai.heads.push(hd); }
+    FX.burst(e.x, 2, e.z, 24, [0.4, 0.9, 0.3], 5, 0.14, 0.6, 1); AUDIO.play('split');
+  }
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.3 : 1)); bossFace(e, dt, 2);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['snap', 'seeds', 'roots'][ai.next++ % 3];
+        ai.state = k;
+        if (k === 'snap') ai.heads.forEach((hd, i) => { hd.st = 'wait'; hd.t = 0.15 + i * (rage ? 0.28 : 0.4); });
+        else if (k === 'seeds') { ai.t = 1.6; ai.volley = 0; ai.fireT = 0.35; }
+        else { ai.t = 1; ai.rootN = 0; ai.fireT = 0; }
+      }
+      break;
+    }
+    case 'snap':
+      e.vx *= 0.85; e.vz *= 0.85; bossFace(e, dt, 2);
+      if (ai.heads.every(hd => hd.st === 'idle')) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.1; }
+      break;
+    case 'seeds': {
+      // every head spits a fan of seeds; the second volley fills the gaps of the first
+      e.vx *= 0.85; e.vz *= 0.85; bossFace(e, dt, 3);
+      ai.fireT -= dt;
+      if (ai.fireT <= 0 && ai.volley < 2) {
+        ai.fireT = 0.7; ai.volley++;
+        for (const hd of ai.heads) {
+          const base = Math.atan2(h[0] - hd.x, h[2] - hd.z), m = rage ? 4 : 3;
+          for (let j = 0; j < m; j++) {
+            const a = base + (j - (m - 1) / 2) * 0.24 + (ai.volley === 2 ? 0.12 : 0);
+            run.eShots.push({ kind: 'seed', x: hd.x, y: 1.0, z: hd.z, vx: Math.sin(a) * 7.5, vy: 0, vz: Math.cos(a) * 7.5, dmg: 12 * run.info.dmgMul, r: 0.26, life: 4, ph: rand(0, 10) });
+          }
+          hd.recoil = 1;
+        }
+        AUDIO.play('throw', 1.2);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.1; }
+      break;
+    }
+    case 'roots': {
+      // roots burst up where the hero is, again and again
+      e.vx *= 0.85; e.vz *= 0.85; e.phase += dt;
+      const total = rage ? 8 : 6;
+      ai.fireT -= dt;
+      if (ai.fireT <= 0 && ai.rootN < total) {
+        ai.fireT = rage ? 0.36 : 0.45; ai.rootN++;
+        const o = { x: h[0] + run.vel[0] * 0.3, z: h[2] + run.vel[2] * 0.3 }; resolveCircle(o, 0.5);
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.3, dur: 0.75 });
+        ai.roots.push({ x: o.x, z: o.z, t: 0.75 });
+      }
+      if (ai.rootN >= total && !ai.roots.length) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+  }
+  for (const r of ai.roots) {
+    r.t -= dt;
+    if (r.t > 0) continue;
+    r.done = true;
+    // caught: hurt and stuck for a moment, then safe from more roots for a little while
+    if (Math.hypot(h[0] - r.x, h[2] - r.z) < 1.3 + HERO_R * 0.5 && run.t > (run.rootFree || 0)) { hurtHero(18 * run.info.dmgMul, r.x, r.z); run.rootT = 0.7; run.rootFree = run.t + 1.5; }
+    enemiesInRadius(r.x, r.z, 1.3, o => { if (!o.boss) hurtEnemy(o, 14, 0, 0, { sound: false }); });
+    tempProp('roots', r.x, r.z, 0.7, 1.4);
+    FX.burst(r.x, 0.3, r.z, 10, [0.45, 0.32, 0.2], 4, 0.12, 0.5, 2); FX.crack(r.x, r.z, 1.2, 1.4);
+    AUDIO.play('hit', 0.6);
+  }
+  ai.roots = ai.roots.filter(r => !r.done);
+  for (let i = 0; i < ai.heads.length; i++) updateHydraHead(e, ai.heads[i], i, ai.heads.length, dt, rage);
+};
+BOSS_DRAW.hydra = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, L = R.frame.lightDir, s = e.scale / 2.6;
+  const D = MODELS.defs, ok = R.enemyDraw.hydrabody && R.enemyDraw.hydrahead && R.enemyDraw.vineseg;
+  if (!ok) return;
+  pushEnemy('hydrabody', false, e.x, 0, e.z, e.yaw, D.hydrabody.clips.still.row, e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 1.4 * s, 1.3 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  const heads = e.ai.heads || [0, 1, 2].map(i => hydraHead(e, i, 3)), n = heads.length;
+  for (let i = 0; i < n; i++) {
+    const hd = heads[i], g = hd.grow * (1 - dead), a = e.yaw + (i - (n - 1) / 2) * 0.5;
+    // the neck: a sagging curve of vine segments from the top of the bulb to the head
+    const bx = e.x + Math.sin(a) * 0.4 * e.scale, by = 0.85 * e.scale, bz = e.z + Math.cos(a) * 0.4 * e.scale;
+    const cx = (bx + hd.x) / 2, cy = Math.max(by, hd.y) + 1.0 * s, cz = (bz + hd.z) / 2;
+    const len = Math.hypot(hd.x - bx, hd.y - by, hd.z - bz), m = clamp(Math.ceil(len / 0.55), 5, 16);
+    for (let k = 1; k < m; k++) {
+      const u = k / m, v = 1 - u;
+      const x = v * v * bx + 2 * v * u * cx + u * u * hd.x, y = v * v * by + 2 * v * u * cy + u * u * hd.y, z = v * v * bz + 2 * v * u * cz + u * u * hd.z;
+      const ss = (1.15 - u * 0.35) * s * g;
+      pushEnemy('vineseg', false, x, y - 0.5 * ss, z, a + k, D.vineseg.clips.still.row, ss, 1, dead, fl, 0, t[0] * 0.85, t[1] * 0.85, t[2] * 0.85);
+    }
+    const hs = 1.9 * s * g * (1 + hd.recoil * 0.15);
+    pushEnemy('hydrahead', false, hd.x, hd.y - 0.5 * hs, hd.z, hd.yaw, D.hydrahead.clips.still.row, hs, 1, dead, fl, 0, t[0], t[1], t[2]);
+    if (!e.portrait) pushDecal(hd.x - L[0] * 0.4, hd.z - L[2] * 0.4, 0.6 * s, 0.5 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.35);
+  }
 };
 
 // ---- 14-ui.js ----
@@ -10896,7 +11233,7 @@ function renderAllIcons() {
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {
     thick: { scale: 0.62 }, regen: { scale: 0.6, emissive: 0.15 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 },
-    power: { scale: 0.62, emissive: 0.2 }, armor: { scale: 0.62 }, haste: { scale: 0.6 }, reach: { scale: 0.68, eye: [0, 1.6, 1.8] }, multishot: { scale: 0.62 }, growth: { scale: 0.55, p1: 0, emissive: 0.3 }, sugar: { scale: 0.6, emissive: 0.2, eye: [0, 1.2, 2.1] },
+    power: { scale: 0.62, emissive: 0.2 }, armor: { scale: 0.62 }, haste: { scale: 0.6 }, reach: { scale: 0.68, eye: [0, 1.6, 1.8] }, multishot: { scale: 0.62 }, growth: { scale: 0.55, p1: 0, emissive: 0.3 }, sugar: { scale: 0.6, emissive: 0.2, eye: [0, 1.2, 2.1] }, thorns: { scale: 0.62, emissive: 0.15 },
   };
   for (const id in PASSIVES) { const ic = PASSIVES[id].icon; renderIcon('passive-' + id, ic.type, ic.colw, pspecial[id] || {}); }
   const mspecial = { damage: { scale: 0.62 }, health: { scale: 0.6, emissive: 0.15 }, offline: { scale: 0.62 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 } };

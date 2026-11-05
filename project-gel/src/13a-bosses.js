@@ -726,3 +726,156 @@ BOSS_DRAW.magma = function (e) {
   const s = e.scale, h = ai.heat || 0;
   FX.glow(e.x + Math.sin(e.yaw) * 0.3 * s, 0.66 * s, e.z + Math.cos(e.yaw) * 0.3 * s, (0.5 + h * 1.4) * (1 - cool), [1, 0.55, 0.15], 0.05, 0.5 + h * 0.5);
 };
+
+// ---------- Vine Hydra (chapter 8): flower heads on vine necks that snap and spit seeds, and roots that snare ----------
+const HYDRA = { reach: 7 };
+// where head i of n sways when it isn't attacking: a fan in front of the bulb
+function hydraRest(e, i, n, out) {
+  const s = e.scale / 2.6, spread = n > 3 ? 0.72 : 1.05, a = e.yaw + (i - (n - 1) / 2) * spread, t = (G.run && G.run.t) || 0;
+  out.x = e.x + Math.sin(a) * 2.7 * s + Math.sin(t * 1.3 + i * 2) * 0.25;
+  out.z = e.z + Math.cos(a) * 2.7 * s + Math.cos(t * 1.1 + i * 2) * 0.25;
+  out.y = 3.0 * s + Math.sin(t * 1.7 + i) * 0.2;
+  return out;
+}
+function hydraHead(e, i, n) { const o = hydraRest(e, i, n, {}); return { x: o.x, y: o.y, z: o.z, yaw: e.yaw, st: 'idle', t: 0, grow: 1, recoil: 0 }; }
+const _rest = {};
+function updateHydraHead(e, hd, i, n, dt, rage) {
+  const h = G.hero.pos, run = G.run, ease = k => { const f = Math.min(1, dt * k); hd.x += (_rest.x - hd.x) * f; hd.z += (_rest.z - hd.z) * f; hd.y += (_rest.y - hd.y) * f; };
+  hydraRest(e, i, n, _rest);
+  hd.grow = Math.min(1, hd.grow + dt * 1.5);
+  hd.recoil = Math.max(0, hd.recoil - dt * 4);
+  hd.t -= dt;
+  switch (hd.st) {
+    case 'wait':
+      ease(6); hd.yaw = angleLerp(hd.yaw, Math.atan2(h[0] - hd.x, h[2] - hd.z), Math.min(1, dt * 6));
+      if (hd.t <= 0) {
+        // rear back and telegraph the lane it will strike along
+        hd.st = 'aim'; hd.t = hd.dur = rage ? 0.55 : 0.7;
+        hd.sx = _rest.x; hd.sz = _rest.z; hd.rot = Math.atan2(h[0] + run.vel[0] * 0.25 - hd.sx, h[2] + run.vel[2] * 0.25 - hd.sz);
+        addTele({ kind: 'lane', x: hd.sx, z: hd.sz, r: 0.9, len: HYDRA.reach, rot: hd.rot, dur: hd.dur });
+      }
+      break;
+    case 'aim': {
+      const f = Math.min(1, dt * 8);
+      hd.x += (hd.sx - Math.sin(hd.rot) * 0.9 - hd.x) * f; hd.z += (hd.sz - Math.cos(hd.rot) * 0.9 - hd.z) * f; hd.y += (_rest.y + 0.5 - hd.y) * f;
+      hd.yaw = hd.rot;
+      if (hd.t <= 0) { hd.st = 'strike'; hd.t = 0.16; hd.hit = false; AUDIO.play('throw', 0.8); }
+      break;
+    }
+    case 'strike': {
+      const u = 1 - Math.max(hd.t, 0) / 0.16;
+      hd.x = hd.sx + Math.sin(hd.rot) * HYDRA.reach * u; hd.z = hd.sz + Math.cos(hd.rot) * HYDRA.reach * u; hd.y = lerp(_rest.y, 0.8, u);
+      if (!hd.hit && Math.hypot(h[0] - hd.x, h[2] - hd.z) < 1.0 + HERO_R) { hd.hit = true; hurtHero(24 * run.info.dmgMul, hd.x, hd.z); run.vel[0] += Math.sin(hd.rot) * 8; run.vel[2] += Math.cos(hd.rot) * 8; }
+      enemiesInRadius(hd.x, hd.z, 1.0, o => { if (!o.boss && o.snapId !== hd) { o.snapId = hd; hurtEnemy(o, 18, Math.sin(hd.rot) * 6, Math.cos(hd.rot) * 6, { sound: false }); } });
+      if (hd.t <= 0) {
+        hd.st = 'back'; hd.t = 0.5;
+        FX.burst(hd.x, 0.3, hd.z, 8, [0.45, 0.35, 0.22], 4, 0.12, 0.45, 2); FX.crack(hd.x, hd.z, 1.1, 1.2);
+        G.cam.shake = Math.max(G.cam.shake, 0.1);
+      }
+      break;
+    }
+    case 'back':
+      ease(5); hd.yaw = angleLerp(hd.yaw, Math.atan2(h[0] - hd.x, h[2] - hd.z), Math.min(1, dt * 4));
+      if (hd.t <= 0) hd.st = 'idle';
+      break;
+    default:
+      ease(4); hd.yaw = angleLerp(hd.yaw, Math.atan2(h[0] - hd.x, h[2] - hd.z), Math.min(1, dt * 4));
+  }
+}
+BOSS_AI.hydra = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (!ai.heads) { ai.heads = [0, 1, 2].map(i => hydraHead(e, i, 3)); ai.next = 0; ai.cd = 1.6; ai.roots = []; }
+  // enraged, it sprouts two more heads
+  if (rage && ai.heads.length < 5) {
+    while (ai.heads.length < 5) { const hd = hydraHead(e, ai.heads.length, 5); hd.grow = 0; ai.heads.push(hd); }
+    FX.burst(e.x, 2, e.z, 24, [0.4, 0.9, 0.3], 5, 0.14, 0.6, 1); AUDIO.play('split');
+  }
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.3 : 1)); bossFace(e, dt, 2);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['snap', 'seeds', 'roots'][ai.next++ % 3];
+        ai.state = k;
+        if (k === 'snap') ai.heads.forEach((hd, i) => { hd.st = 'wait'; hd.t = 0.15 + i * (rage ? 0.28 : 0.4); });
+        else if (k === 'seeds') { ai.t = 1.6; ai.volley = 0; ai.fireT = 0.35; }
+        else { ai.t = 1; ai.rootN = 0; ai.fireT = 0; }
+      }
+      break;
+    }
+    case 'snap':
+      e.vx *= 0.85; e.vz *= 0.85; bossFace(e, dt, 2);
+      if (ai.heads.every(hd => hd.st === 'idle')) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.1; }
+      break;
+    case 'seeds': {
+      // every head spits a fan of seeds; the second volley fills the gaps of the first
+      e.vx *= 0.85; e.vz *= 0.85; bossFace(e, dt, 3);
+      ai.fireT -= dt;
+      if (ai.fireT <= 0 && ai.volley < 2) {
+        ai.fireT = 0.7; ai.volley++;
+        for (const hd of ai.heads) {
+          const base = Math.atan2(h[0] - hd.x, h[2] - hd.z), m = rage ? 4 : 3;
+          for (let j = 0; j < m; j++) {
+            const a = base + (j - (m - 1) / 2) * 0.24 + (ai.volley === 2 ? 0.12 : 0);
+            run.eShots.push({ kind: 'seed', x: hd.x, y: 1.0, z: hd.z, vx: Math.sin(a) * 7.5, vy: 0, vz: Math.cos(a) * 7.5, dmg: 12 * run.info.dmgMul, r: 0.26, life: 4, ph: rand(0, 10) });
+          }
+          hd.recoil = 1;
+        }
+        AUDIO.play('throw', 1.2);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.1; }
+      break;
+    }
+    case 'roots': {
+      // roots burst up where the hero is, again and again
+      e.vx *= 0.85; e.vz *= 0.85; e.phase += dt;
+      const total = rage ? 8 : 6;
+      ai.fireT -= dt;
+      if (ai.fireT <= 0 && ai.rootN < total) {
+        ai.fireT = rage ? 0.36 : 0.45; ai.rootN++;
+        const o = { x: h[0] + run.vel[0] * 0.3, z: h[2] + run.vel[2] * 0.3 }; resolveCircle(o, 0.5);
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.3, dur: 0.75 });
+        ai.roots.push({ x: o.x, z: o.z, t: 0.75 });
+      }
+      if (ai.rootN >= total && !ai.roots.length) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+  }
+  for (const r of ai.roots) {
+    r.t -= dt;
+    if (r.t > 0) continue;
+    r.done = true;
+    // caught: hurt and stuck for a moment, then safe from more roots for a little while
+    if (Math.hypot(h[0] - r.x, h[2] - r.z) < 1.3 + HERO_R * 0.5 && run.t > (run.rootFree || 0)) { hurtHero(18 * run.info.dmgMul, r.x, r.z); run.rootT = 0.7; run.rootFree = run.t + 1.5; }
+    enemiesInRadius(r.x, r.z, 1.3, o => { if (!o.boss) hurtEnemy(o, 14, 0, 0, { sound: false }); });
+    tempProp('roots', r.x, r.z, 0.7, 1.4);
+    FX.burst(r.x, 0.3, r.z, 10, [0.45, 0.32, 0.2], 4, 0.12, 0.5, 2); FX.crack(r.x, r.z, 1.2, 1.4);
+    AUDIO.play('hit', 0.6);
+  }
+  ai.roots = ai.roots.filter(r => !r.done);
+  for (let i = 0; i < ai.heads.length; i++) updateHydraHead(e, ai.heads[i], i, ai.heads.length, dt, rage);
+};
+BOSS_DRAW.hydra = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, L = R.frame.lightDir, s = e.scale / 2.6;
+  const D = MODELS.defs, ok = R.enemyDraw.hydrabody && R.enemyDraw.hydrahead && R.enemyDraw.vineseg;
+  if (!ok) return;
+  pushEnemy('hydrabody', false, e.x, 0, e.z, e.yaw, D.hydrabody.clips.still.row, e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (!e.portrait) pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 1.4 * s, 1.3 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  const heads = e.ai.heads || [0, 1, 2].map(i => hydraHead(e, i, 3)), n = heads.length;
+  for (let i = 0; i < n; i++) {
+    const hd = heads[i], g = hd.grow * (1 - dead), a = e.yaw + (i - (n - 1) / 2) * 0.5;
+    // the neck: a sagging curve of vine segments from the top of the bulb to the head
+    const bx = e.x + Math.sin(a) * 0.4 * e.scale, by = 0.85 * e.scale, bz = e.z + Math.cos(a) * 0.4 * e.scale;
+    const cx = (bx + hd.x) / 2, cy = Math.max(by, hd.y) + 1.0 * s, cz = (bz + hd.z) / 2;
+    const len = Math.hypot(hd.x - bx, hd.y - by, hd.z - bz), m = clamp(Math.ceil(len / 0.55), 5, 16);
+    for (let k = 1; k < m; k++) {
+      const u = k / m, v = 1 - u;
+      const x = v * v * bx + 2 * v * u * cx + u * u * hd.x, y = v * v * by + 2 * v * u * cy + u * u * hd.y, z = v * v * bz + 2 * v * u * cz + u * u * hd.z;
+      const ss = (1.15 - u * 0.35) * s * g;
+      pushEnemy('vineseg', false, x, y - 0.5 * ss, z, a + k, D.vineseg.clips.still.row, ss, 1, dead, fl, 0, t[0] * 0.85, t[1] * 0.85, t[2] * 0.85);
+    }
+    const hs = 1.9 * s * g * (1 + hd.recoil * 0.15);
+    pushEnemy('hydrahead', false, hd.x, hd.y - 0.5 * hs, hd.z, hd.yaw, D.hydrahead.clips.still.row, hs, 1, dead, fl, 0, t[0], t[1], t[2]);
+    if (!e.portrait) pushDecal(hd.x - L[0] * 0.4, hd.z - L[2] * 0.4, 0.6 * s, 0.5 * s, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.35);
+  }
+};

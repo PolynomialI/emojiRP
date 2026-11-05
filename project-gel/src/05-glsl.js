@@ -914,6 +914,18 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
   }
+  if (type == 40) {
+    // thorn pod: a round goo seed bristling with brown spikes (three rings of seven, plus top and bottom)
+    float rr = length(p), pod = rr - 0.44;
+    float az = atan(p.z, p.x), el = asin(clamp(p.y / max(rr, 1e-4), -1.0, 1.0));
+    float ca = 6.2832 / 7.0, ce = 0.75;
+    float ei = clamp(floor(el / ce + 0.5), -1.0, 1.0);
+    float ai = floor(az / ca + 0.5 - ei * 0.5) + ei * 0.5;
+    vec3 dir = vec3(cos(ei * ce) * cos(ai * ca), sin(ei * ce), cos(ei * ce) * sin(ai * ca));
+    float sp = sdRoundCone(p, dir * 0.3, dir * 0.82, 0.12, 0.012);
+    sp = min(sp, min(sdRoundCone(p, vec3(0.0, 0.3, 0.0), vec3(0.0, 0.82, 0.0), 0.12, 0.012), sdRoundCone(p, vec3(0.0, -0.3, 0.0), vec3(0.0, -0.82, 0.0), 0.12, 0.012)));
+    return vec2(min(pod, sp), sp < pod ? 4.0 : 0.0);
+  }
   if (type == 39) {
     // meteor: a lumpy rock with glowing veins, trailing a flickering flame tail along -z
     vec3 q = p - vec3(0.0, 0.0, 0.32);

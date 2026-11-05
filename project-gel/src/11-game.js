@@ -374,7 +374,9 @@ function updateRun(dt) {
   updateSugar(run, dt);
   // chilled by frost breath: slower for a moment
   if (run.chillT > 0) { run.chillT -= dt; if (Math.random() < 0.3) FX.part(h[0] + rand(-0.4, 0.4), rand(0.3, 1.2), h[2] + rand(-0.4, 0.4), 0, 0.4, 0, 0.1, 0.02, 0.6, [0.75, 0.92, 1], 0.9, 3); }
-  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1) * (run.chillT > 0 ? 0.6 : 1);
+  // snared by roots: can't move at all for a moment
+  if (run.rootT > 0) run.rootT -= dt;
+  const top = hero.topSpeed * (1 - run.contactSlow) * (Z && Z.slow ? Z.slow : 1) * (run.rushT > 0 ? 1 + run.rushPower : 1) * (run.chillT > 0 ? 0.6 : 1) * (run.rootT > 0 ? 0 : 1);
   const k = 1 - Math.exp(-dt / (Z && Z.slide ? 0.55 : 0.045));
   if (Z && Z.burn) {
     run.burnT = (run.burnT || 0) - dt;
@@ -477,6 +479,7 @@ function updateEnemies(dt) {
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }
       if (e.contactCd <= 0 && G.state === 'run' && e.spawnT <= 0) { hurtHero(e.contactDmg || e.dmg, e.x, e.z); e.contactCd = 0.75; }
+      thornsTouch(e, dx, dz, d);
     }
   }
   run.contactSlow = Math.min(0.3, touching * 0.05);
