@@ -72,7 +72,7 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   - Chapter map, offline earnings, settings and saving.
 - **Verified in headless Chromium:** every test mode below runs with no script errors and nothing invalid sent to the GPU.
 
-## Chapter themes (in progress)
+## Chapter themes
 Each chapter of a 10-chapter cycle gets its own map, boss and power-up; chapters 11+ repeat them with stronger stats.
 Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Conductor) as a second boss.
 
@@ -85,11 +85,26 @@ Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Condu
 | 5 | Candy Land (chocolate puddles) | Jelly Queen + Hurler | Sugar Rush (ability) | done |
 | 6 | Frozen Tundra (slippery ice, snowfall) | Frost Yeti | Frost Nova (skill) | done |
 | 7 | Volcano (lava burns, erupting vents) | Magma Golem | Meteor (skill) | done |
-| 8 | Jungle Swamp (floor style 7) | Vine Hydra | Thorns (ability) | to do |
-| 9 | Pirate Beach (floor style 8) | Captain Crab | Tidal Wave (skill) | to do |
-| 10 | Moon Base (floor style 9) | UFO Overlord + Charger | Black Hole (skill) | to do |
+| 8 | Jungle Swamp (swamp slows, fireflies) | Vine Hydra | Thorns (ability) | done |
+| 9 | Pirate Beach (tide pools, shipwreck) | Captain Crab | Tidal Wave (skill) | done |
+| 10 | Moon Base (energy pads speed you up) | UFO Overlord + Charger | Black Hole (skill) | done |
 
-Until a chapter's boss exists, `chapterInfo()` falls back to the original roster and the arena wraps around `ARENAS`.
+Boss mechanics in short:
+- Sand Worm: burrows and breaches under you.
+- Wrecking Bot: ball swings, rocket barrages and lane slams.
+- Big Bounce: hops, pinball rolls and rubber balls.
+- Jelly Queen: jelly spirals, slime summons and sticky flops.
+- Frost Yeti: a breath sweep that chills, icicles that leave spikes, and a spike ring with gaps.
+- Magma Golem: lava fissures and magma lobs; after its eruption it is cooled and takes extra damage.
+- Vine Hydra: heads snap along lanes and spit seeds, and roots snare you.
+- Captain Crab: claw snaps, a walking cannon line, homing bubbles and a sideways dash.
+- UFO Overlord: a tractor beam, sweeping lasers and beamed-down invaders.
+
+Every boss has a rage phase below half health.
+
+Other additions:
+- Tall scenery fades when it hides the hero.
+- Frozen enemies (from Frost Nova or the yeti's breath) stand still and do no harm.
 
 Where things live:
 - Data: `ARENAS`, `PROP_KINDS`, `ZONE_KINDS`, `BOSS_TYPES`, `CHAPTER_BOSSES`, and `from:` on `SKILLS`/`PASSIVES` in `src/10-data.js`.
