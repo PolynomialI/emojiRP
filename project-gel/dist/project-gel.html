@@ -1333,16 +1333,18 @@ function buildModels(progress) {
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'], golem: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
-  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015 };
+  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
+  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
-  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti');
+  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
+  'obsidian', 'vent', 'deadtree', 'basalt', 'golem');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -1628,6 +1630,62 @@ function themeModels(defs) {
     }
     m.top = hd[1] + hr + 0.2; m.bmin = [-0.7, -0.03, -0.65]; m.bmax = [0.7, m.top + 0.05, 0.6]; m.name = 'yeti'; m.runAmp = 0.7;
     defs.yeti = m;
+  }
+  // ---------- Volcano ----------
+  {
+    const obs = C('#1d1622'), obsHi = C('#4a3a5c'), hot = C('#ff7a1a'), glow = C('#ffc040'), rockD = C('#3a2e2a'), char = C('#2a201c');
+    P('obsidian', [
+      ...[[0, 0, 1.2, 0.2, obs], [0.26, 0.24, 0.8, 0.14, obsHi], [-0.28, 0.08, 0.85, 0.15, obs], [0.04, -0.3, 0.7, 0.13, obs], [-0.14, 0.3, 0.55, 0.1, obsHi]]
+        .map(([x, z, hgt, r, col]) => ({ s: 'cap', a: [x * 0.4, 0, z * 0.4], b: [x, hgt, z], r, r2: 0.02, col, k: 0.01 })),
+      { s: 'ell', c: [0, 0.04, 0], rr: [0.42, 0.08, 0.42], col: hot, k: 0.05 },
+    ], { ao: 0.6 });
+    // a small cone with a glowing crater (the arena feature makes it erupt)
+    P('vent', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 0.42, 0], r: 0.5, r2: 0.26, col: rockD, k: 0.02 },
+      { s: 'tor', ax: 'y', c: [0, 0.6, 0], R: 0.2, r: 0.07, a0: -Math.PI, a1: Math.PI, col: hot, k: 0.03 },
+      { s: 'sph', c: [0, 0.58, 0], r: 0.17, col: glow, k: 0.02 },
+      ...[[0.38, 0.2, 0.1], [-0.3, 0.15, -0.25], [0.05, 0.1, 0.42]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.12, col: rockD, k: 0.06 })),
+    ]);
+    P('deadtree', [
+      { s: 'cap', a: [0, 0, 0], b: [0.04, 1.2, 0], r: 0.09, r2: 0.05, col: char, k: 0.02 },
+      { s: 'cap', a: [0.03, 0.8, 0], b: [0.4, 1.15, 0.06], r: 0.045, r2: 0.02, col: char, k: 0.02 },
+      { s: 'cap', a: [0.03, 0.6, 0], b: [-0.34, 0.92, -0.08], r: 0.045, r2: 0.02, col: char, k: 0.02 },
+      { s: 'cap', a: [0.04, 1.05, 0], b: [-0.12, 1.42, 0.1], r: 0.035, r2: 0.015, col: char, k: 0.02 },
+      { s: 'sph', c: [0.4, 1.15, 0.06], r: 0.035, col: hot, k: 0 }, { s: 'sph', c: [-0.12, 1.42, 0.1], r: 0.03, col: hot, k: 0 },
+      { s: 'ell', c: [0, 0.03, 0], rr: [0.18, 0.05, 0.18], col: char, k: 0.04 },
+    ]);
+    // basalt columns for the wall; the columns take the instance tint
+    P('basalt', [
+      ...[[0, 0, 0.26, 0.6], [0.3, 0.12, 0.2, 0.42], [-0.24, 0.2, 0.22, 0.5], [0.08, -0.3, 0.2, 0.34]].map(([x, z, r, hh]) => ({ s: 'cyl', ax: 'y', c: [x, hh, z], r, hh, rd: 0.03, k: 0.01 })),
+      { s: 'sph', c: [0.2, 0.05, 0.36], r: 0.08, col: hot, k: 0.03 },
+    ], { ao: 0.8 });
+  }
+  // ---------- Magma Golem (chapter 7 boss): a hulking rock man with a molten core; plain rock takes the boss tint ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.42, shY: 0.8, headY: 0.98, headR: 0.15, headZ: 0.1, shW: 0.3, hipW: 0.13, elOut: 0.1, upperLen: 0.2, foreLen: 0.2,
+      pelvisR: 0.2, torso: 'ell', torsoRR: [0.32, 0.28, 0.24], neckR: 0.12, armR: 0.11, handR: 0.16, legR: 0.13, k: 0.06 });
+    const J = m.J, hd = J.head, hot = C('#ff7a1a'), core = C('#ffd040'), eye = C('#ffe060');
+    m.parts.push({ s: 'rock', c: [0, 0.66, -0.02], r: 0.29, bump: 0.14, bone: 1, k: 0.04 });
+    m.parts.push({ s: 'rock', c: [hd[0], hd[1] + 0.02, hd[2]], r: 0.17, bump: 0.14, bone: 2, k: 0.03 });
+    // the molten core and the cracks spreading from it
+    m.parts.push({ s: 'sph', c: [0, 0.66, 0.24], r: 0.11, col: core, bone: 1, k: 0.02 });
+    for (const [x, y] of [[0.16, 0.8], [-0.17, 0.78], [0.2, 0.52], [-0.15, 0.5], [0.02, 0.9]])
+      m.parts.push({ s: 'cap', a: [0, 0.66, 0.24], b: [x, y, 0.2], r: 0.028, r2: 0.012, col: hot, bone: 1, k: 0.01 });
+    // glowing eyes under a heavy brow
+    for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.07, hd[1] + 0.03, hd[2] + 0.15], rr: [0.05, 0.035, 0.03], col: eye, bone: 2, k: 0 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.07, hd[2] + 0.12], hs: [0.13, 0.03, 0.05], rd: 0.02, bone: 2, k: 0.03 });
+    // boulder shoulders and fists, with lava dripping between the knuckles
+    for (const sd of ['L', 'R']) {
+      const sx = sd === 'L' ? 1 : -1, b = sd === 'L' ? 4 : 6, ha = J['ha' + sd];
+      m.parts.push({ s: 'rock', c: [sx * 0.33, 0.86, -0.02], r: 0.16, bump: 0.18, bone: 1, k: 0.04 });
+      m.parts.push({ s: 'rock', c: [ha[0], ha[1] - 0.03, ha[2] + 0.02], r: 0.19, bump: 0.18, bone: b, k: 0.04 });
+      m.parts.push({ s: 'cap', a: J['sh' + sd], b: J['el' + sd], r: 0.026, col: hot, bone: b - 1, k: 0.01 });
+      m.parts.push({ s: 'sph', c: [ha[0], ha[1] - 0.12, ha[2] + 0.15], r: 0.04, col: hot, bone: b, k: 0.02 });
+      const lb = sd === 'L' ? 7 : 9;
+      m.parts.push({ s: 'cap', a: [(J['hi' + sd][0] + J['kn' + sd][0]) / 2, 0.32, 0.12], b: [J['kn' + sd][0], 0.22, 0.13], r: 0.02, col: hot, bone: lb, k: 0.01 });
+    }
+    m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.6]; m.bmax = [0.72, m.top + 0.05, 0.6]; m.name = 'golem'; m.runAmp = 0.65;
+    defs.golem = m;
   }
 }
 </script>
@@ -2640,16 +2698,18 @@ function buildModels(progress) {
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'], golem: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
-  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015 };
+  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
+  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
-  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti');
+  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
+  'obsidian', 'vent', 'deadtree', 'basalt', 'golem');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -2936,6 +2996,62 @@ function themeModels(defs) {
     m.top = hd[1] + hr + 0.2; m.bmin = [-0.7, -0.03, -0.65]; m.bmax = [0.7, m.top + 0.05, 0.6]; m.name = 'yeti'; m.runAmp = 0.7;
     defs.yeti = m;
   }
+  // ---------- Volcano ----------
+  {
+    const obs = C('#1d1622'), obsHi = C('#4a3a5c'), hot = C('#ff7a1a'), glow = C('#ffc040'), rockD = C('#3a2e2a'), char = C('#2a201c');
+    P('obsidian', [
+      ...[[0, 0, 1.2, 0.2, obs], [0.26, 0.24, 0.8, 0.14, obsHi], [-0.28, 0.08, 0.85, 0.15, obs], [0.04, -0.3, 0.7, 0.13, obs], [-0.14, 0.3, 0.55, 0.1, obsHi]]
+        .map(([x, z, hgt, r, col]) => ({ s: 'cap', a: [x * 0.4, 0, z * 0.4], b: [x, hgt, z], r, r2: 0.02, col, k: 0.01 })),
+      { s: 'ell', c: [0, 0.04, 0], rr: [0.42, 0.08, 0.42], col: hot, k: 0.05 },
+    ], { ao: 0.6 });
+    // a small cone with a glowing crater (the arena feature makes it erupt)
+    P('vent', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 0.42, 0], r: 0.5, r2: 0.26, col: rockD, k: 0.02 },
+      { s: 'tor', ax: 'y', c: [0, 0.6, 0], R: 0.2, r: 0.07, a0: -Math.PI, a1: Math.PI, col: hot, k: 0.03 },
+      { s: 'sph', c: [0, 0.58, 0], r: 0.17, col: glow, k: 0.02 },
+      ...[[0.38, 0.2, 0.1], [-0.3, 0.15, -0.25], [0.05, 0.1, 0.42]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.12, col: rockD, k: 0.06 })),
+    ]);
+    P('deadtree', [
+      { s: 'cap', a: [0, 0, 0], b: [0.04, 1.2, 0], r: 0.09, r2: 0.05, col: char, k: 0.02 },
+      { s: 'cap', a: [0.03, 0.8, 0], b: [0.4, 1.15, 0.06], r: 0.045, r2: 0.02, col: char, k: 0.02 },
+      { s: 'cap', a: [0.03, 0.6, 0], b: [-0.34, 0.92, -0.08], r: 0.045, r2: 0.02, col: char, k: 0.02 },
+      { s: 'cap', a: [0.04, 1.05, 0], b: [-0.12, 1.42, 0.1], r: 0.035, r2: 0.015, col: char, k: 0.02 },
+      { s: 'sph', c: [0.4, 1.15, 0.06], r: 0.035, col: hot, k: 0 }, { s: 'sph', c: [-0.12, 1.42, 0.1], r: 0.03, col: hot, k: 0 },
+      { s: 'ell', c: [0, 0.03, 0], rr: [0.18, 0.05, 0.18], col: char, k: 0.04 },
+    ]);
+    // basalt columns for the wall; the columns take the instance tint
+    P('basalt', [
+      ...[[0, 0, 0.26, 0.6], [0.3, 0.12, 0.2, 0.42], [-0.24, 0.2, 0.22, 0.5], [0.08, -0.3, 0.2, 0.34]].map(([x, z, r, hh]) => ({ s: 'cyl', ax: 'y', c: [x, hh, z], r, hh, rd: 0.03, k: 0.01 })),
+      { s: 'sph', c: [0.2, 0.05, 0.36], r: 0.08, col: hot, k: 0.03 },
+    ], { ao: 0.8 });
+  }
+  // ---------- Magma Golem (chapter 7 boss): a hulking rock man with a molten core; plain rock takes the boss tint ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.42, shY: 0.8, headY: 0.98, headR: 0.15, headZ: 0.1, shW: 0.3, hipW: 0.13, elOut: 0.1, upperLen: 0.2, foreLen: 0.2,
+      pelvisR: 0.2, torso: 'ell', torsoRR: [0.32, 0.28, 0.24], neckR: 0.12, armR: 0.11, handR: 0.16, legR: 0.13, k: 0.06 });
+    const J = m.J, hd = J.head, hot = C('#ff7a1a'), core = C('#ffd040'), eye = C('#ffe060');
+    m.parts.push({ s: 'rock', c: [0, 0.66, -0.02], r: 0.29, bump: 0.14, bone: 1, k: 0.04 });
+    m.parts.push({ s: 'rock', c: [hd[0], hd[1] + 0.02, hd[2]], r: 0.17, bump: 0.14, bone: 2, k: 0.03 });
+    // the molten core and the cracks spreading from it
+    m.parts.push({ s: 'sph', c: [0, 0.66, 0.24], r: 0.11, col: core, bone: 1, k: 0.02 });
+    for (const [x, y] of [[0.16, 0.8], [-0.17, 0.78], [0.2, 0.52], [-0.15, 0.5], [0.02, 0.9]])
+      m.parts.push({ s: 'cap', a: [0, 0.66, 0.24], b: [x, y, 0.2], r: 0.028, r2: 0.012, col: hot, bone: 1, k: 0.01 });
+    // glowing eyes under a heavy brow
+    for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.07, hd[1] + 0.03, hd[2] + 0.15], rr: [0.05, 0.035, 0.03], col: eye, bone: 2, k: 0 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.07, hd[2] + 0.12], hs: [0.13, 0.03, 0.05], rd: 0.02, bone: 2, k: 0.03 });
+    // boulder shoulders and fists, with lava dripping between the knuckles
+    for (const sd of ['L', 'R']) {
+      const sx = sd === 'L' ? 1 : -1, b = sd === 'L' ? 4 : 6, ha = J['ha' + sd];
+      m.parts.push({ s: 'rock', c: [sx * 0.33, 0.86, -0.02], r: 0.16, bump: 0.18, bone: 1, k: 0.04 });
+      m.parts.push({ s: 'rock', c: [ha[0], ha[1] - 0.03, ha[2] + 0.02], r: 0.19, bump: 0.18, bone: b, k: 0.04 });
+      m.parts.push({ s: 'cap', a: J['sh' + sd], b: J['el' + sd], r: 0.026, col: hot, bone: b - 1, k: 0.01 });
+      m.parts.push({ s: 'sph', c: [ha[0], ha[1] - 0.12, ha[2] + 0.15], r: 0.04, col: hot, bone: b, k: 0.02 });
+      const lb = sd === 'L' ? 7 : 9;
+      m.parts.push({ s: 'cap', a: [(J['hi' + sd][0] + J['kn' + sd][0]) / 2, 0.32, 0.12], b: [J['kn' + sd][0], 0.22, 0.13], r: 0.02, col: hot, bone: lb, k: 0.01 });
+    }
+    m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.6]; m.bmax = [0.72, m.top + 0.05, 0.6]; m.name = 'golem'; m.runAmp = 0.65;
+    defs.golem = m;
+  }
 }
 
 // ---- 05-glsl.js ----
@@ -3203,11 +3319,11 @@ void main() {
     gloss = 0.15; sharp = 30.0;
   } else if (style == 6) {
     // volcano: cracked basalt plates with glowing lava seams
-    vec3 v = voro(p / 2.4);
-    float crack = 1.0 - smoothstep(0.0, 0.06, v.y);
+    vec3 v = voro(p / 3.2);
+    float crack = 1.0 - smoothstep(0.0, 0.035, v.y);
     alb = mix(uStoneA, uStoneB, v.z) * (0.85 + 0.2 * fine) * (1.0 - 0.6 * crack);
     float pulse = 0.65 + 0.35 * sin(uTime * 1.5 + v.z * 6.0 + p.x * 0.2);
-    emis = uAccent * crack * pulse * (1.6 + 1.2 * mott);
+    emis = uAccent * crack * pulse * (0.7 + 0.8 * mott);
     N = normalize(vec3((fine - 0.5) * 0.2, 1.0, (mott - 0.5) * 0.2));
     ao = mix(0.75, 1.0, smoothstep(0.0, 0.25, v.y));
   } else if (style == 7) {
@@ -3854,6 +3970,15 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 39) {
+    // meteor: a lumpy rock with glowing veins, trailing a flickering flame tail along -z
+    vec3 q = p - vec3(0.0, 0.0, 0.32);
+    float rock = length(q) - 0.46 + sin(q.x * 7.0 + 1.3) * sin(q.y * 6.0 + 0.7) * sin(q.z * 6.5 + 2.1) * 0.07;
+    float fl = sin(p.z * 9.0 + ph * 14.0) * 0.04 + sin(atan(p.y, p.x) * 5.0 + ph * 9.0) * 0.03;
+    float tail = sdRoundCone(p, vec3(0.0, 0.0, 0.3), vec3(0.0, 0.0, -0.75), 0.4 + fl, 0.05);
+    float vein = abs(sin(q.x * 9.0 + q.y * 4.0) * sin(q.y * 8.0 - q.z * 5.0) * sin(q.z * 7.0 + q.x * 3.0));
+    return vec2(min(rock, tail), rock <= tail ? (vein < 0.04 ? 6.0 : 3.0) : 6.0);
   }
   if (type == 38) {
     // snowflake: six arms with side branches, flat in the xy plane
@@ -5819,6 +5944,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Drones'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
     levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
   },
+  meteor: {
+    name: 'Meteor', from: 7, intro: 'Calls flaming meteors down on the thickest crowds nearby; the ground keeps burning where they land.', icon: { type: 39, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Meteors'], ['radius', 'Radius', 'm'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [30, 34, 38, 42, 48, 54, 60, 68, 76, 86], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.7, 2.9], cd: [6, 5.8, 5.6, 5.4, 5.2, 5.0, 4.8, 4.6, 4.3, 4.0] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -5892,11 +6022,12 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 6800, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.yeti = { name: 'Frost Yeti', model: 'yeti', meshes: ['yeti', 'icicle', 'icespike'], hp: 6100, speed: 2.1, dmg: 18, scale: 2.8, radius: 1.2, tint: '#6fa8f2', mass: 60, portraitTop: 1.05 };
-BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 0.95 };
-BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 0.95 };
+BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 1.75 };
+BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 2.1 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
-BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 0.8 };
+BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 1.25 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
 const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
@@ -5916,6 +6047,8 @@ const ARENAS = [
     props: [['lollipop', 5, 0.32, 0.4], ['candycane', 5, 0.3, 0.36], ['gumdrop', 7, 0.8, 1.3], ['cupcake', 3, 0.7, 0.9]], zones: [['chocolate', 4, 2.0, 3.0]], wall: 'gumdrop' },
   { id: 'tundra', name: 'Frozen Tundra', floor: 5, stoneA: '#eef5fc', stoneB: '#c2d6ec', grout: '#7a93b0', accent: '#7fd8ff', fog: '#1a2a46', sky: '#e2f1ff', ground: '#b4c8de', light: '#e6eff9', spotMin: 0.62, shadowTint: '#28487a', rock: '#a9bccf', pool: '#bfe6ff', poolGlow: 0.04,
     props: [['pine', 8, 0.42, 0.6], ['icecrystal', 4, 0.6, 0.9], ['snowman', 2, 0.5, 0.6], ['rock', 3, 0.8, 1.2]], zones: [['ice', 3, 3.0, 4.6]], wall: 'iceblock' },
+  { id: 'volcano', name: 'Volcano', floor: 6, stoneA: '#3d3230', stoneB: '#2b2321', grout: '#140c0a', accent: '#ff6a1a', fog: '#1c0b06', sky: '#ffa060', ground: '#2c1c16', light: '#ffe2c8', spotMin: 0.55, shadowTint: '#1c0804', rock: '#54443f', pool: '#f04a0c', poolGlow: 0.3,
+    props: [['obsidian', 4, 0.6, 0.9], ['vent', 2.2, 0.55, 0.65], ['deadtree', 3, 0.4, 0.55], ['rock', 5, 0.8, 1.3]], zones: [['lava', 2.4, 2.4, 3.6]], wall: 'basalt' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -5944,6 +6077,10 @@ const PROP_KINDS = {
   icecrystal: { models: ['icecrystal'], unit: 0.35, block: true, shots: true, tints: ['#9fdcff', '#bfe8ff', '#8fc8ff'], tall: 2 },
   iceblock: { models: ['iceblock'], unit: 0.45, block: true, shots: true, tints: ['#a8dcff', '#c6eaff', '#92ceff'], wallR: [1.0, 1.15] },
   icespike: { models: ['icespike'], unit: 0.3, block: true, shots: false, tint: '#86c8ff', shadow: false },
+  obsidian: { models: ['obsidian'], unit: 0.35, block: true, shots: true, tall: 2 },
+  vent: { models: ['vent'], unit: 0.5, block: true, shots: false },
+  deadtree: { models: ['deadtree'], unit: 0.15, block: true, tall: 2.5 },
+  basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -5954,6 +6091,7 @@ const ZONE_KINDS = {
   chocolate: { slow: 0.55, col: '#5e3018', glow: 0.02 },
   jelly: { slow: 0.45, col: '#ff5f8a', glow: 0.12 },
   ice: { slide: true, col: '#7cc4f0', glow: 0.04, style: 1 },
+  lava: { burn: 16, slow: 0.85, col: '#f04a0c', glow: 0.3 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -6785,7 +6923,7 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
-    if (s.kind === 'boulder' || s.kind === 'rocket') {
+    if (s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma') {
       // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1);
@@ -6798,6 +6936,8 @@ function updateEnemyShots(dt) {
         FX.ring(s.tx, s.tz, s.radius * 1.4, [1, 0.8, 0.6], 0.4);
         FX.crack(s.tx, s.tz, s.radius * 1.6);
         FX.burst(s.tx, 0.3, s.tz, 10, [0.55, 0.5, 0.45], 4, 0.14, 0.5, 2);
+        // magma splashes into a puddle of lava that burns for a while
+        if (s.kind === 'magma') { tempZone('lava', s.tx, s.tz, s.pool, s.stay); FX.burst(s.tx, 0.4, s.tz, 14, [1, 0.55, 0.15], 5, 0.12, 0.6, 0); }
         G.cam.shake = Math.max(G.cam.shake, 0.1);
         AUDIO.play('boom');
       }
@@ -7328,6 +7468,52 @@ ARENA_FEATURES.tundra = {
       // each flake lives just long enough to reach the ground
       const x = h[0] + rand(-16, 16), z = h[2] + rand(-13, 9), y = rand(5, 9), vy = rand(-1.7, -1.1);
       FX.part(x, y, z, rand(0.3, 0.9), vy, rand(-0.2, 0.2), rand(0.05, 0.09), 0.06, y / -vy, [1, 1, 1], 0.85, 2, 0, 0);
+    }
+  },
+};
+
+// ---------- Volcano: vents that rumble, then blast a column of fire; embers drifting up ----------
+const VENT_R = 1.9;
+ARENA_FEATURES.volcano = {
+  init(st, rnd) {
+    st.vents = ARENA.props.filter(o => o.kind === 'vent').map(o => ({ o, state: 'idle', t: 2 + rnd() * 7, tick: 0 }));
+    st.acc = 0;
+  },
+  update(st, dt) {
+    const h = G.hero.pos, run = G.run;
+    for (const v of st.vents) {
+      const o = v.o, near = Math.hypot(o.x - h[0], o.z - h[2]) < 24;
+      v.t -= dt;
+      if (v.state === 'idle') {
+        if (near && Math.random() < dt * 0.6) FX.smoke(o.x + rand(-0.2, 0.2), o.r * 1.4, o.z + rand(-0.2, 0.2), 0.5, [0.3, 0.27, 0.26], 1.4, 1.2);
+        if (v.t <= 0) { if (near) { v.state = 'warn'; v.t = 1.1; } else v.t = rand(2, 4); }
+      } else if (v.state === 'warn') {
+        if (Math.random() < 0.5) FX.part(o.x + rand(-0.3, 0.3), o.r * 1.3, o.z + rand(-0.3, 0.3), rand(-0.5, 0.5), rand(2, 4), rand(-0.5, 0.5), 0.12, 0.03, 0.5, [1, 0.6, 0.15], 1, 0, -3);
+        if (v.t <= 0) { v.state = 'blast'; v.t = 1.3; v.tick = 0; AUDIO.play('boom', 0.8); G.cam.shake = Math.max(G.cam.shake, 0.08); }
+      } else {
+        // the fire column: burns the hero and anything else standing next to the vent
+        for (let i = 0; i < (FX.reduced ? 2 : 5); i++) FX.part(o.x + rand(-0.4, 0.4), o.r * 1.2, o.z + rand(-0.4, 0.4), rand(-0.8, 0.8), rand(7, 12), rand(-0.8, 0.8), rand(0.35, 0.6), 0.1, rand(0.5, 0.8), [1, rand(0.35, 0.7), 0.1], 1, 0, 0, 1.2);
+        if (Math.random() < 0.4) FX.smoke(o.x, 4, o.z, 1.4, [0.25, 0.2, 0.18], 1.2, 2);
+        v.tick -= dt;
+        if (v.tick <= 0) {
+          v.tick = 0.4;
+          if (Math.hypot(h[0] - o.x, h[2] - o.z) < VENT_R + HERO_R * 0.5 && G.state === 'run') hurtHero(14 * run.info.dmgMul, o.x, o.z);
+          enemiesInRadius(o.x, o.z, VENT_R, e => { if (!e.boss) hurtEnemy(e, 12, 0, 0, { sound: false, color: [1, 0.6, 0.2] }); });
+        }
+        if (v.t <= 0) { v.state = 'idle'; v.t = rand(5, 9); }
+      }
+    }
+    // embers drifting up around the hero
+    st.acc += dt * (FX.reduced ? 5 : 14);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0, 1), h[2] + rand(-11, 8), rand(-0.3, 0.3), rand(0.8, 1.6), rand(-0.3, 0.3), rand(0.05, 0.09), 0.02, rand(2, 3.5), [1, rand(0.4, 0.65), 0.15], 1, 0, 0, 0.2);
+  },
+  emit(st) {
+    // a pulsing ring around a vent about to blow, and a glow while it burns
+    for (const v of st.vents) {
+      if (v.state === 'idle' || !onScreen(v.o.x, v.o.z, 3)) continue;
+      const p = v.state === 'warn' ? 1 - v.t / 1.1 : 1;
+      if (v.state === 'warn') pushDecal(v.o.x, v.o.z, VENT_R, VENT_R, 0, 4, 0, p, 1, 0.45, 0.1, 0.8);
+      else pushDecal(v.o.x, v.o.z, VENT_R * 1.3, VENT_R * 1.3, 0, 1, 0, 0, 1, 0.5, 0.15, 0.55, true);
     }
   },
 };
@@ -8236,6 +8422,58 @@ SKILL_HOOKS.frostnova = {
   emit() {},
 };
 
+// ---------- Meteor (chapter 7): flaming rocks fall on the thickest crowds and leave the ground burning ----------
+const METEOR_FALL = 0.75;
+SKILL_HOOKS.meteor = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, r = L.radius * areaMul();
+    st.rocks = st.rocks || []; st.fires = st.fires || [];
+    st.t = (st.t ?? 1.5) - dt;
+    if (st.t <= 0 && nearestEnemy(h[0], h[2], 10)) {
+      st.t = L.cd * cdMul();
+      for (let i = 0; i < L.count; i++) {
+        let tgt = clusterTarget(h[0], h[2], 10);
+        if (!tgt || i) { const e = nearestEnemy(h[0] + rand(-4, 4), h[2] + rand(-4, 4), 10); if (e) tgt = [e.x, e.z]; }
+        if (!tgt) break;
+        // they come in at a slant from up and behind, a little apart
+        st.rocks.push({ tx: tgt[0], tz: tgt[1], sx: tgt[0] + 5, sy: 15, sz: tgt[1] - 7, t: -i * 0.18, r, ph: rand(0, 10) });
+      }
+    }
+    for (const m of st.rocks) {
+      m.t += dt;
+      if (m.t < METEOR_FALL) { if (m.t > 0 && Math.random() < 0.8) { const u = m.t / METEOR_FALL; FX.smoke(lerp(m.sx, m.tx, u), lerp(m.sy, 0, u), lerp(m.sz, m.tz, u), 0.5, [0.35, 0.3, 0.28], 0.6, 0.2); } continue; }
+      m.done = true;
+      enemiesInRadius(m.tx, m.tz, m.r, e => { const ex = e.x - m.tx, ez = e.z - m.tz, ed = Math.hypot(ex, ez) || 1; hurtEnemy(e, L.dmg, ex / ed * 8, ez / ed * 8, { sound: false, color: [1, 0.6, 0.2] }); });
+      FX.ring(m.tx, m.tz, m.r * 1.6, [1, 0.6, 0.2], 0.45); FX.crack(m.tx, m.tz, m.r * 1.3, 2.2); FX.scorch(m.tx, m.tz, m.r * 1.1, 2.5);
+      FX.burst(m.tx, 0.4, m.tz, 18, [1, 0.55, 0.15], 6, 0.16, 0.6, 0); FX.burst(m.tx, 0.3, m.tz, 8, [0.4, 0.35, 0.32], 4, 0.18, 0.7, 2);
+      arenaBlast(m.tx, m.tz, m.r * 1.5, 1.2);
+      G.cam.shake = Math.max(G.cam.shake, 0.12); AUDIO.play('boom', 0.7);
+      st.fires.push({ x: m.tx, z: m.tz, r: m.r * 0.85, life: 2, tick: 0.2 });
+    }
+    st.rocks = st.rocks.filter(m => !m.done);
+    // burning ground where they landed
+    for (const f of st.fires) {
+      f.life -= dt; f.tick -= dt;
+      if (f.tick <= 0) { f.tick = 0.4; enemiesInRadius(f.x, f.z, f.r, e => hurtEnemy(e, Math.max(1, Math.round(L.dmg * 0.12)), 0, 0, { sound: false, color: [1, 0.6, 0.2] })); }
+      if (Math.random() < 0.6) FX.part(f.x + rand(-f.r, f.r) * 0.7, 0.2, f.z + rand(-f.r, f.r) * 0.7, 0, rand(1.5, 3), 0, rand(0.15, 0.3), 0.05, 0.5, [1, rand(0.35, 0.7), 0.1], 1, 0);
+    }
+    st.fires = st.fires.filter(f => f.life > 0);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.rocks) return;
+    for (const m of st.rocks) {
+      if (m.t < 0) continue;
+      const u = m.t / METEOR_FALL, x = lerp(m.sx, m.tx, u), y = lerp(m.sy, 0.4, u), z = lerp(m.sz, m.tz, u);
+      const dx = m.tx - m.sx, dy = -m.sy, dz = m.tz - m.sz, l = Math.hypot(dx, dy, dz);
+      pushImp(x, y, z, 0.9, dx / l, dy / l, dz / l, 1.2, 39, 0, 0.3, m.ph + m.t * 3, 0, 0, 0, 1);
+      FX.glow(x, y, z, 1.6, [1, 0.5, 0.15], 0.05, 0.6);
+      pushDecal(m.tx, m.tz, m.r * u, m.r * u, 0, 1, 0, 0, 1, 0.4, 0.1, 0.35 * u, true);
+    }
+    for (const f of st.fires) pushDecal(f.x, f.z, f.r * 1.2, f.r * 1.2, 0, 1, 0, 0, 1, 0.45, 0.1, 0.5 * Math.min(1, f.life) * (0.85 + 0.15 * Math.sin(G.run.t * 20 + f.x)), true);
+  },
+};
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -8582,6 +8820,7 @@ function emitRunScene() {
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
     else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
+    else if (s.kind === 'magma') { pushImp(s.x, s.y, s.z, 0.5, 0, 1, 0, 1, 15, 0, 0.5, s.spin, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.9, [1, 0.5, 0.15], 0.05, 0.6); pushDecal(s.x + 0.15, s.z + 0.1, 0.5, 0.4, 0, 1, 0, 0, 0.02, 0.01, 0.0, 0.4); }
     else if (s.kind === 'icicle') {
       if (R.enemyDraw.icicle) pushEnemy('icicle', false, s.x, s.y - 0.5 * 1.7, s.z, s.spin, MODELS.defs.icicle.clips.still.row, 1.7, 1, 0, 0, 0, 1, 1, 1);
       const g = 1 - s.y / s.sy; pushDecal(s.x, s.z, 0.25 + g * 0.45, 0.25 + g * 0.45, 0, 1, 0, 0, 0.02, 0.05, 0.12, 0.2 + g * 0.4);
@@ -9330,6 +9569,106 @@ BOSS_DRAW.yeti = function (e) {
       }
     }
   }
+};
+
+// ---------- Magma Golem (chapter 7): lava fissures, magma lobs, and a core eruption that leaves it cooled and brittle ----------
+BOSS_AI.magma = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.8; ai.heat = 0; ai.stepT = 0; }
+  ai.heat = Math.max(0, (ai.heat || 0) - dt * 0.8);
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.35 : 1)); bossFace(e, dt);
+      // enraged, its crust cracks open and it leaves burning footprints
+      if (rage) { ai.stepT -= dt; if (ai.stepT <= 0) { ai.stepT = 0.5; tempZone('lava', e.x, e.z, 1.0, 3.5); } }
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['fissure', 'lob', 'erupt'][ai.next++ % 3];
+        if (k === 'fissure') {
+          ai.state = 'fissureWind'; ai.t = ai.dur = 0.85; ai.lanes = [];
+          const n = rage ? 3 : 1, base = Math.atan2(dx, dz);
+          for (let i = 0; i < n; i++) { const rot = base + (i - (n - 1) / 2) * 0.5; ai.lanes.push(rot); addTele({ kind: 'lane', x: e.x, z: e.z, r: 1.0, len: 16, rot, dur: ai.dur }); }
+        } else if (k === 'lob') { ai.state = 'lob'; ai.t = 1.6; ai.fired = 0; ai.fireT = 0.3; }
+        else { ai.state = 'erupt'; ai.t = ai.dur = rage ? 1.15 : 1.4; addTele({ kind: 'circle', x: e.x, z: e.z, r: 5.5, dur: ai.dur }); }
+      }
+      break;
+    }
+    case 'fissureWind':
+      e.clip = 'slam'; e.clipU = (1 - ai.t / ai.dur) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
+      if (ai.t <= 0) {
+        ai.state = 'fissure'; ai.front = 0.8; ai.hitLane = false; ai.cx = e.x; ai.cz = e.z; ai.t = 0.6; ai.lastK = 0;
+        G.cam.shake = Math.max(G.cam.shake, 0.22); AUDIO.play('boom');
+      }
+      break;
+    case 'fissure': {
+      // the crack races out along each lane and lava wells up behind it
+      e.clip = 'slam'; e.clipU = 0.6 + Math.min(0.39, (0.6 - Math.max(ai.t, 0)) * 0.65);
+      ai.front += 15 * dt;
+      while (ai.lastK * 1.5 < Math.min(ai.front, 16)) {
+        ai.lastK++;
+        for (const rot of ai.lanes) {
+          const px = ai.cx + Math.sin(rot) * ai.lastK * 1.5, pz = ai.cz + Math.cos(rot) * ai.lastK * 1.5;
+          if (arenaSd(px, pz) > -0.5) continue;
+          tempZone('lava', px, pz, 0.95, rage ? 6 : 4.5);
+          FX.burst(px, 0.3, pz, 5, [1, 0.5, 0.12], 4, 0.12, 0.5, 0); FX.crack(px, pz, 1.3, 2);
+          if (!ai.hitLane && Math.hypot(h[0] - px, h[2] - pz) < 1.0 + HERO_R) { ai.hitLane = true; hurtHero(26 * run.info.dmgMul, px, pz); }
+          enemiesInRadius(px, pz, 1.1, o => { if (!o.boss) hurtEnemy(o, 16, 0, 0, { sound: false }); });
+        }
+      }
+      if (ai.front >= 16) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.1; }
+      break;
+    }
+    case 'lob': {
+      e.clip = 'throw'; e.clipU = clamp(1 - ai.t / 1.6, 0, 0.999); bossFace(e, dt, 8); e.vx *= 0.8; e.vz *= 0.8;
+      const n = rage ? 6 : 4;
+      ai.fireT -= dt;
+      if (ai.fired < n && ai.fireT <= 0) {
+        ai.fireT = 0.22;
+        let tx = h[0] + run.vel[0] * 0.9, tz = h[2] + run.vel[2] * 0.9;
+        if (ai.fired) { const a = rand(0, TAU), r = rand(2, 5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+        const o = { x: tx, z: tz }; resolveCircle(o, 0.8);
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.5, dur: 1.1 });
+        run.eShots.push({ kind: 'magma', sx: e.x, sy: 2.6, sz: e.z, tx: o.x, tz: o.z, x: e.x, y: 2.6, z: e.z, t: 0, dur: 1.1, radius: 1.5, dmg: 22 * run.info.dmgMul, life: 2, spin: 0, peak: 5.5, pool: 1.7, stay: rage ? 6 : 5 });
+        ai.fired++; AUDIO.play('throw', 0.8);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+    case 'erupt': {
+      // the core overheats (stand clear), then blows
+      e.clip = 'idle'; e.phase += dt * 3; e.vx *= 0.7; e.vz *= 0.7;
+      ai.heat = 1 - Math.max(ai.t, 0) / ai.dur;
+      if (Math.random() < 0.3 + ai.heat) FX.part(e.x + rand(-1, 1), rand(0.5, 2.5), e.z + rand(-1, 1), 0, rand(1, 3), 0, 0.2, 0.05, 0.5, [1, rand(0.3, 0.7), 0.1], 1, 0);
+      if (ai.t <= 0) {
+        if (Math.hypot(h[0] - e.x, h[2] - e.z) < 5.5 + HERO_R * 0.5) { hurtHero(36 * run.info.dmgMul, e.x, e.z); run.vel[0] += dx / d * 10; run.vel[2] += dz / d * 10; }
+        enemiesInRadius(e.x, e.z, 5.5, o => { if (o !== e && !o.boss) hurtEnemy(o, 30, (o.x - e.x) * 3, (o.z - e.z) * 3, { sound: false }); });
+        FX.ring(e.x, e.z, 11, [1, 0.55, 0.15], 0.6); FX.ring(e.x, e.z, 7, [1, 0.85, 0.4], 0.45);
+        for (let i = 0; i < 40; i++) { const a = rand(0, TAU), sp = rand(6, 14); FX.part(e.x, rand(0.5, 2), e.z, Math.cos(a) * sp, rand(1, 5), Math.sin(a) * sp, rand(0.15, 0.3), 0.05, rand(0.4, 0.8), [1, rand(0.35, 0.75), 0.1], 1, 0, -4, 2); }
+        FX.crack(e.x, e.z, 5, 2.5); arenaBlast(e.x, e.z, 8, 1.5);
+        G.cam.shake = Math.max(G.cam.shake, 0.35); AUDIO.play('boom');
+        // cooled and crusted over: it stands still and takes extra damage for a moment
+        ai.state = 'cooled'; ai.t = 2.4; e.dizzy = 2.4; ai.heat = 0;
+      }
+      break;
+    }
+    case 'cooled':
+      e.clip = 'idle'; e.phase += dt * 0.3; e.vx *= 0.7; e.vz *= 0.7;
+      if (Math.random() < 0.4) FX.smoke(e.x + rand(-0.8, 0.8), rand(1, 2.5), e.z + rand(-0.8, 0.8), 0.9, [0.35, 0.32, 0.3], 1, 1);
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.0 : 1.6; }
+      break;
+  }
+};
+BOSS_DRAW.magma = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, ai = e.ai, L = R.frame.lightDir, t = e.tint;
+  // heats toward orange while erupting (and a little for good once enraged), greys out while cooled
+  const k = Math.max(ai.heat || 0, !e.portrait && isRage(e) ? 0.22 : 0), cool = ai.state === 'cooled' ? clamp(ai.t / 0.6, 0, 1) : 0;
+  let r = lerp(t[0], 1.0, k), g = lerp(t[1], 0.42, k), b = lerp(t[2], 0.12, k);
+  r = lerp(r, 0.4, cool); g = lerp(g, 0.4, cool); b = lerp(b, 0.42, cool);
+  if (R.enemyDraw.golem) pushEnemy('golem', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? MODELS.defs.golem.clips.idle.row + 2 : enemyRow(e), e.scale, e.squash, dead, fl, 0, r, g, b);
+  if (e.portrait || dead) return;
+  pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 0.42 * e.scale, 0.55 * e.scale, -Math.atan2(L[0], L[2]), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  const s = e.scale, h = ai.heat || 0;
+  FX.glow(e.x + Math.sin(e.yaw) * 0.3 * s, 0.66 * s, e.z + Math.cos(e.yaw) * 0.3 * s, (0.5 + h * 1.4) * (1 - cool), [1, 0.55, 0.15], 0.05, 0.5 + h * 0.5);
 };
 
 // ---- 14-ui.js ----
@@ -10552,6 +10891,7 @@ function renderAllIcons() {
     laser: { scale: 0.62, emissive: 0.3 },
     shield: { scale: 0.62, emissive: 0.15 },
     frostnova: { scale: 0.62, emissive: 0.25 },
+    meteor: { scale: 0.66, ax: -0.75, ay: -0.6, az: 0.25, emissive: 0.1 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

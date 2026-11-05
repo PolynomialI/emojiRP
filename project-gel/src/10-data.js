@@ -88,6 +88,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Drones'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
     levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
   },
+  meteor: {
+    name: 'Meteor', from: 7, intro: 'Calls flaming meteors down on the thickest crowds nearby; the ground keeps burning where they land.', icon: { type: 39, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Meteors'], ['radius', 'Radius', 'm'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [30, 34, 38, 42, 48, 54, 60, 68, 76, 86], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.7, 2.9], cd: [6, 5.8, 5.6, 5.4, 5.2, 5.0, 4.8, 4.6, 4.3, 4.0] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -161,11 +166,12 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 6800, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.yeti = { name: 'Frost Yeti', model: 'yeti', meshes: ['yeti', 'icicle', 'icespike'], hp: 6100, speed: 2.1, dmg: 18, scale: 2.8, radius: 1.2, tint: '#6fa8f2', mass: 60, portraitTop: 1.05 };
-BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 0.95 };
-BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 0.95 };
+BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 1.75 };
+BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 2.1 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
-BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 0.8 };
+BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 1.25 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
 const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
@@ -185,6 +191,8 @@ const ARENAS = [
     props: [['lollipop', 5, 0.32, 0.4], ['candycane', 5, 0.3, 0.36], ['gumdrop', 7, 0.8, 1.3], ['cupcake', 3, 0.7, 0.9]], zones: [['chocolate', 4, 2.0, 3.0]], wall: 'gumdrop' },
   { id: 'tundra', name: 'Frozen Tundra', floor: 5, stoneA: '#eef5fc', stoneB: '#c2d6ec', grout: '#7a93b0', accent: '#7fd8ff', fog: '#1a2a46', sky: '#e2f1ff', ground: '#b4c8de', light: '#e6eff9', spotMin: 0.62, shadowTint: '#28487a', rock: '#a9bccf', pool: '#bfe6ff', poolGlow: 0.04,
     props: [['pine', 8, 0.42, 0.6], ['icecrystal', 4, 0.6, 0.9], ['snowman', 2, 0.5, 0.6], ['rock', 3, 0.8, 1.2]], zones: [['ice', 3, 3.0, 4.6]], wall: 'iceblock' },
+  { id: 'volcano', name: 'Volcano', floor: 6, stoneA: '#3d3230', stoneB: '#2b2321', grout: '#140c0a', accent: '#ff6a1a', fog: '#1c0b06', sky: '#ffa060', ground: '#2c1c16', light: '#ffe2c8', spotMin: 0.55, shadowTint: '#1c0804', rock: '#54443f', pool: '#f04a0c', poolGlow: 0.3,
+    props: [['obsidian', 4, 0.6, 0.9], ['vent', 2.2, 0.55, 0.65], ['deadtree', 3, 0.4, 0.55], ['rock', 5, 0.8, 1.3]], zones: [['lava', 2.4, 2.4, 3.6]], wall: 'basalt' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -213,6 +221,10 @@ const PROP_KINDS = {
   icecrystal: { models: ['icecrystal'], unit: 0.35, block: true, shots: true, tints: ['#9fdcff', '#bfe8ff', '#8fc8ff'], tall: 2 },
   iceblock: { models: ['iceblock'], unit: 0.45, block: true, shots: true, tints: ['#a8dcff', '#c6eaff', '#92ceff'], wallR: [1.0, 1.15] },
   icespike: { models: ['icespike'], unit: 0.3, block: true, shots: false, tint: '#86c8ff', shadow: false },
+  obsidian: { models: ['obsidian'], unit: 0.35, block: true, shots: true, tall: 2 },
+  vent: { models: ['vent'], unit: 0.5, block: true, shots: false },
+  deadtree: { models: ['deadtree'], unit: 0.15, block: true, tall: 2.5 },
+  basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -223,6 +235,7 @@ const ZONE_KINDS = {
   chocolate: { slow: 0.55, col: '#5e3018', glow: 0.02 },
   jelly: { slow: 0.45, col: '#ff5f8a', glow: 0.12 },
   ice: { slide: true, col: '#7cc4f0', glow: 0.04, style: 1 },
+  lava: { burn: 16, slow: 0.85, col: '#f04a0c', glow: 0.3 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests

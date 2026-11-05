@@ -626,3 +626,103 @@ BOSS_DRAW.yeti = function (e) {
     }
   }
 };
+
+// ---------- Magma Golem (chapter 7): lava fissures, magma lobs, and a core eruption that leaves it cooled and brittle ----------
+BOSS_AI.magma = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.8; ai.heat = 0; ai.stepT = 0; }
+  ai.heat = Math.max(0, (ai.heat || 0) - dt * 0.8);
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.35 : 1)); bossFace(e, dt);
+      // enraged, its crust cracks open and it leaves burning footprints
+      if (rage) { ai.stepT -= dt; if (ai.stepT <= 0) { ai.stepT = 0.5; tempZone('lava', e.x, e.z, 1.0, 3.5); } }
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['fissure', 'lob', 'erupt'][ai.next++ % 3];
+        if (k === 'fissure') {
+          ai.state = 'fissureWind'; ai.t = ai.dur = 0.85; ai.lanes = [];
+          const n = rage ? 3 : 1, base = Math.atan2(dx, dz);
+          for (let i = 0; i < n; i++) { const rot = base + (i - (n - 1) / 2) * 0.5; ai.lanes.push(rot); addTele({ kind: 'lane', x: e.x, z: e.z, r: 1.0, len: 16, rot, dur: ai.dur }); }
+        } else if (k === 'lob') { ai.state = 'lob'; ai.t = 1.6; ai.fired = 0; ai.fireT = 0.3; }
+        else { ai.state = 'erupt'; ai.t = ai.dur = rage ? 1.15 : 1.4; addTele({ kind: 'circle', x: e.x, z: e.z, r: 5.5, dur: ai.dur }); }
+      }
+      break;
+    }
+    case 'fissureWind':
+      e.clip = 'slam'; e.clipU = (1 - ai.t / ai.dur) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
+      if (ai.t <= 0) {
+        ai.state = 'fissure'; ai.front = 0.8; ai.hitLane = false; ai.cx = e.x; ai.cz = e.z; ai.t = 0.6; ai.lastK = 0;
+        G.cam.shake = Math.max(G.cam.shake, 0.22); AUDIO.play('boom');
+      }
+      break;
+    case 'fissure': {
+      // the crack races out along each lane and lava wells up behind it
+      e.clip = 'slam'; e.clipU = 0.6 + Math.min(0.39, (0.6 - Math.max(ai.t, 0)) * 0.65);
+      ai.front += 15 * dt;
+      while (ai.lastK * 1.5 < Math.min(ai.front, 16)) {
+        ai.lastK++;
+        for (const rot of ai.lanes) {
+          const px = ai.cx + Math.sin(rot) * ai.lastK * 1.5, pz = ai.cz + Math.cos(rot) * ai.lastK * 1.5;
+          if (arenaSd(px, pz) > -0.5) continue;
+          tempZone('lava', px, pz, 0.95, rage ? 6 : 4.5);
+          FX.burst(px, 0.3, pz, 5, [1, 0.5, 0.12], 4, 0.12, 0.5, 0); FX.crack(px, pz, 1.3, 2);
+          if (!ai.hitLane && Math.hypot(h[0] - px, h[2] - pz) < 1.0 + HERO_R) { ai.hitLane = true; hurtHero(26 * run.info.dmgMul, px, pz); }
+          enemiesInRadius(px, pz, 1.1, o => { if (!o.boss) hurtEnemy(o, 16, 0, 0, { sound: false }); });
+        }
+      }
+      if (ai.front >= 16) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.1; }
+      break;
+    }
+    case 'lob': {
+      e.clip = 'throw'; e.clipU = clamp(1 - ai.t / 1.6, 0, 0.999); bossFace(e, dt, 8); e.vx *= 0.8; e.vz *= 0.8;
+      const n = rage ? 6 : 4;
+      ai.fireT -= dt;
+      if (ai.fired < n && ai.fireT <= 0) {
+        ai.fireT = 0.22;
+        let tx = h[0] + run.vel[0] * 0.9, tz = h[2] + run.vel[2] * 0.9;
+        if (ai.fired) { const a = rand(0, TAU), r = rand(2, 5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+        const o = { x: tx, z: tz }; resolveCircle(o, 0.8);
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.5, dur: 1.1 });
+        run.eShots.push({ kind: 'magma', sx: e.x, sy: 2.6, sz: e.z, tx: o.x, tz: o.z, x: e.x, y: 2.6, z: e.z, t: 0, dur: 1.1, radius: 1.5, dmg: 22 * run.info.dmgMul, life: 2, spin: 0, peak: 5.5, pool: 1.7, stay: rage ? 6 : 5 });
+        ai.fired++; AUDIO.play('throw', 0.8);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+    case 'erupt': {
+      // the core overheats (stand clear), then blows
+      e.clip = 'idle'; e.phase += dt * 3; e.vx *= 0.7; e.vz *= 0.7;
+      ai.heat = 1 - Math.max(ai.t, 0) / ai.dur;
+      if (Math.random() < 0.3 + ai.heat) FX.part(e.x + rand(-1, 1), rand(0.5, 2.5), e.z + rand(-1, 1), 0, rand(1, 3), 0, 0.2, 0.05, 0.5, [1, rand(0.3, 0.7), 0.1], 1, 0);
+      if (ai.t <= 0) {
+        if (Math.hypot(h[0] - e.x, h[2] - e.z) < 5.5 + HERO_R * 0.5) { hurtHero(36 * run.info.dmgMul, e.x, e.z); run.vel[0] += dx / d * 10; run.vel[2] += dz / d * 10; }
+        enemiesInRadius(e.x, e.z, 5.5, o => { if (o !== e && !o.boss) hurtEnemy(o, 30, (o.x - e.x) * 3, (o.z - e.z) * 3, { sound: false }); });
+        FX.ring(e.x, e.z, 11, [1, 0.55, 0.15], 0.6); FX.ring(e.x, e.z, 7, [1, 0.85, 0.4], 0.45);
+        for (let i = 0; i < 40; i++) { const a = rand(0, TAU), sp = rand(6, 14); FX.part(e.x, rand(0.5, 2), e.z, Math.cos(a) * sp, rand(1, 5), Math.sin(a) * sp, rand(0.15, 0.3), 0.05, rand(0.4, 0.8), [1, rand(0.35, 0.75), 0.1], 1, 0, -4, 2); }
+        FX.crack(e.x, e.z, 5, 2.5); arenaBlast(e.x, e.z, 8, 1.5);
+        G.cam.shake = Math.max(G.cam.shake, 0.35); AUDIO.play('boom');
+        // cooled and crusted over: it stands still and takes extra damage for a moment
+        ai.state = 'cooled'; ai.t = 2.4; e.dizzy = 2.4; ai.heat = 0;
+      }
+      break;
+    }
+    case 'cooled':
+      e.clip = 'idle'; e.phase += dt * 0.3; e.vx *= 0.7; e.vz *= 0.7;
+      if (Math.random() < 0.4) FX.smoke(e.x + rand(-0.8, 0.8), rand(1, 2.5), e.z + rand(-0.8, 0.8), 0.9, [0.35, 0.32, 0.3], 1, 1);
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.0 : 1.6; }
+      break;
+  }
+};
+BOSS_DRAW.magma = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, ai = e.ai, L = R.frame.lightDir, t = e.tint;
+  // heats toward orange while erupting (and a little for good once enraged), greys out while cooled
+  const k = Math.max(ai.heat || 0, !e.portrait && isRage(e) ? 0.22 : 0), cool = ai.state === 'cooled' ? clamp(ai.t / 0.6, 0, 1) : 0;
+  let r = lerp(t[0], 1.0, k), g = lerp(t[1], 0.42, k), b = lerp(t[2], 0.12, k);
+  r = lerp(r, 0.4, cool); g = lerp(g, 0.4, cool); b = lerp(b, 0.42, cool);
+  if (R.enemyDraw.golem) pushEnemy('golem', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? MODELS.defs.golem.clips.idle.row + 2 : enemyRow(e), e.scale, e.squash, dead, fl, 0, r, g, b);
+  if (e.portrait || dead) return;
+  pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 0.42 * e.scale, 0.55 * e.scale, -Math.atan2(L[0], L[2]), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  const s = e.scale, h = ai.heat || 0;
+  FX.glow(e.x + Math.sin(e.yaw) * 0.3 * s, 0.66 * s, e.z + Math.cos(e.yaw) * 0.3 * s, (0.5 + h * 1.4) * (1 - cool), [1, 0.55, 0.15], 0.05, 0.5 + h * 0.5);
+};

@@ -262,11 +262,11 @@ void main() {
     gloss = 0.15; sharp = 30.0;
   } else if (style == 6) {
     // volcano: cracked basalt plates with glowing lava seams
-    vec3 v = voro(p / 2.4);
-    float crack = 1.0 - smoothstep(0.0, 0.06, v.y);
+    vec3 v = voro(p / 3.2);
+    float crack = 1.0 - smoothstep(0.0, 0.035, v.y);
     alb = mix(uStoneA, uStoneB, v.z) * (0.85 + 0.2 * fine) * (1.0 - 0.6 * crack);
     float pulse = 0.65 + 0.35 * sin(uTime * 1.5 + v.z * 6.0 + p.x * 0.2);
-    emis = uAccent * crack * pulse * (1.6 + 1.2 * mott);
+    emis = uAccent * crack * pulse * (0.7 + 0.8 * mott);
     N = normalize(vec3((fine - 0.5) * 0.2, 1.0, (mott - 0.5) * 0.2));
     ao = mix(0.75, 1.0, smoothstep(0.0, 0.25, v.y));
   } else if (style == 7) {
@@ -913,6 +913,15 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 39) {
+    // meteor: a lumpy rock with glowing veins, trailing a flickering flame tail along -z
+    vec3 q = p - vec3(0.0, 0.0, 0.32);
+    float rock = length(q) - 0.46 + sin(q.x * 7.0 + 1.3) * sin(q.y * 6.0 + 0.7) * sin(q.z * 6.5 + 2.1) * 0.07;
+    float fl = sin(p.z * 9.0 + ph * 14.0) * 0.04 + sin(atan(p.y, p.x) * 5.0 + ph * 9.0) * 0.03;
+    float tail = sdRoundCone(p, vec3(0.0, 0.0, 0.3), vec3(0.0, 0.0, -0.75), 0.4 + fl, 0.05);
+    float vein = abs(sin(q.x * 9.0 + q.y * 4.0) * sin(q.y * 8.0 - q.z * 5.0) * sin(q.z * 7.0 + q.x * 3.0));
+    return vec2(min(rock, tail), rock <= tail ? (vein < 0.04 ? 6.0 : 3.0) : 6.0);
   }
   if (type == 38) {
     // snowflake: six arms with side branches, flat in the xy plane

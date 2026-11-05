@@ -228,3 +228,55 @@ SKILL_HOOKS.frostnova = {
   },
   emit() {},
 };
+
+// ---------- Meteor (chapter 7): flaming rocks fall on the thickest crowds and leave the ground burning ----------
+const METEOR_FALL = 0.75;
+SKILL_HOOKS.meteor = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, r = L.radius * areaMul();
+    st.rocks = st.rocks || []; st.fires = st.fires || [];
+    st.t = (st.t ?? 1.5) - dt;
+    if (st.t <= 0 && nearestEnemy(h[0], h[2], 10)) {
+      st.t = L.cd * cdMul();
+      for (let i = 0; i < L.count; i++) {
+        let tgt = clusterTarget(h[0], h[2], 10);
+        if (!tgt || i) { const e = nearestEnemy(h[0] + rand(-4, 4), h[2] + rand(-4, 4), 10); if (e) tgt = [e.x, e.z]; }
+        if (!tgt) break;
+        // they come in at a slant from up and behind, a little apart
+        st.rocks.push({ tx: tgt[0], tz: tgt[1], sx: tgt[0] + 5, sy: 15, sz: tgt[1] - 7, t: -i * 0.18, r, ph: rand(0, 10) });
+      }
+    }
+    for (const m of st.rocks) {
+      m.t += dt;
+      if (m.t < METEOR_FALL) { if (m.t > 0 && Math.random() < 0.8) { const u = m.t / METEOR_FALL; FX.smoke(lerp(m.sx, m.tx, u), lerp(m.sy, 0, u), lerp(m.sz, m.tz, u), 0.5, [0.35, 0.3, 0.28], 0.6, 0.2); } continue; }
+      m.done = true;
+      enemiesInRadius(m.tx, m.tz, m.r, e => { const ex = e.x - m.tx, ez = e.z - m.tz, ed = Math.hypot(ex, ez) || 1; hurtEnemy(e, L.dmg, ex / ed * 8, ez / ed * 8, { sound: false, color: [1, 0.6, 0.2] }); });
+      FX.ring(m.tx, m.tz, m.r * 1.6, [1, 0.6, 0.2], 0.45); FX.crack(m.tx, m.tz, m.r * 1.3, 2.2); FX.scorch(m.tx, m.tz, m.r * 1.1, 2.5);
+      FX.burst(m.tx, 0.4, m.tz, 18, [1, 0.55, 0.15], 6, 0.16, 0.6, 0); FX.burst(m.tx, 0.3, m.tz, 8, [0.4, 0.35, 0.32], 4, 0.18, 0.7, 2);
+      arenaBlast(m.tx, m.tz, m.r * 1.5, 1.2);
+      G.cam.shake = Math.max(G.cam.shake, 0.12); AUDIO.play('boom', 0.7);
+      st.fires.push({ x: m.tx, z: m.tz, r: m.r * 0.85, life: 2, tick: 0.2 });
+    }
+    st.rocks = st.rocks.filter(m => !m.done);
+    // burning ground where they landed
+    for (const f of st.fires) {
+      f.life -= dt; f.tick -= dt;
+      if (f.tick <= 0) { f.tick = 0.4; enemiesInRadius(f.x, f.z, f.r, e => hurtEnemy(e, Math.max(1, Math.round(L.dmg * 0.12)), 0, 0, { sound: false, color: [1, 0.6, 0.2] })); }
+      if (Math.random() < 0.6) FX.part(f.x + rand(-f.r, f.r) * 0.7, 0.2, f.z + rand(-f.r, f.r) * 0.7, 0, rand(1.5, 3), 0, rand(0.15, 0.3), 0.05, 0.5, [1, rand(0.35, 0.7), 0.1], 1, 0);
+    }
+    st.fires = st.fires.filter(f => f.life > 0);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.rocks) return;
+    for (const m of st.rocks) {
+      if (m.t < 0) continue;
+      const u = m.t / METEOR_FALL, x = lerp(m.sx, m.tx, u), y = lerp(m.sy, 0.4, u), z = lerp(m.sz, m.tz, u);
+      const dx = m.tx - m.sx, dy = -m.sy, dz = m.tz - m.sz, l = Math.hypot(dx, dy, dz);
+      pushImp(x, y, z, 0.9, dx / l, dy / l, dz / l, 1.2, 39, 0, 0.3, m.ph + m.t * 3, 0, 0, 0, 1);
+      FX.glow(x, y, z, 1.6, [1, 0.5, 0.15], 0.05, 0.6);
+      pushDecal(m.tx, m.tz, m.r * u, m.r * u, 0, 1, 0, 0, 1, 0.4, 0.1, 0.35 * u, true);
+    }
+    for (const f of st.fires) pushDecal(f.x, f.z, f.r * 1.2, f.r * 1.2, 0, 1, 0, 0, 1, 0.45, 0.1, 0.5 * Math.min(1, f.life) * (0.85 + 0.15 * Math.sin(G.run.t * 20 + f.x)), true);
+  },
+};

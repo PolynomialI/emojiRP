@@ -229,3 +229,49 @@ ARENA_FEATURES.tundra = {
     }
   },
 };
+
+// ---------- Volcano: vents that rumble, then blast a column of fire; embers drifting up ----------
+const VENT_R = 1.9;
+ARENA_FEATURES.volcano = {
+  init(st, rnd) {
+    st.vents = ARENA.props.filter(o => o.kind === 'vent').map(o => ({ o, state: 'idle', t: 2 + rnd() * 7, tick: 0 }));
+    st.acc = 0;
+  },
+  update(st, dt) {
+    const h = G.hero.pos, run = G.run;
+    for (const v of st.vents) {
+      const o = v.o, near = Math.hypot(o.x - h[0], o.z - h[2]) < 24;
+      v.t -= dt;
+      if (v.state === 'idle') {
+        if (near && Math.random() < dt * 0.6) FX.smoke(o.x + rand(-0.2, 0.2), o.r * 1.4, o.z + rand(-0.2, 0.2), 0.5, [0.3, 0.27, 0.26], 1.4, 1.2);
+        if (v.t <= 0) { if (near) { v.state = 'warn'; v.t = 1.1; } else v.t = rand(2, 4); }
+      } else if (v.state === 'warn') {
+        if (Math.random() < 0.5) FX.part(o.x + rand(-0.3, 0.3), o.r * 1.3, o.z + rand(-0.3, 0.3), rand(-0.5, 0.5), rand(2, 4), rand(-0.5, 0.5), 0.12, 0.03, 0.5, [1, 0.6, 0.15], 1, 0, -3);
+        if (v.t <= 0) { v.state = 'blast'; v.t = 1.3; v.tick = 0; AUDIO.play('boom', 0.8); G.cam.shake = Math.max(G.cam.shake, 0.08); }
+      } else {
+        // the fire column: burns the hero and anything else standing next to the vent
+        for (let i = 0; i < (FX.reduced ? 2 : 5); i++) FX.part(o.x + rand(-0.4, 0.4), o.r * 1.2, o.z + rand(-0.4, 0.4), rand(-0.8, 0.8), rand(7, 12), rand(-0.8, 0.8), rand(0.35, 0.6), 0.1, rand(0.5, 0.8), [1, rand(0.35, 0.7), 0.1], 1, 0, 0, 1.2);
+        if (Math.random() < 0.4) FX.smoke(o.x, 4, o.z, 1.4, [0.25, 0.2, 0.18], 1.2, 2);
+        v.tick -= dt;
+        if (v.tick <= 0) {
+          v.tick = 0.4;
+          if (Math.hypot(h[0] - o.x, h[2] - o.z) < VENT_R + HERO_R * 0.5 && G.state === 'run') hurtHero(14 * run.info.dmgMul, o.x, o.z);
+          enemiesInRadius(o.x, o.z, VENT_R, e => { if (!e.boss) hurtEnemy(e, 12, 0, 0, { sound: false, color: [1, 0.6, 0.2] }); });
+        }
+        if (v.t <= 0) { v.state = 'idle'; v.t = rand(5, 9); }
+      }
+    }
+    // embers drifting up around the hero
+    st.acc += dt * (FX.reduced ? 5 : 14);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0, 1), h[2] + rand(-11, 8), rand(-0.3, 0.3), rand(0.8, 1.6), rand(-0.3, 0.3), rand(0.05, 0.09), 0.02, rand(2, 3.5), [1, rand(0.4, 0.65), 0.15], 1, 0, 0, 0.2);
+  },
+  emit(st) {
+    // a pulsing ring around a vent about to blow, and a glow while it burns
+    for (const v of st.vents) {
+      if (v.state === 'idle' || !onScreen(v.o.x, v.o.z, 3)) continue;
+      const p = v.state === 'warn' ? 1 - v.t / 1.1 : 1;
+      if (v.state === 'warn') pushDecal(v.o.x, v.o.z, VENT_R, VENT_R, 0, 4, 0, p, 1, 0.45, 0.1, 0.8);
+      else pushDecal(v.o.x, v.o.z, VENT_R * 1.3, VENT_R * 1.3, 0, 1, 0, 0, 1, 0.5, 0.15, 0.55, true);
+    }
+  },
+};

@@ -2,16 +2,18 @@
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'] };
+const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'], golem: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
 const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
-  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015 };
+  pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
+  obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
-  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti');
+  'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
+  'obsidian', 'vent', 'deadtree', 'basalt', 'golem');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -297,5 +299,61 @@ function themeModels(defs) {
     }
     m.top = hd[1] + hr + 0.2; m.bmin = [-0.7, -0.03, -0.65]; m.bmax = [0.7, m.top + 0.05, 0.6]; m.name = 'yeti'; m.runAmp = 0.7;
     defs.yeti = m;
+  }
+  // ---------- Volcano ----------
+  {
+    const obs = C('#1d1622'), obsHi = C('#4a3a5c'), hot = C('#ff7a1a'), glow = C('#ffc040'), rockD = C('#3a2e2a'), char = C('#2a201c');
+    P('obsidian', [
+      ...[[0, 0, 1.2, 0.2, obs], [0.26, 0.24, 0.8, 0.14, obsHi], [-0.28, 0.08, 0.85, 0.15, obs], [0.04, -0.3, 0.7, 0.13, obs], [-0.14, 0.3, 0.55, 0.1, obsHi]]
+        .map(([x, z, hgt, r, col]) => ({ s: 'cap', a: [x * 0.4, 0, z * 0.4], b: [x, hgt, z], r, r2: 0.02, col, k: 0.01 })),
+      { s: 'ell', c: [0, 0.04, 0], rr: [0.42, 0.08, 0.42], col: hot, k: 0.05 },
+    ], { ao: 0.6 });
+    // a small cone with a glowing crater (the arena feature makes it erupt)
+    P('vent', [
+      { s: 'cap', a: [0, 0, 0], b: [0, 0.42, 0], r: 0.5, r2: 0.26, col: rockD, k: 0.02 },
+      { s: 'tor', ax: 'y', c: [0, 0.6, 0], R: 0.2, r: 0.07, a0: -Math.PI, a1: Math.PI, col: hot, k: 0.03 },
+      { s: 'sph', c: [0, 0.58, 0], r: 0.17, col: glow, k: 0.02 },
+      ...[[0.38, 0.2, 0.1], [-0.3, 0.15, -0.25], [0.05, 0.1, 0.42]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.12, col: rockD, k: 0.06 })),
+    ]);
+    P('deadtree', [
+      { s: 'cap', a: [0, 0, 0], b: [0.04, 1.2, 0], r: 0.09, r2: 0.05, col: char, k: 0.02 },
+      { s: 'cap', a: [0.03, 0.8, 0], b: [0.4, 1.15, 0.06], r: 0.045, r2: 0.02, col: char, k: 0.02 },
+      { s: 'cap', a: [0.03, 0.6, 0], b: [-0.34, 0.92, -0.08], r: 0.045, r2: 0.02, col: char, k: 0.02 },
+      { s: 'cap', a: [0.04, 1.05, 0], b: [-0.12, 1.42, 0.1], r: 0.035, r2: 0.015, col: char, k: 0.02 },
+      { s: 'sph', c: [0.4, 1.15, 0.06], r: 0.035, col: hot, k: 0 }, { s: 'sph', c: [-0.12, 1.42, 0.1], r: 0.03, col: hot, k: 0 },
+      { s: 'ell', c: [0, 0.03, 0], rr: [0.18, 0.05, 0.18], col: char, k: 0.04 },
+    ]);
+    // basalt columns for the wall; the columns take the instance tint
+    P('basalt', [
+      ...[[0, 0, 0.26, 0.6], [0.3, 0.12, 0.2, 0.42], [-0.24, 0.2, 0.22, 0.5], [0.08, -0.3, 0.2, 0.34]].map(([x, z, r, hh]) => ({ s: 'cyl', ax: 'y', c: [x, hh, z], r, hh, rd: 0.03, k: 0.01 })),
+      { s: 'sph', c: [0.2, 0.05, 0.36], r: 0.08, col: hot, k: 0.03 },
+    ], { ao: 0.8 });
+  }
+  // ---------- Magma Golem (chapter 7 boss): a hulking rock man with a molten core; plain rock takes the boss tint ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.42, shY: 0.8, headY: 0.98, headR: 0.15, headZ: 0.1, shW: 0.3, hipW: 0.13, elOut: 0.1, upperLen: 0.2, foreLen: 0.2,
+      pelvisR: 0.2, torso: 'ell', torsoRR: [0.32, 0.28, 0.24], neckR: 0.12, armR: 0.11, handR: 0.16, legR: 0.13, k: 0.06 });
+    const J = m.J, hd = J.head, hot = C('#ff7a1a'), core = C('#ffd040'), eye = C('#ffe060');
+    m.parts.push({ s: 'rock', c: [0, 0.66, -0.02], r: 0.29, bump: 0.14, bone: 1, k: 0.04 });
+    m.parts.push({ s: 'rock', c: [hd[0], hd[1] + 0.02, hd[2]], r: 0.17, bump: 0.14, bone: 2, k: 0.03 });
+    // the molten core and the cracks spreading from it
+    m.parts.push({ s: 'sph', c: [0, 0.66, 0.24], r: 0.11, col: core, bone: 1, k: 0.02 });
+    for (const [x, y] of [[0.16, 0.8], [-0.17, 0.78], [0.2, 0.52], [-0.15, 0.5], [0.02, 0.9]])
+      m.parts.push({ s: 'cap', a: [0, 0.66, 0.24], b: [x, y, 0.2], r: 0.028, r2: 0.012, col: hot, bone: 1, k: 0.01 });
+    // glowing eyes under a heavy brow
+    for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.07, hd[1] + 0.03, hd[2] + 0.15], rr: [0.05, 0.035, 0.03], col: eye, bone: 2, k: 0 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.07, hd[2] + 0.12], hs: [0.13, 0.03, 0.05], rd: 0.02, bone: 2, k: 0.03 });
+    // boulder shoulders and fists, with lava dripping between the knuckles
+    for (const sd of ['L', 'R']) {
+      const sx = sd === 'L' ? 1 : -1, b = sd === 'L' ? 4 : 6, ha = J['ha' + sd];
+      m.parts.push({ s: 'rock', c: [sx * 0.33, 0.86, -0.02], r: 0.16, bump: 0.18, bone: 1, k: 0.04 });
+      m.parts.push({ s: 'rock', c: [ha[0], ha[1] - 0.03, ha[2] + 0.02], r: 0.19, bump: 0.18, bone: b, k: 0.04 });
+      m.parts.push({ s: 'cap', a: J['sh' + sd], b: J['el' + sd], r: 0.026, col: hot, bone: b - 1, k: 0.01 });
+      m.parts.push({ s: 'sph', c: [ha[0], ha[1] - 0.12, ha[2] + 0.15], r: 0.04, col: hot, bone: b, k: 0.02 });
+      const lb = sd === 'L' ? 7 : 9;
+      m.parts.push({ s: 'cap', a: [(J['hi' + sd][0] + J['kn' + sd][0]) / 2, 0.32, 0.12], b: [J['kn' + sd][0], 0.22, 0.13], r: 0.02, col: hot, bone: lb, k: 0.01 });
+    }
+    m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.6]; m.bmax = [0.72, m.top + 0.05, 0.6]; m.name = 'golem'; m.runAmp = 0.65;
+    defs.golem = m;
   }
 }

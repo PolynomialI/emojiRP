@@ -343,6 +343,7 @@ function emitRunScene() {
       FX.glow(s.x - vx / l * 0.4, s.y - vy / l * 0.4, s.z - vz / l * 0.4, 0.45, [1, 0.6, 0.2], 0.05, 0.8);
     }
     else if (s.kind === 'rball') { if (R.enemyDraw.pitball) pushEnemy('pitball', false, s.x, s.y - s.r, s.z, 0, MODELS.defs.pitball.clips.still.row, s.r * 2, 1, 0, 0, 0, s.col[0], s.col[1], s.col[2]); pushDecal(s.x + 0.08, s.z + 0.06, s.r, s.r * 0.85, 0, 1, 0, 0, 0.02, 0.03, 0.08, 0.4); }
+    else if (s.kind === 'magma') { pushImp(s.x, s.y, s.z, 0.5, 0, 1, 0, 1, 15, 0, 0.5, s.spin, 0, 0, 0, 1); FX.glow(s.x, s.y, s.z, 0.9, [1, 0.5, 0.15], 0.05, 0.6); pushDecal(s.x + 0.15, s.z + 0.1, 0.5, 0.4, 0, 1, 0, 0, 0.02, 0.01, 0.0, 0.4); }
     else if (s.kind === 'icicle') {
       if (R.enemyDraw.icicle) pushEnemy('icicle', false, s.x, s.y - 0.5 * 1.7, s.z, s.spin, MODELS.defs.icicle.clips.still.row, 1.7, 1, 0, 0, 0, 1, 1, 1);
       const g = 1 - s.y / s.sy; pushDecal(s.x, s.z, 0.25 + g * 0.45, 0.25 + g * 0.45, 0, 1, 0, 0, 0.02, 0.05, 0.12, 0.2 + g * 0.4);
