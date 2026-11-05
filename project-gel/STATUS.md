@@ -128,6 +128,16 @@ Measured after the 100x100 arena, emeralds and long legs:
 
 An A/B run of chapter 3 at upgrade level 3 shows no real change in difficulty from the bigger map: average survival was 318 s now against 304 s before. Small samples swing a lot; the earlier 2/4 results were partly luck.
 
+After the ten chapter themes (new bosses with base health 3400-4200; chapter scaling multiplies boss health by 1.17 per chapter):
+
+| Chapter | Upgrades | Bot wins | Notes |
+|---|---|---|---|
+| 1 | none | 2/2 | Big Stomper down in about 50 s, no deaths |
+| 2 | level 3 | 1/2 | the Sand Worm fight took about 85 s (at base health 3900; now 3400) |
+| 6 | level 6 | 1/2, then 0/3 | most losses come before the boss; at base health 6100 one Yeti fight took 213 s, so health was lowered |
+
+Boss fight length is the main thing to tune after real play: lower `hp` in `BOSS_TYPES` to shorten a fight.
+
 Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/10-data.js`, and the spawn curve in `RATE_KEYS` in `src/11-game.js`.
 
 ## Next steps (optional)
@@ -170,5 +180,8 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - To stop stray test processes, use `pkill -f "[n]ode test/game.mjs"`. The bracket keeps the pattern from matching the shell running the command.
 
 ## Known limits
+- On Auto quality, a change of resolution blanks one frame. `adaptQuality()` calls `resize()` after the frame is drawn, and resizing clears the canvas.
+  - Test screenshots taken on such a frame come out black, which happens every couple of seconds in the software-rendered test browser.
+  - On a real device it would be a single-frame flicker whenever Auto steps the resolution. This is not fixed yet.
 - Performance on real phones hasn't been measured. There are Auto, High and Low quality presets, and Auto scales resolution.
 - The UI font (Fredoka) loads from Google Fonts. Offline, it falls back to the system rounded font.
