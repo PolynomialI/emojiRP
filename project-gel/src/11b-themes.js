@@ -306,3 +306,21 @@ ARENA_FEATURES.beach = {
     }
   },
 };
+
+// ---------- Moon Base: blinking beacons on the landers and dishes, and slow-drifting moon dust ----------
+ARENA_FEATURES.moon = {
+  init(st) { st.beacons = ARENA.props.filter(o => o.kind === 'lander' || o.kind === 'dish'); st.acc = 0; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 3 : 8);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.1, 0.6), h[2] + rand(-11, 8), rand(-0.3, 0.3), rand(0.1, 0.35), rand(-0.3, 0.3), rand(0.06, 0.1), 0.12, rand(2, 3.5), [0.85, 0.88, 0.95], 0.5, 2, 0, 0.1);
+  },
+  emit(st) {
+    const t = G.run ? G.run.t : 0;
+    for (const o of st.beacons) {
+      if (!onScreen(o.x, o.z, 3) || ((t * 1.2 + o.ph) % 1.6) > 0.35) continue;
+      const sc = o.r / PROP_KINDS[o.kind].unit, y = (o.kind === 'lander' ? 1.62 : 1.3) * sc;
+      FX.glow(o.x, y, o.z, 0.9, [1, 0.3, 0.35], 0.05, 0.9);
+    }
+  },
+};

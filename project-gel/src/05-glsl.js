@@ -288,8 +288,8 @@ void main() {
   } else if (style == 9) {
     // moon: grey regolith pocked with craters
     vec2 c = floor(p / 7.0), f = fract(p / 7.0) * 7.0 - 3.5;
-    float h = hash12(c), cr = 1.2 + h * 1.8;
-    vec2 off = (vec2(hash12(c + 4.1), hash12(c + 8.3)) - 0.5) * (7.0 - cr * 2.0);
+    float h = hash12(c), cr = 1.0 + h * 1.4;
+    vec2 off = (vec2(hash12(c + 4.1), hash12(c + 8.3)) - 0.5) * max(7.0 - cr * 2.5, 0.0);
     vec2 d = f - off;
     float r = length(d) / cr;
     float bowl = step(0.4, h) * (1.0 - smoothstep(0.85, 1.0, r));
@@ -913,6 +913,16 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 42) {
+    // black hole: a glossy black core inside a tilted, glowing accretion ring that spins
+    float core = length(p) - 0.42;
+    vec3 q = p;
+    q.yz = rot2(0.45) * q.yz;
+    q.xz = rot2(ph * 3.0) * q.xz;
+    float wob = 0.03 * sin(atan(q.z, q.x) * 6.0);
+    float ring = length(vec2(length(q.xz) - 0.7, q.y)) - (0.07 + wob);
+    return vec2(min(core, ring), core < ring ? 12.0 : 6.0);
   }
   if (type == 41) {
     // a curling wave seen side on: a low swell rising into a hooked crest with a foam cap, extruded along z

@@ -337,3 +337,50 @@ SKILL_HOOKS.wave = {
     }
   },
 };
+
+// ---------- Black Hole (chapter 10): drags a crowd into one spot, then collapses on it ----------
+SKILL_HOOKS.blackhole = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, r = L.radius * areaMul();
+    st.holes = st.holes || [];
+    st.t = (st.t ?? 2) - dt;
+    if (st.t <= 0 && nearestEnemy(h[0], h[2], 10)) {
+      st.t = L.cd * cdMul();
+      const c = clusterTarget(h[0], h[2], 10) || [h[0] + rand(-3, 3), h[2] + rand(-3, 3)];
+      const o = { x: c[0], z: c[1] }; resolveCircle(o, 0.5);
+      st.holes.push({ x: o.x, z: o.z, r, t: 0, life: L.life, tick: 0, ph: rand(0, 10) });
+      AUDIO.play('zap', 0.5);
+    }
+    for (const b of st.holes) {
+      b.t += dt;
+      // the pull grows stronger toward the middle; bosses only feel a little of it
+      enemiesInRadius(b.x, b.z, b.r, e => {
+        const ex = b.x - e.x, ez = b.z - e.z, ed = Math.hypot(ex, ez) || 1, f = (1.4 - ed / b.r) * (e.boss ? 0 : 16);
+        e.kx += ex / ed * f * dt; e.kz += ez / ed * f * dt;
+      });
+      b.tick -= dt;
+      if (b.tick <= 0) { b.tick = 0.35; enemiesInRadius(b.x, b.z, b.r * 0.5, e => hurtEnemy(e, Math.max(1, Math.round(L.dmg * 0.06)), 0, 0, { sound: false, color: [0.8, 0.6, 1] })); }
+      if (Math.random() < 0.9) { const a = rand(0, TAU), d = b.r * rand(0.6, 1); FX.part(b.x + Math.cos(a) * d, 0.4, b.z + Math.sin(a) * d, -Math.cos(a) * d * 1.6 - Math.sin(a) * 2, 0, -Math.sin(a) * d * 1.6 + Math.cos(a) * 2, 0.09, 0.02, 0.5, [0.75, 0.5, 1], 1, 1, 0, 0); }
+      if (b.t >= b.life) {
+        // collapse: a crushing blast on everything it gathered
+        b.done = true;
+        enemiesInRadius(b.x, b.z, b.r * 0.75, e => { const ex = e.x - b.x, ez = e.z - b.z, ed = Math.hypot(ex, ez) || 1; hurtEnemy(e, L.dmg, ex / ed * 10, ez / ed * 10, { sound: false, color: [0.85, 0.6, 1] }); });
+        FX.ring(b.x, b.z, b.r * 1.5, [0.75, 0.5, 1], 0.45); FX.ring(b.x, b.z, b.r * 0.8, [1, 0.85, 1], 0.3);
+        FX.burst(b.x, 0.6, b.z, 22, [0.8, 0.55, 1], 7, 0.13, 0.5, 0);
+        arenaBlast(b.x, b.z, b.r * 1.2, 1.4);
+        G.cam.shake = Math.max(G.cam.shake, 0.14); AUDIO.play('boom', 0.8);
+      }
+    }
+    st.holes = st.holes.filter(b => !b.done);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.holes) return;
+    for (const b of st.holes) {
+      const grow = Math.min(1, b.t / 0.25), shrink = Math.min(1, (b.life - b.t) / 0.15), sc = 0.75 * grow * (0.4 + 0.6 * shrink);
+      pushImp(b.x, 1.0, b.z, sc, 0, 0, 1, 1, 42, 0, 0.6, b.ph + b.t, 0, 0, 0, 1);
+      pushDecal(b.x, b.z, b.r, b.r, -b.t * 2.5, 3, 0, 0.55, 0.55, 0.35, 0.95, 0.4 * grow, true);
+      pushDecal(b.x, b.z, b.r * 0.6, b.r * 0.6, 0, 1, 0, 0, 0.02, 0.0, 0.05, 0.55 * grow);
+    }
+  },
+};

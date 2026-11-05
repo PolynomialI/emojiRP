@@ -1339,7 +1339,8 @@ const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
   jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
-  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02 };
+  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02,
+  dish: 0.02, lander: 0.02, habdome: 0.03, moonwall: 0.025, ufo: 0.02, alien: 0.014 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
@@ -1348,7 +1349,8 @@ MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormse
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
   'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
   'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg',
-  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg');
+  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg',
+  'dish', 'lander', 'habdome', 'moonwall', 'ufo', 'alien');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -1831,6 +1833,65 @@ function themeModels(defs) {
     P('crableg', [
       { s: 'cap', a: [0, 0.4, 0], b: [0, 0.58, 0.35], r: 0.06, k: 0.02 },
       { s: 'cap', a: [0, 0.58, 0.35], b: [0, 0.02, 0.62], r: 0.05, r2: 0.02, k: 0.02 },
+    ]);
+  }
+  // ---------- Moon Base ----------
+  {
+    const metal = C('#d8dce6'), metalD = C('#8a90a0'), dark = C('#2a2e3a'), red = C('#ff4a5a'), glow = C('#7af0ff'), yel = C('#ffcf3a'), glass = C('#3a5a8a');
+    // a radar dish looking up at the sky
+    P('dish', [
+      { s: 'cyl', ax: 'y', c: [0, 0.08, 0], r: 0.3, hh: 0.08, rd: 0.03, col: metalD, k: 0 },
+      { s: 'cap', a: [0, 0.1, 0], b: [0, 0.75, 0], r: 0.06, col: metalD, k: 0.02 },
+      { s: 'ell', c: [0, 0.85, 0], rr: [0.48, 0.1, 0.48], col: metal, k: 0.02 },
+      { s: 'tor', ax: 'y', c: [0, 0.9, 0], R: 0.46, r: 0.03, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
+      { s: 'cap', a: [0, 0.9, 0], b: [0, 1.25, 0], r: 0.025, col: dark, k: 0 },
+      { s: 'sph', c: [0, 1.27, 0], r: 0.05, col: red, k: 0 },
+    ]);
+    // a little moon lander rocket
+    P('lander', [
+      { s: 'cap', a: [0, 0.25, 0], b: [0, 1.2, 0], r: 0.24, r2: 0.2, col: metal, k: 0.02 },
+      { s: 'cap', a: [0, 1.2, 0], b: [0, 1.6, 0], r: 0.2, r2: 0.03, col: red, k: 0.02 },
+      { s: 'sph', c: [0, 1.0, 0.2], r: 0.08, col: glass, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 1.0, 0.2], R: 0.085, r: 0.02, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
+      ...[0, 2.09, 4.19].map(a => ({ s: 'cap', a: [Math.cos(a) * 0.2, 0.5, Math.sin(a) * 0.2], b: [Math.cos(a) * 0.42, 0.02, Math.sin(a) * 0.42], r: 0.05, r2: 0.03, col: red, k: 0.02 })),
+      { s: 'cyl', ax: 'y', c: [0, 0.2, 0], r: 0.14, hh: 0.06, rd: 0.02, col: dark, k: 0 },
+    ]);
+    // a habitat dome with a ring of windows and a door
+    P('habdome', [
+      { s: 'ell', c: [0, 0.05, 0], rr: [0.6, 0.48, 0.6], col: metal, k: 0.02 },
+      { s: 'cyl', ax: 'y', c: [0, 0.04, 0], r: 0.62, hh: 0.05, rd: 0.02, col: metalD, k: 0.01 },
+      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.5, 0.25, Math.sin(a) * 0.5], r: 0.07, col: glow, k: 0 }; }),
+      { s: 'box', c: [0, 0.15, 0.58], hs: [0.12, 0.15, 0.05], rd: 0.03, col: metalD, k: 0.01 },
+      { s: 'sph', c: [0, 0.5, 0], r: 0.08, col: yel, k: 0 },
+    ]);
+    // the base perimeter: metal panels with a hazard stripe and a light, facing in
+    P('moonwall', [
+      { s: 'box', c: [0, 0.42, 0], hs: [0.5, 0.42, 0.12], rd: 0.04, col: metalD, k: 0 },
+      { s: 'box', c: [0, 0.62, 0.121], hs: [0.46, 0.05, 0.005], rd: 0, col: yel, k: 0 },
+      { s: 'box', c: [0, 0.05, 0], hs: [0.5, 0.05, 0.2], rd: 0.02, col: dark, k: 0.01 },
+      { s: 'sph', c: [0.36, 0.84, 0.05], r: 0.05, col: glow, k: 0 },
+    ], { ao: 0.8 });
+  }
+  // ---------- UFO Overlord (chapter 10 boss): a spinning saucer (takes the tint) and its little green pilot ----------
+  {
+    const metal = C('#e2e6f0'), dark = C('#2a2440'), lightY = C('#ffe060'), lightC = C('#7af0ff'), green = C('#7dff6a'), eye = C('#101018');
+    P('ufo', [
+      { s: 'ell', c: [0, 0.5, 0], rr: [0.92, 0.16, 0.92], k: 0.04 },
+      { s: 'ell', c: [0, 0.4, 0], rr: [0.55, 0.14, 0.55], col: metal, k: 0.04 },
+      { s: 'tor', ax: 'y', c: [0, 0.5, 0], R: 0.86, r: 0.05, a0: -Math.PI, a1: Math.PI, col: metal, k: 0.01 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.9, 0.5, Math.sin(a) * 0.9], r: 0.055, col: i % 2 ? lightY : lightC, k: 0 }; }),
+      { s: 'cyl', ax: 'y', c: [0, 0.66, 0], r: 0.36, hh: 0.04, rd: 0.03, col: dark, k: 0.01 },
+      { s: 'tor', ax: 'y', c: [0, 0.69, 0], R: 0.36, r: 0.04, a0: -Math.PI, a1: Math.PI, col: metal, k: 0 },
+      { s: 'sph', c: [0, 0.28, 0], r: 0.2, col: lightC, k: 0.03 },
+    ]);
+    // the pilot: a big green head with huge black eyes and antennae, sitting in the cockpit
+    P('alien', [
+      { s: 'cap', a: [0, 0.0, 0], b: [0, 0.2, 0], r: 0.12, col: green, k: 0.03 },
+      { s: 'ell', c: [0, 0.38, 0.02], rr: [0.26, 0.22, 0.22], col: green, k: 0.05 },
+      { s: 'ell', c: [0, 0.28, 0.12], rr: [0.13, 0.12, 0.12], col: green, k: 0.06 },
+      { s: 'ell', c: [0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 }, { s: 'ell', c: [-0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 },
+      { s: 'cap', a: [0.08, 0.56, 0], b: [0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 }, { s: 'cap', a: [-0.08, 0.56, 0], b: [-0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 },
+      { s: 'sph', c: [0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 }, { s: 'sph', c: [-0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 },
     ]);
   }
 }
@@ -2850,7 +2911,8 @@ const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
   jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
-  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02 };
+  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02,
+  dish: 0.02, lander: 0.02, habdome: 0.03, moonwall: 0.025, ufo: 0.02, alien: 0.014 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
@@ -2859,7 +2921,8 @@ MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormse
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
   'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
   'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg',
-  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg');
+  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg',
+  'dish', 'lander', 'habdome', 'moonwall', 'ufo', 'alien');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- desert ----------
@@ -3344,6 +3407,65 @@ function themeModels(defs) {
       { s: 'cap', a: [0, 0.58, 0.35], b: [0, 0.02, 0.62], r: 0.05, r2: 0.02, k: 0.02 },
     ]);
   }
+  // ---------- Moon Base ----------
+  {
+    const metal = C('#d8dce6'), metalD = C('#8a90a0'), dark = C('#2a2e3a'), red = C('#ff4a5a'), glow = C('#7af0ff'), yel = C('#ffcf3a'), glass = C('#3a5a8a');
+    // a radar dish looking up at the sky
+    P('dish', [
+      { s: 'cyl', ax: 'y', c: [0, 0.08, 0], r: 0.3, hh: 0.08, rd: 0.03, col: metalD, k: 0 },
+      { s: 'cap', a: [0, 0.1, 0], b: [0, 0.75, 0], r: 0.06, col: metalD, k: 0.02 },
+      { s: 'ell', c: [0, 0.85, 0], rr: [0.48, 0.1, 0.48], col: metal, k: 0.02 },
+      { s: 'tor', ax: 'y', c: [0, 0.9, 0], R: 0.46, r: 0.03, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
+      { s: 'cap', a: [0, 0.9, 0], b: [0, 1.25, 0], r: 0.025, col: dark, k: 0 },
+      { s: 'sph', c: [0, 1.27, 0], r: 0.05, col: red, k: 0 },
+    ]);
+    // a little moon lander rocket
+    P('lander', [
+      { s: 'cap', a: [0, 0.25, 0], b: [0, 1.2, 0], r: 0.24, r2: 0.2, col: metal, k: 0.02 },
+      { s: 'cap', a: [0, 1.2, 0], b: [0, 1.6, 0], r: 0.2, r2: 0.03, col: red, k: 0.02 },
+      { s: 'sph', c: [0, 1.0, 0.2], r: 0.08, col: glass, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 1.0, 0.2], R: 0.085, r: 0.02, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
+      ...[0, 2.09, 4.19].map(a => ({ s: 'cap', a: [Math.cos(a) * 0.2, 0.5, Math.sin(a) * 0.2], b: [Math.cos(a) * 0.42, 0.02, Math.sin(a) * 0.42], r: 0.05, r2: 0.03, col: red, k: 0.02 })),
+      { s: 'cyl', ax: 'y', c: [0, 0.2, 0], r: 0.14, hh: 0.06, rd: 0.02, col: dark, k: 0 },
+    ]);
+    // a habitat dome with a ring of windows and a door
+    P('habdome', [
+      { s: 'ell', c: [0, 0.05, 0], rr: [0.6, 0.48, 0.6], col: metal, k: 0.02 },
+      { s: 'cyl', ax: 'y', c: [0, 0.04, 0], r: 0.62, hh: 0.05, rd: 0.02, col: metalD, k: 0.01 },
+      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.5, 0.25, Math.sin(a) * 0.5], r: 0.07, col: glow, k: 0 }; }),
+      { s: 'box', c: [0, 0.15, 0.58], hs: [0.12, 0.15, 0.05], rd: 0.03, col: metalD, k: 0.01 },
+      { s: 'sph', c: [0, 0.5, 0], r: 0.08, col: yel, k: 0 },
+    ]);
+    // the base perimeter: metal panels with a hazard stripe and a light, facing in
+    P('moonwall', [
+      { s: 'box', c: [0, 0.42, 0], hs: [0.5, 0.42, 0.12], rd: 0.04, col: metalD, k: 0 },
+      { s: 'box', c: [0, 0.62, 0.121], hs: [0.46, 0.05, 0.005], rd: 0, col: yel, k: 0 },
+      { s: 'box', c: [0, 0.05, 0], hs: [0.5, 0.05, 0.2], rd: 0.02, col: dark, k: 0.01 },
+      { s: 'sph', c: [0.36, 0.84, 0.05], r: 0.05, col: glow, k: 0 },
+    ], { ao: 0.8 });
+  }
+  // ---------- UFO Overlord (chapter 10 boss): a spinning saucer (takes the tint) and its little green pilot ----------
+  {
+    const metal = C('#e2e6f0'), dark = C('#2a2440'), lightY = C('#ffe060'), lightC = C('#7af0ff'), green = C('#7dff6a'), eye = C('#101018');
+    P('ufo', [
+      { s: 'ell', c: [0, 0.5, 0], rr: [0.92, 0.16, 0.92], k: 0.04 },
+      { s: 'ell', c: [0, 0.4, 0], rr: [0.55, 0.14, 0.55], col: metal, k: 0.04 },
+      { s: 'tor', ax: 'y', c: [0, 0.5, 0], R: 0.86, r: 0.05, a0: -Math.PI, a1: Math.PI, col: metal, k: 0.01 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.9, 0.5, Math.sin(a) * 0.9], r: 0.055, col: i % 2 ? lightY : lightC, k: 0 }; }),
+      { s: 'cyl', ax: 'y', c: [0, 0.66, 0], r: 0.36, hh: 0.04, rd: 0.03, col: dark, k: 0.01 },
+      { s: 'tor', ax: 'y', c: [0, 0.69, 0], R: 0.36, r: 0.04, a0: -Math.PI, a1: Math.PI, col: metal, k: 0 },
+      { s: 'sph', c: [0, 0.28, 0], r: 0.2, col: lightC, k: 0.03 },
+    ]);
+    // the pilot: a big green head with huge black eyes and antennae, sitting in the cockpit
+    P('alien', [
+      { s: 'cap', a: [0, 0.0, 0], b: [0, 0.2, 0], r: 0.12, col: green, k: 0.03 },
+      { s: 'ell', c: [0, 0.38, 0.02], rr: [0.26, 0.22, 0.22], col: green, k: 0.05 },
+      { s: 'ell', c: [0, 0.28, 0.12], rr: [0.13, 0.12, 0.12], col: green, k: 0.06 },
+      { s: 'ell', c: [0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 }, { s: 'ell', c: [-0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 },
+      { s: 'cap', a: [0.08, 0.56, 0], b: [0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 }, { s: 'cap', a: [-0.08, 0.56, 0], b: [-0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 },
+      { s: 'sph', c: [0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 }, { s: 'sph', c: [-0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 },
+    ]);
+  }
 }
 
 // ---- 05-glsl.js ----
@@ -3637,8 +3759,8 @@ void main() {
   } else if (style == 9) {
     // moon: grey regolith pocked with craters
     vec2 c = floor(p / 7.0), f = fract(p / 7.0) * 7.0 - 3.5;
-    float h = hash12(c), cr = 1.2 + h * 1.8;
-    vec2 off = (vec2(hash12(c + 4.1), hash12(c + 8.3)) - 0.5) * (7.0 - cr * 2.0);
+    float h = hash12(c), cr = 1.0 + h * 1.4;
+    vec2 off = (vec2(hash12(c + 4.1), hash12(c + 8.3)) - 0.5) * max(7.0 - cr * 2.5, 0.0);
     vec2 d = f - off;
     float r = length(d) / cr;
     float bowl = step(0.4, h) * (1.0 - smoothstep(0.85, 1.0, r));
@@ -4262,6 +4384,16 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 42) {
+    // black hole: a glossy black core inside a tilted, glowing accretion ring that spins
+    float core = length(p) - 0.42;
+    vec3 q = p;
+    q.yz = rot2(0.45) * q.yz;
+    q.xz = rot2(ph * 3.0) * q.xz;
+    float wob = 0.03 * sin(atan(q.z, q.x) * 6.0);
+    float ring = length(vec2(length(q.xz) - 0.7, q.y)) - (0.07 + wob);
+    return vec2(min(core, ring), core < ring ? 12.0 : 6.0);
   }
   if (type == 41) {
     // a curling wave seen side on: a low swell rising into a hooked crest with a foam cap, extruded along z
@@ -6270,6 +6402,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Waves'], ['width', 'Width', 'm'], ['cd', 'Cooldown', 's']],
     levels: L10({ dmg: [16, 18, 20, 23, 26, 29, 32, 36, 40, 46], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], width: [2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.3, 4.6], cd: [5.5, 5.4, 5.2, 5.0, 4.8, 4.6, 4.4, 4.2, 4.0, 3.7] }),
   },
+  blackhole: {
+    name: 'Black Hole', from: 10, intro: 'Opens a black hole in the thickest crowd that drags enemies in, then collapses with a crushing blast.', icon: { type: 42, colw: 0 },
+    fields: [['dmg', 'Collapse damage'], ['radius', 'Pull radius', 'm'], ['life', 'Lasts', 's'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [40, 46, 52, 58, 66, 74, 82, 92, 104, 120], radius: [3.5, 3.7, 3.9, 4.1, 4.3, 4.5, 4.8, 5.1, 5.4, 5.8], life: [2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8, 3.0, 3.2], cd: [9, 8.7, 8.4, 8.1, 7.8, 7.5, 7.2, 6.9, 6.6, 6.2] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -6344,6 +6481,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 8600, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 8000, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 7400, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
 BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 6800, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
@@ -6377,6 +6515,8 @@ const ARENAS = [
     props: [['jtree', 6, 0.45, 0.6], ['mushroom', 4, 0.5, 0.75], ['fern', 6, 0.6, 0.9], ['rock', 3, 0.8, 1.2]], zones: [['swamp', 3, 2.8, 4.2]], wall: 'bamboo' },
   { id: 'beach', name: 'Pirate Beach', floor: 8, stoneA: '#f2dcae', stoneB: '#d6b480', grout: '#8a6a44', accent: '#4fd8ff', fog: '#123a4a', sky: '#bfe8ff', ground: '#c8a878', light: '#fff6e4', spotMin: 0.62, shadowTint: '#3a4a6a', rock: '#9a8a7a', pool: '#2fb0d8', poolGlow: 0.1,
     props: [['palm', 6, 0.42, 0.55], ['barrel', 3, 0.3, 0.36], ['crate', 3, 0.34, 0.4], ['rock', 3, 0.8, 1.2], ['starfish', 4, 0.3, 0.4]], zones: [['tidepool', 3, 2.0, 3.0]], wall: 'post' },
+  { id: 'moon', name: 'Moon Base', floor: 9, stoneA: '#b8bcc8', stoneB: '#979dab', grout: '#3a3e4a', accent: '#7af0ff', fog: '#05060f', sky: '#3a4070', ground: '#2a2e40', light: '#eef2ff', spotMin: 0.5, shadowTint: '#0a0c20', rock: '#7c808c', pool: '#3ad8ff', poolGlow: 0.5,
+    props: [['dish', 2.5, 0.55, 0.7], ['lander', 2, 0.42, 0.5], ['habdome', 2, 0.9, 1.2], ['rock', 5, 0.8, 1.3]], zones: [['boost', 2.4, 2.0, 2.8]], wall: 'moonwall' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -6419,6 +6559,10 @@ const PROP_KINDS = {
   starfish: { models: ['starfish'], unit: 0.35, block: false, tints: ['#ff7a5a', '#ffb03a', '#c860ff', '#ff5a8a'], shadow: false },
   post: { models: ['post'], unit: 0.4, block: true, shots: true, wallR: [0.9, 1.05] },
   wreck: { models: ['wreck'], unit: 0.5, block: true, shots: true, shadow: false, tall: 3 },
+  dish: { models: ['dish'], unit: 0.4, block: true, shots: true, tall: 2 },
+  lander: { models: ['lander'], unit: 0.3, block: true, shots: true, tall: 3 },
+  habdome: { models: ['habdome'], unit: 0.6, block: true, shots: true },
+  moonwall: { models: ['moonwall'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
   basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
@@ -6433,6 +6577,7 @@ const ZONE_KINDS = {
   lava: { burn: 16, slow: 0.85, col: '#f04a0c', glow: 0.3 },
   swamp: { slow: 0.6, col: '#56702c', glow: 0.03 },
   tidepool: { block: true, col: '#2fb8e0', glow: 0.12 },
+  boost: { slow: 1.35, col: '#3ad8ff', glow: 0.55 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
@@ -7911,6 +8056,24 @@ ARENA_FEATURES.beach = {
   },
 };
 
+// ---------- Moon Base: blinking beacons on the landers and dishes, and slow-drifting moon dust ----------
+ARENA_FEATURES.moon = {
+  init(st) { st.beacons = ARENA.props.filter(o => o.kind === 'lander' || o.kind === 'dish'); st.acc = 0; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 3 : 8);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.1, 0.6), h[2] + rand(-11, 8), rand(-0.3, 0.3), rand(0.1, 0.35), rand(-0.3, 0.3), rand(0.06, 0.1), 0.12, rand(2, 3.5), [0.85, 0.88, 0.95], 0.5, 2, 0, 0.1);
+  },
+  emit(st) {
+    const t = G.run ? G.run.t : 0;
+    for (const o of st.beacons) {
+      if (!onScreen(o.x, o.z, 3) || ((t * 1.2 + o.ph) % 1.6) > 0.35) continue;
+      const sc = o.r / PROP_KINDS[o.kind].unit, y = (o.kind === 'lander' ? 1.62 : 1.3) * sc;
+      FX.glow(o.x, y, o.z, 0.9, [1, 0.3, 0.35], 0.05, 0.9);
+    }
+  },
+};
+
 // ---- 12-skills.js ----
 // ============================================================
 // Skills: behaviors, hero body actions, projectiles and visuals
@@ -8920,6 +9083,53 @@ SKILL_HOOKS.wave = {
         pushImp(x, hgt * 0.6, z, hgt, v.dx, 0, v.dz, 1.25, 0, 0, 0.12, G.run.t * 3 + i, 0, 0, 0, 0.85);
       }
       pushDecal(v.x - v.dx * 0.8, v.z - v.dz * 0.8, v.w, 1.0, -Math.atan2(v.dx, v.dz), 1, 0, 0, 0.6, 0.9, 1, 0.35 * fade, true);
+    }
+  },
+};
+
+// ---------- Black Hole (chapter 10): drags a crowd into one spot, then collapses on it ----------
+SKILL_HOOKS.blackhole = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, r = L.radius * areaMul();
+    st.holes = st.holes || [];
+    st.t = (st.t ?? 2) - dt;
+    if (st.t <= 0 && nearestEnemy(h[0], h[2], 10)) {
+      st.t = L.cd * cdMul();
+      const c = clusterTarget(h[0], h[2], 10) || [h[0] + rand(-3, 3), h[2] + rand(-3, 3)];
+      const o = { x: c[0], z: c[1] }; resolveCircle(o, 0.5);
+      st.holes.push({ x: o.x, z: o.z, r, t: 0, life: L.life, tick: 0, ph: rand(0, 10) });
+      AUDIO.play('zap', 0.5);
+    }
+    for (const b of st.holes) {
+      b.t += dt;
+      // the pull grows stronger toward the middle; bosses only feel a little of it
+      enemiesInRadius(b.x, b.z, b.r, e => {
+        const ex = b.x - e.x, ez = b.z - e.z, ed = Math.hypot(ex, ez) || 1, f = (1.4 - ed / b.r) * (e.boss ? 0 : 16);
+        e.kx += ex / ed * f * dt; e.kz += ez / ed * f * dt;
+      });
+      b.tick -= dt;
+      if (b.tick <= 0) { b.tick = 0.35; enemiesInRadius(b.x, b.z, b.r * 0.5, e => hurtEnemy(e, Math.max(1, Math.round(L.dmg * 0.06)), 0, 0, { sound: false, color: [0.8, 0.6, 1] })); }
+      if (Math.random() < 0.9) { const a = rand(0, TAU), d = b.r * rand(0.6, 1); FX.part(b.x + Math.cos(a) * d, 0.4, b.z + Math.sin(a) * d, -Math.cos(a) * d * 1.6 - Math.sin(a) * 2, 0, -Math.sin(a) * d * 1.6 + Math.cos(a) * 2, 0.09, 0.02, 0.5, [0.75, 0.5, 1], 1, 1, 0, 0); }
+      if (b.t >= b.life) {
+        // collapse: a crushing blast on everything it gathered
+        b.done = true;
+        enemiesInRadius(b.x, b.z, b.r * 0.75, e => { const ex = e.x - b.x, ez = e.z - b.z, ed = Math.hypot(ex, ez) || 1; hurtEnemy(e, L.dmg, ex / ed * 10, ez / ed * 10, { sound: false, color: [0.85, 0.6, 1] }); });
+        FX.ring(b.x, b.z, b.r * 1.5, [0.75, 0.5, 1], 0.45); FX.ring(b.x, b.z, b.r * 0.8, [1, 0.85, 1], 0.3);
+        FX.burst(b.x, 0.6, b.z, 22, [0.8, 0.55, 1], 7, 0.13, 0.5, 0);
+        arenaBlast(b.x, b.z, b.r * 1.2, 1.4);
+        G.cam.shake = Math.max(G.cam.shake, 0.14); AUDIO.play('boom', 0.8);
+      }
+    }
+    st.holes = st.holes.filter(b => !b.done);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.holes) return;
+    for (const b of st.holes) {
+      const grow = Math.min(1, b.t / 0.25), shrink = Math.min(1, (b.life - b.t) / 0.15), sc = 0.75 * grow * (0.4 + 0.6 * shrink);
+      pushImp(b.x, 1.0, b.z, sc, 0, 0, 1, 1, 42, 0, 0.6, b.ph + b.t, 0, 0, 0, 1);
+      pushDecal(b.x, b.z, b.r, b.r, -b.t * 2.5, 3, 0, 0.55, 0.55, 0.35, 0.95, 0.4 * grow, true);
+      pushDecal(b.x, b.z, b.r * 0.6, b.r * 0.6, 0, 1, 0, 0, 0.02, 0.0, 0.05, 0.55 * grow);
     }
   },
 };
@@ -10396,6 +10606,122 @@ BOSS_DRAW.crab = function (e) {
   if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.75 * s, 0.6 * s, -e.yaw, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
 };
 
+// ---------- UFO Overlord (chapter 10): a tractor beam that drags you in, sweeping lasers, and beamed-down invaders ----------
+const UFO = { beamR: 3.2, laserLen: 14 };
+function ufoBeams(ai) { const n = ai.beams, out = []; for (let i = 0; i < n; i++) out.push(ai.laserA + i * TAU / n); return out; }
+BOSS_AI.ufo = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.5; ai.spin = 0; ai.drops = []; }
+  // hovers above the moon dust, its saucer always spinning
+  e.y += (2.4 + Math.sin(run.t * 2) * 0.25 - (e.y || 0)) * Math.min(1, dt * 3);
+  ai.spin += dt * (ai.state === 'lasers' ? 5 : 1.5);
+  switch (ai.state) {
+    case 'walk': {
+      const a = Math.atan2(e.x - h[0], e.z - h[2]) + 0.4;
+      bossWalk(e, dt, h[0] + Math.sin(a) * 5.5, h[2] + Math.cos(a) * 5.5, e.speed * (rage ? 1.3 : 1)); bossFace(e, dt, 4);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['beam', 'lasers', 'invade'][ai.next++ % 3];
+        if (k === 'beam') { ai.state = 'beamWind'; ai.t = ai.dur = 0.6; addTele({ kind: 'circle', x: e.x, z: e.z, r: UFO.beamR, dur: ai.dur }); }
+        else if (k === 'lasers') {
+          ai.state = 'laserWind'; ai.t = ai.dur = 0.9; ai.beams = rage ? 4 : 3; ai.laserA = Math.atan2(dx, dz) + Math.PI / ai.beams; ai.laserV = (Math.random() < 0.5 ? 1 : -1) * (rage ? 1.25 : 0.95);
+          for (const rot of ufoBeams(ai)) addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.55, len: UFO.laserLen, rot, dur: ai.dur });
+        } else {
+          ai.state = 'invade'; ai.t = 1.1;
+          const n = rage ? 5 : 3;
+          for (let i = 0; i < n; i++) {
+            const a = rand(0, TAU), r = rand(3.5, 6), o = { x: h[0] + Math.cos(a) * r, z: h[2] + Math.sin(a) * r }; resolveCircle(o, 1);
+            ai.drops.push({ x: o.x, z: o.z, t: 1.1 });
+            addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.1, dur: 1.1 });
+          }
+        }
+      }
+      break;
+    }
+    case 'beamWind':
+      e.vx *= 0.8; e.vz *= 0.8;
+      if (ai.t <= 0) { ai.state = 'beam'; ai.t = rage ? 3.2 : 2.6; ai.tick = 0; AUDIO.play('zap', 0.5); }
+      break;
+    case 'beam': {
+      // the tractor beam drags the hero toward its centre and burns; run outward to break free
+      bossWalk(e, dt, h[0], h[2], 2.0);
+      const ox = e.x - h[0], oz = e.z - h[2], od = Math.hypot(ox, oz);
+      if (od < UFO.beamR + HERO_R * 0.5 && od > 0.05) {
+        const pull = (rage ? 3.6 : 3.0) * dt;
+        h[0] += ox / od * Math.min(pull, od); h[2] += oz / od * Math.min(pull, od);
+        ai.tick -= dt;
+        if (ai.tick <= 0) { ai.tick = 0.3; hurtHero(7 * run.info.dmgMul, e.x, e.z + 0.01); }
+      }
+      if (Math.random() < 0.7) { const a = rand(0, TAU), r = rand(0, UFO.beamR); FX.part(e.x + Math.cos(a) * r, 0.2, e.z + Math.sin(a) * r, 0, rand(2, 4), 0, 0.1, 0.03, 0.6, [0.5, 1, 0.6], 1, 0); }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2; }
+      break;
+    }
+    case 'laserWind':
+      e.vx *= 0.7; e.vz *= 0.7;
+      if (ai.t <= 0) { ai.state = 'lasers'; ai.t = 3; ai.tick = 0; AUDIO.play('zap', 1.2); }
+      break;
+    case 'lasers': {
+      // the beams sweep round like a lighthouse; keep moving round with them
+      e.vx *= 0.7; e.vz *= 0.7;
+      ai.laserA += ai.laserV * dt;
+      ai.tick -= dt;
+      for (const rot of ufoBeams(ai)) {
+        if (ai.tick <= 0 && laneHit(e.x, e.z, rot, UFO.laserLen, 0.55 + HERO_R * 0.5, h[0], h[2])) { ai.tick = 0.25; hurtHero(11 * run.info.dmgMul, e.x, e.z); }
+        const k = rand(2, UFO.laserLen);
+        if (Math.random() < 0.6) FX.burst(e.x + Math.sin(rot) * k, 0.2, e.z + Math.cos(rot) * k, 1, [1, 0.4, 0.6], 2.5, 0.08, 0.3, 0);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.2 : 2; }
+      break;
+    }
+    case 'invade':
+      e.vx *= 0.8; e.vz *= 0.8;
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+  }
+  // beamed-down invaders land a moment after their columns of light appear
+  for (const p of ai.drops) {
+    p.t -= dt;
+    if (p.t > 0) { if (Math.random() < 0.5) FX.part(p.x + rand(-0.6, 0.6), 0.2, p.z + rand(-0.6, 0.6), 0, rand(3, 6), 0, 0.12, 0.03, 0.5, [0.5, 1, 0.6], 1, 0); continue; }
+    p.done = true;
+    if (Math.hypot(h[0] - p.x, h[2] - p.z) < 1.1 + HERO_R * 0.5) hurtHero(16 * run.info.dmgMul, p.x, p.z);
+    for (let i = 0; i < 2; i++) { const m = spawnEnemy('sprinter', p.x + rand(-0.5, 0.5), p.z + rand(-0.5, 0.5), { tint: '#6aff7a' }); m.spawnT = 0.3; }
+    FX.ring(p.x, p.z, 2.4, [0.5, 1, 0.6], 0.4); FX.burst(p.x, 0.4, p.z, 10, [0.6, 1, 0.7], 4, 0.1, 0.4, 0);
+    AUDIO.play('split', 0.8);
+  }
+  ai.drops = ai.drops.filter(p => !p.done);
+};
+BOSS_DRAW.ufo = function (e) {
+  const D = MODELS.defs;
+  if (!R.enemyDraw.ufo || !R.enemyDraw.alien) return;
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, s = e.scale, ai = e.ai, L = R.frame.lightDir;
+  const y = e.portrait ? 0.3 * s : (e.y || 0) - 0.5 * s * (1 - dead * 0.5), spin = ai.spin || 0;
+  // the saucer turns see-through while the hero is underneath it (the camera looks north, so "under" reaches a bit behind)
+  const hp = G.hero.pos, under = e.portrait ? 0 : clamp(1.4 - Math.hypot(hp[0] - e.x, (hp[2] - e.z + 1.2) * 0.8) / (1.1 * s), 0, 1) * 0.7;
+  pushEnemy('ufo', false, e.x, y, e.z, spin, D.ufo.clips.still.row, s, e.squash, dead, fl, 0, t[0], t[1], t[2], under);
+  pushEnemy('alien', false, e.x, y + 0.7 * s, e.z, e.yaw, D.alien.clips.still.row, s * 0.75, 1, dead, fl, 0, 1, 1, 1, under);
+  if (e.portrait || dead) return;
+  // its shadow far below, and the rim lights chasing round
+  pushDecal(e.x, e.z, 1.6 * s * 0.5, 1.6 * s * 0.5, 0, 1, 0, 0, 0.01, 0.02, 0.06, 0.45);
+  const yy = y + 0.5 * s;
+  for (let i = 0; i < 10; i += 2) { const a = (i / 10) * TAU - spin; FX.glow(e.x + Math.cos(a) * 0.9 * s, yy, e.z + Math.sin(a) * 0.9 * s, 0.6, (i / 2) % 2 ? [1, 0.85, 0.3] : [0.45, 0.95, 1], 0.05, 0.7); }
+  if (ai.state === 'beam') {
+    // the tractor beam: a pool of green light and streaks rising into the saucer
+    pushDecal(e.x, e.z, UFO.beamR, UFO.beamR, G.run.t, 1, 0, 0, 0.4, 1, 0.5, 0.5, true);
+    for (let k = 0; k < 6; k++) {
+      const a = k / 6 * TAU + G.run.t * 0.8, x0 = e.x + Math.cos(a) * UFO.beamR * 0.9, z0 = e.z + Math.sin(a) * UFO.beamR * 0.9;
+      R.ribStrip([x0, 0.1, z0, e.x + Math.cos(a) * 0.5 * s, yy - 0.3, e.z + Math.sin(a) * 0.5 * s], 2, 0.35, [0.45, 1, 0.55, 0.3], 0);
+    }
+  }
+  if (ai.state === 'lasers') {
+    for (const rot of ufoBeams(ai)) {
+      const ex = e.x + Math.sin(rot) * UFO.laserLen, ez = e.z + Math.cos(rot) * UFO.laserLen, pts = [e.x, yy - 0.4, e.z, e.x + Math.sin(rot) * 2, 0.35, e.z + Math.cos(rot) * 2, ex, 0.3, ez];
+      R.ribStrip(pts, 3, 0.16, [1, 0.6, 0.75, 1], 0);
+      R.ribStrip(pts, 3, 0.55, [1, 0.25, 0.45, 0.4], 0);
+    }
+  }
+  for (const p of ai.drops || []) R.ribStrip([p.x, 0.1, p.z, p.x, 9, p.z], 2, 0.9 * (1 - p.t / 1.1) + 0.2, [0.5, 1, 0.6, 0.35], 0);
+};
+
 // ---- 14-ui.js ----
 // ============================================================
 // UI: screens, HUD, level-up cards, chest roulette, overlay drawing
@@ -11618,6 +11944,7 @@ function renderAllIcons() {
     frostnova: { scale: 0.62, emissive: 0.25 },
     meteor: { scale: 0.66, ax: -0.75, ay: -0.6, az: 0.25, emissive: 0.1 },
     wave: { scale: 0.64, emissive: 0.15 },
+    blackhole: { scale: 0.62, emissive: 0.3 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

@@ -479,7 +479,7 @@ if (mode === 'powerups') {
       for (let i = 0; i < 60; i++) { const a = i / 60 * TAU, r = 3 + (i % 4) * 1.3; spawnEnemy(i % 6 ? 'stickman' : 'brute', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }
     }, id);
     for (let k = 0; k < 2; k++) {
-      await page.evaluate(() => { for (let i = 0; i < 75; i++) { G.run.invuln = 1; __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); } });
+      await page.evaluate(n => { for (let i = 0; i < n; i++) { G.run.invuln = 1; __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); } }, +(process.env.FRAMES || 75));
       await render(2); await shot(`power-${id}-${k}`);
     }
     console.log(id, await page.evaluate(() => JSON.stringify({ kills: G.run.kills, rushT: G.run.rushT })));

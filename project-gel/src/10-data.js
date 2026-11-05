@@ -98,6 +98,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Waves'], ['width', 'Width', 'm'], ['cd', 'Cooldown', 's']],
     levels: L10({ dmg: [16, 18, 20, 23, 26, 29, 32, 36, 40, 46], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], width: [2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.3, 4.6], cd: [5.5, 5.4, 5.2, 5.0, 4.8, 4.6, 4.4, 4.2, 4.0, 3.7] }),
   },
+  blackhole: {
+    name: 'Black Hole', from: 10, intro: 'Opens a black hole in the thickest crowd that drags enemies in, then collapses with a crushing blast.', icon: { type: 42, colw: 0 },
+    fields: [['dmg', 'Collapse damage'], ['radius', 'Pull radius', 'm'], ['life', 'Lasts', 's'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [40, 46, 52, 58, 66, 74, 82, 92, 104, 120], radius: [3.5, 3.7, 3.9, 4.1, 4.3, 4.5, 4.8, 5.1, 5.4, 5.8], life: [2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8, 3.0, 3.2], cd: [9, 8.7, 8.4, 8.1, 7.8, 7.5, 7.2, 6.9, 6.6, 6.2] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -172,6 +177,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 8600, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 8000, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 7400, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
 BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 6800, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
@@ -205,6 +211,8 @@ const ARENAS = [
     props: [['jtree', 6, 0.45, 0.6], ['mushroom', 4, 0.5, 0.75], ['fern', 6, 0.6, 0.9], ['rock', 3, 0.8, 1.2]], zones: [['swamp', 3, 2.8, 4.2]], wall: 'bamboo' },
   { id: 'beach', name: 'Pirate Beach', floor: 8, stoneA: '#f2dcae', stoneB: '#d6b480', grout: '#8a6a44', accent: '#4fd8ff', fog: '#123a4a', sky: '#bfe8ff', ground: '#c8a878', light: '#fff6e4', spotMin: 0.62, shadowTint: '#3a4a6a', rock: '#9a8a7a', pool: '#2fb0d8', poolGlow: 0.1,
     props: [['palm', 6, 0.42, 0.55], ['barrel', 3, 0.3, 0.36], ['crate', 3, 0.34, 0.4], ['rock', 3, 0.8, 1.2], ['starfish', 4, 0.3, 0.4]], zones: [['tidepool', 3, 2.0, 3.0]], wall: 'post' },
+  { id: 'moon', name: 'Moon Base', floor: 9, stoneA: '#b8bcc8', stoneB: '#979dab', grout: '#3a3e4a', accent: '#7af0ff', fog: '#05060f', sky: '#3a4070', ground: '#2a2e40', light: '#eef2ff', spotMin: 0.5, shadowTint: '#0a0c20', rock: '#7c808c', pool: '#3ad8ff', poolGlow: 0.5,
+    props: [['dish', 2.5, 0.55, 0.7], ['lander', 2, 0.42, 0.5], ['habdome', 2, 0.9, 1.2], ['rock', 5, 0.8, 1.3]], zones: [['boost', 2.4, 2.0, 2.8]], wall: 'moonwall' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -247,6 +255,10 @@ const PROP_KINDS = {
   starfish: { models: ['starfish'], unit: 0.35, block: false, tints: ['#ff7a5a', '#ffb03a', '#c860ff', '#ff5a8a'], shadow: false },
   post: { models: ['post'], unit: 0.4, block: true, shots: true, wallR: [0.9, 1.05] },
   wreck: { models: ['wreck'], unit: 0.5, block: true, shots: true, shadow: false, tall: 3 },
+  dish: { models: ['dish'], unit: 0.4, block: true, shots: true, tall: 2 },
+  lander: { models: ['lander'], unit: 0.3, block: true, shots: true, tall: 3 },
+  habdome: { models: ['habdome'], unit: 0.6, block: true, shots: true },
+  moonwall: { models: ['moonwall'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
   basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
@@ -261,6 +273,7 @@ const ZONE_KINDS = {
   lava: { burn: 16, slow: 0.85, col: '#f04a0c', glow: 0.3 },
   swamp: { slow: 0.6, col: '#56702c', glow: 0.03 },
   tidepool: { block: true, col: '#2fb8e0', glow: 0.12 },
+  boost: { slow: 1.35, col: '#3ad8ff', glow: 0.55 },
 };
 
 // Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
