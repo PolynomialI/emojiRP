@@ -441,6 +441,8 @@ if (mode === 'perf') {
   await page.click('.tab[data-tab="skins"]'); await render(5); await variants('skins');
   await page.click('#skins .back');
   if (await page.$('.tab[data-tab="gear"]')) { await page.click('.tab[data-tab="gear"]'); await render(5); await variants('gear'); await page.click('#gear .back'); }
+  // CH=4 measures the run on that chapter's map
+  if (process.env.CH) await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); }, +process.env.CH);
   await page.click('#btnPlay');
   await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
   await page.evaluate(() => {

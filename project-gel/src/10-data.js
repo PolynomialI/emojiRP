@@ -177,15 +177,15 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
-BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 8600, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
-BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 8000, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
-BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 7400, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
-BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 6800, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
-BOSS_TYPES.yeti = { name: 'Frost Yeti', model: 'yeti', meshes: ['yeti', 'icicle', 'icespike'], hp: 6100, speed: 2.1, dmg: 18, scale: 2.8, radius: 1.2, tint: '#6fa8f2', mass: 60, portraitTop: 1.05 };
-BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 5600, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 1.75 };
-BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 5200, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 2.1 };
-BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 4700, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
-BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3900, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 1.25 };
+BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 5000, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
+BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4800, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
+BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4600, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
+BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 4400, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
+BOSS_TYPES.yeti = { name: 'Frost Yeti', model: 'yeti', meshes: ['yeti', 'icicle', 'icespike'], hp: 4200, speed: 2.1, dmg: 18, scale: 2.8, radius: 1.2, tint: '#6fa8f2', mass: 60, portraitTop: 1.05 };
+BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 4000, speed: 1.7, dmg: 18, scale: 2.5, radius: 1.9, tint: '#ff5c78', mass: 60, portraitTop: 1.75 };
+BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 3800, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 2.1 };
+BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 3600, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
+BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3400, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 1.25 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
 const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
