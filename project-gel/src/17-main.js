@@ -171,12 +171,12 @@ function requiredMeshes(n) {
   for (const k in has) if (has[k] && !req.includes(ENEMY_TYPES[k].model)) req.push(ENEMY_TYPES[k].model);
   return req;
 }
-function beginChapter(n) {
+function beginChapter(n, opts) {
   if (G.state !== 'home') return;
   const info = chapterInfo(n), req = requiredMeshes(n);
   prioritizeMeshes(req.concat(...info.bosses.map(bossMeshes)));
   const go = () => {
-    startRun(n);
+    startRun(n, opts);
     updateCamera(0, true); updateView();
     const hint = $('hint');
     hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Drag anywhere to move · tap DASH to dodge' : 'Move with WASD, the arrow keys, or drag · Space to dash';

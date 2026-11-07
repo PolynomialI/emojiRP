@@ -1,10 +1,10 @@
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
 // ============================================================
-function startBoss() {
+function startBoss(list) {
   const run = G.run, h = G.hero.pos;
   run.bossStarted = true;
-  const ids = run.info.bosses;
+  const ids = list || run.info.bosses;
   for (const id of ids) { for (const m of bossMeshes(id)) ensureMeshNow(m); if (!ICONS.map['boss-' + id]) renderBossPortraitOf(id); }
   // bosses drop in on screen, clear of the HUD: beside the hero on wide screens, below it on tall ones
   const W = R.cssW, H = R.cssH, wide = W > H;

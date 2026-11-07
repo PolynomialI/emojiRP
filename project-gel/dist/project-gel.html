@@ -390,6 +390,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     <div class="wave">
     <div class="col play-wrap">
       <button class="jelly gold big" id="btnPlay">PLAY</button>
+      <button class="jelly violet" id="btnEndless" hidden>ENDLESS</button>
     </div>
     <nav class="col tabs" aria-label="Menu">
       <button class="tab" data-tab="upgrades"><img alt="" data-icon="meta-damage">Upgrades</button>
@@ -6938,14 +6939,15 @@ function spawnRate(t) {
   return RATE_KEYS[RATE_KEYS.length - 1][1];
 }
 
-function startRun(chapter) {
-  const info = chapterInfo(chapter);
+function startRun(chapter, opts = {}) {
+  const info = { ...chapterInfo(chapter) };
   const run = G.run = {
     chapter, info, t: 0, kills: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
-    nextId: 1, spawnAcc: 0, events: makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
+    nextId: 1, spawnAcc: 0, events: opts.endless ? endlessEvents() : makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
+    endless: !!opts.endless, powerCap: opts.powerCap || chapter, tier: 0,
     vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
   };
   run.gear = gearStats();
@@ -7225,7 +7227,8 @@ function updateRun(dt) {
     while (run.events.length && run.t >= run.events[0].t) runEvent(run.events.shift());
     // continuous spawning
     const alive = run.enemies.length;
-    const rate = run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1));
+    if (run.endless) endlessTick(run);
+    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1))) * (run.endless ? 1 + Math.max(0, run.t - 150) / 360 : 1);
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) {
       run.spawnAcc -= 1;
@@ -7279,7 +7282,8 @@ function updateRun(dt) {
   R.frame.lowHp = run.hp / run.maxHp < 0.25 ? 0.35 : 0;
 
   // victory check: the remaining enemies melt and every gem and coin flies to the hero
-  if (live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) {
+  if (live && run.endless && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) endlessBossDown(run);
+  else if (live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) {
     run.won = true; run.endT = 0;
     for (const e of run.enemies) if (!e.dying && !e.boss) e.dying = 0.0001;
     for (const g of run.gems) g.pull = true;
@@ -7304,11 +7308,13 @@ function runEvent(ev) {
     startBoss();
   } else if (ev.kind === 'gooblin') {
     spawnGooblin();
+  } else if (ev.kind === 'eboss') {
+    if (!run.bossStarted) startBoss(ev.ids);
   }
 }
 
 function spawnFromMix() {
-  const run = G.run, t = run.t, ch = run.chapter;
+  const run = G.run, t = run.t, ch = run.endless ? Math.max(run.chapter, 1 + run.tier) : run.chapter;
   const w = { stickman: 1 };
   // each type joins after its unlock time; in later chapters it shows up sooner
   for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.8 : 1)) w[k] = wt; }
@@ -7675,13 +7681,13 @@ function finishRun(won) {
   run.over = true;
   run.won = won;
   const sv = G.save;
-  const reward = won ? run.info.reward : 0;
+  const reward = won ? run.info.reward : run.endless ? Math.round(run.t / 3) : 0;
   run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100));
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
-  const best = sv.best[run.chapter] || 0;
-  if (run.t > best) sv.best[run.chapter] = Math.round(run.t);
+  if (run.endless) { run.newBest = run.t > (sv.endlessBest || 0); if (run.newBest) sv.endlessBest = Math.round(run.t); }
+  else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
   if (won) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   sv.stats.runs++; sv.stats.kills += run.kills;
@@ -8279,6 +8285,45 @@ function gooblinLoot(e) {
   FX.ring(e.x, e.z, 4, [1, 0.85, 0.3], 0.6, 1); FX.burst(e.x, 0.8, e.z, 30, [1, 0.85, 0.3], 7, 0.14, 0.7, 3);
   UI.toast('Gooblin caught! Grab the loot!', 2);
   AUDIO.play('levelup', 1.2);
+}
+
+// ---------- Endless: survive as long as you can on a random map; it keeps getting harder ----------
+const ENDLESS = { unlockAfter: 3, tierEvery: 50, bossEvery: 120 };
+function endlessUnlocked() { return !!G.save.cleared[ENDLESS.unlockAfter] || G.save.chapter > ENDLESS.unlockAfter; }
+// the map comes from a chapter already reached; power-ups from every chapter reached are on offer
+function beginEndless() {
+  if (!endlessUnlocked()) return;
+  const reached = Math.min(G.save.chapter, CHAPTER_BOSSES.length), ch = randInt(1, reached);
+  beginChapter(ch, { endless: true, powerCap: Math.max(reached, G.save.chapter) });
+}
+function endlessEvents() {
+  const ev = [];
+  for (let k = 0; k < 40; k++) {
+    const t0 = k * ENDLESS.bossEvery;
+    ev.push({ t: t0 + 50, kind: 'swarm', n: 14 + k * 4 }, { t: t0 + 80, kind: 'elite' });
+    if (k % 2 === 0) ev.push({ t: t0 + rand(30, 100), kind: 'gooblin' });
+    // a boss every two minutes, working through all ten; every third visit brings an old friend along
+    if (k > 0) {
+      const main = CHAPTER_BOSSES[(k - 1) % CHAPTER_BOSSES.length];
+      ev.push({ t: t0, kind: 'eboss', ids: k % 3 === 0 ? [main, GUEST_BOSSES[(k / 3 - 1) % GUEST_BOSSES.length]] : [main] });
+    }
+  }
+  return ev.sort((a, b) => a.t - b.t);
+}
+// every tierEvery seconds the enemies take on the next chapter's toughness
+function endlessTick(run) {
+  const tier = Math.floor(run.t / ENDLESS.tierEvery);
+  if (tier === run.tier) return;
+  run.tier = tier;
+  const T = chapterInfo(1 + tier);
+  Object.assign(run.info, { hpMul: T.hpMul, dmgMul: T.dmgMul, rateMul: T.rateMul, bossHpMul: T.bossHpMul * (tier > 0 ? 0.8 : 1), has: T.has });
+  if (tier > 0) UI.toast(`Endless · danger ${tier + 1}`, 1.6);
+}
+// a boss beaten in Endless drops its loot and the run goes on
+function endlessBossDown(run) {
+  for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
+  run.bosses = []; run.bossStarted = false; run.bossTotalHp = 0;
+  UI.toast('Boss down! Keep going!', 2);
 }
 
 // ---- 12-skills.js ----
@@ -9359,10 +9404,10 @@ SKILL_HOOKS.blackhole = {
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
 // ============================================================
-function startBoss() {
+function startBoss(list) {
   const run = G.run, h = G.hero.pos;
   run.bossStarted = true;
-  const ids = run.info.bosses;
+  const ids = list || run.info.bosses;
   for (const id of ids) { for (const m of bossMeshes(id)) ensureMeshNow(m); if (!ICONS.map['boss-' + id]) renderBossPortraitOf(id); }
   // bosses drop in on screen, clear of the HUD: beside the hero on wide screens, below it on tall ones
   const W = R.cssW, H = R.cssH, wide = W > H;
@@ -10961,6 +11006,7 @@ const UI = {
     this.overlay = $('overlay');
     this.octx = this.overlay.getContext('2d');
     $('btnPlay').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginChapter(G.save.selected); });
+    $('btnEndless').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginEndless(); });
     $('chPrev').addEventListener('click', () => { G.save.selected = Math.max(1, G.save.selected - 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
     $('chNext').addEventListener('click', () => { G.save.selected = Math.min(G.save.chapter, G.save.selected + 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
     document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openTab(b.dataset.tab); }));
@@ -11041,6 +11087,9 @@ const UI = {
     const bossNames = [...new Set(info.bosses)].map(b => BOSS_TYPES[b].name).join(' + ');
     const best = sv.best[sv.selected];
     $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${bossNames}`;
+    const eb = $('btnEndless');
+    eb.hidden = !endlessUnlocked();
+    eb.textContent = sv.endlessBest ? `ENDLESS · best ${fmtTime(sv.endlessBest)}` : 'ENDLESS';
     $('chPrev').disabled = sv.selected <= 1;
     $('chNext').disabled = sv.selected >= sv.chapter;
     applyArena(info.arena);
@@ -11213,8 +11262,8 @@ const UI = {
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
-      label = 'CHAPTER ' + run.chapter;
+      pct = run.endless ? (run.t % ENDLESS.bossEvery) / ENDLESS.bossEvery : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      label = run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
     }
     const pctS = (pct * 100).toFixed(1) + '%';
     if (L.chap !== pctS) { L.chap = pctS; $('chapFill').style.width = pctS; }
@@ -11362,7 +11411,7 @@ const UI = {
   // ---------- pause / revive / results ----------
   openPause() {
     const run = G.run;
-    $('pauseSub').textContent = `Chapter ${run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
+    $('pauseSub').textContent = `${run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
     $('pauseList').replaceChildren(...run.slots.map(s => {
       const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
@@ -11377,15 +11426,16 @@ const UI = {
   fillResults() {
     const run = G.run;
     if (!run) return;
-    $('resEyebrow').textContent = `Chapter ${run.chapter} · ${run.info.arenaName}`;
+    $('resEyebrow').textContent = run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
     const t = $('resTitle');
-    t.textContent = run.won ? 'CLEARED!' : 'YOU MELTED';
-    t.style.color = run.won ? 'var(--mint)' : 'var(--pink)';
+    t.textContent = run.won ? 'CLEARED!' : run.endless && run.newBest ? 'NEW BEST!' : 'YOU MELTED';
+    t.style.color = run.won || (run.endless && run.newBest) ? 'var(--mint)' : 'var(--pink)';
     $('resTime').textContent = fmtTime(run.t);
     $('resKills').textContent = fmtNum(run.kills);
     $('resLevel').textContent = run.level;
     $('resCoins').textContent = '+' + fmtNum(run.earned || 0);
-    $('resBreak').textContent = run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
+    $('resBreak').textContent = run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
+      : run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
   },
 
   update(dt) {
@@ -11511,7 +11561,7 @@ function rollChoices() {
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
-  const open = def => (def.from || 1) <= run.chapter, feat = featuredPowerup(run.chapter);
+  const open = def => (def.from || 1) <= run.powerCap, feat = run.endless ? null : featuredPowerup(run.chapter);
   if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
   if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
@@ -11549,7 +11599,7 @@ function describeChoiceBase(c) {
   if (sk) {
     if (!lvl) {
       const f = sk.fields.slice(0, 2).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`).join(' · ');
-      return { tag: sk.from === G.run.chapter ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
+      return { tag: sk.from === G.run.chapter && !G.run.endless ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
     }
     const parts = [];
     for (const [k, label, unit] of sk.fields) {
@@ -11558,7 +11608,7 @@ function describeChoiceBase(c) {
     }
     return { tag: `LV ${lvl} → ${lvl + 1}`, name: sk.name, desc: parts.join(' · '), icon: 'skill-' + c.id, kind: 'skill', isNew: false };
   }
-  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
+  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter && !G.run.endless ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
 }
 function applyChoice(c) {
   const run = G.run;
@@ -12458,12 +12508,12 @@ function requiredMeshes(n) {
   for (const k in has) if (has[k] && !req.includes(ENEMY_TYPES[k].model)) req.push(ENEMY_TYPES[k].model);
   return req;
 }
-function beginChapter(n) {
+function beginChapter(n, opts) {
   if (G.state !== 'home') return;
   const info = chapterInfo(n), req = requiredMeshes(n);
   prioritizeMeshes(req.concat(...info.bosses.map(bossMeshes)));
   const go = () => {
-    startRun(n);
+    startRun(n, opts);
     updateCamera(0, true); updateView();
     const hint = $('hint');
     hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Drag anywhere to move · tap DASH to dodge' : 'Move with WASD, the arrow keys, or drag · Space to dash';

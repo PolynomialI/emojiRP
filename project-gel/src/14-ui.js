@@ -10,6 +10,7 @@ const UI = {
     this.overlay = $('overlay');
     this.octx = this.overlay.getContext('2d');
     $('btnPlay').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginChapter(G.save.selected); });
+    $('btnEndless').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginEndless(); });
     $('chPrev').addEventListener('click', () => { G.save.selected = Math.max(1, G.save.selected - 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
     $('chNext').addEventListener('click', () => { G.save.selected = Math.min(G.save.chapter, G.save.selected + 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
     document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openTab(b.dataset.tab); }));
@@ -90,6 +91,9 @@ const UI = {
     const bossNames = [...new Set(info.bosses)].map(b => BOSS_TYPES[b].name).join(' + ');
     const best = sv.best[sv.selected];
     $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${bossNames}`;
+    const eb = $('btnEndless');
+    eb.hidden = !endlessUnlocked();
+    eb.textContent = sv.endlessBest ? `ENDLESS · best ${fmtTime(sv.endlessBest)}` : 'ENDLESS';
     $('chPrev').disabled = sv.selected <= 1;
     $('chNext').disabled = sv.selected >= sv.chapter;
     applyArena(info.arena);
@@ -262,8 +266,8 @@ const UI = {
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
-      label = 'CHAPTER ' + run.chapter;
+      pct = run.endless ? (run.t % ENDLESS.bossEvery) / ENDLESS.bossEvery : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      label = run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
     }
     const pctS = (pct * 100).toFixed(1) + '%';
     if (L.chap !== pctS) { L.chap = pctS; $('chapFill').style.width = pctS; }
@@ -411,7 +415,7 @@ const UI = {
   // ---------- pause / revive / results ----------
   openPause() {
     const run = G.run;
-    $('pauseSub').textContent = `Chapter ${run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
+    $('pauseSub').textContent = `${run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
     $('pauseList').replaceChildren(...run.slots.map(s => {
       const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
@@ -426,15 +430,16 @@ const UI = {
   fillResults() {
     const run = G.run;
     if (!run) return;
-    $('resEyebrow').textContent = `Chapter ${run.chapter} · ${run.info.arenaName}`;
+    $('resEyebrow').textContent = run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
     const t = $('resTitle');
-    t.textContent = run.won ? 'CLEARED!' : 'YOU MELTED';
-    t.style.color = run.won ? 'var(--mint)' : 'var(--pink)';
+    t.textContent = run.won ? 'CLEARED!' : run.endless && run.newBest ? 'NEW BEST!' : 'YOU MELTED';
+    t.style.color = run.won || (run.endless && run.newBest) ? 'var(--mint)' : 'var(--pink)';
     $('resTime').textContent = fmtTime(run.t);
     $('resKills').textContent = fmtNum(run.kills);
     $('resLevel').textContent = run.level;
     $('resCoins').textContent = '+' + fmtNum(run.earned || 0);
-    $('resBreak').textContent = run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
+    $('resBreak').textContent = run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
+      : run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
   },
 
   update(dt) {
@@ -560,7 +565,7 @@ function rollChoices() {
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
-  const open = def => (def.from || 1) <= run.chapter, feat = featuredPowerup(run.chapter);
+  const open = def => (def.from || 1) <= run.powerCap, feat = run.endless ? null : featuredPowerup(run.chapter);
   if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
   if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
@@ -598,7 +603,7 @@ function describeChoiceBase(c) {
   if (sk) {
     if (!lvl) {
       const f = sk.fields.slice(0, 2).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`).join(' · ');
-      return { tag: sk.from === G.run.chapter ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
+      return { tag: sk.from === G.run.chapter && !G.run.endless ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
     }
     const parts = [];
     for (const [k, label, unit] of sk.fields) {
@@ -607,7 +612,7 @@ function describeChoiceBase(c) {
     }
     return { tag: `LV ${lvl} → ${lvl + 1}`, name: sk.name, desc: parts.join(' · '), icon: 'skill-' + c.id, kind: 'skill', isNew: false };
   }
-  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
+  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter && !G.run.endless ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
 }
 function applyChoice(c) {
   const run = G.run;

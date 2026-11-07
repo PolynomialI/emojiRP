@@ -132,14 +132,15 @@ function spawnRate(t) {
   return RATE_KEYS[RATE_KEYS.length - 1][1];
 }
 
-function startRun(chapter) {
-  const info = chapterInfo(chapter);
+function startRun(chapter, opts = {}) {
+  const info = { ...chapterInfo(chapter) };
   const run = G.run = {
     chapter, info, t: 0, kills: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
-    nextId: 1, spawnAcc: 0, events: makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
+    nextId: 1, spawnAcc: 0, events: opts.endless ? endlessEvents() : makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
+    endless: !!opts.endless, powerCap: opts.powerCap || chapter, tier: 0,
     vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
   };
   run.gear = gearStats();
@@ -419,7 +420,8 @@ function updateRun(dt) {
     while (run.events.length && run.t >= run.events[0].t) runEvent(run.events.shift());
     // continuous spawning
     const alive = run.enemies.length;
-    const rate = run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1));
+    if (run.endless) endlessTick(run);
+    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1))) * (run.endless ? 1 + Math.max(0, run.t - 150) / 360 : 1);
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) {
       run.spawnAcc -= 1;
@@ -473,7 +475,8 @@ function updateRun(dt) {
   R.frame.lowHp = run.hp / run.maxHp < 0.25 ? 0.35 : 0;
 
   // victory check: the remaining enemies melt and every gem and coin flies to the hero
-  if (live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) {
+  if (live && run.endless && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) endlessBossDown(run);
+  else if (live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) {
     run.won = true; run.endT = 0;
     for (const e of run.enemies) if (!e.dying && !e.boss) e.dying = 0.0001;
     for (const g of run.gems) g.pull = true;
@@ -498,11 +501,13 @@ function runEvent(ev) {
     startBoss();
   } else if (ev.kind === 'gooblin') {
     spawnGooblin();
+  } else if (ev.kind === 'eboss') {
+    if (!run.bossStarted) startBoss(ev.ids);
   }
 }
 
 function spawnFromMix() {
-  const run = G.run, t = run.t, ch = run.chapter;
+  const run = G.run, t = run.t, ch = run.endless ? Math.max(run.chapter, 1 + run.tier) : run.chapter;
   const w = { stickman: 1 };
   // each type joins after its unlock time; in later chapters it shows up sooner
   for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.8 : 1)) w[k] = wt; }
@@ -869,13 +874,13 @@ function finishRun(won) {
   run.over = true;
   run.won = won;
   const sv = G.save;
-  const reward = won ? run.info.reward : 0;
+  const reward = won ? run.info.reward : run.endless ? Math.round(run.t / 3) : 0;
   run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100));
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
-  const best = sv.best[run.chapter] || 0;
-  if (run.t > best) sv.best[run.chapter] = Math.round(run.t);
+  if (run.endless) { run.newBest = run.t > (sv.endlessBest || 0); if (run.newBest) sv.endlessBest = Math.round(run.t); }
+  else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
   if (won) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   sv.stats.runs++; sv.stats.kills += run.kills;
