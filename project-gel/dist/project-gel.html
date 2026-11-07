@@ -242,6 +242,15 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 /* HUD: pause, skill tiles and coins; then the chapter bar and the XP bar with its level badge */
 #hud { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
 #hud > * { pointer-events: none; }
+/* Goo Dash: bottom right; the dark wedge shows the cooldown */
+#hud #btnDash { pointer-events: auto; position: absolute; right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); width: 74px; height: 74px; border-radius: 50%; border: 0; padding: 0;
+  display: grid; place-items: center; align-content: center; gap: 0; color: #fff; font: 800 11px/1 var(--font, inherit); letter-spacing: .06em;
+  background: conic-gradient(rgba(10, 30, 70, .55) calc(var(--cd, 0) * 1turn), transparent 0), linear-gradient(180deg, #5fe0ff, #1d8fe0);
+  box-shadow: inset 0 -4px 0 rgba(10, 60, 140, .45), 0 3px 0 rgba(0, 0, 0, .25); touch-action: none; }
+#hud #btnDash svg { width: 32px; height: 32px; }
+#hud #btnDash.ready { animation: dashReady .35s ease-out; }
+@keyframes dashReady { 50% { transform: scale(1.12); } }
+@media (pointer: fine) { #hud #btnDash { width: 60px; height: 60px; opacity: .85; } #hud #btnDash span::after { content: ' · SPACE'; } }
 .hud-top { width: min(100%, 760px); margin-inline: auto; display: grid; gap: 7px; }
 .hud-row1 { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 #btnPause { pointer-events: auto; width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(180deg, #ffe066, #ffb51f); box-shadow: inset 0 -4px 0 #e08e0b, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #9c5c05; }
@@ -255,6 +264,11 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .slot img { width: 100%; height: 100%; }
 .slot.skill { background: linear-gradient(180deg, #ff8fcb, #ef3d98); box-shadow: inset 0 -3px 0 rgba(150,20,80,.4), 0 2px 0 rgba(0,0,0,.25); }
 .slot.passive { background: linear-gradient(180deg, #7fe3ff, #1fa4ee); box-shadow: inset 0 -3px 0 rgba(10,80,160,.4), 0 2px 0 rgba(0,0,0,.25); }
+.slot.evo { box-shadow: inset 0 0 0 3px #ffd84a, 0 0 10px rgba(255, 205, 60, .85), 0 2px 0 rgba(0,0,0,.25); }
+.tile.evo { box-shadow: 0 0 0 3px #ffd84a, 0 0 18px rgba(255, 200, 60, .9); }
+.evohint { color: #d98a00; font-weight: 700; }
+.evo-row b { color: #c97a00; }
+.evo-row small { color: #5a6a8a; }
 .slot u { position: absolute; left: 4px; right: 4px; bottom: 3px; height: 4px; border-radius: 2px; background: rgba(0,0,0,.25); }
 .slot u i { display: block; height: 100%; border-radius: 2px; background: #fff; }
 .chapbar { position: relative; height: 28px; border-radius: 10px; background: #18263d; box-shadow: inset 0 0 0 2px rgba(0,0,0,.3), 0 3px 0 rgba(0,0,0,.25); overflow: hidden; }
@@ -469,6 +483,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
     <div id="banner"></div>
     <div id="hint" hidden>Drag anywhere to move</div>
+    <button id="btnDash" aria-label="Dash"><svg viewBox="0 0 24 24"><path d="M5 6l6 6-6 6M12 6l6 6-6 6" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>DASH</span></button>
   </section>
 
   <section id="levelup" class="screen modal" hidden>
@@ -6436,6 +6451,22 @@ const PASSIVES = {
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 // the power-up a chapter's theme introduces (from: the first chapter it appears in)
+// Evolutions: a skill at max level plus its partner ability turns into a stronger, named form, through a chest.
+// boost(L) gets the skill's level-10 stats and returns the ones the evolved form changes.
+const EVOLUTIONS = {
+  ball: { with: 'multishot', name: 'Goo Gatling', desc: 'Twice the fire rate, two more balls that pierce further, all molten gold.', boost: L => ({ dmg: Math.round(L.dmg * 1.3), cd: L.cd * 0.5, count: L.count + 2, pierce: L.pierce + 2 }) },
+  fists: { with: 'power', name: 'Titan Fists', desc: 'Heavier, longer punches that send out big shockwaves.', boost: L => ({ dmg: Math.round(L.dmg * 1.8), cd: L.cd * 0.8, reach: +(L.reach * 1.35).toFixed(1), shock: 2.2 }) },
+  grenade: { with: 'reach', name: 'Cluster Bomb', desc: 'Three more grenades with much bigger blasts.', boost: L => ({ dmg: Math.round(L.dmg * 1.5), count: L.count + 3, radius: +(L.radius * 1.35).toFixed(1) }) },
+  missile: { with: 'haste', name: 'Missile Swarm', desc: 'Four more golden missiles, fired faster, with wide splash.', boost: L => ({ count: L.count + 4, cd: L.cd * 0.65, splash: +(L.splash * 1.8).toFixed(1) }) },
+  blade: { with: 'speed', name: 'Buzzsaw Halo', desc: 'Three more blades, spinning wider and faster, cutting deeper.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 3, radius: +(L.radius * 1.3).toFixed(1), spin: Math.round(L.spin * 1.5) }) },
+  lightning: { with: 'magnet', name: 'Thunder God', desc: 'Three more strikes that chain much further.', boost: L => ({ dmg: Math.round(L.dmg * 1.4), strikes: L.strikes + 3, chain: L.chain + 3, radius: +(L.radius * 1.6).toFixed(1) }) },
+  aura: { with: 'thick', name: 'Toxic Bog', desc: 'A huge, sticky puddle that burns twice as hard and slows to a crawl.', boost: L => ({ dmg: Math.round(L.dmg * 2.2), radius: +(L.radius * 1.6).toFixed(1), slow: 50 }) },
+  frostnova: { with: 'armor', name: 'Absolute Zero', desc: 'A wider, harder freeze; frozen enemies take 50% more damage from everything.', boost: L => ({ dmg: L.dmg * 2, radius: +(L.radius * 1.5).toFixed(1), freeze: +(L.freeze * 1.6).toFixed(1), cd: +(L.cd * 0.85).toFixed(1) }) },
+  meteor: { with: 'growth', name: 'Armageddon', desc: 'Three more meteors, bigger, and much more often.', boost: L => ({ count: L.count + 3, radius: +(L.radius * 1.25).toFixed(1), cd: +(L.cd * 0.6).toFixed(1) }) },
+  wave: { with: 'regen', name: 'Tsunami', desc: 'Bigger, harder waves; every enemy they hit heals you a little.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 1, width: +(L.width * 1.5).toFixed(1) }) },
+  bouncy: { with: 'sugar', name: 'Jawbreaker', desc: 'Huge candy-hard balls that bounce six more times.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 1, bounces: L.bounces + 6, size: +(L.size * 1.4).toFixed(2) }) },
+  axe: { with: 'thorns', name: 'Bramble Axes', desc: 'Three more axes, thrown faster and farther.', boost: L => ({ dmg: Math.round(L.dmg * 1.5), count: L.count + 3, cd: +(L.cd * 0.7).toFixed(2), range: +(L.range * 1.2).toFixed(1) }) },
+};
 function featuredPowerup(chapter) {
   const want = ((chapter - 1) % 10) + 1;
   if (want < 2) return null;
@@ -6894,6 +6925,24 @@ function startRun(chapter) {
   setState('run');
 }
 
+// ---------- goo dash: a quick burst with a moment of invulnerability ----------
+const DASH = { dist: 4.2, time: 0.18, cd: 3, invuln: 0.32 };
+function tryDash() {
+  const run = G.run;
+  if (G.state !== 'run' || !run || run.dash || run.dashCd > 0 || run.rootT > 0) return false;
+  let dx = G.input.x, dz = G.input.z;
+  if (!dx && !dz) [dx, dz] = run.lastDir || [0, -1];
+  const l = Math.hypot(dx, dz) || 1, h = G.hero.pos;
+  run.dash = { dx: dx / l, dz: dz / l, t: DASH.time, splat: 0 };
+  run.dashCd = DASH.cd;
+  run.invuln = Math.max(run.invuln, DASH.invuln);
+  G.hero.impulse(2.5);
+  FX.ring(h[0], h[2], 1.8, COLORS.cyanHi, 0.3, 0.8);
+  FX.droplets(h[0], 0.5, h[2], 8, 0, 3, 0.06, null);
+  AUDIO.play('throw', 1.4);
+  return true;
+}
+
 function slotOf(id) { return G.run.slots.find(s => s.id === id); }
 function lvlOf(id) { const s = slotOf(id); return s ? s.lvl : 0; }
 function addOrLevel(id) {
@@ -6905,7 +6954,42 @@ function addOrLevel(id) {
   recomputeStats();
   if (id === 'thick') run.hp = Math.min(run.maxHp, run.hp + (run.maxHp - oldMax));
   if (SKILL_HOOKS[id] && SKILL_HOOKS[id].onLevel) SKILL_HOOKS[id].onLevel(s);
+  checkEvolutions();
   return s;
+}
+// ---------- evolutions ----------
+// a skill's current stats: its level row, or the evolved row once evolved
+function skillL(s) { return s.evoL || SKILLS[s.id].levels[s.lvl - 1]; }
+// skills ready to evolve: max level, not evolved yet, partner ability owned
+function evolvable() { return G.run.slots.filter(s => s.kind === 'skill' && !s.evo && EVOLUTIONS[s.id] && s.lvl >= maxLevel(s.id) && slotOf(EVOLUTIONS[s.id].with)); }
+// the first time an evolution becomes possible, a glowing chest drops nearby so it can't slip by
+function checkEvolutions() {
+  const run = G.run;
+  if (!run || !run.slots) return;
+  run.evoSeen = run.evoSeen || {};
+  for (const s of evolvable()) {
+    if (run.evoSeen[s.id]) continue;
+    run.evoSeen[s.id] = true;
+    const h = G.hero.pos, a = rand(0, TAU), o = { x: h[0] + Math.cos(a) * 4, z: h[2] + Math.sin(a) * 4 };
+    resolveCircle(o, 0.6);
+    spawnPickup('chest', o.x, o.z);
+    run.pickups[run.pickups.length - 1].evo = true;
+    if (G.state === 'run' || G.state === 'levelup') UI.toast(`${SKILLS[s.id].name} can evolve! Grab the golden chest.`, 2.6);
+  }
+}
+function evolveSkill(id) {
+  const run = G.run, s = slotOf(id), E = EVOLUTIONS[id], rows = SKILLS[id].levels, top = rows[rows.length - 1];
+  s.evo = true;
+  s.evoL = { ...top, ...E.boost(top) };
+  if (id === 'frostnova') run.absZero = true;
+  recomputeStats();
+  if (SKILL_HOOKS[id].onLevel) SKILL_HOOKS[id].onLevel(s);
+  // a golden burst around the blob
+  const h = G.hero.pos;
+  FX.ring(h[0], h[2], 7, [1, 0.82, 0.3], 0.8, 1); FX.ring(h[0], h[2], 4, [1, 0.95, 0.6], 0.6, 1);
+  for (let i = 0; i < 36; i++) FX.star(h[0] + rand(-1.6, 1.6), rand(0.3, 2.6), h[2] + rand(-1.6, 1.6), rand(0.2, 0.4), [1, rand(0.75, 0.95), rand(0.2, 0.5)], rand(0.6, 1.1));
+  G.hero.impulse(3);
+  UI.toast(`★ ${E.name}!`, 2);
 }
 function recomputeStats() {
   const run = G.run, meta = G.save.upgrades, lv = lvlOf;
@@ -6933,7 +7017,7 @@ function recomputeStats() {
   h.gloss = 1 + 0.06 * lv('armor');
   h.wobbleMul = (1 + 0.125 * lv('haste')) * (1 - 0.05 * lv('armor'));
   h.topSpeed = 4.5 * run.stats.speedMul;
-  h.setArmCount(lv('fists') ? SKILLS.fists.levels[lv('fists') - 1].fists : 2);
+  h.setArmCount(lv('fists') ? skillL(slotOf('fists')).fists : 2);
   return oldMax;
 }
 
@@ -6962,6 +7046,7 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   if (e.dying || e.hp <= 0) return false;
   dmg *= G.run.stats.dmgMul;
   if (e.boss && e.dizzy > 0) dmg *= 1.5;
+  if (e.frozen > 0 && G.run.absZero) dmg *= 1.5;
   e.hp -= dmg;
   // flash white on a hit, but under constant fire strobe instead of staying solid white
   if (!(e.flashCd > 0)) { e.flash = 0.07; e.flashCd = 0.16; }
@@ -7123,8 +7208,19 @@ function updateRun(dt) {
     run.burnT = (run.burnT || 0) - dt;
     if (run.burnT <= 0) { run.burnT = 0.5; hurtHero(Z.burn * 0.5 * run.info.dmgMul, h[0], h[2] + 0.01); FX.burst(h[0], 0.3, h[2], 6, [1, 0.5, 0.1], 2, 0.1, 0.4, 0); }
   }
-  run.vel[0] += (G.input.x * top - run.vel[0]) * k;
-  run.vel[2] += (G.input.z * top - run.vel[2]) * k;
+  if (G.input.x || G.input.z) run.lastDir = [G.input.x, G.input.z];
+  run.dashCd = Math.max(0, (run.dashCd || 0) - dt);
+  if (run.dash) {
+    // mid-dash: a fixed burst along the dash line, leaving a streak of goo
+    const D = run.dash, sp = DASH.dist / DASH.time;
+    run.vel[0] = D.dx * sp; run.vel[2] = D.dz * sp;
+    D.t -= dt; D.splat -= dt;
+    if (D.splat <= 0) { D.splat = 0.04; FX.splat(h[0], h[2], 0.45, R.goo.base, 1.2); }
+    if (D.t <= 0) { run.dash = null; run.vel[0] *= 0.35; run.vel[2] *= 0.35; }
+  } else {
+    run.vel[0] += (G.input.x * top - run.vel[0]) * k;
+    run.vel[2] += (G.input.z * top - run.vel[2]) * k;
+  }
   h[0] += run.vel[0] * dt; h[2] += run.vel[2] * dt;
   HERO_PT.x = h[0]; HERO_PT.z = h[2];
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
@@ -8089,8 +8185,7 @@ function updateSkills(dt) {
   G.hero.auraLevel = 0;
   for (const s of run.slots) {
     if (s.kind !== 'skill') continue;
-    const L = SKILLS[s.id].levels[s.lvl - 1];
-    SKILL_HOOKS[s.id].update(s, L, dt);
+    SKILL_HOOKS[s.id].update(s, skillL(s), dt);
   }
   updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt); updateZaps(dt); updateBouncy(dt);
   for (const b of G.bolts) b.life -= dt;
@@ -8101,7 +8196,7 @@ function emitSkills() {
   for (const s of run.slots) {
     if (s.kind !== 'skill') continue;
     const hook = SKILL_HOOKS[s.id];
-    if (hook.emit) hook.emit(s, SKILLS[s.id].levels[s.lvl - 1]);
+    if (hook.emit) hook.emit(s, skillL(s));
   }
   emitStorms(); emitZaps(); emitBouncy();
 }
@@ -8149,7 +8244,7 @@ SKILL_HOOKS.ball = {
       const base = Math.atan2(tgt.x - from[0], tgt.z - from[2]);
       for (let i = 0; i < count; i++) {
         const a = base + (i - (count - 1) / 2) * 0.15;
-        spawnProj('ball', from, [Math.sin(a) * 12, -0.3, Math.cos(a) * 12], { dmg: L.dmg, pierce: L.pierce, life: 0.85, r: 0.18 * areaMul(), hitR: 0.34 * areaMul() });
+        spawnProj('ball', from, [Math.sin(a) * 12, -0.3, Math.cos(a) * 12], { dmg: L.dmg, pierce: L.pierce, life: 0.85, r: 0.18 * areaMul(), hitR: 0.34 * areaMul(), evo: s.evo });
       }
       AUDIO.play('pop');
     };
@@ -8178,7 +8273,7 @@ function updateProjectiles(dt) {
         p.hit.add(e);
         const sp = Math.hypot(p.vx, p.vz) || 1;
         hurtEnemy(e, p.dmg, p.vx / sp * 3, p.vz / sp * 3);
-        FX.droplets(p.x, p.y, p.z, 4, 0, 2.5, 0.045, R.goo.base);
+        FX.droplets(p.x, p.y, p.z, 4, p.evo ? 6 : 0, 2.5, 0.045, p.evo ? COLORS.gold : R.goo.base);
         if (p.pierce-- <= 0) p.dead = true;
       });
       if (p.dead || p.life <= 0) { p.dead = true; FX.splat(p.x, p.z, 0.55 * areaMul(), R.goo.base, 1.4); FX.droplets(p.x, p.y, p.z, 3, 0, 2, 0.04, null); }
@@ -8240,7 +8335,7 @@ function explode(x, z, radius, dmg, colw, col) {
 
 // ---------- Blob Fists ----------
 SKILL_HOOKS.fists = {
-  onLevel(s) { G.hero.setArmCount(SKILLS.fists.levels[s.lvl - 1].fists); },
+  onLevel(s) { G.hero.setArmCount(skillL(s).fists); },
   update(s, L, dt) {
     const st = s.st, hero = G.hero, h = hero.pos;
     if (!st.timers) { st.timers = [0.2, 0.2 + L.cd * 0.5, 0.2 + L.cd * 0.25, 0.2 + L.cd * 0.75]; st.trails = [[], [], [], []]; }
@@ -8335,7 +8430,7 @@ SKILL_HOOKS.missile = {
       hero.addBud({
         joint: 'chest', off: [(col - 1) * 0.17 + (row ? 0.085 : 0), 0.06 + row * 0.15, -0.24], r: 0.11, grow: 0.22 + i * 0.035, colw: 0.8, glow: 0.3,
         onRelease: wp => {
-          spawnProj('missile', wp, [rand(-1.8, 1.8), 6.8, rand(-1.8, 1.8) - 0.8], { dmg: L.dmg, splash: L.splash * areaMul(), life: 3.2, target: null, hitR: 0.42 });
+          spawnProj('missile', wp, [rand(-1.8, 1.8), 6.8, rand(-1.8, 1.8) - 0.8], { dmg: L.dmg, splash: L.splash * areaMul(), life: 3.2, target: null, hitR: 0.42, evo: s.evo });
           AUDIO.play('pop', 0.8);
         },
       });
@@ -9075,7 +9170,11 @@ SKILL_HOOKS.wave = {
       enemiesInRadius(v.x, v.z, v.w + 1, e => {
         const ox = e.x - v.x, oz = e.z - v.z, along = ox * v.dx + oz * v.dz, perp = Math.abs(ox * v.dz - oz * v.dx);
         if (along < -1.2 || along > 0.6 || perp > v.w) return;
-        if (e.waveHit !== v.id) { e.waveHit = v.id; hurtEnemy(e, L.dmg, 0, 0, { sound: false, color: [0.5, 0.85, 1] }); }
+        if (e.waveHit !== v.id) {
+          e.waveHit = v.id; hurtEnemy(e, L.dmg, 0, 0, { sound: false, color: [0.5, 0.85, 1] });
+          // Tsunami: every enemy hit heals a little, up to 6% of max health per wave
+          if (s.evo && (v.healed || 0) < 0.06) { v.healed = (v.healed || 0) + 0.004; run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.004); }
+        }
         if (!e.boss) { e.kx += (v.dx * WAVE.speed * 1.2 - e.kx) * Math.min(1, dt * 8); e.kz += (v.dz * WAVE.speed * 1.2 - e.kz) * Math.min(1, dt * 8); }
       });
       if (Math.random() < 0.8) { const u = rand(-1, 1) * v.w; FX.part(v.x + v.dz * u, 0.5, v.z - v.dx * u, v.dx * 3 + rand(-1, 1), rand(1, 3), v.dz * 3 + rand(-1, 1), 0.12, 0.03, 0.5, [0.9, 0.97, 1], 1, 1, -8, 1); }
@@ -9519,10 +9618,11 @@ function emitRunScene() {
   // hero projectiles
   for (const p of run.proj) {
     if (p.kind === 'ball') {
-      pushImp(p.x, p.y, p.z, p.r, p.vx, p.vy, p.vz, 1.35, 0, 0, 0.25, p.ph + p.t, 0, 0, 0, 1);
-      trailRibbon(p.trail, 0.15, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
+      // evolved (Goo Gatling) balls are molten gold
+      pushImp(p.x, p.y, p.z, p.r, p.vx, p.vy, p.vz, 1.35, 0, p.evo ? 6 : 0, p.evo ? 0.45 : 0.25, p.ph + p.t, 0, 0, 0, 1);
+      trailRibbon(p.trail, 0.15, p.evo ? [1, 0.8, 0.3] : [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
     } else if (p.kind === 'missile') {
-      pushImp(p.x, p.y, p.z, 0.28, p.vx, p.vy, p.vz, 1.3, 1, 0.8, 0.3, p.ph + p.t, 0, 0, 0, 1);
+      pushImp(p.x, p.y, p.z, 0.28, p.vx, p.vy, p.vz, 1.3, 1, p.evo ? 6 : 0.8, 0.3, p.ph + p.t, 0, 0, 0, 1);
       if (p.trail.length > 2) {
         const pts = [];
         p.trail.forEach((q, i) => { const k = 0.1 * Math.min(1, i / 3); pts.push(q[0] + Math.sin(p.t * 22 - i) * k, q[1] + Math.cos(p.t * 22 - i) * k, q[2]); });
@@ -9568,7 +9668,11 @@ function emitRunScene() {
     else if (p.kind === 'heart') pushImp(p.x, p.y + 0.42 + bob, p.z, 0.62, 0, 0, 1, 1, 10, 4, 0.2, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'magnet') pushImp(p.x, p.y + 0.12 + bob, p.z, 0.26, 0, 0, 1, 1, 11, 4, 0.1, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'scroll') { pushImp(p.x, p.y + 0.15 + bob, p.z, 0.3, 0, 0, 1, 1, 30, 0, 0.12, (run.t + p.ph) * 0.6, 0, 0, 0, 1); FX.glow(p.x, 0.45, p.z, 0.8, [1, 0.85, 0.45], 0.05, 0.3); }
-    else if (p.kind === 'chest') { pushImp(p.x, p.y + 0.02, p.z, 0.36, 0, 0, 1, 1, 12, 0, 0.05, run.t, 0, 0, 0, 1); FX.glow(p.x, 0.5, p.z, 0.9, [1, 0.8, 0.3], 0.05, 0.25); }
+    else if (p.kind === 'chest') {
+      pushImp(p.x, p.y + 0.02, p.z, p.evo ? 0.46 : 0.36, 0, 0, 1, 1, 12, 0, p.evo ? 0.35 : 0.05, run.t, 0, 0, 0, 1);
+      FX.glow(p.x, 0.5, p.z, p.evo ? 2.2 : 0.9, [1, 0.8, 0.3], 0.05, p.evo ? 0.55 + 0.25 * Math.sin(run.t * 6) : 0.25);
+      if (p.evo) pushDecal(p.x, p.z, 1.3, 1.3, run.t, 3, 0, (run.t * 0.8) % 1, 1, 0.8, 0.3, 0.6, true);
+    }
     pushDecal(p.x + 0.06, p.z + 0.05, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.4);
   }
   // lightning bolts
@@ -10752,6 +10856,7 @@ const UI = {
     document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => { AUDIO.play('click'); this.openTab('home'); }));
     $('btnSettings').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openSettings(); });
     $('btnPause').addEventListener('click', () => pauseGame());
+    $('btnDash').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); tryDash(); });
     $('btnResume').addEventListener('click', () => resumeGame());
     $('btnPauseSettings').addEventListener('click', () => this.openSettings());
     $('btnQuit').addEventListener('click', () => { $('quitConfirm').hidden = false; $('pauseActions').hidden = true; });
@@ -10960,7 +11065,15 @@ const UI = {
     if (L.xp !== xpPct) { L.xp = xpPct; $('xpFill').style.width = `calc(${xpPct} - 4px)`; }
     this.setText('lv', $('xpText'), 'LEVEL ' + run.level);
     this.setText('coins', $('hudCoinsVal'), fmtNum(run.coins));
-    const sig = run.slots.map(s => s.id + s.lvl).join(',');
+    // dash cooldown wedge, with a little pop when it comes back
+    const cd = (run.dashCd || 0) / DASH.cd, cdS = cd.toFixed(2);
+    if (L.dash !== cdS) {
+      const b = $('btnDash');
+      b.style.setProperty('--cd', cdS);
+      if (cd === 0 && L.dash !== undefined) { b.classList.remove('ready'); void b.offsetWidth; b.classList.add('ready'); }
+      L.dash = cdS;
+    }
+    const sig = run.slots.map(s => s.id + s.lvl + (s.evo ? '*' : '')).join(',');
     if (sig !== this.slotSig) {
       this.slotSig = sig;
       // two groups of boxes: skills, then passives
@@ -10970,7 +11083,7 @@ const UI = {
         for (let i = 0; i < SLOT_LIMIT[kind]; i++) {
           const s = list[i], d = document.createElement('div');
           if (s) {
-            d.className = 'slot ' + s.kind;
+            d.className = 'slot ' + s.kind + (s.evo ? ' evo' : '');
             d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / maxLevel(s.id)) * 100}%"></i></u>`;
             d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
           } else d.className = 'slot empty-' + kind;
@@ -11056,8 +11169,10 @@ const UI = {
   openChest() {
     const run = G.run;
     run.chestQueued--;
-    // one upgrade per chest
-    const n = 1;
+    // a ready evolution comes first; otherwise one upgrade per chest
+    const evos = evolvable();
+    this.chestEvo = evos.length ? pick(evos).id : null;
+    const n = this.chestEvo ? 0 : 1;
     const results = [];
     for (let k = 0; k < n; k++) {
       const up = run.slots.filter(s => s.lvl < maxLevel(s.id) - results.filter(x => x === s.id).length);
@@ -11066,14 +11181,14 @@ const UI = {
       results.push(pick(skills.length && Math.random() < 0.75 ? skills : up).id);
     }
     this.chestResults = results;
-    this.chestCoins = results.length ? 0 : 40;
+    this.chestCoins = results.length || this.chestEvo ? 0 : 40;
     const pool = run.slots.map(s => (s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
     const strip = $('chStrip'), tiles = [];
     const total = 34, land = 28;
-    const landKey = results.length ? (SKILLS[results[0]] ? 'skill-' : 'passive-') + results[0] : 'meta-offline';
+    const landKey = this.chestEvo ? 'skill-' + this.chestEvo : results.length ? (SKILLS[results[0]] ? 'skill-' : 'passive-') + results[0] : 'meta-offline';
     for (let i = 0; i < total; i++) {
       const key = i === land ? landKey : pick(pool);
-      const t = document.createElement('span'); t.className = 'tile'; const im = document.createElement('img'); im.alt = ''; im.src = ICONS.get(key); t.append(im); tiles.push(t);
+      const t = document.createElement('span'); t.className = 'tile' + (i === land && this.chestEvo ? ' evo' : ''); const im = document.createElement('img'); im.alt = ''; im.src = ICONS.get(key); t.append(im); tiles.push(t);
     }
     strip.replaceChildren(...tiles);
     strip.style.transition = 'none';
@@ -11094,7 +11209,18 @@ const UI = {
   },
   revealChest() {
     const res = $('chRes'), rows = [];
-    if (this.chestResults.length) {
+    if (this.chestEvo) {
+      const id = this.chestEvo, E = EVOLUTIONS[id];
+      evolveSkill(id);
+      const d = document.createElement('div');
+      d.className = 'evo-row';
+      d.innerHTML = `<span class="tile evo"><img alt=""></span><span><b></b><br><small></small></span>`;
+      d.querySelector('img').src = ICONS.get('skill-' + id);
+      d.querySelector('b').textContent = `EVOLVED! ${SKILLS[id].name} → ${E.name}`;
+      d.querySelector('small').textContent = E.desc;
+      rows.push(d);
+      AUDIO.play('levelup', 0.75);
+    } else if (this.chestResults.length) {
       for (const id of this.chestResults) {
         const before = lvlOf(id);
         addOrLevel(id);
@@ -11130,7 +11256,8 @@ const UI = {
       const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
       d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
-      d.querySelector('span:nth-child(2)').textContent = (SKILLS[s.id] || PASSIVES[s.id]).name;
+      d.querySelector('span:nth-child(2)').textContent = s.evo ? '★ ' + EVOLUTIONS[s.id].name : (SKILLS[s.id] || PASSIVES[s.id]).name;
+      if (s.evo) d.querySelector('.tile').classList.add('evo');
       d.querySelector('.dots').innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < s.lvl ? 'on' : ''}"></i>`).join('');
       return d;
     }));
@@ -11281,7 +11408,18 @@ function fmtStat(v, unit) {
   if (unit === '°/s') return v + '°/s';
   return String(v);
 }
+// a line under a card naming the evolution this skill or ability is part of
+function evoHint(id) {
+  if (EVOLUTIONS[id]) { const E = EVOLUTIONS[id]; return `<br><span class="evohint">★ Max level + ${PASSIVES[E.with].name} → ${E.name}</span>`; }
+  for (const k in EVOLUTIONS) if (EVOLUTIONS[k].with === id) return `<br><span class="evohint">★ Evolves a maxed ${SKILLS[k].name} into ${EVOLUTIONS[k].name}</span>`;
+  return '';
+}
 function describeChoice(c) {
+  const d = describeChoiceBase(c);
+  if (c.id !== 'snack') d.desc += evoHint(c.id);
+  return d;
+}
+function describeChoiceBase(c) {
   if (c.id === 'snack') return { tag: 'HEAL', name: 'Goo Snack', desc: 'Recover 30% of your health.', icon: 'passive-regen', kind: 'passive', isNew: true };
   const sk = SKILLS[c.id], ps = PASSIVES[c.id], lvl = lvlOf(c.id);
   if (sk) {
@@ -12110,6 +12248,7 @@ function initInput(canvas) {
     AUDIO.unlock();
     if ((k === 'escape' || k === 'p') && !e.repeat) { if (G.state === 'run') pauseGame(); else if (G.state === 'pause') resumeGame(); }
     if (G.state === 'levelup' && (k === '1' || k === '2' || k === '3')) UI.pick(Number(k) - 1);
+    if ((k === ' ' || k === 'shift') && !e.repeat) tryDash();
   });
   window.addEventListener('keyup', e => INPUT.keys.delete(e.key.toLowerCase()));
   window.addEventListener('blur', () => { INPUT.keys.clear(); INPUT.stick.active = false; if (G.state === 'run') pauseGame(); });
@@ -12127,7 +12266,7 @@ function initInput(canvas) {
   canvas.addEventListener('pointercancel', end);
 }
 function readInput() {
-  let x = 0, z = 0;
+  let x = 0, z = 0, dashQueued = false;
   const K = INPUT.keys, S = INPUT.stick;
   if (K.has('a') || K.has('arrowleft')) x -= 1;
   if (K.has('d') || K.has('arrowright')) x += 1;
@@ -12143,10 +12282,15 @@ function readInput() {
       if (!p) continue;
       const ax = p.axes[0] || 0, ay = p.axes[1] || 0, m = Math.hypot(ax, ay);
       if (m > 0.15) { const s = Math.min(1, (m - 0.15) / 0.85); x = ax / m * s; z = ay / m * s; }
+      // the A button dashes, once per press
+      const a = !!(p.buttons[0] && p.buttons[0].pressed);
+      if (a && !INPUT.padDash) dashQueued = true;
+      INPUT.padDash = a;
       break;
     }
   }
   G.input.x = x; G.input.z = z;
+  if (dashQueued) { dashQueued = false; tryDash(); }
   if ((x || z) && G.state === 'run') INPUT.moved = true;
 }
 
@@ -12198,7 +12342,7 @@ function beginChapter(n) {
     startRun(n);
     updateCamera(0, true); updateView();
     const hint = $('hint');
-    hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Drag anywhere to move' : 'Move with WASD, the arrow keys, or drag';
+    hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Drag anywhere to move · tap DASH to dodge' : 'Move with WASD, the arrow keys, or drag · Space to dash';
     hint.hidden = !G.save.tutorial;
     INPUT.moved = false;
   };

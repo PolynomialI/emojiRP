@@ -132,6 +132,22 @@ const PASSIVES = {
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 // the power-up a chapter's theme introduces (from: the first chapter it appears in)
+// Evolutions: a skill at max level plus its partner ability turns into a stronger, named form, through a chest.
+// boost(L) gets the skill's level-10 stats and returns the ones the evolved form changes.
+const EVOLUTIONS = {
+  ball: { with: 'multishot', name: 'Goo Gatling', desc: 'Twice the fire rate, two more balls that pierce further, all molten gold.', boost: L => ({ dmg: Math.round(L.dmg * 1.3), cd: L.cd * 0.5, count: L.count + 2, pierce: L.pierce + 2 }) },
+  fists: { with: 'power', name: 'Titan Fists', desc: 'Heavier, longer punches that send out big shockwaves.', boost: L => ({ dmg: Math.round(L.dmg * 1.8), cd: L.cd * 0.8, reach: +(L.reach * 1.35).toFixed(1), shock: 2.2 }) },
+  grenade: { with: 'reach', name: 'Cluster Bomb', desc: 'Three more grenades with much bigger blasts.', boost: L => ({ dmg: Math.round(L.dmg * 1.5), count: L.count + 3, radius: +(L.radius * 1.35).toFixed(1) }) },
+  missile: { with: 'haste', name: 'Missile Swarm', desc: 'Four more golden missiles, fired faster, with wide splash.', boost: L => ({ count: L.count + 4, cd: L.cd * 0.65, splash: +(L.splash * 1.8).toFixed(1) }) },
+  blade: { with: 'speed', name: 'Buzzsaw Halo', desc: 'Three more blades, spinning wider and faster, cutting deeper.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 3, radius: +(L.radius * 1.3).toFixed(1), spin: Math.round(L.spin * 1.5) }) },
+  lightning: { with: 'magnet', name: 'Thunder God', desc: 'Three more strikes that chain much further.', boost: L => ({ dmg: Math.round(L.dmg * 1.4), strikes: L.strikes + 3, chain: L.chain + 3, radius: +(L.radius * 1.6).toFixed(1) }) },
+  aura: { with: 'thick', name: 'Toxic Bog', desc: 'A huge, sticky puddle that burns twice as hard and slows to a crawl.', boost: L => ({ dmg: Math.round(L.dmg * 2.2), radius: +(L.radius * 1.6).toFixed(1), slow: 50 }) },
+  frostnova: { with: 'armor', name: 'Absolute Zero', desc: 'A wider, harder freeze; frozen enemies take 50% more damage from everything.', boost: L => ({ dmg: L.dmg * 2, radius: +(L.radius * 1.5).toFixed(1), freeze: +(L.freeze * 1.6).toFixed(1), cd: +(L.cd * 0.85).toFixed(1) }) },
+  meteor: { with: 'growth', name: 'Armageddon', desc: 'Three more meteors, bigger, and much more often.', boost: L => ({ count: L.count + 3, radius: +(L.radius * 1.25).toFixed(1), cd: +(L.cd * 0.6).toFixed(1) }) },
+  wave: { with: 'regen', name: 'Tsunami', desc: 'Bigger, harder waves; every enemy they hit heals you a little.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 1, width: +(L.width * 1.5).toFixed(1) }) },
+  bouncy: { with: 'sugar', name: 'Jawbreaker', desc: 'Huge candy-hard balls that bounce six more times.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 1, bounces: L.bounces + 6, size: +(L.size * 1.4).toFixed(2) }) },
+  axe: { with: 'thorns', name: 'Bramble Axes', desc: 'Three more axes, thrown faster and farther.', boost: L => ({ dmg: Math.round(L.dmg * 1.5), count: L.count + 3, cd: +(L.cd * 0.7).toFixed(2), range: +(L.range * 1.2).toFixed(1) }) },
+};
 function featuredPowerup(chapter) {
   const want = ((chapter - 1) % 10) + 1;
   if (want < 2) return null;

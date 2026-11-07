@@ -12,8 +12,7 @@ function updateSkills(dt) {
   G.hero.auraLevel = 0;
   for (const s of run.slots) {
     if (s.kind !== 'skill') continue;
-    const L = SKILLS[s.id].levels[s.lvl - 1];
-    SKILL_HOOKS[s.id].update(s, L, dt);
+    SKILL_HOOKS[s.id].update(s, skillL(s), dt);
   }
   updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt); updateZaps(dt); updateBouncy(dt);
   for (const b of G.bolts) b.life -= dt;
@@ -24,7 +23,7 @@ function emitSkills() {
   for (const s of run.slots) {
     if (s.kind !== 'skill') continue;
     const hook = SKILL_HOOKS[s.id];
-    if (hook.emit) hook.emit(s, SKILLS[s.id].levels[s.lvl - 1]);
+    if (hook.emit) hook.emit(s, skillL(s));
   }
   emitStorms(); emitZaps(); emitBouncy();
 }
@@ -72,7 +71,7 @@ SKILL_HOOKS.ball = {
       const base = Math.atan2(tgt.x - from[0], tgt.z - from[2]);
       for (let i = 0; i < count; i++) {
         const a = base + (i - (count - 1) / 2) * 0.15;
-        spawnProj('ball', from, [Math.sin(a) * 12, -0.3, Math.cos(a) * 12], { dmg: L.dmg, pierce: L.pierce, life: 0.85, r: 0.18 * areaMul(), hitR: 0.34 * areaMul() });
+        spawnProj('ball', from, [Math.sin(a) * 12, -0.3, Math.cos(a) * 12], { dmg: L.dmg, pierce: L.pierce, life: 0.85, r: 0.18 * areaMul(), hitR: 0.34 * areaMul(), evo: s.evo });
       }
       AUDIO.play('pop');
     };
@@ -101,7 +100,7 @@ function updateProjectiles(dt) {
         p.hit.add(e);
         const sp = Math.hypot(p.vx, p.vz) || 1;
         hurtEnemy(e, p.dmg, p.vx / sp * 3, p.vz / sp * 3);
-        FX.droplets(p.x, p.y, p.z, 4, 0, 2.5, 0.045, R.goo.base);
+        FX.droplets(p.x, p.y, p.z, 4, p.evo ? 6 : 0, 2.5, 0.045, p.evo ? COLORS.gold : R.goo.base);
         if (p.pierce-- <= 0) p.dead = true;
       });
       if (p.dead || p.life <= 0) { p.dead = true; FX.splat(p.x, p.z, 0.55 * areaMul(), R.goo.base, 1.4); FX.droplets(p.x, p.y, p.z, 3, 0, 2, 0.04, null); }
@@ -163,7 +162,7 @@ function explode(x, z, radius, dmg, colw, col) {
 
 // ---------- Blob Fists ----------
 SKILL_HOOKS.fists = {
-  onLevel(s) { G.hero.setArmCount(SKILLS.fists.levels[s.lvl - 1].fists); },
+  onLevel(s) { G.hero.setArmCount(skillL(s).fists); },
   update(s, L, dt) {
     const st = s.st, hero = G.hero, h = hero.pos;
     if (!st.timers) { st.timers = [0.2, 0.2 + L.cd * 0.5, 0.2 + L.cd * 0.25, 0.2 + L.cd * 0.75]; st.trails = [[], [], [], []]; }
@@ -258,7 +257,7 @@ SKILL_HOOKS.missile = {
       hero.addBud({
         joint: 'chest', off: [(col - 1) * 0.17 + (row ? 0.085 : 0), 0.06 + row * 0.15, -0.24], r: 0.11, grow: 0.22 + i * 0.035, colw: 0.8, glow: 0.3,
         onRelease: wp => {
-          spawnProj('missile', wp, [rand(-1.8, 1.8), 6.8, rand(-1.8, 1.8) - 0.8], { dmg: L.dmg, splash: L.splash * areaMul(), life: 3.2, target: null, hitR: 0.42 });
+          spawnProj('missile', wp, [rand(-1.8, 1.8), 6.8, rand(-1.8, 1.8) - 0.8], { dmg: L.dmg, splash: L.splash * areaMul(), life: 3.2, target: null, hitR: 0.42, evo: s.evo });
           AUDIO.play('pop', 0.8);
         },
       });

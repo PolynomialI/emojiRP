@@ -326,7 +326,11 @@ SKILL_HOOKS.wave = {
       enemiesInRadius(v.x, v.z, v.w + 1, e => {
         const ox = e.x - v.x, oz = e.z - v.z, along = ox * v.dx + oz * v.dz, perp = Math.abs(ox * v.dz - oz * v.dx);
         if (along < -1.2 || along > 0.6 || perp > v.w) return;
-        if (e.waveHit !== v.id) { e.waveHit = v.id; hurtEnemy(e, L.dmg, 0, 0, { sound: false, color: [0.5, 0.85, 1] }); }
+        if (e.waveHit !== v.id) {
+          e.waveHit = v.id; hurtEnemy(e, L.dmg, 0, 0, { sound: false, color: [0.5, 0.85, 1] });
+          // Tsunami: every enemy hit heals a little, up to 6% of max health per wave
+          if (s.evo && (v.healed || 0) < 0.06) { v.healed = (v.healed || 0) + 0.004; run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.004); }
+        }
         if (!e.boss) { e.kx += (v.dx * WAVE.speed * 1.2 - e.kx) * Math.min(1, dt * 8); e.kz += (v.dz * WAVE.speed * 1.2 - e.kz) * Math.min(1, dt * 8); }
       });
       if (Math.random() < 0.8) { const u = rand(-1, 1) * v.w; FX.part(v.x + v.dz * u, 0.5, v.z - v.dx * u, v.dx * 3 + rand(-1, 1), rand(1, 3), v.dz * 3 + rand(-1, 1), 0.12, 0.03, 0.5, [0.9, 0.97, 1], 1, 1, -8, 1); }

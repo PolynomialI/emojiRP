@@ -242,6 +242,15 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 /* HUD: pause, skill tiles and coins; then the chapter bar and the XP bar with its level badge */
 #hud { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
 #hud > * { pointer-events: none; }
+/* Goo Dash: bottom right; the dark wedge shows the cooldown */
+#hud #btnDash { pointer-events: auto; position: absolute; right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); width: 74px; height: 74px; border-radius: 50%; border: 0; padding: 0;
+  display: grid; place-items: center; align-content: center; gap: 0; color: #fff; font: 800 11px/1 var(--font, inherit); letter-spacing: .06em;
+  background: conic-gradient(rgba(10, 30, 70, .55) calc(var(--cd, 0) * 1turn), transparent 0), linear-gradient(180deg, #5fe0ff, #1d8fe0);
+  box-shadow: inset 0 -4px 0 rgba(10, 60, 140, .45), 0 3px 0 rgba(0, 0, 0, .25); touch-action: none; }
+#hud #btnDash svg { width: 32px; height: 32px; }
+#hud #btnDash.ready { animation: dashReady .35s ease-out; }
+@keyframes dashReady { 50% { transform: scale(1.12); } }
+@media (pointer: fine) { #hud #btnDash { width: 60px; height: 60px; opacity: .85; } #hud #btnDash span::after { content: ' · SPACE'; } }
 .hud-top { width: min(100%, 760px); margin-inline: auto; display: grid; gap: 7px; }
 .hud-row1 { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 #btnPause { pointer-events: auto; width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; background: linear-gradient(180deg, #ffe066, #ffb51f); box-shadow: inset 0 -4px 0 #e08e0b, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #9c5c05; }
@@ -255,6 +264,11 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .slot img { width: 100%; height: 100%; }
 .slot.skill { background: linear-gradient(180deg, #ff8fcb, #ef3d98); box-shadow: inset 0 -3px 0 rgba(150,20,80,.4), 0 2px 0 rgba(0,0,0,.25); }
 .slot.passive { background: linear-gradient(180deg, #7fe3ff, #1fa4ee); box-shadow: inset 0 -3px 0 rgba(10,80,160,.4), 0 2px 0 rgba(0,0,0,.25); }
+.slot.evo { box-shadow: inset 0 0 0 3px #ffd84a, 0 0 10px rgba(255, 205, 60, .85), 0 2px 0 rgba(0,0,0,.25); }
+.tile.evo { box-shadow: 0 0 0 3px #ffd84a, 0 0 18px rgba(255, 200, 60, .9); }
+.evohint { color: #d98a00; font-weight: 700; }
+.evo-row b { color: #c97a00; }
+.evo-row small { color: #5a6a8a; }
 .slot u { position: absolute; left: 4px; right: 4px; bottom: 3px; height: 4px; border-radius: 2px; background: rgba(0,0,0,.25); }
 .slot u i { display: block; height: 100%; border-radius: 2px; background: #fff; }
 .chapbar { position: relative; height: 28px; border-radius: 10px; background: #18263d; box-shadow: inset 0 0 0 2px rgba(0,0,0,.3), 0 3px 0 rgba(0,0,0,.25); overflow: hidden; }
@@ -469,6 +483,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
     <div id="banner"></div>
     <div id="hint" hidden>Drag anywhere to move</div>
+    <button id="btnDash" aria-label="Dash"><svg viewBox="0 0 24 24"><path d="M5 6l6 6-6 6M12 6l6 6-6 6" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>DASH</span></button>
   </section>
 
   <section id="levelup" class="screen modal" hidden>

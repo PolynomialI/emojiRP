@@ -85,6 +85,7 @@ function initInput(canvas) {
     AUDIO.unlock();
     if ((k === 'escape' || k === 'p') && !e.repeat) { if (G.state === 'run') pauseGame(); else if (G.state === 'pause') resumeGame(); }
     if (G.state === 'levelup' && (k === '1' || k === '2' || k === '3')) UI.pick(Number(k) - 1);
+    if ((k === ' ' || k === 'shift') && !e.repeat) tryDash();
   });
   window.addEventListener('keyup', e => INPUT.keys.delete(e.key.toLowerCase()));
   window.addEventListener('blur', () => { INPUT.keys.clear(); INPUT.stick.active = false; if (G.state === 'run') pauseGame(); });
@@ -102,7 +103,7 @@ function initInput(canvas) {
   canvas.addEventListener('pointercancel', end);
 }
 function readInput() {
-  let x = 0, z = 0;
+  let x = 0, z = 0, dashQueued = false;
   const K = INPUT.keys, S = INPUT.stick;
   if (K.has('a') || K.has('arrowleft')) x -= 1;
   if (K.has('d') || K.has('arrowright')) x += 1;
@@ -118,10 +119,15 @@ function readInput() {
       if (!p) continue;
       const ax = p.axes[0] || 0, ay = p.axes[1] || 0, m = Math.hypot(ax, ay);
       if (m > 0.15) { const s = Math.min(1, (m - 0.15) / 0.85); x = ax / m * s; z = ay / m * s; }
+      // the A button dashes, once per press
+      const a = !!(p.buttons[0] && p.buttons[0].pressed);
+      if (a && !INPUT.padDash) dashQueued = true;
+      INPUT.padDash = a;
       break;
     }
   }
   G.input.x = x; G.input.z = z;
+  if (dashQueued) { dashQueued = false; tryDash(); }
   if ((x || z) && G.state === 'run') INPUT.moved = true;
 }
 
@@ -173,7 +179,7 @@ function beginChapter(n) {
     startRun(n);
     updateCamera(0, true); updateView();
     const hint = $('hint');
-    hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Drag anywhere to move' : 'Move with WASD, the arrow keys, or drag';
+    hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Drag anywhere to move · tap DASH to dodge' : 'Move with WASD, the arrow keys, or drag · Space to dash';
     hint.hidden = !G.save.tutorial;
     INPUT.moved = false;
   };

@@ -16,6 +16,7 @@ const UI = {
     document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => { AUDIO.play('click'); this.openTab('home'); }));
     $('btnSettings').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openSettings(); });
     $('btnPause').addEventListener('click', () => pauseGame());
+    $('btnDash').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); tryDash(); });
     $('btnResume').addEventListener('click', () => resumeGame());
     $('btnPauseSettings').addEventListener('click', () => this.openSettings());
     $('btnQuit').addEventListener('click', () => { $('quitConfirm').hidden = false; $('pauseActions').hidden = true; });
@@ -224,7 +225,15 @@ const UI = {
     if (L.xp !== xpPct) { L.xp = xpPct; $('xpFill').style.width = `calc(${xpPct} - 4px)`; }
     this.setText('lv', $('xpText'), 'LEVEL ' + run.level);
     this.setText('coins', $('hudCoinsVal'), fmtNum(run.coins));
-    const sig = run.slots.map(s => s.id + s.lvl).join(',');
+    // dash cooldown wedge, with a little pop when it comes back
+    const cd = (run.dashCd || 0) / DASH.cd, cdS = cd.toFixed(2);
+    if (L.dash !== cdS) {
+      const b = $('btnDash');
+      b.style.setProperty('--cd', cdS);
+      if (cd === 0 && L.dash !== undefined) { b.classList.remove('ready'); void b.offsetWidth; b.classList.add('ready'); }
+      L.dash = cdS;
+    }
+    const sig = run.slots.map(s => s.id + s.lvl + (s.evo ? '*' : '')).join(',');
     if (sig !== this.slotSig) {
       this.slotSig = sig;
       // two groups of boxes: skills, then passives
@@ -234,7 +243,7 @@ const UI = {
         for (let i = 0; i < SLOT_LIMIT[kind]; i++) {
           const s = list[i], d = document.createElement('div');
           if (s) {
-            d.className = 'slot ' + s.kind;
+            d.className = 'slot ' + s.kind + (s.evo ? ' evo' : '');
             d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / maxLevel(s.id)) * 100}%"></i></u>`;
             d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
           } else d.className = 'slot empty-' + kind;
@@ -320,8 +329,10 @@ const UI = {
   openChest() {
     const run = G.run;
     run.chestQueued--;
-    // one upgrade per chest
-    const n = 1;
+    // a ready evolution comes first; otherwise one upgrade per chest
+    const evos = evolvable();
+    this.chestEvo = evos.length ? pick(evos).id : null;
+    const n = this.chestEvo ? 0 : 1;
     const results = [];
     for (let k = 0; k < n; k++) {
       const up = run.slots.filter(s => s.lvl < maxLevel(s.id) - results.filter(x => x === s.id).length);
@@ -330,14 +341,14 @@ const UI = {
       results.push(pick(skills.length && Math.random() < 0.75 ? skills : up).id);
     }
     this.chestResults = results;
-    this.chestCoins = results.length ? 0 : 40;
+    this.chestCoins = results.length || this.chestEvo ? 0 : 40;
     const pool = run.slots.map(s => (s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
     const strip = $('chStrip'), tiles = [];
     const total = 34, land = 28;
-    const landKey = results.length ? (SKILLS[results[0]] ? 'skill-' : 'passive-') + results[0] : 'meta-offline';
+    const landKey = this.chestEvo ? 'skill-' + this.chestEvo : results.length ? (SKILLS[results[0]] ? 'skill-' : 'passive-') + results[0] : 'meta-offline';
     for (let i = 0; i < total; i++) {
       const key = i === land ? landKey : pick(pool);
-      const t = document.createElement('span'); t.className = 'tile'; const im = document.createElement('img'); im.alt = ''; im.src = ICONS.get(key); t.append(im); tiles.push(t);
+      const t = document.createElement('span'); t.className = 'tile' + (i === land && this.chestEvo ? ' evo' : ''); const im = document.createElement('img'); im.alt = ''; im.src = ICONS.get(key); t.append(im); tiles.push(t);
     }
     strip.replaceChildren(...tiles);
     strip.style.transition = 'none';
@@ -358,7 +369,18 @@ const UI = {
   },
   revealChest() {
     const res = $('chRes'), rows = [];
-    if (this.chestResults.length) {
+    if (this.chestEvo) {
+      const id = this.chestEvo, E = EVOLUTIONS[id];
+      evolveSkill(id);
+      const d = document.createElement('div');
+      d.className = 'evo-row';
+      d.innerHTML = `<span class="tile evo"><img alt=""></span><span><b></b><br><small></small></span>`;
+      d.querySelector('img').src = ICONS.get('skill-' + id);
+      d.querySelector('b').textContent = `EVOLVED! ${SKILLS[id].name} → ${E.name}`;
+      d.querySelector('small').textContent = E.desc;
+      rows.push(d);
+      AUDIO.play('levelup', 0.75);
+    } else if (this.chestResults.length) {
       for (const id of this.chestResults) {
         const before = lvlOf(id);
         addOrLevel(id);
@@ -394,7 +416,8 @@ const UI = {
       const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
       d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
-      d.querySelector('span:nth-child(2)').textContent = (SKILLS[s.id] || PASSIVES[s.id]).name;
+      d.querySelector('span:nth-child(2)').textContent = s.evo ? '★ ' + EVOLUTIONS[s.id].name : (SKILLS[s.id] || PASSIVES[s.id]).name;
+      if (s.evo) d.querySelector('.tile').classList.add('evo');
       d.querySelector('.dots').innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < s.lvl ? 'on' : ''}"></i>`).join('');
       return d;
     }));
@@ -545,7 +568,18 @@ function fmtStat(v, unit) {
   if (unit === '°/s') return v + '°/s';
   return String(v);
 }
+// a line under a card naming the evolution this skill or ability is part of
+function evoHint(id) {
+  if (EVOLUTIONS[id]) { const E = EVOLUTIONS[id]; return `<br><span class="evohint">★ Max level + ${PASSIVES[E.with].name} → ${E.name}</span>`; }
+  for (const k in EVOLUTIONS) if (EVOLUTIONS[k].with === id) return `<br><span class="evohint">★ Evolves a maxed ${SKILLS[k].name} into ${EVOLUTIONS[k].name}</span>`;
+  return '';
+}
 function describeChoice(c) {
+  const d = describeChoiceBase(c);
+  if (c.id !== 'snack') d.desc += evoHint(c.id);
+  return d;
+}
+function describeChoiceBase(c) {
   if (c.id === 'snack') return { tag: 'HEAL', name: 'Goo Snack', desc: 'Recover 30% of your health.', icon: 'passive-regen', kind: 'passive', isNew: true };
   const sk = SKILLS[c.id], ps = PASSIVES[c.id], lvl = lvlOf(c.id);
   if (sk) {

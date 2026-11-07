@@ -371,10 +371,11 @@ function emitRunScene() {
   // hero projectiles
   for (const p of run.proj) {
     if (p.kind === 'ball') {
-      pushImp(p.x, p.y, p.z, p.r, p.vx, p.vy, p.vz, 1.35, 0, 0, 0.25, p.ph + p.t, 0, 0, 0, 1);
-      trailRibbon(p.trail, 0.15, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
+      // evolved (Goo Gatling) balls are molten gold
+      pushImp(p.x, p.y, p.z, p.r, p.vx, p.vy, p.vz, 1.35, 0, p.evo ? 6 : 0, p.evo ? 0.45 : 0.25, p.ph + p.t, 0, 0, 0, 1);
+      trailRibbon(p.trail, 0.15, p.evo ? [1, 0.8, 0.3] : [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
     } else if (p.kind === 'missile') {
-      pushImp(p.x, p.y, p.z, 0.28, p.vx, p.vy, p.vz, 1.3, 1, 0.8, 0.3, p.ph + p.t, 0, 0, 0, 1);
+      pushImp(p.x, p.y, p.z, 0.28, p.vx, p.vy, p.vz, 1.3, 1, p.evo ? 6 : 0.8, 0.3, p.ph + p.t, 0, 0, 0, 1);
       if (p.trail.length > 2) {
         const pts = [];
         p.trail.forEach((q, i) => { const k = 0.1 * Math.min(1, i / 3); pts.push(q[0] + Math.sin(p.t * 22 - i) * k, q[1] + Math.cos(p.t * 22 - i) * k, q[2]); });
@@ -420,7 +421,11 @@ function emitRunScene() {
     else if (p.kind === 'heart') pushImp(p.x, p.y + 0.42 + bob, p.z, 0.62, 0, 0, 1, 1, 10, 4, 0.2, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'magnet') pushImp(p.x, p.y + 0.12 + bob, p.z, 0.26, 0, 0, 1, 1, 11, 4, 0.1, run.t + p.ph, 0, 0, 0, 1);
     else if (p.kind === 'scroll') { pushImp(p.x, p.y + 0.15 + bob, p.z, 0.3, 0, 0, 1, 1, 30, 0, 0.12, (run.t + p.ph) * 0.6, 0, 0, 0, 1); FX.glow(p.x, 0.45, p.z, 0.8, [1, 0.85, 0.45], 0.05, 0.3); }
-    else if (p.kind === 'chest') { pushImp(p.x, p.y + 0.02, p.z, 0.36, 0, 0, 1, 1, 12, 0, 0.05, run.t, 0, 0, 0, 1); FX.glow(p.x, 0.5, p.z, 0.9, [1, 0.8, 0.3], 0.05, 0.25); }
+    else if (p.kind === 'chest') {
+      pushImp(p.x, p.y + 0.02, p.z, p.evo ? 0.46 : 0.36, 0, 0, 1, 1, 12, 0, p.evo ? 0.35 : 0.05, run.t, 0, 0, 0, 1);
+      FX.glow(p.x, 0.5, p.z, p.evo ? 2.2 : 0.9, [1, 0.8, 0.3], 0.05, p.evo ? 0.55 + 0.25 * Math.sin(run.t * 6) : 0.25);
+      if (p.evo) pushDecal(p.x, p.z, 1.3, 1.3, run.t, 3, 0, (run.t * 0.8) % 1, 1, 0.8, 0.3, 0.6, true);
+    }
     pushDecal(p.x + 0.06, p.z + 0.05, 0.25, 0.2, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.4);
   }
   // lightning bolts

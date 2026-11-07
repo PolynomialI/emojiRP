@@ -491,6 +491,41 @@ if (mode === 'powerups') {
     await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
   }
 }
+if (mode === 'evos') {
+  // each evolution: max the skill and its partner, see the golden chest, open it, then watch the evolved skill work
+  const ids = (process.env.IDS || 'ball').split(',');
+  await page.evaluate(() => { G.save.chapter = Math.max(G.save.chapter, 10); G.save.selected = 10; UI.refreshHome(); });
+  for (const id of ids) {
+    await page.click('#btnPlay');
+    await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
+    await page.evaluate(id => {
+      window.readInput = () => __botInput(); __bot.on = true;
+      const run = G.run;
+      run.slots.length = 0; run.events = []; run.t = 150; run.spawnAcc = -1e9; run.enemies.length = 0;
+      for (let i = 0; i < maxLevel(id); i++) addOrLevel(id);
+      addOrLevel(EVOLUTIONS[id].with);
+      for (let i = 0; i < 8; i++) { G.run.invuln = 1; __frames(1); }
+    }, id);
+    if (id === ids[0]) { await render(2); await shot('evo-chest-ground'); }
+    // walk onto the golden chest
+    await page.evaluate(() => { const c = G.run.pickups.find(p => p.kind === 'chest'); if (c) { G.hero.pos[0] = c.x; G.hero.pos[2] = c.z; } for (let i = 0; i < 30 && G.state === 'run'; i++) { G.run.invuln = 1; __frames(1); } });
+    await page.waitForFunction(() => G.state === 'chest' && !document.getElementById('btnChest').disabled, null, { timeout: 15000, polling: 100 });
+    await render(1); await shot(`evo-${id}-chest`);
+    console.log(id, await page.evaluate(id => JSON.stringify({ evo: !!slotOf(id).evo, L: slotOf(id).evoL }), id));
+    await page.click('#btnChest');
+    await page.evaluate(n => {
+      const h = G.hero.pos;
+      for (let i = 0; i < 70; i++) { const a = i / 70 * TAU, r = 3 + (i % 5) * 1.2; spawnEnemy(i % 6 ? 'stickman' : 'brute', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); }
+      for (let i = 0; i < n; i++) { G.run.invuln = 1; __frames(1); if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); }
+    }, +(process.env.FRAMES || 120));
+    await render(2); await shot(`evo-${id}-fight`);
+    console.log('   kills', await page.evaluate(() => G.run.kills));
+    await page.evaluate(() => finishRun(false));
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.click('#btnContinue');
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+  }
+}
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
 console.log('ERRORS:', errors.length ? '\n' + errors.join('\n') : 'none');
 await browser.close();

@@ -153,6 +153,24 @@ function startRun(chapter) {
   setState('run');
 }
 
+// ---------- goo dash: a quick burst with a moment of invulnerability ----------
+const DASH = { dist: 4.2, time: 0.18, cd: 3, invuln: 0.32 };
+function tryDash() {
+  const run = G.run;
+  if (G.state !== 'run' || !run || run.dash || run.dashCd > 0 || run.rootT > 0) return false;
+  let dx = G.input.x, dz = G.input.z;
+  if (!dx && !dz) [dx, dz] = run.lastDir || [0, -1];
+  const l = Math.hypot(dx, dz) || 1, h = G.hero.pos;
+  run.dash = { dx: dx / l, dz: dz / l, t: DASH.time, splat: 0 };
+  run.dashCd = DASH.cd;
+  run.invuln = Math.max(run.invuln, DASH.invuln);
+  G.hero.impulse(2.5);
+  FX.ring(h[0], h[2], 1.8, COLORS.cyanHi, 0.3, 0.8);
+  FX.droplets(h[0], 0.5, h[2], 8, 0, 3, 0.06, null);
+  AUDIO.play('throw', 1.4);
+  return true;
+}
+
 function slotOf(id) { return G.run.slots.find(s => s.id === id); }
 function lvlOf(id) { const s = slotOf(id); return s ? s.lvl : 0; }
 function addOrLevel(id) {
@@ -164,7 +182,42 @@ function addOrLevel(id) {
   recomputeStats();
   if (id === 'thick') run.hp = Math.min(run.maxHp, run.hp + (run.maxHp - oldMax));
   if (SKILL_HOOKS[id] && SKILL_HOOKS[id].onLevel) SKILL_HOOKS[id].onLevel(s);
+  checkEvolutions();
   return s;
+}
+// ---------- evolutions ----------
+// a skill's current stats: its level row, or the evolved row once evolved
+function skillL(s) { return s.evoL || SKILLS[s.id].levels[s.lvl - 1]; }
+// skills ready to evolve: max level, not evolved yet, partner ability owned
+function evolvable() { return G.run.slots.filter(s => s.kind === 'skill' && !s.evo && EVOLUTIONS[s.id] && s.lvl >= maxLevel(s.id) && slotOf(EVOLUTIONS[s.id].with)); }
+// the first time an evolution becomes possible, a glowing chest drops nearby so it can't slip by
+function checkEvolutions() {
+  const run = G.run;
+  if (!run || !run.slots) return;
+  run.evoSeen = run.evoSeen || {};
+  for (const s of evolvable()) {
+    if (run.evoSeen[s.id]) continue;
+    run.evoSeen[s.id] = true;
+    const h = G.hero.pos, a = rand(0, TAU), o = { x: h[0] + Math.cos(a) * 4, z: h[2] + Math.sin(a) * 4 };
+    resolveCircle(o, 0.6);
+    spawnPickup('chest', o.x, o.z);
+    run.pickups[run.pickups.length - 1].evo = true;
+    if (G.state === 'run' || G.state === 'levelup') UI.toast(`${SKILLS[s.id].name} can evolve! Grab the golden chest.`, 2.6);
+  }
+}
+function evolveSkill(id) {
+  const run = G.run, s = slotOf(id), E = EVOLUTIONS[id], rows = SKILLS[id].levels, top = rows[rows.length - 1];
+  s.evo = true;
+  s.evoL = { ...top, ...E.boost(top) };
+  if (id === 'frostnova') run.absZero = true;
+  recomputeStats();
+  if (SKILL_HOOKS[id].onLevel) SKILL_HOOKS[id].onLevel(s);
+  // a golden burst around the blob
+  const h = G.hero.pos;
+  FX.ring(h[0], h[2], 7, [1, 0.82, 0.3], 0.8, 1); FX.ring(h[0], h[2], 4, [1, 0.95, 0.6], 0.6, 1);
+  for (let i = 0; i < 36; i++) FX.star(h[0] + rand(-1.6, 1.6), rand(0.3, 2.6), h[2] + rand(-1.6, 1.6), rand(0.2, 0.4), [1, rand(0.75, 0.95), rand(0.2, 0.5)], rand(0.6, 1.1));
+  G.hero.impulse(3);
+  UI.toast(`★ ${E.name}!`, 2);
 }
 function recomputeStats() {
   const run = G.run, meta = G.save.upgrades, lv = lvlOf;
@@ -192,7 +245,7 @@ function recomputeStats() {
   h.gloss = 1 + 0.06 * lv('armor');
   h.wobbleMul = (1 + 0.125 * lv('haste')) * (1 - 0.05 * lv('armor'));
   h.topSpeed = 4.5 * run.stats.speedMul;
-  h.setArmCount(lv('fists') ? SKILLS.fists.levels[lv('fists') - 1].fists : 2);
+  h.setArmCount(lv('fists') ? skillL(slotOf('fists')).fists : 2);
   return oldMax;
 }
 
@@ -221,6 +274,7 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   if (e.dying || e.hp <= 0) return false;
   dmg *= G.run.stats.dmgMul;
   if (e.boss && e.dizzy > 0) dmg *= 1.5;
+  if (e.frozen > 0 && G.run.absZero) dmg *= 1.5;
   e.hp -= dmg;
   // flash white on a hit, but under constant fire strobe instead of staying solid white
   if (!(e.flashCd > 0)) { e.flash = 0.07; e.flashCd = 0.16; }
@@ -382,8 +436,19 @@ function updateRun(dt) {
     run.burnT = (run.burnT || 0) - dt;
     if (run.burnT <= 0) { run.burnT = 0.5; hurtHero(Z.burn * 0.5 * run.info.dmgMul, h[0], h[2] + 0.01); FX.burst(h[0], 0.3, h[2], 6, [1, 0.5, 0.1], 2, 0.1, 0.4, 0); }
   }
-  run.vel[0] += (G.input.x * top - run.vel[0]) * k;
-  run.vel[2] += (G.input.z * top - run.vel[2]) * k;
+  if (G.input.x || G.input.z) run.lastDir = [G.input.x, G.input.z];
+  run.dashCd = Math.max(0, (run.dashCd || 0) - dt);
+  if (run.dash) {
+    // mid-dash: a fixed burst along the dash line, leaving a streak of goo
+    const D = run.dash, sp = DASH.dist / DASH.time;
+    run.vel[0] = D.dx * sp; run.vel[2] = D.dz * sp;
+    D.t -= dt; D.splat -= dt;
+    if (D.splat <= 0) { D.splat = 0.04; FX.splat(h[0], h[2], 0.45, R.goo.base, 1.2); }
+    if (D.t <= 0) { run.dash = null; run.vel[0] *= 0.35; run.vel[2] *= 0.35; }
+  } else {
+    run.vel[0] += (G.input.x * top - run.vel[0]) * k;
+    run.vel[2] += (G.input.z * top - run.vel[2]) * k;
+  }
   h[0] += run.vel[0] * dt; h[2] += run.vel[2] * dt;
   HERO_PT.x = h[0]; HERO_PT.z = h[2];
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }

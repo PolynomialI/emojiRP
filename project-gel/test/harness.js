@@ -47,18 +47,22 @@
         if (d < 2.5) { const sp = Math.hypot(s.vx, s.vz) || 1; const px = -s.vz / sp, pz = s.vx / sp; const side = Math.sign(dx * px + dz * pz) || 1; fx += px * side * 3; fz += pz * side * 3; }
       }
     }
+    let threat = false;
     if (run.tele) for (const t of run.tele) {
       if (t.kind === 'circle') {
         const dx = h[0] - t.x, dz = h[2] - t.z, d = Math.hypot(dx, dz) || 0.01;
         if (d < t.r + 1) { fx += dx / d * 8; fz += dz / d * 8; }
+        if (d < t.r && t.t / t.dur > 0.55) threat = true;
       } else if (t.kind === 'cone') {
         // step sideways out of the slice
         const dx = h[0] - t.x, dz = h[2] - t.z, d = Math.hypot(dx, dz) || 0.01, off = angleDiff(t.rot, Math.atan2(dx, dz));
         if (d < t.r + 1 && Math.abs(off) < t.half + 0.25) { const s = Math.sign(off) || 1; fx += Math.cos(t.rot) * s * 8; fz += -Math.sin(t.rot) * s * 8; }
+        if (d < t.r && Math.abs(off) < t.half && t.t / t.dur > 0.55) threat = true;
       } else {
         const ax = Math.sin(t.rot), az = Math.cos(t.rot), dx = h[0] - t.x, dz = h[2] - t.z;
         const along = dx * ax + dz * az, perp = dx * az - dz * ax;
         if (along > -1 && along < t.len + 1 && Math.abs(perp) < t.r + 1.4) { const s = Math.sign(perp) || 1; fx += az * s * 8; fz += -ax * s * 8; }
+        if (along > -0.5 && along < t.len && Math.abs(perp) < t.r && t.t / t.dur > 0.55) threat = true;
       }
     }
     // twins' rope
@@ -87,6 +91,8 @@
     if (danger > 0.4) { fx += -fz * 0.5; fz += fx * 0.5; }
     const m = Math.hypot(fx, fz);
     if (m > 0.05) { G.input.x = fx / m; G.input.z = fz / m; INPUT.moved = true; } else { G.input.x = 0; G.input.z = 0; }
+    // about to be hit by a telegraphed attack: dash out of it (a player would)
+    if (threat && !__bot.noDash && typeof tryDash === 'function') tryDash();
   };
   // weighted level-up choice: favor owned skills, then new skills, then useful passives
   window.__botPick = () => {
