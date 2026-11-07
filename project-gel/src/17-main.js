@@ -147,12 +147,14 @@ function adaptQuality(dt) {
   if (PERF.acc < 2) return;
   const avg = PERF.acc / PERF.frames;
   PERF.acc = 0; PERF.frames = 0;
-  // too slow: lower the resolution first, then drop MSAA, then bloom (both stay off until the settings change)
+  // too slow: lower the resolution first, then drop MSAA, then bloom (both stay off until the settings change).
+  // The resize waits for the start of the next frame: resizing clears the canvas, and doing it after this
+  // frame was drawn would show one blank frame.
   if (avg > 1 / 42) {
-    if (PERF.ratio > PERF.min) { PERF.ratio = Math.max(PERF.min, PERF.ratio * 0.85); resize(); }
-    else if (R.settings.msaa) { R.settings.msaa = false; resize(); }
+    if (PERF.ratio > PERF.min) { PERF.ratio = Math.max(PERF.min, PERF.ratio * 0.85); PERF.resizeDue = true; }
+    else if (R.settings.msaa) { R.settings.msaa = false; PERF.resizeDue = true; }
     else R.settings.bloom = false;
-  } else if (avg < 1 / 58 && PERF.ratio < PERF.max) { PERF.ratio = Math.min(PERF.max, PERF.ratio * 1.08); resize(); }
+  } else if (avg < 1 / 58 && PERF.ratio < PERF.max) { PERF.ratio = Math.min(PERF.max, PERF.ratio * 1.08); PERF.resizeDue = true; }
 }
 
 // ---------- game flow ----------
@@ -295,6 +297,7 @@ function loop(now) {
   lastT = now;
   PERF.fps += (1 / Math.max(raw, 1e-3) - PERF.fps) * 0.05;
   R.frame.time += dt;
+  if (PERF.resizeDue) { PERF.resizeDue = false; resize(); }
   readInput();
   const s = G.state;
   if ((s === 'run' || s === 'victory') && DEV.open) updateCamera(0, false, true);

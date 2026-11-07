@@ -15,7 +15,7 @@ const SKILLS = {
   ball: {
     name: 'Blob Ball', intro: 'Fires balls of goo at the closest enemy.', icon: { type: 0, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Balls'], ['pierce', 'Pierce']],
-    levels: L10({ dmg: [8, 8, 9, 10, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
+    levels: L10({ dmg: [8, 9, 9, 10, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
   },
   fists: {
     name: 'Blob Fists', intro: 'Your arms stretch out and punch nearby enemies, knocking them back.', icon: { type: 17, colw: 1 },
@@ -84,9 +84,9 @@ const SKILLS = {
     levels: L10({ dmg: [10, 11, 12, 13, 14, 16, 18, 20, 22, 25], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], bounces: [3, 3, 4, 4, 5, 5, 6, 6, 7, 8], cd: [2.6, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7], size: [0.45, 0.47, 0.5, 0.52, 0.55, 0.58, 0.62, 0.66, 0.7, 0.75] }),
   },
   drone: {
-    name: 'Neon Drone', from: 3, intro: 'Little neon drones orbit you and zap the closest enemies.', icon: { type: 34, colw: 0 },
-    fields: [['dmg', 'Damage'], ['count', 'Drones'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
-    levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
+    name: 'Neon Drone', from: 3, intro: 'Little neon drones orbit you and zap the closest enemies; the zaps chain to their neighbours.', icon: { type: 34, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Drones'], ['chain', 'Chains'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
+    levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], chain: [0, 0, 1, 1, 1, 2, 2, 2, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
   },
   meteor: {
     name: 'Meteor', from: 7, intro: 'Calls flaming meteors down on the thickest crowds nearby; the ground keeps burning where they land.', icon: { type: 39, colw: 0 },

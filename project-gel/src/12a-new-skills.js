@@ -86,6 +86,17 @@ SKILL_HOOKS.drone = {
       hurtEnemy(e, L.dmg, (tx - h[0]) * 0.4, (tz - h[2]) * 0.4, { sound: false, color: col });
       run.zaps.push({ a: p.slice(), b: [tx, ty, tz], life: 0.12, col });
       FX.glow(tx, ty, tz, 0.55, col, 0.1);
+      // the zap jumps on to nearby enemies it hasn't hit yet, a little weaker each time
+      let from = e, dmg = L.dmg;
+      const hit = new Set([e]);
+      for (let c = 0; c < (L.chain || 0); c++) {
+        const nx = nearestEnemy(from.x, from.z, 2.8, hit);
+        if (!nx) break;
+        dmg *= 0.7; hit.add(nx);
+        hurtEnemy(nx, dmg, 0, 0, { sound: false, color: col });
+        run.zaps.push({ a: [from.x, 0.6 * from.scale, from.z], b: [nx.x, 0.6 * nx.scale, nx.z], life: 0.12, col });
+        from = nx;
+      }
       AUDIO.play('zap', 1.7);
     }
   },
