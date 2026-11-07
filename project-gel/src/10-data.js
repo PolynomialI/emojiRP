@@ -175,6 +175,8 @@ const ENEMY_TYPES = {
   shield: { model: 'shield', hp: 45, speed: 1.8, dmg: 8, xp: 3, radius: 0.44, scale: 1.4, tint: '#f5891f', mass: 1.6, shield: true },
   bomber: { model: 'bomber', hp: 10, speed: 3.0, dmg: 4, xp: 2, radius: 0.4, scale: 1.35, tint: '#ffb02e', mass: 0.9, ai: 'bomb', hit: 18 },
   slime: { model: 'slime', hp: 22, speed: 2.6, dmg: 6, xp: 2, radius: 0.45, scale: 1.5, tint: '#ff6f96', mass: 0.9 },
+  // the Golden Gooblin: a rare treasure runner that flees, spills coins when hit and escapes after a while
+  gooblin: { model: 'gooblin', hp: 90, speed: 3.5, dmg: 0, xp: 8, radius: 0.55, scale: 1.65, tint: '#ffc93a', mass: 1.5, flee: true },
   knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
 };
 // When each type starts showing up: [first chapter, seconds into the run, spawn weight]

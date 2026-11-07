@@ -2,16 +2,16 @@
 // Theme scenery and new boss bodies, built with prop() (see 04-models.js).
 // Model units: 1 is about one hero leg. Colors are baked in; parts without col take the instance tint.
 // ============================================================
-const THEME_CLIPS = { slime: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'], golem: ['run', 'slam', 'idle', 'throw'] };
+const THEME_CLIPS = { slime: ['run'], gooblin: ['run'], tumbleweed: ['roll'], wreckbot: ['run', 'slam', 'idle', 'throw'], yeti: ['run', 'slam', 'idle', 'conduct'], golem: ['run', 'slam', 'idle', 'throw'] };
 // mesh cell size per model: big boxy scenery can be coarse (colors still follow the nearest part), thin parts need fine cells
-const THEME_CELLS = { lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
+const THEME_CELLS = { gooblin: 0.018, lollipop: 0.018, candycane: 0.02, gumdrop: 0.04, cupcake: 0.02, slime: 0.03, pitball: 0.05, bumper: 0.035, tubewall: 0.04, wreckbot: 0.015, wreckball: 0.02, wormhead: 0.022, wormseg: 0.03, tumbleweed: 0.02, cactus0: 0.025, building0: 0.03, building1: 0.03, building2: 0.03, tower: 0.03, car: 0.022, streetlamp: 0.016, hydrant: 0.02, bin: 0.025, barrier: 0.03, tree: 0.03,
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
   jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
   palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02,
   dish: 0.02, lander: 0.02, habdome: 0.03, moonwall: 0.025, ufo: 0.02, alien: 0.014 };
 // built after everything chapter 1 needs
-MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
+MESH_ORDER.push('gooblin', 'cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
   'pitball', 'bumper', 'tubewall',
   'lollipop', 'candycane', 'gumdrop', 'cupcake', 'slime',
@@ -22,6 +22,22 @@ MESH_ORDER.push('cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormse
   'dish', 'lander', 'habdome', 'moonwall', 'ufo', 'alien');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  // ---------- the Golden Gooblin: a gold blob with a loot sack, grinning; the body takes the tint ----------
+  {
+    const sack = C('#8a5a2a'), tie = C('#5a3a1a'), coin = C('#ffe27a'), white = C('#fff8ea'), pupil = C('#16101a'), mouth = C('#5a1a10');
+    P('gooblin', [
+      { s: 'ell', c: [0, 0.3, 0], rr: [0.32, 0.3, 0.3], k: 0.06 },
+      { s: 'sph', c: [0, 0.52, -0.02], r: 0.16, k: 0.08 },
+      { s: 'sph', c: [0, 0.42, -0.3], r: 0.22, col: sack, k: 0.04 },
+      { s: 'tor', ax: 'y', c: [0, 0.6, -0.3], R: 0.07, r: 0.03, a0: -Math.PI, a1: Math.PI, col: tie, k: 0 },
+      { s: 'sph', c: [0.05, 0.66, -0.3], r: 0.05, col: coin, k: 0 }, { s: 'sph', c: [-0.06, 0.64, -0.26], r: 0.045, col: coin, k: 0 },
+      { s: 'sph', c: [0.12, 0.44, 0.22], r: 0.085, col: white, k: 0 }, { s: 'sph', c: [-0.12, 0.44, 0.22], r: 0.085, col: white, k: 0 },
+      { s: 'sph', c: [0.13, 0.45, 0.29], r: 0.042, col: pupil, k: 0 }, { s: 'sph', c: [-0.13, 0.45, 0.29], r: 0.042, col: pupil, k: 0 },
+      { s: 'ell', c: [0, 0.28, 0.27], rr: [0.13, 0.05, 0.05], col: mouth, k: 0.01 },
+      { s: 'cap', a: [0.05, 0.31, 0.3], b: [0.05, 0.26, 0.31], r: 0.022, col: white, k: 0 },
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.22, 0.5, 0], b: [sx * 0.34, 0.68, -0.04], r: 0.05, r2: 0.015, k: 0.03 })),
+    ]);
+  }
   // ---------- desert ----------
   const cg = C('#56a23e'), cgd = C('#3f8030'), pink = C('#ff6fa8'), yel = C('#ffd34a'), bone = C('#f1e6cf'), dark = C('#2a1a12');
   const ribs = (cx, cz, y0, y1, r, n) => Array.from({ length: n }, (_, i) => { const a = (i / n) * TAU; return { s: 'cap', a: [cx + Math.cos(a) * r, y0, cz + Math.sin(a) * r], b: [cx + Math.cos(a) * r, y1, cz + Math.sin(a) * r], r: 0.028, col: cgd, k: 0.03 }; });

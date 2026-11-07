@@ -165,7 +165,7 @@ function adaptQuality(dt) {
 
 // ---------- game flow ----------
 function requiredMeshes(n) {
-  const info = chapterInfo(n), has = info.has, T = ARENAS[info.arena], req = ['stickman', 'sprinter'];
+  const info = chapterInfo(n), has = info.has, T = ARENAS[info.arena], req = ['stickman', 'sprinter', 'gooblin'];
   // the theme's scenery: scattered props, the wall ring, and whatever its layout and features place
   for (const kind of [...(T.props || []).map(p => p[0]), T.wall || 'rock', ...(T.kinds || [])]) for (const m of PROP_KINDS[kind].models) if (!req.includes(m)) req.push(m);
   for (const k in has) if (has[k] && !req.includes(ENEMY_TYPES[k].model)) req.push(ENEMY_TYPES[k].model);

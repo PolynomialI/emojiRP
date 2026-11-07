@@ -118,7 +118,10 @@ function applySkin(id, costume) {
 
 // ---------- runs ----------
 function makeEvents() {
-  return [{ t: 90, kind: 'swarm', n: 14 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 24 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
+  const ev = [{ t: 90, kind: 'swarm', n: 14 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 24 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
+  // most runs get a visit from the Golden Gooblin somewhere in the middle
+  if (Math.random() < 0.8) ev.push({ t: rand(70, 230), kind: 'gooblin' });
+  return ev.sort((a, b) => a.t - b.t);
 }
 const RATE_KEYS = [[0, 0.35], [30, 0.5], [60, 0.72], [120, 1.15], [180, 1.6], [240, 2.0], [270, 2.6], [300, 2.6]];
 function spawnRate(t) {
@@ -281,6 +284,7 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   e.squashV -= e.boss ? 0.8 : 2.4;
   if (!e.boss) { e.kx += kx / e.mass; e.kz += kz / e.mass; }
   addNumber(e, dmg, opts.color);
+  if (e.def.flee) gooblinHit(e);
   if (opts.sound !== false) AUDIO.play('hit');
   if (e.hp <= 0) killEnemy(e);
   return true;
@@ -296,6 +300,7 @@ function killEnemy(e) {
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
   AUDIO.play('squish');
   if (e.boss) { onBossKilled(e); return; }
+  if (e.def.flee) gooblinLoot(e);
   // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and sometimes a scroll; elites always drop one
   const tough = e.elite || e.def.xp >= 2;
   if (e.elite || (tough && Math.random() < EMERALD_CHANCE)) dropGem(e.x, e.z, e.elite ? e.xp : e.xp * 3 + 2, 1);
@@ -491,6 +496,8 @@ function runEvent(ev) {
     for (let i = 0; i < 18; i++) spawnFromMix();
   } else if (ev.kind === 'boss') {
     startBoss();
+  } else if (ev.kind === 'gooblin') {
+    spawnGooblin();
   }
 }
 
@@ -539,7 +546,7 @@ function updateEnemies(dt) {
     e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
     // hero contact
     const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz), rr = e.radius + HERO_R;
-    if (d < rr && G.hero.melt < 0.5 && !e.hidden && !(e.frozen > 0)) {
+    if (d < rr && G.hero.melt < 0.5 && !e.hidden && !(e.frozen > 0) && !e.def.flee) {
       touching++;
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }
@@ -571,6 +578,7 @@ function updateEnemies(dt) {
 
 const STEER = [0, 0];
 function updateEnemyAI(e, dt) {
+  if (e.def.flee) { fleeAI(e, dt); return; }
   const h = G.hero.pos;
   let dx = h[0] - e.x, dz = h[2] - e.z;
   const d = Math.hypot(dx, dz) || 1;

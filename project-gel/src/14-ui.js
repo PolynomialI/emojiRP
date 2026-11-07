@@ -487,10 +487,8 @@ const UI = {
       ctx.fillStyle = col; roundRect(ctx, x, y, Math.max(4, bw * f), bh, 4.5); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.35)'; roundRect(ctx, x + 2, y + 1, Math.max(0, bw * f - 4), 3, 2); ctx.fill();
     }
-    // arrows toward off-screen bosses: a red pointer at the screen edge with the boss's face
-    for (const b of run.bosses) {
-      if (b.dying || onScreen(b.x, b.z, -0.5)) continue;
-      if (!R.project(b.x, 1, b.z, p)) continue;
+    // a pointer at the screen edge toward something off screen; returns where its badge goes
+    const edgeArrow = (col) => {
       const cx = w / 2, cy = h / 2, dx = p[0] - cx, dy = p[1] - cy;
       const pad = 58, top = 150;
       const k = Math.min((w / 2 - pad) / Math.abs(dx || 1e-3), ((dy < 0 ? cy - top : h - cy - pad)) / Math.abs(dy || 1e-3));
@@ -498,9 +496,24 @@ const UI = {
       const bob = Math.sin(performance.now() / 160) * 3;
       ctx.save(); ctx.translate(ax + Math.cos(ang) * bob, ay + Math.sin(ang) * bob);
       ctx.rotate(ang);
-      ctx.fillStyle = '#ff4d5a'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5; ctx.lineJoin = 'round';
+      ctx.fillStyle = col; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(48, 0); ctx.lineTo(26, -16); ctx.lineTo(26, 16); ctx.closePath(); ctx.stroke(); ctx.fill();
       ctx.restore();
+      return [ax, ay];
+    };
+    // a gold pointer toward a Golden Gooblin running off screen
+    for (const e of run.enemies) {
+      if (!e.def.flee || e.dying || onScreen(e.x, e.z, -0.5) || !R.project(e.x, 1, e.z, p)) continue;
+      const [ax, ay] = edgeArrow('#ffc93a');
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(ax, ay, 22, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#ffc93a'; ctx.beginPath(); ctx.arc(ax, ay, 18, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#8a5a00'; ctx.font = '800 22px Fredoka, ui-rounded, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', ax, ay + 1);
+    }
+    // arrows toward off-screen bosses: a red pointer at the screen edge with the boss's face
+    for (const b of run.bosses) {
+      if (b.dying || onScreen(b.x, b.z, -0.5)) continue;
+      if (!R.project(b.x, 1, b.z, p)) continue;
+      const [ax, ay] = edgeArrow('#ff4d5a');
       const img = this.bossImage(b.type);
       ctx.save(); ctx.translate(ax, ay);
       ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 27, 0, TAU); ctx.fill();
