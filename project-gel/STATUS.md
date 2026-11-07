@@ -116,6 +116,55 @@ Where things live:
 - Floor styles 0-9, the zone shader, and impostors 32-39: `src/05-glsl.js`.
 - Telegraph kinds: `circle`, `lane`, and `cone` (decal type 10).
 
+## Evolutions, Goo Dash, Golden Gooblin, Endless
+
+**Evolutions** (`EVOLUTIONS` in `src/10-data.js`; logic in `src/11-game.js`):
+- Each of the 12 abilities pairs with one skill. A skill at max level plus its partner evolves, through a chest, into a named form with boosted stats.
+- Pairs:
+
+  | Skill | Partner ability | Evolved form |
+  |---|---|---|
+  | Blob Ball | Projectile Count | Goo Gatling |
+  | Fists | Power | Titan Fists |
+  | Grenade | Reach | Cluster Bomb |
+  | Missile | Haste | Missile Swarm |
+  | Blade | Speed | Buzzsaw Halo |
+  | Lightning | Magnet | Thunder God |
+  | Aura | Thick Goo | Toxic Bog |
+  | Frost Nova | Armor | Absolute Zero (frozen enemies take +50%) |
+  | Meteor | Growth | Armageddon |
+  | Tidal Wave | Regen | Tsunami (heals per hit) |
+  | Bouncy Ball | Sugar Rush | Jawbreaker |
+  | Goo Axe | Thorns | Bramble Axes |
+
+- The first time an evolution becomes possible, a glowing golden chest drops near the hero. Any chest gives a ready evolution before a normal upgrade.
+- Level-up cards name each pairing. Evolved HUD tiles get a gold frame, and Goo Gatling and Missile Swarm shots turn gold.
+- `skillL(s)` returns a slot's current stats (its level row, or the evolved row).
+
+**Goo Dash:**
+- Triggered by Space, Shift, the gamepad A button, or the on-screen button at bottom right.
+- Moves the blob about 4.2 m in 0.18 s, with 0.32 s of invulnerability and a goo trail.
+- 3 s cooldown, shown as a wedge on the button. Tuned in `DASH` in `src/11-game.js`.
+- The test bot dashes out of telegraphed attacks.
+
+**Golden Gooblin** (`src/11c-events.js`):
+- Most runs get one between 70 s and 230 s. It pops up nearby and flees.
+- Each hit staggers it and drops a coin. Catching it bursts its sack into 16 coin piles, a chest and a scroll.
+- It escapes after 18 s. A gold arrow at the screen edge points to it when it is off screen.
+
+**Endless** (`src/11c-events.js`):
+- Unlocks once chapter 3 is cleared: an ENDLESS button under PLAY, which shows your best time.
+- Uses a random map from the chapters reached, and offers every power-up unlocked so far.
+- Every 50 s enemies take on the next chapter's toughness ("danger" tiers). The spawn rate keeps climbing; swarms, elites and Gooblins repeat.
+- A boss arrives every 2 minutes, cycling through all ten; every third visit adds a guest. A beaten boss drops a chest and the run continues.
+- Results pay 1 coin per 3 s survived and record the best time.
+
+**Fixes in this round:**
+- Auto quality no longer blanks a frame when it changes resolution (the resize now happens at the start of the next frame).
+- Blob Ball level 2 now does something.
+- Neon Drone zaps chain to nearby enemies.
+- New-boss health is flatter (3400-4200 base).
+
 ## Balance (bot results; the bot is a mediocre player who dodges poorly)
 
 Measured after the 100x100 arena, emeralds and long legs:
@@ -159,7 +208,13 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
     - `MAP=<size>` sets the arena width for the runs (default 100).
   - `skills [--group=a,b] [--phone]`: every skill at max level against a crowd.
   - `bosses` (`ONLY=6` limits it): each chapter's boss fight, chapters 1-10.
-  - `powerups` (`IDS=frostnova,meteor`): each chapter power-up at max level in its own chapter, with a crowd.
+  - `powerups` (`IDS=frostnova,meteor`, `FRAMES=150`): each chapter power-up at max level in its own chapter, with a crowd.
+  - `evos` (`IDS=ball,fists,...`, `FRAMES=240`): for each skill, maxes it and its partner, opens the golden chest, and watches the evolved form against a crowd.
+  - `perf` accepts `CH=<chapter>` to measure the run on that chapter's map.
+- **Standalone checks** (`node test/<name>.mjs`):
+  - `check-dash.mjs`: distance, invulnerability, cooldown and the button.
+  - `check-gooblin.mjs`: appears, flees, edge arrow, loot when caught, escape.
+  - `check-endless.mjs`: the unlock, tiers, a boss that doesn't end the run, results and best time.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.
   - `roster`: every enemy type in a row, plain and elite.
@@ -180,8 +235,5 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - To stop stray test processes, use `pkill -f "[n]ode test/game.mjs"`. The bracket keeps the pattern from matching the shell running the command.
 
 ## Known limits
-- On Auto quality, a change of resolution blanks one frame. `adaptQuality()` calls `resize()` after the frame is drawn, and resizing clears the canvas.
-  - Test screenshots taken on such a frame come out black, which happens every couple of seconds in the software-rendered test browser.
-  - On a real device it would be a single-frame flicker whenever Auto steps the resolution. This is not fixed yet.
 - Performance on real phones hasn't been measured. There are Auto, High and Low quality presets, and Auto scales resolution.
 - The UI font (Fredoka) loads from Google Fonts. Offline, it falls back to the system rounded font.
