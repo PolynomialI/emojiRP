@@ -185,6 +185,23 @@ After the ten chapter themes (new bosses with base health 3400-4200; chapter sca
 | 2 | level 3 | 1/2 | the Sand Worm fight took about 85 s (at base health 3900; now 3400) |
 | 6 | level 6 | 1/2, then 0/3 | most losses come before the boss; at base health 6100 one Yeti fight took 213 s, so health was lowered |
 
+With Goo Dash, evolutions and the flatter boss health:
+
+| Chapter | Upgrades | Bot wins | Notes |
+|---|---|---|---|
+| 1 | none | 2/2 | no deaths |
+| 6 | level 6 | 1/2 | the win beat the Frost Yeti in about 67 s with no deaths; the loss died at level 10 before the boss |
+
+Simulation cost per frame, without rendering, with 150 enemies (test machine):
+
+| Chapter | Average | 90th percentile | Notes |
+|---|---|---|---|
+| 1 | 1.7 ms | 4.2 ms | |
+| 4 | 2.0 ms | 4.8 ms | down from 3.0 / 9 ms; distant ball-pit balls now sleep |
+| 10 | 1.5 ms | 4.2 ms | |
+
+The JS heap stays around 35 MB.
+
 Boss fight length is the main thing to tune after real play: lower `hp` in `BOSS_TYPES` to shorten a fight.
 
 Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/10-data.js`, and the spawn curve in `RATE_KEYS` in `src/11-game.js`.
