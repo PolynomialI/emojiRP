@@ -309,7 +309,7 @@ function emitRunScene() {
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;
     const ic = e.frozen > 0 ? 0.7 : 0, tn = e.tint;
     pushEnemy(e.model, e.elite, e.x, e.y || 0, e.z, e.yaw, enemyRow(e), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? (e.boss ? 0.55 : 0.85) : 0, e.auraTint,
-      lerp(tn[0], 0.42, ic), lerp(tn[1], 0.74, ic), lerp(tn[2], 1.15, ic));
+      lerp(tn[0], 0.42, ic), lerp(tn[1], 0.74, ic), lerp(tn[2], 1.15, ic), e.def.ghost ? 0.3 : 0);
     const ss = e.scale * (1 - dead * 0.5) * (1 - clamp((e.y || 0) / 6, 0, 0.5));
     pushDecal(e.x + sdx * ss, e.z + sdz * ss, 0.3 * ss, 0.45 * ss, -Math.atan2(sdx, sdz), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   }

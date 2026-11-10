@@ -641,3 +641,9 @@ SHOT_DRAW.ink = s => {
   pushImp(s.x, s.y, s.z, 0.42, 0, 0, 1, 1, 27, 0, 0, s.t * 4, 1, 0, 0, 1);
   pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.35, 0, 1, 0, 0, 0.02, 0.02, 0.06, 0.45);
 };
+
+// the cloudlings' sparks
+SHOT_DRAW.spark = s => {
+  pushImp(s.x, s.y, s.z, 0.2, 0, 0, 1, 1, 15, 0, 0.8, s.ph + G.run.t * 3, 0, 0, 0, 1);
+  FX.glow(s.x, s.y, s.z, 0.6, [1, 0.95, 0.5], 0.05, 0.6);
+};

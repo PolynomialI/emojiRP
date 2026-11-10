@@ -2,17 +2,20 @@
 // Chapters 11-15: scenery and boss bodies, built with prop() like 04a-theme-models.js.
 // Model units: 1 is about one hero leg. Parts without col take the instance tint.
 // ============================================================
-Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'] });
+Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'],
+  ghost: ['run'], crystalbug: ['run'], cloudling: ['run'], teddy: ['run'], puffer: ['run'], crabling: ['run'] });
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
   crystal: 0.02, stalagmite: 0.025, geode: 0.016,
   cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03,
   toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016,
-  coral: 0.018, kelp: 0.02, clam: 0.02, kraken: 0.022 });
+  coral: 0.018, kelp: 0.02, clam: 0.02, kraken: 0.022,
+  ghost: 0.022, crystalbug: 0.02, cloudling: 0.024, teddy: 0.02, puffer: 0.018, crabling: 0.018 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
   'crystal', 'stalagmite', 'geode',
   'cloudpuff', 'pillar', 'rainbow', 'stormcloud',
   'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead',
-  'coral', 'kelp', 'clam', 'kraken');
+  'coral', 'kelp', 'clam', 'kraken',
+  'ghost', 'crystalbug', 'cloudling', 'teddy', 'puffer', 'crabling');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -322,5 +325,73 @@ function themeModels2(defs) {
       ...[[0.25, 1.2, 0.1, 0.07], [-0.2, 1.3, -0.05, 0.06], [0.05, 1.42, -0.25, 0.08], [0.35, 0.95, -0.3, 0.06], [-0.38, 1.0, -0.25, 0.07]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: spot, k: 0.01 })),
     ], { ao: 0.5 });
   }
+  // ---------- theme enemies for chapters 11-15: one-piece critters that bob along (they use the 'run' clip's root motion) ----------
+  {
+    const dark = C('#1a1424'), white = C('#ffffff'), cream = C('#fff0d6'), pink = C('#ff9ab8');
+    // graveyard ghost: a sheet ghost with a wavy hem and stubby arms; takes the tint
+    P('ghost', [
+      { s: 'sph', c: [0, 0.62, 0], r: 0.3, k: 0.06 },
+      { s: 'cap', a: [0, 0.6, 0], b: [0, 0.2, 0], r: 0.29, r2: 0.34, k: 0.06 },
+      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.26, 0.1, Math.sin(a) * 0.26], r: 0.11, k: 0.05 }; }),
+      { s: 'cap', a: [0.26, 0.5, 0.05], b: [0.44, 0.58, 0.2], r: 0.08, r2: 0.06, k: 0.05 }, { s: 'cap', a: [-0.26, 0.5, 0.05], b: [-0.44, 0.58, 0.2], r: 0.08, r2: 0.06, k: 0.05 },
+      { s: 'ell', c: [0.11, 0.68, 0.26], rr: [0.055, 0.08, 0.04], col: dark, k: 0 }, { s: 'ell', c: [-0.11, 0.68, 0.26], rr: [0.055, 0.08, 0.04], col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.52, 0.29], rr: [0.06, 0.075, 0.04], col: dark, k: 0 },
+    ], { ao: 0.5 });
+    // cavern crystal bug: a dark beetle with crystals (the tint) growing from its shell
+    P('crystalbug', [
+      { s: 'ell', c: [0, 0.24, 0], rr: [0.36, 0.2, 0.44], col: C('#3a3450'), k: 0.03 },
+      { s: 'sph', c: [0, 0.22, 0.4], r: 0.17, col: C('#4a4466'), k: 0.03 },
+      ...[[0, 0.36, -0.05, 0, 0.34, -0.1, 0.11], [0.16, 0.34, 0.1, 0.16, 0.24, 0.04, 0.08], [-0.17, 0.34, 0.08, -0.16, 0.26, 0.02, 0.085], [0.05, 0.32, -0.26, 0.06, 0.2, -0.14, 0.075], [-0.1, 0.32, -0.2, -0.1, 0.22, -0.1, 0.07]]
+        .map(([x, y, z, dx, dy, dz, r]) => ({ s: 'cap', a: [x, y, z], b: [x + dx, y + dy, z + dz], r, r2: 0.012, k: 0.01 })),
+      ...[-0.25, 0, 0.25].flatMap(z => [1, -1].map(sx => ({ s: 'cap', a: [sx * 0.3, 0.2, z], b: [sx * 0.5, 0.02, z + 0.04], r: 0.035, col: dark, k: 0.01 }))),
+      { s: 'sph', c: [0.08, 0.27, 0.53], r: 0.04, col: C('#ff7ae0'), k: 0 }, { s: 'sph', c: [-0.08, 0.27, 0.53], r: 0.04, col: C('#ff7ae0'), k: 0 },
+      { s: 'cap', a: [0.06, 0.18, 0.54], b: [0.12, 0.12, 0.66], r: 0.025, col: dark, k: 0 }, { s: 'cap', a: [-0.06, 0.18, 0.54], b: [-0.12, 0.12, 0.66], r: 0.025, col: dark, k: 0 },
+    ], { ao: 0.6 });
+    // sky cloudling: a grumpy little cloud (the tint) with a spark under it
+    P('cloudling', [
+      { s: 'sph', c: [0, 0.5, 0], r: 0.3, k: 0.1 }, { s: 'sph', c: [0.27, 0.44, 0.02], r: 0.22, k: 0.1 }, { s: 'sph', c: [-0.27, 0.44, 0], r: 0.23, k: 0.1 },
+      { s: 'sph', c: [0.1, 0.66, -0.06], r: 0.2, k: 0.1 }, { s: 'sph', c: [-0.12, 0.64, -0.04], r: 0.19, k: 0.1 }, { s: 'ell', c: [0, 0.36, 0], rr: [0.42, 0.1, 0.28], k: 0.08 },
+      { s: 'ell', c: [0.11, 0.52, 0.26], rr: [0.055, 0.065, 0.04], col: dark, k: 0 }, { s: 'ell', c: [-0.11, 0.52, 0.26], rr: [0.055, 0.065, 0.04], col: dark, k: 0 },
+      { s: 'cap', a: [0.2, 0.64, 0.24], b: [0.05, 0.59, 0.29], r: 0.025, col: dark, k: 0 }, { s: 'cap', a: [-0.2, 0.64, 0.24], b: [-0.05, 0.59, 0.29], r: 0.025, col: dark, k: 0 },
+      { s: 'cap', a: [0.04, 0.26, 0.05], b: [-0.05, 0.14, 0.05], r: 0.035, col: C('#ffe14a'), k: 0 }, { s: 'cap', a: [-0.05, 0.14, 0.05], b: [0.03, 0.14, 0.05], r: 0.03, col: C('#ffe14a'), k: 0 },
+      { s: 'cap', a: [0.03, 0.14, 0.05], b: [-0.04, 0.0, 0.05], r: 0.03, r2: 0.008, col: C('#ffe14a'), k: 0 },
+    ], { ao: 0.4 });
+    // toy teddy bear: plush body (the tint), cream muzzle and tummy, a stitched patch
+    P('teddy', [
+      { s: 'ell', c: [0, 0.34, 0], rr: [0.3, 0.32, 0.26], k: 0.05 },
+      { s: 'sph', c: [0, 0.78, 0.02], r: 0.26, k: 0.05 },
+      { s: 'sph', c: [0.2, 0.98, 0], r: 0.1, k: 0.03 }, { s: 'sph', c: [-0.2, 0.98, 0], r: 0.1, k: 0.03 },
+      { s: 'ell', c: [0.2, 0.98, 0.04], rr: [0.055, 0.055, 0.04], col: pink, k: 0 }, { s: 'ell', c: [-0.2, 0.98, 0.04], rr: [0.055, 0.055, 0.04], col: pink, k: 0 },
+      { s: 'ell', c: [0, 0.72, 0.22], rr: [0.12, 0.09, 0.08], col: cream, k: 0.01 }, { s: 'sph', c: [0, 0.76, 0.3], r: 0.04, col: dark, k: 0 },
+      { s: 'sph', c: [0.1, 0.85, 0.22], r: 0.035, col: dark, k: 0 }, { s: 'sph', c: [-0.1, 0.85, 0.22], r: 0.035, col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.32, 0.22], rr: [0.17, 0.19, 0.06], col: cream, k: 0.01 },
+      { s: 'cap', a: [0.26, 0.5, 0], b: [0.44, 0.32, 0.1], r: 0.1, k: 0.04 }, { s: 'cap', a: [-0.26, 0.5, 0], b: [-0.44, 0.32, 0.1], r: 0.1, k: 0.04 },
+      { s: 'cap', a: [0.15, 0.12, 0], b: [0.2, 0.06, 0.2], r: 0.11, k: 0.04 }, { s: 'cap', a: [-0.15, 0.12, 0], b: [-0.2, 0.06, 0.2], r: 0.11, k: 0.04 },
+      { s: 'box', c: [0.14, 0.42, 0.25], hs: [0.06, 0.06, 0.02], rd: 0.015, col: C('#4f98ff'), k: 0 },
+    ], { ao: 0.6 });
+    // reef pufferfish: a round spiky fish (the tint) with big eyes
+    P('puffer', [
+      { s: 'sph', c: [0, 0.4, 0], r: 0.32, k: 0.03 },
+      { s: 'ell', c: [0, 0.3, 0.05], rr: [0.26, 0.18, 0.26], col: cream, k: 0.03 },
+      ...Array.from({ length: 14 }, (_, i) => { const u = (i + 0.5) / 14, th = Math.acos(1 - 2 * u), ph = i * 2.4, d = [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)]; return { s: 'cap', a: [d[0] * 0.28, 0.4 + d[1] * 0.28, d[2] * 0.28], b: [d[0] * 0.44, 0.4 + d[1] * 0.44, d[2] * 0.44], r: 0.035, r2: 0.006, col: cream, k: 0.01 }; }),
+      { s: 'sph', c: [0.13, 0.5, 0.26], r: 0.085, col: white, k: 0 }, { s: 'sph', c: [-0.13, 0.5, 0.26], r: 0.085, col: white, k: 0 },
+      { s: 'sph', c: [0.14, 0.5, 0.33], r: 0.04, col: dark, k: 0 }, { s: 'sph', c: [-0.14, 0.5, 0.33], r: 0.04, col: dark, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.36, 0.31], R: 0.04, r: 0.02, a0: -Math.PI, a1: Math.PI, col: C('#ff6a8a'), k: 0 },
+      { s: 'ell', c: [0, 0.42, -0.4], rr: [0.03, 0.16, 0.12], k: 0.03 },
+      { s: 'ell', c: [0.33, 0.36, 0], rr: [0.1, 0.03, 0.08], k: 0.02 }, { s: 'ell', c: [-0.33, 0.36, 0], rr: [0.1, 0.03, 0.08], k: 0.02 },
+    ], { ao: 0.5 });
+    // reef crabling: a little crab (the tint) with raised claws and eye stalks
+    P('crabling', [
+      { s: 'ell', c: [0, 0.24, 0], rr: [0.36, 0.17, 0.26], k: 0.03 },
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.28, 0.28, 0.1], b: [sx * 0.46, 0.42, 0.24], r: 0.06, k: 0.03 },
+        { s: 'sph', c: [sx * 0.5, 0.5, 0.3], r: 0.13, k: 0.03 },
+        { s: 'cap', a: [sx * 0.5, 0.56, 0.32], b: [sx * 0.46, 0.7, 0.4], r: 0.05, r2: 0.015, k: 0.02 },
+        { s: 'cap', a: [sx * 0.1, 0.36, 0.18], b: [sx * 0.11, 0.54, 0.2], r: 0.025, k: 0.01 },
+        { s: 'sph', c: [sx * 0.11, 0.57, 0.2], r: 0.055, col: white, k: 0 }, { s: 'sph', c: [sx * 0.11, 0.57, 0.245], r: 0.028, col: dark, k: 0 },
+        ...[-0.14, 0, 0.14].map(z => ({ s: 'cap', a: [sx * 0.3, 0.2, z - 0.05], b: [sx * 0.5, 0.02, z - 0.08], r: 0.035, r2: 0.015, k: 0.02 })),
+      ]),
+      { s: 'ell', c: [0, 0.2, 0.25], rr: [0.08, 0.02, 0.02], col: dark, k: 0 },
+    ], { ao: 0.5 });
+  }
 }
-

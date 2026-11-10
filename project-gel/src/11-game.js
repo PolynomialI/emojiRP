@@ -482,6 +482,9 @@ function spawnFromMix() {
   const w = { stickman: 1 };
   // each type joins after its unlock time; in later chapters it shows up sooner
   for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.8 : 1)) w[k] = wt; }
+  // this map's own creatures
+  const theme = THEME_ENEMIES[ARENA.theme && ARENA.theme.id];
+  if (theme) for (const k in theme) if (t > theme[k][0]) w[k] = theme[k][1];
   let total = 0; for (const k in w) total += w[k];
   let r = Math.random() * total, type = 'stickman';
   for (const k in w) { r -= w[k]; if (r <= 0) { type = k; break; } }
@@ -493,6 +496,10 @@ function spawnFromMix() {
     // stickmen arrive in small clumps
     const n = t < 60 ? randInt(1, 2) : randInt(1, 3);
     for (let i = 0; i < n; i++) spawnEnemy('stickman', x + rand(-0.9, 0.9), z + rand(-0.9, 0.9));
+  } else if (type === 'toysoldier' || type === 'crabling' || type === 'ghost') {
+    // toy soldiers march in a rank; crablings and ghosts come in little groups
+    const n = type === 'ghost' ? randInt(2, 3) : 3, h = G.hero.pos, dx = h[0] - x, dz = h[2] - z, d = Math.hypot(dx, dz) || 1;
+    for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 0.95; spawnEnemy(type, x - dz / d * o, z + dx / d * o); }
   } else spawnEnemy(type, x, z);
 }
 
@@ -547,7 +554,7 @@ function updateEnemies(dt) {
     });
   }
   for (const e of run.enemies) {
-    if (e.dying || (e.y || 0) > 0.6) continue;
+    if (e.dying || (e.y || 0) > 0.6 || e.def.ghost) continue;
     const hit = resolveCircle(e, e.radius);
     if (hit && e.boss && e.ai.state === 'charge') bossBonk(e, hit);
   }
@@ -565,7 +572,14 @@ function updateEnemyAI(e, dt) {
   if (d > VIEW.radius * 1.7 && !e.elite) {
     const [x, z] = spawnPoint(); e.x = x; e.z = z; return;
   }
-  steerAround(e.x, e.z, e.radius, dx, dz, d, STEER); dx = STEER[0]; dz = STEER[1];
+  // ghosts drift straight through scenery; everything else steers around it
+  if (!e.def.ghost) { steerAround(e.x, e.z, e.radius, dx, dz, d, STEER); dx = STEER[0]; dz = STEER[1]; }
+  if (e.def.weave && d > 1.5) {
+    // sway from side to side on the way in
+    const w = Math.sin(G.run.t * 2.4 + e.id * 1.7) * e.def.weave, c = Math.cos(w), s = Math.sin(w), ox = dx;
+    dx = ox * c - dz * s; dz = ox * s + dz * c;
+  }
+  if (e.def.float && !(e.bubbled > 0)) e.y = e.def.float + Math.sin(G.run.t * 3 + e.id) * 0.1;
   e.cool = (e.cool || 0) - dt;
   if (e.act) { enemyAct(e, dt, d, dx, dz); return; }
   if (e.def.ai && e.cool <= 0 && e.spawnT <= 0 && startEnemyAct(e, d, dx, dz)) return;
@@ -674,7 +688,7 @@ function throwJavelin(e, dmg) {
 
 function fireArrow(e) {
   const h = G.hero.pos, dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
-  G.run.eShots.push({ kind: 'arrow', x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * 10, vy: 0, vz: dz / d * 10, dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
+  G.run.eShots.push({ kind: e.def.shotKind || 'arrow', ph: rand(0, 10), x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * 10, vy: 0, vz: dz / d * 10, dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
 }
 
 function updateEnemyShots(dt) {
