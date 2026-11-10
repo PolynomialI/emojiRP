@@ -101,3 +101,47 @@ SKILL_HOOKS.prism = {
     }
   },
 };
+
+// ---------- Gale Crescents (chapter 13): crescents of wind slash at the nearest crowd, cutting through and blowing enemies back ----------
+SKILL_HOOKS.gale = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos;
+    st.blades = st.blades || [];
+    st.t = (st.t ?? 0.8) - dt;
+    if (st.t <= 0) {
+      let tgt = clusterTarget(h[0], h[2], 9);
+      if (!tgt) { const e = nearestEnemy(h[0], h[2], 9); if (e) tgt = [e.x, e.z]; }
+      if (tgt) {
+        st.t = L.cd * cdMul();
+        const base = Math.atan2(tgt[0] - h[0], tgt[1] - h[2]), n = L.count, size = L.size * areaMul();
+        for (let i = 0; i < n; i++) {
+          const a = base + (i - (n - 1) / 2) * 0.32;
+          st.blades.push({ x: h[0] + Math.sin(a) * 0.6, z: h[2] + Math.cos(a) * 0.6, dx: Math.sin(a), dz: Math.cos(a), t: 0, life: 0.75, size, hits: new Set(), ph: rand(0, 10) });
+        }
+        AUDIO.play('throw', 0.45);
+      } else st.t = 0.2;
+    }
+    for (const b of st.blades) {
+      b.t += dt;
+      b.x += b.dx * 12 * dt; b.z += b.dz * 12 * dt;
+      enemiesInRadius(b.x, b.z, 0.8 * b.size, e => {
+        if (b.hits.has(e)) return;
+        b.hits.add(e);
+        const push = e.boss ? 0.5 : 6;
+        hurtEnemy(e, L.dmg, b.dx * push, b.dz * push, { sound: false, color: [0.85, 0.95, 1] });
+      });
+      if (Math.random() < 0.5) FX.part(b.x + rand(-0.4, 0.4) * b.size, 0.8, b.z + rand(-0.4, 0.4) * b.size, b.dx * 3, 0, b.dz * 3, 0.06, 0.02, 0.3, [0.9, 0.97, 1], 0.7, 1, 0, 0);
+      if (arenaSd(b.x, b.z) > 0) b.t = b.life;
+    }
+    st.blades = st.blades.filter(b => b.t < b.life);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.blades) return;
+    for (const b of st.blades) {
+      const a = Math.min(1, (b.life - b.t) / 0.15);
+      pushImp(b.x, 0.85, b.z, 0.62 * b.size, b.dx, 0, b.dz, 1, 45, 0, 0.5, b.ph, 0, 0, 0, 0.85 * a);
+      pushDecal(b.x, b.z, 0.7 * b.size, 0.3 * b.size, -Math.atan2(b.dx, b.dz), 1, 0, 0, 0.1, 0.2, 0.4, 0.15 * a);
+    }
+  },
+};

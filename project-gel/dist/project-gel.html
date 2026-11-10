@@ -1984,9 +1984,11 @@ function themeModels(defs) {
 // ============================================================
 Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'] });
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
-  crystal: 0.02, stalagmite: 0.025, geode: 0.016 });
+  crystal: 0.02, stalagmite: 0.025, geode: 0.016,
+  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
-  'crystal', 'stalagmite', 'geode');
+  'crystal', 'stalagmite', 'geode',
+  'cloudpuff', 'pillar', 'rainbow', 'stormcloud');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -2119,6 +2121,54 @@ function themeModels2(defs) {
     }
     m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.62]; m.bmax = [0.72, m.top + 0.2, 0.6]; m.name = 'geode'; m.runAmp = 0.65;
     defs.geode = m;
+  }
+  // ---------- Sky Islands (chapter 13) ----------
+  {
+    const marble = C('#f2eee6'), marbleD = C('#d8d2c6'), gold = C('#ffcf4a');
+    // a soft heap of cloud; takes the tint
+    P('cloudpuff', [
+      { s: 'sph', c: [0, 0.42, 0], r: 0.46, k: 0.14 },
+      { s: 'sph', c: [0.42, 0.3, 0.08], r: 0.34, k: 0.14 },
+      { s: 'sph', c: [-0.4, 0.32, -0.06], r: 0.36, k: 0.14 },
+      { s: 'sph', c: [0.1, 0.32, 0.4], r: 0.3, k: 0.14 },
+      { s: 'sph', c: [-0.12, 0.3, -0.4], r: 0.3, k: 0.14 },
+      { s: 'sph', c: [0.18, 0.7, -0.08], r: 0.28, k: 0.14 },
+    ], { ao: 0.4 });
+    // a marble column with a gold band
+    P('pillar', [
+      { s: 'box', c: [0, 0.07, 0], hs: [0.3, 0.07, 0.3], rd: 0.02, col: marbleD, k: 0.01 },
+      { s: 'cyl', ax: 'y', c: [0, 0.85, 0], r: 0.2, hh: 0.72, rd: 0.02, col: marble, k: 0.02 },
+      ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 0.2, 0.85, Math.sin(a) * 0.2], r: 0.035, hh: 0.66, rd: 0.03, sub: true, k: 0.01 }; }),
+      { s: 'box', c: [0, 1.62, 0], hs: [0.28, 0.06, 0.28], rd: 0.02, col: marbleD, k: 0.01 },
+      { s: 'tor', ax: 'y', c: [0, 1.5, 0], R: 0.2, r: 0.03, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+    ], { ao: 0.8 });
+    // a rainbow arch you can walk under
+    const bands = ['#ff4d5a', '#ff9a2e', '#ffe14a', '#5fe08a', '#4fb4ff', '#9a6bff'].map(C);
+    P('rainbow', [
+      ...bands.map((col, i) => ({ s: 'tor', ax: 'z', c: [0, 0, 0], R: 1.2 - i * 0.075, r: 0.04, a0: 0, a1: Math.PI, col, k: 0.005 })),
+      { s: 'sph', c: [1.0, 0.05, 0], r: 0.26, col: C('#ffffff'), k: 0.08 }, { s: 'sph', c: [-1.0, 0.05, 0], r: 0.26, col: C('#ffffff'), k: 0.08 },
+      { s: 'sph', c: [1.2, 0.12, 0.1], r: 0.2, col: C('#ffffff'), k: 0.08 }, { s: 'sph', c: [-1.18, 0.1, -0.1], r: 0.2, col: C('#ffffff'), k: 0.08 },
+    ], { ao: 0.3 });
+  }
+  // ---------- Storm King (chapter 13 boss): a scowling thundercloud; the cloud takes the tint ----------
+  {
+    const white = C('#ffffff'), dark = C('#1c1c28'), bolt = C('#ffe14a');
+    P('stormcloud', [
+      { s: 'sph', c: [0, 0.55, 0], r: 0.5, k: 0.12 },
+      { s: 'sph', c: [0.45, 0.45, 0.05], r: 0.38, k: 0.12 },
+      { s: 'sph', c: [-0.45, 0.45, 0.0], r: 0.4, k: 0.12 },
+      { s: 'sph', c: [0.2, 0.78, -0.15], r: 0.36, k: 0.12 },
+      { s: 'sph', c: [-0.22, 0.8, -0.1], r: 0.34, k: 0.12 },
+      { s: 'sph', c: [0.0, 0.42, -0.32], r: 0.36, k: 0.12 },
+      { s: 'ell', c: [0, 0.3, 0], rr: [0.75, 0.16, 0.5], k: 0.1 },
+      { s: 'ell', c: [0.2, 0.72, 0.38], rr: [0.15, 0.12, 0.08], col: white, k: 0 }, { s: 'ell', c: [-0.2, 0.72, 0.38], rr: [0.15, 0.12, 0.08], col: white, k: 0 },
+      { s: 'sph', c: [0.17, 0.71, 0.45], r: 0.065, col: dark, k: 0 }, { s: 'sph', c: [-0.17, 0.71, 0.45], r: 0.065, col: dark, k: 0 },
+      { s: 'cap', a: [0.38, 0.92, 0.33], b: [0.08, 0.8, 0.43], r: 0.05, col: dark, k: 0 }, { s: 'cap', a: [-0.38, 0.92, 0.33], b: [-0.08, 0.8, 0.43], r: 0.05, col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.47, 0.44], rr: [0.2, 0.07, 0.06], col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.5, 0.47], rr: [0.15, 0.025, 0.04], col: white, k: 0 },
+      { s: 'cap', a: [0.5, 0.95, 0.1], b: [0.62, 0.78, 0.15], r: 0.035, col: bolt, k: 0 }, { s: 'cap', a: [0.62, 0.78, 0.15], b: [0.56, 0.8, 0.16], r: 0.03, col: bolt, k: 0 },
+      { s: 'cap', a: [0.56, 0.8, 0.16], b: [0.7, 0.6, 0.2], r: 0.03, r2: 0.01, col: bolt, k: 0 },
+    ], { ao: 0.5 });
   }
 }
 </script>
@@ -3723,9 +3773,11 @@ function themeModels(defs) {
 // ============================================================
 Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'] });
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
-  crystal: 0.02, stalagmite: 0.025, geode: 0.016 });
+  crystal: 0.02, stalagmite: 0.025, geode: 0.016,
+  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
-  'crystal', 'stalagmite', 'geode');
+  'crystal', 'stalagmite', 'geode',
+  'cloudpuff', 'pillar', 'rainbow', 'stormcloud');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -3858,6 +3910,54 @@ function themeModels2(defs) {
     }
     m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.62]; m.bmax = [0.72, m.top + 0.2, 0.6]; m.name = 'geode'; m.runAmp = 0.65;
     defs.geode = m;
+  }
+  // ---------- Sky Islands (chapter 13) ----------
+  {
+    const marble = C('#f2eee6'), marbleD = C('#d8d2c6'), gold = C('#ffcf4a');
+    // a soft heap of cloud; takes the tint
+    P('cloudpuff', [
+      { s: 'sph', c: [0, 0.42, 0], r: 0.46, k: 0.14 },
+      { s: 'sph', c: [0.42, 0.3, 0.08], r: 0.34, k: 0.14 },
+      { s: 'sph', c: [-0.4, 0.32, -0.06], r: 0.36, k: 0.14 },
+      { s: 'sph', c: [0.1, 0.32, 0.4], r: 0.3, k: 0.14 },
+      { s: 'sph', c: [-0.12, 0.3, -0.4], r: 0.3, k: 0.14 },
+      { s: 'sph', c: [0.18, 0.7, -0.08], r: 0.28, k: 0.14 },
+    ], { ao: 0.4 });
+    // a marble column with a gold band
+    P('pillar', [
+      { s: 'box', c: [0, 0.07, 0], hs: [0.3, 0.07, 0.3], rd: 0.02, col: marbleD, k: 0.01 },
+      { s: 'cyl', ax: 'y', c: [0, 0.85, 0], r: 0.2, hh: 0.72, rd: 0.02, col: marble, k: 0.02 },
+      ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 0.2, 0.85, Math.sin(a) * 0.2], r: 0.035, hh: 0.66, rd: 0.03, sub: true, k: 0.01 }; }),
+      { s: 'box', c: [0, 1.62, 0], hs: [0.28, 0.06, 0.28], rd: 0.02, col: marbleD, k: 0.01 },
+      { s: 'tor', ax: 'y', c: [0, 1.5, 0], R: 0.2, r: 0.03, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+    ], { ao: 0.8 });
+    // a rainbow arch you can walk under
+    const bands = ['#ff4d5a', '#ff9a2e', '#ffe14a', '#5fe08a', '#4fb4ff', '#9a6bff'].map(C);
+    P('rainbow', [
+      ...bands.map((col, i) => ({ s: 'tor', ax: 'z', c: [0, 0, 0], R: 1.2 - i * 0.075, r: 0.04, a0: 0, a1: Math.PI, col, k: 0.005 })),
+      { s: 'sph', c: [1.0, 0.05, 0], r: 0.26, col: C('#ffffff'), k: 0.08 }, { s: 'sph', c: [-1.0, 0.05, 0], r: 0.26, col: C('#ffffff'), k: 0.08 },
+      { s: 'sph', c: [1.2, 0.12, 0.1], r: 0.2, col: C('#ffffff'), k: 0.08 }, { s: 'sph', c: [-1.18, 0.1, -0.1], r: 0.2, col: C('#ffffff'), k: 0.08 },
+    ], { ao: 0.3 });
+  }
+  // ---------- Storm King (chapter 13 boss): a scowling thundercloud; the cloud takes the tint ----------
+  {
+    const white = C('#ffffff'), dark = C('#1c1c28'), bolt = C('#ffe14a');
+    P('stormcloud', [
+      { s: 'sph', c: [0, 0.55, 0], r: 0.5, k: 0.12 },
+      { s: 'sph', c: [0.45, 0.45, 0.05], r: 0.38, k: 0.12 },
+      { s: 'sph', c: [-0.45, 0.45, 0.0], r: 0.4, k: 0.12 },
+      { s: 'sph', c: [0.2, 0.78, -0.15], r: 0.36, k: 0.12 },
+      { s: 'sph', c: [-0.22, 0.8, -0.1], r: 0.34, k: 0.12 },
+      { s: 'sph', c: [0.0, 0.42, -0.32], r: 0.36, k: 0.12 },
+      { s: 'ell', c: [0, 0.3, 0], rr: [0.75, 0.16, 0.5], k: 0.1 },
+      { s: 'ell', c: [0.2, 0.72, 0.38], rr: [0.15, 0.12, 0.08], col: white, k: 0 }, { s: 'ell', c: [-0.2, 0.72, 0.38], rr: [0.15, 0.12, 0.08], col: white, k: 0 },
+      { s: 'sph', c: [0.17, 0.71, 0.45], r: 0.065, col: dark, k: 0 }, { s: 'sph', c: [-0.17, 0.71, 0.45], r: 0.065, col: dark, k: 0 },
+      { s: 'cap', a: [0.38, 0.92, 0.33], b: [0.08, 0.8, 0.43], r: 0.05, col: dark, k: 0 }, { s: 'cap', a: [-0.38, 0.92, 0.33], b: [-0.08, 0.8, 0.43], r: 0.05, col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.47, 0.44], rr: [0.2, 0.07, 0.06], col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.5, 0.47], rr: [0.15, 0.025, 0.04], col: white, k: 0 },
+      { s: 'cap', a: [0.5, 0.95, 0.1], b: [0.62, 0.78, 0.15], r: 0.035, col: bolt, k: 0 }, { s: 'cap', a: [0.62, 0.78, 0.15], b: [0.56, 0.8, 0.16], r: 0.03, col: bolt, k: 0 },
+      { s: 'cap', a: [0.56, 0.8, 0.16], b: [0.7, 0.6, 0.2], r: 0.03, r2: 0.01, col: bolt, k: 0 },
+    ], { ao: 0.5 });
   }
 }
 
@@ -4187,6 +4287,14 @@ void main() {
     N = normalize(vec3((fine - 0.5) * 0.25, 1.0, (mott - 0.5) * 0.25));
     ao = mix(0.7, 1.0, smoothstep(0.0, 0.2, v.y));
     gloss = 0.12; sharp = 40.0;
+  } else if (style == 12) {
+    // sky islands: soft cloud tops in billows, white on the crests and pale blue in the hollows
+    float b1 = texture(uNoise, p * 0.08).r, b2 = texture(uNoise, p * 0.08 + vec2(0.04, 0.0)).r, b3 = texture(uNoise, p * 0.08 + vec2(0.0, 0.04)).r;
+    float puff = texture(uNoise, p * 0.32).g;
+    N = normalize(vec3((b1 - b2) * 5.0 + (puff - 0.5) * 0.3, 1.0, (b1 - b3) * 5.0));
+    alb = mix(uStoneB, uStoneA, smoothstep(0.25, 0.75, b1)) * (0.94 + 0.1 * puff);
+    ao = mix(0.78, 1.0, smoothstep(0.2, 0.7, b1));
+    gloss = 0.05;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -4746,7 +4854,8 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float rad = mix(0.16, 0.72, u * u * 0.6 + u * 0.4);
     float d = length(q) - rad + 0.05 * sin(atan(q.y, q.x) * 4.0 + p.y * 7.0);
     d = max(d * 0.7, abs(p.y) - 0.98);
-    return vec2(d, 0.0);
+    // P1.x > 0.5: a white storm twister instead of goo
+    return vec2(d, P1.x > 0.5 ? 7.0 : 0.0);
   }
   if (type == 33) {
     // a clod of packed sand
@@ -4802,6 +4911,12 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 45) {
+    // wind crescent: a flat moon-shaped blade, thick in the middle and sharp at the tips, flying along +z
+    vec2 q = p.xz;
+    float d2 = max(length(q - vec2(0.0, -0.35)) - 0.85, -(length(q - vec2(0.0, -0.75)) - 0.85));
+    return vec2(extrude(d2, p.y, 0.07, 0.05), 7.0);
   }
   if (type == 44) {
     // prism: a six-sided crystal with pointed ends, turning slowly; gem color from P1.y
@@ -6856,6 +6971,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['bounces', 'Splits'], ['cd', 'Cooldown', 's'], ['width', 'Beam width', 'm']],
     levels: L10({ dmg: [18, 20, 22, 25, 28, 31, 35, 39, 44, 50], bounces: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], cd: [1.8, 1.75, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1, 1.0], width: [0.4, 0.42, 0.44, 0.47, 0.5, 0.53, 0.56, 0.6, 0.64, 0.7] }),
   },
+  gale: {
+    name: 'Gale Crescents', from: 13, intro: 'Slashes crescents of wind at the nearest crowd; they slice through every enemy and blow them back.', icon: { type: 45, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Crescents'], ['cd', 'Cooldown', 's'], ['size', 'Size', 'm']],
+    levels: L10({ dmg: [14, 16, 18, 20, 22, 25, 28, 31, 35, 40], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], cd: [2.0, 1.95, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2], size: [1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.36, 1.43, 1.5] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -6950,6 +7070,7 @@ const BOSS_TYPES = {
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
 BOSS_TYPES.pumpking = { name: 'Pumpkin King', model: 'pumpking', meshes: ['pumpking', 'pumpkin'], hp: 4300, speed: 2.3, dmg: 20, scale: 2.8, radius: 1.2, tint: '#3a2850', mass: 60, portraitTop: 1.12 };
 BOSS_TYPES.geode = { name: 'Geode Titan', model: 'geode', meshes: ['geode', 'icespike'], hp: 4500, speed: 1.9, dmg: 20, scale: 3.0, radius: 1.3, tint: '#6a5a8a', mass: 60, portraitTop: 1.08 };
+BOSS_TYPES.storm = { name: 'Storm King', model: 'stormcloud', meshes: ['stormcloud'], hp: 4400, speed: 2.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#7c86a0', mass: 60, portraitTop: 0.9 };
 BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 4200, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4000, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
@@ -6990,6 +7111,8 @@ const ARENAS = [
     props: [['tombstone', 10, 0.52, 0.64], ['pumpkin', 5, 0.38, 0.48], ['gravetree', 4, 0.42, 0.58], ['rock', 2, 0.8, 1.1]], zones: [['mist', 3, 2.2, 3.4]], wall: 'fence' },
   { id: 'caverns', name: 'Crystal Caverns', floor: 11, stoneA: '#3a3350', stoneB: '#2a2440', grout: '#120e1e', accent: '#5ae8ff', fog: '#0a0716', sky: '#4a3a7a', ground: '#1c1830', light: '#ebe6ff', spotMin: 0.46, shadowTint: '#0c0820', rock: '#5a5470', pool: '#7a5aff', poolGlow: 0.4,
     props: [['crystal', 7, 0.5, 0.75], ['stalagmite', 6, 0.5, 0.8], ['rock', 3, 0.8, 1.2]], zones: [['crystalpool', 2.5, 2.0, 3.0]], wall: 'cavewall' },
+  { id: 'sky', name: 'Sky Islands', floor: 12, stoneA: '#ffffff', stoneB: '#e2ebf8', grout: '#a8bcd8', accent: '#ffd86a', fog: '#7fb0e8', sky: '#c4e2ff', ground: '#e8f0ff', light: '#fffaf0', spotMin: 0.72, shadowTint: '#5a78b0', rock: '#e8eef8', pool: '#9fd8ff', poolGlow: 0.3,
+    props: [['cloudpuff', 5, 1.2, 1.8], ['pillar', 5, 0.38, 0.46], ['rainbow', 1.5, 2.2, 2.6]], zones: [['updraft', 2.4, 2.0, 2.8]], wall: 'cloudwall' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -7045,6 +7168,10 @@ const PROP_KINDS = {
   stalagmite: { models: ['stalagmite'], unit: 0.4, block: true, shots: true, tint: 'rock', tall: 2 },
   cavewall: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a3450', '#2e2a44', '#463e5e'], wallR: [1.0, 1.2] },
   crystalspike: { models: ['icespike'], unit: 0.3, block: true, shots: false, tint: '#d58aff', shadow: false },
+  cloudpuff: { models: ['cloudpuff'], unit: 0.6, block: true, shots: true, tints: ['#fff4fa', '#ffe2ef', '#dfeaff'] },
+  pillar: { models: ['pillar'], unit: 0.3, block: true, shots: true, tall: 2.2 },
+  rainbow: { models: ['rainbow'], unit: 1.0, block: false, shadow: false, tall: 2 },
+  cloudwall: { models: ['cloudpuff'], unit: 0.6, block: true, shots: true, tints: ['#ffffff', '#f2f6ff', '#e8f0ff'], wallR: [1.1, 1.4] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -7061,10 +7188,11 @@ const ZONE_KINDS = {
   boost: { slow: 1.35, col: '#3ad8ff', glow: 0.55 },
   mist: { slow: 0.7, col: '#7a5aa8', glow: 0.14 },
   crystalpool: { block: true, col: '#7a5aff', glow: 0.45 },
+  updraft: { slow: 1.3, col: '#8fe4ff', glow: 0.35 },
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
@@ -9015,6 +9143,26 @@ ARENA_FEATURES.caverns = {
   },
 };
 
+// ---------- Sky Islands: wisps of cloud and wind streaks blowing past, and bird shadows wheeling overhead ----------
+ARENA_FEATURES.sky = {
+  init(st, rnd) { st.acc = 0; st.birds = Array.from({ length: 3 }, () => ({ a: rnd() * TAU, r: 5 + rnd() * 7, w: (rnd() < 0.5 ? -1 : 1) * (0.35 + rnd() * 0.25), cx: 0, cz: 0 })); },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 2 : 5);
+    for (; st.acc >= 1; st.acc--) {
+      if (Math.random() < 0.5) FX.part(h[0] - 15, rand(0.2, 2.2), h[2] + rand(-11, 8), rand(6, 9), 0, rand(-0.5, 0.5), 0.07, 0.02, rand(2.5, 4), [1, 1, 1], 0.6, 1, 0, 0);
+      else FX.smoke(h[0] + rand(-14, 14), rand(0.1, 0.5), h[2] + rand(-11, 8), rand(0.6, 1.1), [1, 1, 1], rand(1.5, 2.5), 0.05);
+    }
+    for (const b of st.birds) { b.a += b.w * dt; b.cx += (h[0] - b.cx) * dt * 0.3; b.cz += (h[2] - b.cz) * dt * 0.3; }
+  },
+  emit(st) {
+    for (const b of st.birds) {
+      const x = b.cx + Math.cos(b.a) * b.r, z = b.cz + Math.sin(b.a) * b.r, flap = 0.8 + 0.2 * Math.sin(G.run ? G.run.t * 7 + b.r : 0);
+      pushDecal(x, z, 0.9 * flap, 0.32, -(b.a + (b.w > 0 ? Math.PI / 2 : -Math.PI / 2)) + Math.PI / 2, 1, 0, 0, 0.15, 0.25, 0.45, 0.18);
+    }
+  },
+};
+
 // ---- 12-skills.js ----
 // ============================================================
 // Skills: behaviors, hero body actions, projectiles and visuals
@@ -10190,6 +10338,50 @@ SKILL_HOOKS.prism = {
         R.ribStrip(seg, 2, b.w * 1.5, [c[0], c[1], c[2], 0.55 * a], 0);
         pushImp(q[0], q[1], q[2], 0.22 * (0.5 + a), 0, 0, 1, 1, 44, 0, 0.6, G.run.t * 2 + i, 0, 2, 0, a);
       }
+    }
+  },
+};
+
+// ---------- Gale Crescents (chapter 13): crescents of wind slash at the nearest crowd, cutting through and blowing enemies back ----------
+SKILL_HOOKS.gale = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos;
+    st.blades = st.blades || [];
+    st.t = (st.t ?? 0.8) - dt;
+    if (st.t <= 0) {
+      let tgt = clusterTarget(h[0], h[2], 9);
+      if (!tgt) { const e = nearestEnemy(h[0], h[2], 9); if (e) tgt = [e.x, e.z]; }
+      if (tgt) {
+        st.t = L.cd * cdMul();
+        const base = Math.atan2(tgt[0] - h[0], tgt[1] - h[2]), n = L.count, size = L.size * areaMul();
+        for (let i = 0; i < n; i++) {
+          const a = base + (i - (n - 1) / 2) * 0.32;
+          st.blades.push({ x: h[0] + Math.sin(a) * 0.6, z: h[2] + Math.cos(a) * 0.6, dx: Math.sin(a), dz: Math.cos(a), t: 0, life: 0.75, size, hits: new Set(), ph: rand(0, 10) });
+        }
+        AUDIO.play('throw', 0.45);
+      } else st.t = 0.2;
+    }
+    for (const b of st.blades) {
+      b.t += dt;
+      b.x += b.dx * 12 * dt; b.z += b.dz * 12 * dt;
+      enemiesInRadius(b.x, b.z, 0.8 * b.size, e => {
+        if (b.hits.has(e)) return;
+        b.hits.add(e);
+        const push = e.boss ? 0.5 : 6;
+        hurtEnemy(e, L.dmg, b.dx * push, b.dz * push, { sound: false, color: [0.85, 0.95, 1] });
+      });
+      if (Math.random() < 0.5) FX.part(b.x + rand(-0.4, 0.4) * b.size, 0.8, b.z + rand(-0.4, 0.4) * b.size, b.dx * 3, 0, b.dz * 3, 0.06, 0.02, 0.3, [0.9, 0.97, 1], 0.7, 1, 0, 0);
+      if (arenaSd(b.x, b.z) > 0) b.t = b.life;
+    }
+    st.blades = st.blades.filter(b => b.t < b.life);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.blades) return;
+    for (const b of st.blades) {
+      const a = Math.min(1, (b.life - b.t) / 0.15);
+      pushImp(b.x, 0.85, b.z, 0.62 * b.size, b.dx, 0, b.dz, 1, 45, 0, 0.5, b.ph, 0, 0, 0, 0.85 * a);
+      pushDecal(b.x, b.z, 0.7 * b.size, 0.3 * b.size, -Math.atan2(b.dx, b.dz), 1, 0, 0, 0.1, 0.2, 0.4, 0.15 * a);
     }
   },
 };
@@ -12032,6 +12224,147 @@ SHOT_DRAW.shard = s => {
   pushDecal(s.x + 0.08, s.z + 0.06, s.r * 0.6, s.r * 0.6, 0, 1, 0, 0, 0.02, 0.0, 0.06, 0.3);
 };
 
+// ---------- Storm King (chapter 13): a floating thundercloud that calls down lightning, blasts gusts of wind and spins up twisters ----------
+const STORM = { gustLen: 16, gustW: 2.2, floatY: 1.5 };
+// a jagged bolt from the sky (or the cloud) to the ground, drawn for a few frames
+function stormBolt(x0, y0, z0, x1, z1) {
+  const pts = [], n = 7;
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, j = i && i < n ? 0.45 : 0;
+    pts.push(lerp(x0, x1, u) + rand(-j, j), lerp(y0, 0.1, u), lerp(z0, z1, u) + rand(-j, j));
+  }
+  G.run.stormBolts = G.run.stormBolts || [];
+  G.run.stormBolts.push({ pts, t: 0 });
+}
+BOSS_AI.storm = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; ai.twisters = []; }
+  // it floats, bobbing gently
+  e.y = lerp(e.y || 0, STORM.floatY + Math.sin(run.t * 1.7) * 0.2, Math.min(1, dt * 3));
+  run.stormBolts = (run.stormBolts || []).filter(b => (b.t += dt) < 0.18);
+  // its twisters chase you for a while
+  for (const w of ai.twisters || []) {
+    w.t += dt;
+    const tx = h[0] - w.x, tz = h[2] - w.z, tl = Math.hypot(tx, tz) || 1, sp = rage ? 3.2 : 2.7;
+    w.vx += (tx / tl * sp - w.vx) * Math.min(1, dt * 1.5); w.vz += (tz / tl * sp - w.vz) * Math.min(1, dt * 1.5);
+    w.x += w.vx * dt; w.z += w.vz * dt; resolveCircle(w, 0.6);
+    w.tick -= dt;
+    if (tl < 1.1 + HERO_R * 0.5 && w.tick <= 0) { w.tick = 0.5; hurtHero(12 * run.info.dmgMul, w.x, w.z); }
+    if (tl < 3) { run.vel[0] -= tx / tl * 5 * dt * (3 - tl); run.vel[2] -= tz / tl * 5 * dt * (3 - tl); }
+    enemiesInRadius(w.x, w.z, 1.2, o => { if (!o.boss) { o.kx += (Math.random() - 0.5) * 6; o.kz += (Math.random() - 0.5) * 6; } });
+    if (Math.random() < 0.5) FX.smoke(w.x + rand(-0.5, 0.5), 0.2, w.z + rand(-0.5, 0.5), 0.6, [0.9, 0.93, 1], 0.5, 0.8);
+  }
+  if (ai.twisters) ai.twisters = ai.twisters.filter(w => w.t < w.life);
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.25 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['lightning', 'gust', 'twister'][ai.next++ % 3];
+        if (k === 'lightning') { ai.state = 'charge'; ai.t = 0.6; ai.strikes = []; ai.waves = rage ? 3 : 2; }
+        else if (k === 'gust') {
+          ai.state = 'gustWind'; ai.t = ai.dur = 0.9; ai.rot = Math.atan2(dx, dz);
+          ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: STORM.gustW, len: STORM.gustLen, rot: ai.rot, dur: ai.dur });
+        } else { ai.state = 'brew'; ai.t = 0.8; }
+      }
+      break;
+    }
+    case 'charge':
+      // rumbles, flickering inside, then marks where the bolts will fall
+      e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      if (ai.t <= 0) {
+        const n = rage ? 9 : 6;
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.7, tz = h[2] + run.vel[2] * 0.7;
+          if (i) { const a = rand(0, TAU), r = rand(1.6, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.5);
+          const dur = 0.95 + i * 0.06;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.4, dur });
+          ai.strikes.push({ x: o.x, z: o.z, t: dur });
+        }
+        AUDIO.play('zap', 0.6);
+        ai.state = 'strike'; ai.t = 1.6;
+      }
+      break;
+    case 'strike':
+      e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      for (const s of ai.strikes) {
+        s.t -= dt;
+        if (s.t <= 0 && !s.done) {
+          s.done = true;
+          stormBolt(s.x + rand(-1, 1), 12, s.z + rand(-1, 1), s.x, s.z);
+          if (Math.hypot(h[0] - s.x, h[2] - s.z) < 1.4 + HERO_R * 0.5) hurtHero(22 * run.info.dmgMul, s.x, s.z);
+          enemiesInRadius(s.x, s.z, 1.4, o => { if (!o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+          FX.glow(s.x, 0.5, s.z, 2.6, [1, 0.95, 0.6], 0.2); FX.burst(s.x, 0.3, s.z, 10, [1, 0.95, 0.6], 5, 0.08, 0.35, 1);
+          FX.crack(s.x, s.z, 1.2);
+          G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play('hit', 0.6);
+        }
+      }
+      if (ai.strikes.every(s => s.done)) {
+        if (--ai.waves > 0) { ai.state = 'charge'; ai.t = 0.35; ai.strikes = []; }
+        else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.2; }
+      }
+      break;
+    case 'gustWind':
+      // it puffs up, aiming along the marked lane
+      e.vx *= 0.7; e.vz *= 0.7;
+      e.yaw = angleLerp(e.yaw, ai.rot, Math.min(1, dt * 8)); e.squash = 1 + 0.15 * (1 - ai.t / ai.dur);
+      if (ai.t <= 0) {
+        ai.state = 'gust'; ai.t = 0.5; e.squash = 0.85;
+        const fx = Math.sin(ai.rot), fz = Math.cos(ai.rot);
+        if (laneHit(e.x, e.z, ai.rot, STORM.gustLen, STORM.gustW + HERO_R * 0.5, h[0], h[2])) { hurtHero(14 * run.info.dmgMul, e.x, e.z); run.vel[0] += fx * 16; run.vel[2] += fz * 16; }
+        enemiesInRadius(e.x + fx * 8, e.z + fz * 8, 9, o => { if (!o.boss && laneHit(e.x, e.z, ai.rot, STORM.gustLen, STORM.gustW, o.x, o.z)) { o.kx += fx * 14 / o.mass; o.kz += fz * 14 / o.mass; } });
+        for (let i = 0; i < 26; i++) {
+          const along = rand(1, STORM.gustLen), side = rand(-STORM.gustW, STORM.gustW);
+          FX.part(e.x + fx * along + fz * side, rand(0.3, 1.6), e.z + fz * along - fx * side, fx * 16, 0, fz * 16, 0.12, 0.02, 0.4, [0.92, 0.96, 1], 0.9, 1, 0, 0);
+        }
+        AUDIO.play('throw', 0.8);
+      }
+      break;
+    case 'gust':
+      e.squash = lerp(e.squash, 1, Math.min(1, dt * 6));
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.1; e.squash = 1; }
+      break;
+    case 'brew':
+      // spins up twisters that drop out of the cloud and chase you
+      e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      if (Math.random() < 0.5) FX.smoke(e.x + rand(-1, 1), 1, e.z + rand(-1, 1), 0.8, [0.85, 0.9, 1], 0.6, -0.5);
+      if (ai.t <= 0) {
+        const n = rage ? 3 : 2;
+        for (let i = 0; i < n; i++) {
+          const a = Math.atan2(dx, dz) + (i - (n - 1) / 2) * 0.9;
+          ai.twisters.push({ x: e.x + Math.sin(a) * 2, z: e.z + Math.cos(a) * 2, vx: Math.sin(a) * 3, vz: Math.cos(a) * 3, t: 0, life: rage ? 6 : 5, tick: 0, ph: rand(0, 10) });
+        }
+        AUDIO.play('throw', 0.6);
+        ai.state = 'walk'; ai.cd = rage ? 1.8 : 2.6;
+      }
+      break;
+  }
+};
+BOSS_DRAW.storm = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, ai = e.ai;
+  const charging = ai.state === 'charge' || ai.state === 'strike';
+  // a cloud has no back: its face stays turned to the camera, leaning a little toward its target
+  const yaw = e.portrait ? 0.3 : clamp(angleDiff(0, e.yaw), -0.6, 0.6);
+  if (R.enemyDraw.stormcloud) pushEnemy('stormcloud', false, e.x, (e.y || 0) - dead * 1.2, e.z, yaw, MODELS.defs.stormcloud.clips.still.row, e.scale, e.squash, dead, Math.max(fl, charging && Math.random() < 0.15 ? 0.6 : 0), 0, t[0], t[1], t[2]);
+  if (e.portrait) return;
+  bossShadow(e, 0.4);
+  if (dead) return;
+  // rain falling from its belly, and flashes inside it while it charges
+  if (Math.random() < 0.7) { const a = rand(0, TAU), r = rand(0, 1.4); FX.part(e.x + Math.cos(a) * r, (e.y || 0) + 0.4, e.z + Math.sin(a) * r, 0, -9, 0, 0.05, 0.02, 0.25, [0.7, 0.8, 1], 0.7, 1, 0, 0); }
+  if (charging && Math.random() < 0.3) FX.glow(e.x + rand(-1, 1), (e.y || 0) + 1.4, e.z + rand(-1, 1), 2, [1, 0.95, 0.7], 0.08, 0.7);
+  for (const w of ai.twisters || []) {
+    const grow = Math.min(1, w.t / 0.4) * Math.min(1, (w.life - w.t) / 0.4), sc = 1.15 * grow;
+    pushImp(w.x, sc * 1.05, w.z, sc, 0, 0, 1, 1, 32, 0, 0.1, w.t * 1.8 + w.ph, 1, 0, 0, 0.7);
+    pushDecal(w.x, w.z, 1.1 * grow, 1.1 * grow, w.t * 3, 3, 0, 0.5, 0.75, 0.85, 1, 0.35 * grow, true);
+  }
+  for (const b of G.run.stormBolts || []) {
+    const n = b.pts.length / 3, a = 1 - b.t / 0.18;
+    R.ribStrip(b.pts, n, 0.12, [1, 1, 0.85, a], 0);
+    R.ribStrip(b.pts, n, 0.5, [1, 0.9, 0.5, 0.4 * a], 0);
+  }
+};
+
 // ---- 14-ui.js ----
 // ============================================================
 // UI: screens, HUD, level-up cards, chest roulette, overlay drawing
@@ -13346,6 +13679,7 @@ function renderAllIcons() {
     blackhole: { scale: 0.62, emissive: 0.3 },
     wisps: { scale: 0.6, emissive: 0.45, ax: 0.8, az: 0.6 },
     prism: { scale: 0.66, emissive: 0.3, p1: 2 },
+    gale: { scale: 0.58, emissive: 0.35, az: -1, eye: [0, 2.3, 1.0] },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

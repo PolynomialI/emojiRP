@@ -4,9 +4,11 @@
 // ============================================================
 Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'] });
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
-  crystal: 0.02, stalagmite: 0.025, geode: 0.016 });
+  crystal: 0.02, stalagmite: 0.025, geode: 0.016,
+  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
-  'crystal', 'stalagmite', 'geode');
+  'crystal', 'stalagmite', 'geode',
+  'cloudpuff', 'pillar', 'rainbow', 'stormcloud');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -139,5 +141,53 @@ function themeModels2(defs) {
     }
     m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.62]; m.bmax = [0.72, m.top + 0.2, 0.6]; m.name = 'geode'; m.runAmp = 0.65;
     defs.geode = m;
+  }
+  // ---------- Sky Islands (chapter 13) ----------
+  {
+    const marble = C('#f2eee6'), marbleD = C('#d8d2c6'), gold = C('#ffcf4a');
+    // a soft heap of cloud; takes the tint
+    P('cloudpuff', [
+      { s: 'sph', c: [0, 0.42, 0], r: 0.46, k: 0.14 },
+      { s: 'sph', c: [0.42, 0.3, 0.08], r: 0.34, k: 0.14 },
+      { s: 'sph', c: [-0.4, 0.32, -0.06], r: 0.36, k: 0.14 },
+      { s: 'sph', c: [0.1, 0.32, 0.4], r: 0.3, k: 0.14 },
+      { s: 'sph', c: [-0.12, 0.3, -0.4], r: 0.3, k: 0.14 },
+      { s: 'sph', c: [0.18, 0.7, -0.08], r: 0.28, k: 0.14 },
+    ], { ao: 0.4 });
+    // a marble column with a gold band
+    P('pillar', [
+      { s: 'box', c: [0, 0.07, 0], hs: [0.3, 0.07, 0.3], rd: 0.02, col: marbleD, k: 0.01 },
+      { s: 'cyl', ax: 'y', c: [0, 0.85, 0], r: 0.2, hh: 0.72, rd: 0.02, col: marble, k: 0.02 },
+      ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 0.2, 0.85, Math.sin(a) * 0.2], r: 0.035, hh: 0.66, rd: 0.03, sub: true, k: 0.01 }; }),
+      { s: 'box', c: [0, 1.62, 0], hs: [0.28, 0.06, 0.28], rd: 0.02, col: marbleD, k: 0.01 },
+      { s: 'tor', ax: 'y', c: [0, 1.5, 0], R: 0.2, r: 0.03, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+    ], { ao: 0.8 });
+    // a rainbow arch you can walk under
+    const bands = ['#ff4d5a', '#ff9a2e', '#ffe14a', '#5fe08a', '#4fb4ff', '#9a6bff'].map(C);
+    P('rainbow', [
+      ...bands.map((col, i) => ({ s: 'tor', ax: 'z', c: [0, 0, 0], R: 1.2 - i * 0.075, r: 0.04, a0: 0, a1: Math.PI, col, k: 0.005 })),
+      { s: 'sph', c: [1.0, 0.05, 0], r: 0.26, col: C('#ffffff'), k: 0.08 }, { s: 'sph', c: [-1.0, 0.05, 0], r: 0.26, col: C('#ffffff'), k: 0.08 },
+      { s: 'sph', c: [1.2, 0.12, 0.1], r: 0.2, col: C('#ffffff'), k: 0.08 }, { s: 'sph', c: [-1.18, 0.1, -0.1], r: 0.2, col: C('#ffffff'), k: 0.08 },
+    ], { ao: 0.3 });
+  }
+  // ---------- Storm King (chapter 13 boss): a scowling thundercloud; the cloud takes the tint ----------
+  {
+    const white = C('#ffffff'), dark = C('#1c1c28'), bolt = C('#ffe14a');
+    P('stormcloud', [
+      { s: 'sph', c: [0, 0.55, 0], r: 0.5, k: 0.12 },
+      { s: 'sph', c: [0.45, 0.45, 0.05], r: 0.38, k: 0.12 },
+      { s: 'sph', c: [-0.45, 0.45, 0.0], r: 0.4, k: 0.12 },
+      { s: 'sph', c: [0.2, 0.78, -0.15], r: 0.36, k: 0.12 },
+      { s: 'sph', c: [-0.22, 0.8, -0.1], r: 0.34, k: 0.12 },
+      { s: 'sph', c: [0.0, 0.42, -0.32], r: 0.36, k: 0.12 },
+      { s: 'ell', c: [0, 0.3, 0], rr: [0.75, 0.16, 0.5], k: 0.1 },
+      { s: 'ell', c: [0.2, 0.72, 0.38], rr: [0.15, 0.12, 0.08], col: white, k: 0 }, { s: 'ell', c: [-0.2, 0.72, 0.38], rr: [0.15, 0.12, 0.08], col: white, k: 0 },
+      { s: 'sph', c: [0.17, 0.71, 0.45], r: 0.065, col: dark, k: 0 }, { s: 'sph', c: [-0.17, 0.71, 0.45], r: 0.065, col: dark, k: 0 },
+      { s: 'cap', a: [0.38, 0.92, 0.33], b: [0.08, 0.8, 0.43], r: 0.05, col: dark, k: 0 }, { s: 'cap', a: [-0.38, 0.92, 0.33], b: [-0.08, 0.8, 0.43], r: 0.05, col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.47, 0.44], rr: [0.2, 0.07, 0.06], col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.5, 0.47], rr: [0.15, 0.025, 0.04], col: white, k: 0 },
+      { s: 'cap', a: [0.5, 0.95, 0.1], b: [0.62, 0.78, 0.15], r: 0.035, col: bolt, k: 0 }, { s: 'cap', a: [0.62, 0.78, 0.15], b: [0.56, 0.8, 0.16], r: 0.03, col: bolt, k: 0 },
+      { s: 'cap', a: [0.56, 0.8, 0.16], b: [0.7, 0.6, 0.2], r: 0.03, r2: 0.01, col: bolt, k: 0 },
+    ], { ao: 0.5 });
   }
 }

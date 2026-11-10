@@ -113,6 +113,7 @@ function renderAllIcons() {
     blackhole: { scale: 0.62, emissive: 0.3 },
     wisps: { scale: 0.6, emissive: 0.45, ax: 0.8, az: 0.6 },
     prism: { scale: 0.66, emissive: 0.3, p1: 2 },
+    gale: { scale: 0.58, emissive: 0.35, az: -1, eye: [0, 2.3, 1.0] },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

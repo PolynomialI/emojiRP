@@ -323,6 +323,14 @@ void main() {
     N = normalize(vec3((fine - 0.5) * 0.25, 1.0, (mott - 0.5) * 0.25));
     ao = mix(0.7, 1.0, smoothstep(0.0, 0.2, v.y));
     gloss = 0.12; sharp = 40.0;
+  } else if (style == 12) {
+    // sky islands: soft cloud tops in billows, white on the crests and pale blue in the hollows
+    float b1 = texture(uNoise, p * 0.08).r, b2 = texture(uNoise, p * 0.08 + vec2(0.04, 0.0)).r, b3 = texture(uNoise, p * 0.08 + vec2(0.0, 0.04)).r;
+    float puff = texture(uNoise, p * 0.32).g;
+    N = normalize(vec3((b1 - b2) * 5.0 + (puff - 0.5) * 0.3, 1.0, (b1 - b3) * 5.0));
+    alb = mix(uStoneB, uStoneA, smoothstep(0.25, 0.75, b1)) * (0.94 + 0.1 * puff);
+    ao = mix(0.78, 1.0, smoothstep(0.2, 0.7, b1));
+    gloss = 0.05;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -882,7 +890,8 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float rad = mix(0.16, 0.72, u * u * 0.6 + u * 0.4);
     float d = length(q) - rad + 0.05 * sin(atan(q.y, q.x) * 4.0 + p.y * 7.0);
     d = max(d * 0.7, abs(p.y) - 0.98);
-    return vec2(d, 0.0);
+    // P1.x > 0.5: a white storm twister instead of goo
+    return vec2(d, P1.x > 0.5 ? 7.0 : 0.0);
   }
   if (type == 33) {
     // a clod of packed sand
@@ -938,6 +947,12 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 45) {
+    // wind crescent: a flat moon-shaped blade, thick in the middle and sharp at the tips, flying along +z
+    vec2 q = p.xz;
+    float d2 = max(length(q - vec2(0.0, -0.35)) - 0.85, -(length(q - vec2(0.0, -0.75)) - 0.85));
+    return vec2(extrude(d2, p.y, 0.07, 0.05), 7.0);
   }
   if (type == 44) {
     // prism: a six-sided crystal with pointed ends, turning slowly; gem color from P1.y

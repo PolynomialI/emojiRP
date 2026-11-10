@@ -37,3 +37,23 @@ ARENA_FEATURES.caverns = {
     }
   },
 };
+
+// ---------- Sky Islands: wisps of cloud and wind streaks blowing past, and bird shadows wheeling overhead ----------
+ARENA_FEATURES.sky = {
+  init(st, rnd) { st.acc = 0; st.birds = Array.from({ length: 3 }, () => ({ a: rnd() * TAU, r: 5 + rnd() * 7, w: (rnd() < 0.5 ? -1 : 1) * (0.35 + rnd() * 0.25), cx: 0, cz: 0 })); },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 2 : 5);
+    for (; st.acc >= 1; st.acc--) {
+      if (Math.random() < 0.5) FX.part(h[0] - 15, rand(0.2, 2.2), h[2] + rand(-11, 8), rand(6, 9), 0, rand(-0.5, 0.5), 0.07, 0.02, rand(2.5, 4), [1, 1, 1], 0.6, 1, 0, 0);
+      else FX.smoke(h[0] + rand(-14, 14), rand(0.1, 0.5), h[2] + rand(-11, 8), rand(0.6, 1.1), [1, 1, 1], rand(1.5, 2.5), 0.05);
+    }
+    for (const b of st.birds) { b.a += b.w * dt; b.cx += (h[0] - b.cx) * dt * 0.3; b.cz += (h[2] - b.cz) * dt * 0.3; }
+  },
+  emit(st) {
+    for (const b of st.birds) {
+      const x = b.cx + Math.cos(b.a) * b.r, z = b.cz + Math.sin(b.a) * b.r, flap = 0.8 + 0.2 * Math.sin(G.run ? G.run.t * 7 + b.r : 0);
+      pushDecal(x, z, 0.9 * flap, 0.32, -(b.a + (b.w > 0 ? Math.PI / 2 : -Math.PI / 2)) + Math.PI / 2, 1, 0, 0, 0.15, 0.25, 0.45, 0.18);
+    }
+  },
+};

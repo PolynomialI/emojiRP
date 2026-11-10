@@ -238,3 +238,144 @@ SHOT_DRAW.shard = s => {
   pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 44, 0, 0.35, s.ph + G.run.t * 3, 0, 2, 0, 1);
   pushDecal(s.x + 0.08, s.z + 0.06, s.r * 0.6, s.r * 0.6, 0, 1, 0, 0, 0.02, 0.0, 0.06, 0.3);
 };
+
+// ---------- Storm King (chapter 13): a floating thundercloud that calls down lightning, blasts gusts of wind and spins up twisters ----------
+const STORM = { gustLen: 16, gustW: 2.2, floatY: 1.5 };
+// a jagged bolt from the sky (or the cloud) to the ground, drawn for a few frames
+function stormBolt(x0, y0, z0, x1, z1) {
+  const pts = [], n = 7;
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, j = i && i < n ? 0.45 : 0;
+    pts.push(lerp(x0, x1, u) + rand(-j, j), lerp(y0, 0.1, u), lerp(z0, z1, u) + rand(-j, j));
+  }
+  G.run.stormBolts = G.run.stormBolts || [];
+  G.run.stormBolts.push({ pts, t: 0 });
+}
+BOSS_AI.storm = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; ai.twisters = []; }
+  // it floats, bobbing gently
+  e.y = lerp(e.y || 0, STORM.floatY + Math.sin(run.t * 1.7) * 0.2, Math.min(1, dt * 3));
+  run.stormBolts = (run.stormBolts || []).filter(b => (b.t += dt) < 0.18);
+  // its twisters chase you for a while
+  for (const w of ai.twisters || []) {
+    w.t += dt;
+    const tx = h[0] - w.x, tz = h[2] - w.z, tl = Math.hypot(tx, tz) || 1, sp = rage ? 3.2 : 2.7;
+    w.vx += (tx / tl * sp - w.vx) * Math.min(1, dt * 1.5); w.vz += (tz / tl * sp - w.vz) * Math.min(1, dt * 1.5);
+    w.x += w.vx * dt; w.z += w.vz * dt; resolveCircle(w, 0.6);
+    w.tick -= dt;
+    if (tl < 1.1 + HERO_R * 0.5 && w.tick <= 0) { w.tick = 0.5; hurtHero(12 * run.info.dmgMul, w.x, w.z); }
+    if (tl < 3) { run.vel[0] -= tx / tl * 5 * dt * (3 - tl); run.vel[2] -= tz / tl * 5 * dt * (3 - tl); }
+    enemiesInRadius(w.x, w.z, 1.2, o => { if (!o.boss) { o.kx += (Math.random() - 0.5) * 6; o.kz += (Math.random() - 0.5) * 6; } });
+    if (Math.random() < 0.5) FX.smoke(w.x + rand(-0.5, 0.5), 0.2, w.z + rand(-0.5, 0.5), 0.6, [0.9, 0.93, 1], 0.5, 0.8);
+  }
+  if (ai.twisters) ai.twisters = ai.twisters.filter(w => w.t < w.life);
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.25 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['lightning', 'gust', 'twister'][ai.next++ % 3];
+        if (k === 'lightning') { ai.state = 'charge'; ai.t = 0.6; ai.strikes = []; ai.waves = rage ? 3 : 2; }
+        else if (k === 'gust') {
+          ai.state = 'gustWind'; ai.t = ai.dur = 0.9; ai.rot = Math.atan2(dx, dz);
+          ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: STORM.gustW, len: STORM.gustLen, rot: ai.rot, dur: ai.dur });
+        } else { ai.state = 'brew'; ai.t = 0.8; }
+      }
+      break;
+    }
+    case 'charge':
+      // rumbles, flickering inside, then marks where the bolts will fall
+      e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      if (ai.t <= 0) {
+        const n = rage ? 9 : 6;
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.7, tz = h[2] + run.vel[2] * 0.7;
+          if (i) { const a = rand(0, TAU), r = rand(1.6, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.5);
+          const dur = 0.95 + i * 0.06;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.4, dur });
+          ai.strikes.push({ x: o.x, z: o.z, t: dur });
+        }
+        AUDIO.play('zap', 0.6);
+        ai.state = 'strike'; ai.t = 1.6;
+      }
+      break;
+    case 'strike':
+      e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      for (const s of ai.strikes) {
+        s.t -= dt;
+        if (s.t <= 0 && !s.done) {
+          s.done = true;
+          stormBolt(s.x + rand(-1, 1), 12, s.z + rand(-1, 1), s.x, s.z);
+          if (Math.hypot(h[0] - s.x, h[2] - s.z) < 1.4 + HERO_R * 0.5) hurtHero(22 * run.info.dmgMul, s.x, s.z);
+          enemiesInRadius(s.x, s.z, 1.4, o => { if (!o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+          FX.glow(s.x, 0.5, s.z, 2.6, [1, 0.95, 0.6], 0.2); FX.burst(s.x, 0.3, s.z, 10, [1, 0.95, 0.6], 5, 0.08, 0.35, 1);
+          FX.crack(s.x, s.z, 1.2);
+          G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play('hit', 0.6);
+        }
+      }
+      if (ai.strikes.every(s => s.done)) {
+        if (--ai.waves > 0) { ai.state = 'charge'; ai.t = 0.35; ai.strikes = []; }
+        else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.2; }
+      }
+      break;
+    case 'gustWind':
+      // it puffs up, aiming along the marked lane
+      e.vx *= 0.7; e.vz *= 0.7;
+      e.yaw = angleLerp(e.yaw, ai.rot, Math.min(1, dt * 8)); e.squash = 1 + 0.15 * (1 - ai.t / ai.dur);
+      if (ai.t <= 0) {
+        ai.state = 'gust'; ai.t = 0.5; e.squash = 0.85;
+        const fx = Math.sin(ai.rot), fz = Math.cos(ai.rot);
+        if (laneHit(e.x, e.z, ai.rot, STORM.gustLen, STORM.gustW + HERO_R * 0.5, h[0], h[2])) { hurtHero(14 * run.info.dmgMul, e.x, e.z); run.vel[0] += fx * 16; run.vel[2] += fz * 16; }
+        enemiesInRadius(e.x + fx * 8, e.z + fz * 8, 9, o => { if (!o.boss && laneHit(e.x, e.z, ai.rot, STORM.gustLen, STORM.gustW, o.x, o.z)) { o.kx += fx * 14 / o.mass; o.kz += fz * 14 / o.mass; } });
+        for (let i = 0; i < 26; i++) {
+          const along = rand(1, STORM.gustLen), side = rand(-STORM.gustW, STORM.gustW);
+          FX.part(e.x + fx * along + fz * side, rand(0.3, 1.6), e.z + fz * along - fx * side, fx * 16, 0, fz * 16, 0.12, 0.02, 0.4, [0.92, 0.96, 1], 0.9, 1, 0, 0);
+        }
+        AUDIO.play('throw', 0.8);
+      }
+      break;
+    case 'gust':
+      e.squash = lerp(e.squash, 1, Math.min(1, dt * 6));
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.1; e.squash = 1; }
+      break;
+    case 'brew':
+      // spins up twisters that drop out of the cloud and chase you
+      e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      if (Math.random() < 0.5) FX.smoke(e.x + rand(-1, 1), 1, e.z + rand(-1, 1), 0.8, [0.85, 0.9, 1], 0.6, -0.5);
+      if (ai.t <= 0) {
+        const n = rage ? 3 : 2;
+        for (let i = 0; i < n; i++) {
+          const a = Math.atan2(dx, dz) + (i - (n - 1) / 2) * 0.9;
+          ai.twisters.push({ x: e.x + Math.sin(a) * 2, z: e.z + Math.cos(a) * 2, vx: Math.sin(a) * 3, vz: Math.cos(a) * 3, t: 0, life: rage ? 6 : 5, tick: 0, ph: rand(0, 10) });
+        }
+        AUDIO.play('throw', 0.6);
+        ai.state = 'walk'; ai.cd = rage ? 1.8 : 2.6;
+      }
+      break;
+  }
+};
+BOSS_DRAW.storm = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, ai = e.ai;
+  const charging = ai.state === 'charge' || ai.state === 'strike';
+  // a cloud has no back: its face stays turned to the camera, leaning a little toward its target
+  const yaw = e.portrait ? 0.3 : clamp(angleDiff(0, e.yaw), -0.6, 0.6);
+  if (R.enemyDraw.stormcloud) pushEnemy('stormcloud', false, e.x, (e.y || 0) - dead * 1.2, e.z, yaw, MODELS.defs.stormcloud.clips.still.row, e.scale, e.squash, dead, Math.max(fl, charging && Math.random() < 0.15 ? 0.6 : 0), 0, t[0], t[1], t[2]);
+  if (e.portrait) return;
+  bossShadow(e, 0.4);
+  if (dead) return;
+  // rain falling from its belly, and flashes inside it while it charges
+  if (Math.random() < 0.7) { const a = rand(0, TAU), r = rand(0, 1.4); FX.part(e.x + Math.cos(a) * r, (e.y || 0) + 0.4, e.z + Math.sin(a) * r, 0, -9, 0, 0.05, 0.02, 0.25, [0.7, 0.8, 1], 0.7, 1, 0, 0); }
+  if (charging && Math.random() < 0.3) FX.glow(e.x + rand(-1, 1), (e.y || 0) + 1.4, e.z + rand(-1, 1), 2, [1, 0.95, 0.7], 0.08, 0.7);
+  for (const w of ai.twisters || []) {
+    const grow = Math.min(1, w.t / 0.4) * Math.min(1, (w.life - w.t) / 0.4), sc = 1.15 * grow;
+    pushImp(w.x, sc * 1.05, w.z, sc, 0, 0, 1, 1, 32, 0, 0.1, w.t * 1.8 + w.ph, 1, 0, 0, 0.7);
+    pushDecal(w.x, w.z, 1.1 * grow, 1.1 * grow, w.t * 3, 3, 0, 0.5, 0.75, 0.85, 1, 0.35 * grow, true);
+  }
+  for (const b of G.run.stormBolts || []) {
+    const n = b.pts.length / 3, a = 1 - b.t / 0.18;
+    R.ribStrip(b.pts, n, 0.12, [1, 1, 0.85, a], 0);
+    R.ribStrip(b.pts, n, 0.5, [1, 0.9, 0.5, 0.4 * a], 0);
+  }
+};
