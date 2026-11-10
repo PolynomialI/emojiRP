@@ -11,6 +11,11 @@ const GLX = {
     GLCAPS.hdr = !!gl.getExtension('EXT_color_buffer_float');
     gl.getExtension('OES_texture_float_linear');
     GLCAPS.samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES) || 0);
+    // half-float targets can support fewer samples than MAX_SAMPLES; use the largest supported count up to 4
+    if (GLCAPS.hdr && GLCAPS.samples) {
+      const ok = gl.getInternalformatParameter(gl.RENDERBUFFER, gl.RGBA16F, gl.SAMPLES);
+      GLCAPS.samples = ok && ok.length ? Math.max(0, ...Array.from(ok).filter(n => n <= 4)) : 0;
+    }
     return true;
   },
 

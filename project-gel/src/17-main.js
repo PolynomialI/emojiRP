@@ -139,7 +139,9 @@ function applySettings() {
   // Ultra low: a third of the pixels of Low, no MSAA or bloom, and 30 frames a second
   PERF.cap = st.quality === 'ultra' ? 30 : 60;
   if (st.quality === 'ultra') { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = PERF.min = 0.4; }
-  else if (st.quality === 'high') { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = PERF.min = Math.min(dpr, 2); }
+  // High keeps MSAA and bloom on, but at most 1.5x resolution, lowered toward 1x if frames run slow:
+  // 2x with MSAA was too much for laptop and Chromebook GPUs and made the game stutter
+  else if (st.quality === 'high') { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = Math.min(dpr, 1.5); PERF.min = Math.min(1, PERF.max); }
   else if (st.quality === 'low') { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = PERF.min = Math.max(0.5, Math.min(dpr, 1) * 0.75); }
   else if (PERF.software) { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = 0.6; PERF.min = 0.5; }
   else { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = Math.min(dpr, 1.5); PERF.min = 0.6; }
@@ -148,7 +150,8 @@ function applySettings() {
 function resize() { R.resize(window.innerWidth, window.innerHeight, PERF.ratio); }
 function gpuName() { const d = gl.getExtension('WEBGL_debug_renderer_info'); return (d && gl.getParameter(d.UNMASKED_RENDERER_WEBGL)) || gl.getParameter(gl.RENDERER) || ''; }
 function adaptQuality(dt) {
-  if (G.save.settings.quality !== 'auto' || (G.state !== 'run' && G.state !== 'home')) { PERF.acc = PERF.frames = 0; return; }
+  const q = G.save.settings.quality;
+  if ((q !== 'auto' && q !== 'high') || (G.state !== 'run' && G.state !== 'home')) { PERF.acc = PERF.frames = 0; return; }
   PERF.acc += dt; PERF.frames++;
   if (PERF.acc < 2) return;
   const avg = PERF.acc / PERF.frames;
@@ -158,8 +161,9 @@ function adaptQuality(dt) {
   // frame was drawn would show one blank frame.
   if (avg > 1 / 42) {
     if (PERF.ratio > PERF.min) { PERF.ratio = Math.max(PERF.min, PERF.ratio * 0.85); PERF.resizeDue = true; }
-    else if (R.settings.msaa) { R.settings.msaa = false; PERF.resizeDue = true; }
-    else R.settings.bloom = false;
+    // High never gives up MSAA or bloom; Auto does, after the resolution
+    else if (q === 'auto' && R.settings.msaa) { R.settings.msaa = false; PERF.resizeDue = true; }
+    else if (q === 'auto') R.settings.bloom = false;
   } else if (avg < 1 / 58 && PERF.ratio < PERF.max) { PERF.ratio = Math.min(PERF.max, PERF.ratio * 1.08); PERF.resizeDue = true; }
 }
 

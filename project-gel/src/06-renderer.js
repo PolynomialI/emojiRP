@@ -118,7 +118,9 @@ R.initEnemies = function (models) { for (const name in models.meshes) R.addEnemy
 R.resize = function (cssW, cssH, pixelRatio) {
   const w = Math.max(1, Math.round(cssW * pixelRatio)), h = Math.max(1, Math.round(cssH * pixelRatio));
   R.cssW = cssW; R.cssH = cssH; R.pixelRatio = pixelRatio;
-  R.canvas.width = w; R.canvas.height = h;
+  // setting a canvas size clears it, even to the same value: only touch it when it changes
+  if (R.canvas.width !== w) R.canvas.width = w;
+  if (R.canvas.height !== h) R.canvas.height = h;
   if (R.w === w && R.h === h && R.targets && R.targets.msaaWanted === R.settings.msaa) return;
   R.w = w; R.h = h;
   const T = R.targets;
