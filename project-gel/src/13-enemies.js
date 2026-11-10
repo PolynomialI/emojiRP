@@ -167,24 +167,26 @@ function updateBoss(e, dt) {
       e.contactDmg = e.dmg;
       if (ai.state === 'walk') {
         bossWalk(e, dt, h[0], h[2], e.speed); bossFace(e, dt);
-        if (ai.t <= 0) { ai.state = 'aim'; ai.t = 0.8; ai.charges = 3; }
+        if (ai.t <= 0) { ai.state = 'aim'; ai.t = 0.95; ai.charges = 3; }
       } else if (ai.state === 'aim') {
         e.clip = 'idle'; e.phase += dt; bossFace(e, dt, 12);
         e.vx *= 0.8; e.vz *= 0.8;
-        if (!ai.tele || ai.tele.done) { ai.dir = [Math.sin(e.yaw), Math.cos(e.yaw)]; ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.75, len: 14, rot: e.yaw, dur: ai.t }); }
+        if (!ai.tele || ai.tele.done) { ai.dir = [Math.sin(e.yaw), Math.cos(e.yaw)]; ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.75, len: 14, rot: e.yaw, dur: ai.t }); ai.lockYaw = null; }
+        // it stops tracking for the last moment, so a sidestep works
+        if (ai.t < 0.4) { if (ai.lockYaw === null) ai.lockYaw = e.yaw; e.yaw = ai.lockYaw; }
         ai.dir = [Math.sin(e.yaw), Math.cos(e.yaw)];
         ai.tele.rot = e.yaw; ai.tele.x = e.x; ai.tele.z = e.z;
         if (ai.t <= 0) { ai.state = 'charge'; ai.t = 1.0; ai.tele.done = true; AUDIO.play('throw'); }
       } else if (ai.state === 'charge') {
         e.clip = 'run'; e.phase += dt * 3;
-        e.x += ai.dir[0] * 14 * dt; e.z += ai.dir[1] * 14 * dt;
+        e.x += ai.dir[0] * 12.5 * dt; e.z += ai.dir[1] * 12.5 * dt;
         e.contactDmg = 30 * run.info.dmgMul;
         if (Math.random() < 0.6) FX.smoke(e.x, 0.2, e.z, 0.5, [0.6, 0.55, 0.5], 0.5, 0.4);
         enemiesInRadius(e.x, e.z, e.radius + 0.3, o => { if (o !== e && !o.boss) { o.kx += -ai.dir[1] * 8 * (Math.random() < 0.5 ? 1 : -1); o.kz += ai.dir[0] * 8; } });
         if (ai.t <= 0) {
           ai.charges--;
           ai.tele = null;
-          if (ai.charges > 0) { ai.state = 'aim'; ai.t = 0.6; }
+          if (ai.charges > 0) { ai.state = 'aim'; ai.t = 0.8; }
           else { ai.state = 'dizzy'; ai.t = 2.5; e.dizzy = 2.5; G.cam.shake = 0.12; AUDIO.play('boom'); }
         }
       } else if (ai.state === 'dizzy') {

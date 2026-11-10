@@ -68,9 +68,9 @@ BOSS_AI.sandworm = function (e, dt, d, dx, dz) {
       if (ai.state === 'under') {
         steer(h[0], h[2], sp, 3.5);
         if (d < 2.2 || ai.t <= 0) {
-          ai.state = 'tele'; ai.t = rage ? 0.7 : 0.9; ai.bx = h[0]; ai.bz = h[2];
+          ai.state = 'tele'; ai.t = rage ? 0.9 : 1.05; ai.bx = h[0]; ai.bz = h[2];
           const o = { x: ai.bx, z: ai.bz }; resolveCircle(o, 1.5); ai.bx = o.x; ai.bz = o.z;
-          addTele({ kind: 'circle', x: ai.bx, z: ai.bz, r: 2.4, dur: ai.t });
+          addTele({ kind: 'circle', x: ai.bx, z: ai.bz, r: 2.2, dur: ai.t });
         }
       } else {
         steer(ai.bx, ai.bz, Math.max(sp, Math.hypot(ai.bx - e.x, ai.bz - e.z) / Math.max(ai.t, 0.05)), 8);
@@ -87,7 +87,7 @@ BOSS_AI.sandworm = function (e, dt, d, dx, dz) {
       if (!ai.hit) {
         ai.hit = true;
         ai.heading = Math.atan2(h[0] - ai.bx, h[2] - ai.bz) + rand(-0.6, 0.6);
-        if (Math.hypot(h[0] - ai.bx, h[2] - ai.bz) < 2.4 + HERO_R * 0.5) { hurtHero(34 * run.info.dmgMul, ai.bx, ai.bz); run.vel[0] += (h[0] - ai.bx) * 3; run.vel[2] += (h[2] - ai.bz) * 3; }
+        if (Math.hypot(h[0] - ai.bx, h[2] - ai.bz) < 2.2 + HERO_R * 0.5) { hurtHero(30 * run.info.dmgMul, ai.bx, ai.bz); run.vel[0] += (h[0] - ai.bx) * 3; run.vel[2] += (h[2] - ai.bz) * 3; }
         enemiesInRadius(ai.bx, ai.bz, 2.4, o => { if (o !== e && !o.boss) { const ox = o.x - ai.bx, oz = o.z - ai.bz, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 8 / o.mass; o.kz += oz / od * 8 / o.mass; } });
         sandBurst(ai.bx, ai.bz, 30, 2.4);
         G.cam.shake = Math.max(G.cam.shake, 0.24); AUDIO.play('boom');
@@ -129,7 +129,7 @@ BOSS_AI.sandworm = function (e, dt, d, dx, dz) {
         const n = rage ? 9 : 7, base = Math.atan2(dx, dz);
         for (let i = 0; i < n; i++) {
           const a = base + (i / (n - 1) - 0.5) * 1.4 + (ai.fired - 1) * 0.08;
-          run.eShots.push({ kind: 'sand', x: e.x, y: 1.1, z: e.z, vx: Math.sin(a) * 6.5, vy: 0, vz: Math.cos(a) * 6.5, dmg: 13 * run.info.dmgMul, r: 0.35, life: 2.6, ph: rand(0, 10) });
+          run.eShots.push({ kind: 'sand', x: e.x, y: 1.1, z: e.z, vx: Math.sin(a) * 6.5, vy: 0, vz: Math.cos(a) * 6.5, dmg: 10 * run.info.dmgMul, r: 0.35, life: 2.6, ph: rand(0, 10) });
         }
         AUDIO.play('throw');
       }
@@ -222,30 +222,31 @@ BOSS_AI.wreckbot = function (e, dt, d, dx, dz) {
       ai.cd -= dt;
       if (ai.cd <= 0) {
         const kind = ['swing', 'rockets', 'slam'][ai.next++ % 3];
-        if (kind === 'swing') { ai.state = 'swingWind'; ai.t = 0.9; addTele({ kind: 'circle', x: e.x, z: e.z, r: 6, dur: 0.9 }); ai.cx = e.x; ai.cz = e.z; }
+        if (kind === 'swing') { ai.state = 'swingWind'; ai.t = 1.15; addTele({ kind: 'circle', x: e.x, z: e.z, r: 5.6, dur: 1.15 }); ai.cx = e.x; ai.cz = e.z; }
         else if (kind === 'rockets') { ai.state = 'rockets'; ai.t = 1.5; ai.fired = 0; ai.fireT = 0; }
         else {
-          ai.state = 'slamWind'; ai.t = 0.9; ai.lanes = [];
+          // calm: a tight fan to step out of; rage: five lanes spread wide, with room to stand between them
+          ai.state = 'slamWind'; ai.t = ai.dur = 1.1; ai.lanes = [];
           const n = rage ? 5 : 3, base = Math.atan2(dx, dz);
           for (let i = 0; i < n; i++) {
-            const rot = base + (i - (n - 1) / 2) * 0.42;
+            const rot = base + (i - (n - 1) / 2) * (rage ? 0.62 : 0.42);
             ai.lanes.push(rot);
-            addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.9, len: 15, rot, dur: 0.9 });
+            addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.75, len: 15, rot, dur: 1.1 });
           }
         }
       }
       break;
     }
     case 'swingWind':
-      e.clip = 'throw'; e.clipU = (1 - ai.t / 0.9) * 0.5; e.vx *= 0.8; e.vz *= 0.8;
-      if (ai.t <= 0) { ai.state = 'swing'; ai.t = rage ? 2.1 : 1.4; ai.swingA = Math.atan2(ball.x - e.x, ball.z - e.z); ai.hitCd = 0; AUDIO.play('throw'); }
+      e.clip = 'throw'; e.clipU = (1 - ai.t / 1.15) * 0.5; e.vx *= 0.8; e.vz *= 0.8;
+      if (ai.t <= 0) { ai.state = 'swing'; ai.t = rage ? 1.8 : 1.4; ai.swingA = Math.atan2(ball.x - e.x, ball.z - e.z); ai.hitCd = 0; AUDIO.play('throw'); }
       break;
     case 'swing': {
       // the ball whips round in a ring; right next to the bot is the safe spot
       e.clip = 'throw'; e.clipU = 0.55;
       ai.swingA += dt * TAU * 1.45;
       e.yaw = ai.swingA;
-      ball.x = e.x + Math.sin(ai.swingA) * 4.6; ball.z = e.z + Math.cos(ai.swingA) * 4.6; ball.y = 1.1; ball.vx = ball.vz = 0;
+      ball.x = e.x + Math.sin(ai.swingA) * 4.2; ball.z = e.z + Math.cos(ai.swingA) * 4.2; ball.y = 1.1; ball.vx = ball.vz = 0;
       ai.hitCd -= dt;
       if (ai.hitCd <= 0 && Math.hypot(h[0] - ball.x, h[2] - ball.z) < 1.3 + HERO_R) { ai.hitCd = 0.5; hurtHero(28 * run.info.dmgMul, ball.x, ball.z); run.vel[0] += (h[0] - e.x) * 2; run.vel[2] += (h[2] - e.z) * 2; }
       enemiesInRadius(ball.x, ball.z, 1.3, o => { if (o !== e && !o.boss) { o.kx += (o.x - e.x) * 2 / o.mass; o.kz += (o.z - e.z) * 2 / o.mass; } });
@@ -271,11 +272,11 @@ BOSS_AI.wreckbot = function (e, dt, d, dx, dz) {
       break;
     }
     case 'slamWind':
-      e.clip = 'slam'; e.clipU = (1 - ai.t / 0.9) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
+      e.clip = 'slam'; e.clipU = (1 - ai.t / 1.1) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
       if (ai.t <= 0) {
         // shockwaves run along each lane
         for (const rot of ai.lanes) {
-          if (laneHit(e.x, e.z, rot, 15, 0.9 + HERO_R * 0.5, h[0], h[2])) { hurtHero(32 * run.info.dmgMul, e.x, e.z); break; }
+          if (laneHit(e.x, e.z, rot, 15, 0.75 + HERO_R * 0.5, h[0], h[2])) { hurtHero(30 * run.info.dmgMul, e.x, e.z); break; }
         }
         for (const rot of ai.lanes) for (let k = 1; k <= 7; k++) {
           const px = e.x + Math.sin(rot) * k * 2, pz = e.z + Math.cos(rot) * k * 2;
@@ -328,12 +329,12 @@ BOSS_AI.bigbounce = function (e, dt, d, dx, dz) {
   switch (ai.state) {
     case 'hopStart': {
       // crouch, then leap at where the hero is heading; the landing spot is telegraphed
-      const dur = rage ? 0.62 : 0.85;
-      let tx = h[0] + run.vel[0] * dur * 0.8, tz = h[2] + run.vel[2] * dur * 0.8;
+      const dur = rage ? 0.8 : 1.0;
+      let tx = h[0] + run.vel[0] * dur * 0.45, tz = h[2] + run.vel[2] * dur * 0.45;
       const jx = tx - e.x, jz = tz - e.z, jl = Math.hypot(jx, jz);
       if (jl > 8) { tx = e.x + jx / jl * 8; tz = e.z + jz / jl * 8; }
       const o = { x: tx, z: tz }; resolveCircle(o, e.radius); ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z;
-      addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 3.1, dur: dur + 0.2 });
+      addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 2.6, dur: dur + 0.2 });
       ai.state = 'crouch'; ai.t = 0.2; ai.dur = dur; ai.sqV -= 3;
       break;
     }
@@ -346,35 +347,35 @@ BOSS_AI.bigbounce = function (e, dt, d, dx, dz) {
       e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 6));
       if (ai.t <= 0) {
         e.y = 0; ai.sqV -= 9;
-        if (Math.hypot(h[0] - e.x, h[2] - e.z) < 3.1 + HERO_R * 0.5) hurtHero(30 * run.info.dmgMul, e.x, e.z);
+        if (Math.hypot(h[0] - e.x, h[2] - e.z) < 2.6 + HERO_R * 0.5) hurtHero(28 * run.info.dmgMul, e.x, e.z);
         enemiesInRadius(e.x, e.z, 3.4, o => { if (o !== e && !o.boss) { const ox = o.x - e.x, oz = o.z - e.z, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 10 / o.mass; o.kz += oz / od * 10 / o.mass; } });
         arenaBlast(e.x, e.z, 7, 1.6);
         FX.ring(e.x, e.z, 7.5, [1, 0.6, 0.7], 0.5); FX.burst(e.x, 0.3, e.z, 18, [1, 0.85, 0.9], 6, 0.16, 0.6, 2);
         G.cam.shake = Math.max(G.cam.shake, 0.2); AUDIO.play('boom');
         ai.hops--;
         if (ai.hops > 0) { ai.state = 'hopStart'; }
-        else { ai.cycle++; ai.state = ai.cycle % 2 || rage ? 'rollAim' : 'spitWind'; ai.t = ai.state === 'rollAim' ? 0.7 : 0.55; if (ai.state === 'rollAim') ai.tele = null; }
+        else { ai.cycle++; ai.state = ai.cycle % 2 || rage ? 'rollAim' : 'spitWind'; ai.t = ai.state === 'rollAim' ? 0.9 : 0.55; if (ai.state === 'rollAim') ai.tele = null; }
       }
       break;
     }
     case 'rollAim': {
       e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
-      if (!ai.tele) ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 2.0, len: 16, rot: e.yaw, dur: 0.7 });
+      if (!ai.tele) ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 2.0, len: 16, rot: e.yaw, dur: 0.9 });
       ai.tele.rot = e.yaw; ai.tele.x = e.x; ai.tele.z = e.z;
       ai.sqV -= dt * 20;
-      if (ai.t <= 0) { ai.state = 'roll'; ai.t = rage ? 3.6 : 3; ai.dir = [Math.sin(e.yaw), Math.cos(e.yaw)]; ai.tele.done = true; AUDIO.play('throw'); }
+      if (ai.t <= 0) { ai.state = 'roll'; ai.t = rage ? 3 : 2.6; ai.dir = [Math.sin(e.yaw), Math.cos(e.yaw)]; ai.tele.done = true; AUDIO.play('throw'); }
       break;
     }
     case 'roll': {
       // pinball: full speed, ricocheting off walls and scenery
-      const sp = rage ? 15 : 12.5;
+      const sp = rage ? 12.5 : 10.5;
       const ox = e.x + ai.dir[0] * sp * dt, oz = e.z + ai.dir[1] * sp * dt, p = { x: ox, z: oz };
       e.contactDmg = 30 * run.info.dmgMul;
       if (resolveCircle(p, e.radius)) {
         const nx = p.x - ox, nz = p.z - oz, nl = Math.hypot(nx, nz) || 1, vn = ai.dir[0] * nx / nl + ai.dir[1] * nz / nl;
         ai.dir[0] -= 2 * vn * nx / nl; ai.dir[1] -= 2 * vn * nz / nl;
         // steer each bounce a little back toward the hero so it stays dangerous
-        const ha = Math.atan2(dx, dz), da = Math.atan2(ai.dir[0], ai.dir[1]), na = turnToward(da, ha, 0.5);
+        const ha = Math.atan2(dx, dz), da = Math.atan2(ai.dir[0], ai.dir[1]), na = turnToward(da, ha, 0.35);
         ai.dir = [Math.sin(na), Math.cos(na)];
         ai.sqV -= 4; G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play('pop', 0.6); arenaBlast(p.x, p.z, 4, 1);
       }
@@ -427,7 +428,7 @@ BOSS_AI.jellyqueen = function (e, dt, d, dx, dz) {
         else if (k === 'summon') { ai.state = 'summon'; ai.t = 0.8; }
         else {
           const o = { x: h[0] + run.vel[0] * 0.6, z: h[2] + run.vel[2] * 0.6 }; resolveCircle(o, e.radius);
-          ai.state = 'flop'; ai.t = ai.dur = rage ? 0.95 : 1.15; ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z; ai.sqV += 5;
+          ai.state = 'flop'; ai.t = ai.dur = rage ? 1.1 : 1.25; ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z; ai.sqV += 5;
           addTele({ kind: 'circle', x: o.x, z: o.z, r: 3.2, dur: ai.dur });
         }
       }
@@ -435,7 +436,7 @@ BOSS_AI.jellyqueen = function (e, dt, d, dx, dz) {
     case 'spiral': {
       // spinning arms of jelly blobs: walk along the gaps
       e.vx *= 0.85; e.vz *= 0.85;
-      const arms = rage ? 6 : 4;
+      const arms = rage ? 5 : 4;
       ai.spin += dt * (rage ? 1.9 : 1.4);
       ai.emitT -= dt;
       if (ai.emitT <= 0) {
@@ -511,8 +512,8 @@ BOSS_AI.yeti = function (e, dt, d, dx, dz) {
         } else if (k === 'icicles') { ai.state = 'summon'; ai.t = 0.7; ai.waves = rage ? 4 : 3; }
         else {
           // spikes erupt in a ring rolling outward; a few slices stay clear
-          ai.state = 'slamWind'; ai.t = ai.dur = 0.9; ai.rings = rage ? 2 : 1;
-          yetiGaps(ai, rage ? 2 : 3, rand(0, TAU));
+          ai.state = 'slamWind'; ai.t = ai.dur = 1.1; ai.rings = rage ? 2 : 1;
+          yetiGaps(ai, 3, rand(0, TAU));
           for (const g of ai.danger) addTele({ kind: 'cone', x: e.x, z: e.z, r: 12, rot: g[0], half: g[1], dur: ai.dur });
         }
       }
@@ -565,7 +566,7 @@ BOSS_AI.yeti = function (e, dt, d, dx, dz) {
     case 'wave': {
       e.clip = 'slam'; e.clipU = Math.min(0.999, 0.6 + (0.6 - Math.max(ai.t, 0)) * 0.66);
       const prev = ai.waveR;
-      ai.waveR += (rage ? 11 : 9) * dt;
+      ai.waveR += (rage ? 9 : 7.5) * dt;
       // the hero is hit when the front passes them, unless they stand in a gap
       const hd = Math.hypot(h[0] - ai.cx, h[2] - ai.cz);
       if (!ai.hit && hd > prev - 0.6 && hd < ai.waveR + 0.4 && !yetiInGap(ai, Math.atan2(h[0] - ai.cx, h[2] - ai.cz))) {
@@ -585,7 +586,7 @@ BOSS_AI.yeti = function (e, dt, d, dx, dz) {
         if (--ai.rings > 0) {
           // a second ring with the gaps moved: find the new ones
           ai.state = 'slamWind'; ai.t = ai.dur = 0.55;
-          yetiGaps(ai, 2, ai.gap0 + Math.PI / 2 + rand(-0.3, 0.3));
+          yetiGaps(ai, 3, ai.gap0 + Math.PI / 3 + rand(-0.2, 0.2));
           for (const g of ai.danger) addTele({ kind: 'cone', x: e.x, z: e.z, r: 12, rot: g[0], half: g[1], dur: ai.dur });
         } else { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.2; }
       }
@@ -594,7 +595,7 @@ BOSS_AI.yeti = function (e, dt, d, dx, dz) {
   }
 };
 // n evenly spaced clear slices, the first at angle a0; ai.danger holds the [centre, half-angle] of the slices between
-const YETI_GAP = 0.3;
+const YETI_GAP = 0.38;
 function yetiGaps(ai, n, a0) {
   ai.gap0 = a0; ai.gaps = n; ai.waveId = (ai.waveId || 0) + 1; ai.danger = [];
   const step = TAU / n;
@@ -750,7 +751,7 @@ function updateHydraHead(e, hd, i, n, dt, rage) {
       ease(6); hd.yaw = angleLerp(hd.yaw, Math.atan2(h[0] - hd.x, h[2] - hd.z), Math.min(1, dt * 6));
       if (hd.t <= 0) {
         // rear back and telegraph the lane it will strike along
-        hd.st = 'aim'; hd.t = hd.dur = rage ? 0.55 : 0.7;
+        hd.st = 'aim'; hd.t = hd.dur = rage ? 0.72 : 0.88;
         hd.sx = _rest.x; hd.sz = _rest.z; hd.rot = Math.atan2(h[0] + run.vel[0] * 0.25 - hd.sx, h[2] + run.vel[2] * 0.25 - hd.sz);
         addTele({ kind: 'lane', x: hd.sx, z: hd.sz, r: 0.9, len: HYDRA.reach, rot: hd.rot, dur: hd.dur });
       }
@@ -918,7 +919,7 @@ BOSS_AI.crab = function (e, dt, d, dx, dz) {
       e.yaw = angleLerp(e.yaw, ai.rot, Math.min(1, dt * 10));
       if (ai.t <= 0) {
         ai.claw = 1;
-        const inCone = (x, z) => { const ox = x - e.x, oz = z - e.z; return Math.hypot(ox, oz) < 4.8 && Math.abs(angleDiff(Math.atan2(ox, oz), ai.rot)) < 0.75; };
+        const inCone = (x, z) => { const ox = x - e.x, oz = z - e.z; return Math.hypot(ox, oz) < 4.6 && Math.abs(angleDiff(Math.atan2(ox, oz), ai.rot)) < 0.6; };
         if (inCone(h[0], h[2])) { hurtHero(28 * run.info.dmgMul, e.x, e.z); run.vel[0] += Math.sin(ai.rot) * 9; run.vel[2] += Math.cos(ai.rot) * 9; }
         enemiesInRadius(e.x, e.z, 4.8, o => { if (!o.boss && inCone(o.x, o.z)) hurtEnemy(o, 20, Math.sin(ai.rot) * 6, Math.cos(ai.rot) * 6, { sound: false }); });
         FX.burst(e.x + Math.sin(ai.rot) * 3, 0.6, e.z + Math.cos(ai.rot) * 3, 10, [1, 0.85, 0.7], 5, 0.1, 0.4, 1);
@@ -975,8 +976,8 @@ BOSS_AI.crab = function (e, dt, d, dx, dz) {
   }
 };
 function crabSnapWind(e, ai, dx, dz, rage) {
-  ai.state = 'snapWind'; ai.t = ai.dur = rage ? 0.42 : 0.55; ai.rot = Math.atan2(dx, dz);
-  addTele({ kind: 'cone', x: e.x, z: e.z, r: 4.8, rot: ai.rot, half: 0.7, dur: ai.dur });
+  ai.state = 'snapWind'; ai.t = ai.dur = rage ? 0.65 : 0.8; ai.rot = Math.atan2(dx, dz);
+  addTele({ kind: 'cone', x: e.x, z: e.z, r: 4.6, rot: ai.rot, half: 0.58, dur: ai.dur });
 }
 BOSS_DRAW.crab = function (e) {
   const D = MODELS.defs;
@@ -1000,7 +1001,7 @@ BOSS_DRAW.crab = function (e) {
 };
 
 // ---------- UFO Overlord (chapter 10): a tractor beam that drags you in, sweeping lasers, and beamed-down invaders ----------
-const UFO = { beamR: 3.2, laserLen: 14 };
+const UFO = { beamR: 2.9, laserLen: 14 };
 function ufoBeams(ai) { const n = ai.beams, out = []; for (let i = 0; i < n; i++) out.push(ai.laserA + i * TAU / n); return out; }
 BOSS_AI.ufo = function (e, dt, d, dx, dz) {
   const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
@@ -1015,9 +1016,9 @@ BOSS_AI.ufo = function (e, dt, d, dx, dz) {
       ai.cd -= dt;
       if (ai.cd <= 0) {
         const k = ['beam', 'lasers', 'invade'][ai.next++ % 3];
-        if (k === 'beam') { ai.state = 'beamWind'; ai.t = ai.dur = 0.6; addTele({ kind: 'circle', x: e.x, z: e.z, r: UFO.beamR, dur: ai.dur }); }
+        if (k === 'beam') { ai.state = 'beamWind'; ai.t = ai.dur = 0.85; addTele({ kind: 'circle', x: e.x, z: e.z, r: UFO.beamR, dur: ai.dur }); }
         else if (k === 'lasers') {
-          ai.state = 'laserWind'; ai.t = ai.dur = 0.9; ai.beams = rage ? 4 : 3; ai.laserA = Math.atan2(dx, dz) + Math.PI / ai.beams; ai.laserV = (Math.random() < 0.5 ? 1 : -1) * (rage ? 1.25 : 0.95);
+          ai.state = 'laserWind'; ai.t = ai.dur = 0.9; ai.beams = rage ? 4 : 3; ai.laserA = Math.atan2(dx, dz) + Math.PI / ai.beams; ai.laserV = (Math.random() < 0.5 ? 1 : -1) * (rage ? 0.95 : 0.75);
           for (const rot of ufoBeams(ai)) addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.55, len: UFO.laserLen, rot, dur: ai.dur });
         } else {
           ai.state = 'invade'; ai.t = 1.1;
@@ -1033,17 +1034,17 @@ BOSS_AI.ufo = function (e, dt, d, dx, dz) {
     }
     case 'beamWind':
       e.vx *= 0.8; e.vz *= 0.8;
-      if (ai.t <= 0) { ai.state = 'beam'; ai.t = rage ? 3.2 : 2.6; ai.tick = 0; AUDIO.play('zap', 0.5); }
+      if (ai.t <= 0) { ai.state = 'beam'; ai.t = rage ? 2.8 : 2.4; ai.tick = 0; AUDIO.play('zap', 0.5); }
       break;
     case 'beam': {
       // the tractor beam drags the hero toward its centre and burns; run outward to break free
-      bossWalk(e, dt, h[0], h[2], 2.0);
+      bossWalk(e, dt, h[0], h[2], 1.1);
       const ox = e.x - h[0], oz = e.z - h[2], od = Math.hypot(ox, oz);
       if (od < UFO.beamR + HERO_R * 0.5 && od > 0.05) {
-        const pull = (rage ? 3.6 : 3.0) * dt;
+        const pull = 2.0 * dt;
         h[0] += ox / od * Math.min(pull, od); h[2] += oz / od * Math.min(pull, od);
         ai.tick -= dt;
-        if (ai.tick <= 0) { ai.tick = 0.3; hurtHero(7 * run.info.dmgMul, e.x, e.z + 0.01); }
+        if (ai.tick <= 0) { ai.tick = 0.35; hurtHero(7 * run.info.dmgMul, e.x, e.z + 0.01); }
       }
       if (Math.random() < 0.7) { const a = rand(0, TAU), r = rand(0, UFO.beamR); FX.part(e.x + Math.cos(a) * r, 0.2, e.z + Math.sin(a) * r, 0, rand(2, 4), 0, 0.1, 0.03, 0.6, [0.5, 1, 0.6], 1, 0); }
       if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2; }

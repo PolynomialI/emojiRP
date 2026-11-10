@@ -4,7 +4,8 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import path from 'node:path';
 import fs from 'node:fs';
 const dir = path.dirname(new URL(import.meta.url).pathname);
-const url = 'file://' + path.join(dir, '..', 'dist', 'project-gel.html');
+// HTML=<path> tests another build (for example a snapshot, while dist/ is being rebuilt)
+const url = 'file://' + (process.env.HTML ? path.resolve(process.env.HTML) : path.join(dir, '..', 'dist', 'project-gel.html'));
 const shots = path.join(dir, 'shots');
 fs.mkdirSync(shots, { recursive: true });
 const args = process.argv.slice(2);

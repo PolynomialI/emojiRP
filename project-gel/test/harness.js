@@ -61,6 +61,15 @@
         if (along > -1 && along < t.len + 1 && Math.abs(perp) < t.r + 1.4) { const s = Math.sign(perp) || 1; fx += az * s * 8; fz += -ax * s * 8; }
       }
     }
+    for (const b of run.bosses || []) for (const w of b.ai.twisters || []) {
+      const dx = h[0] - w.x, dz = h[2] - w.z, d = Math.hypot(dx, dz) || 0.01;
+      if (d < 3) { fx += dx / d * 5; fz += dz / d * 5; }
+    }
+    for (const z of ARENA.zones) {
+      if (!ZONE_KINDS[z.kind].burn) continue;
+      const dx = h[0] - z.x, dz = h[2] - z.z, d = Math.hypot(dx, dz) || 0.01;
+      if (d < z.r + 1) { fx += dx / d * 5; fz += dz / d * 5; }
+    }
     // twins' rope
     for (const b of run.bosses) {
       if (b.type !== 'twins' || b.dying || !b.ai.partner || b.ai.partner.dying) continue;
