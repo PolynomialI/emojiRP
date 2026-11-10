@@ -520,3 +520,124 @@ SHOT_DRAW.block = s => {
   if (R.enemyDraw.toyblock) pushEnemy('toyblock', false, s.x, s.y - 0.4, s.z, s.spin, MODELS.defs.toyblock.clips.still.row, 1.1, 1, 0, 0, 0, s.tint[0], s.tint[1], s.tint[2]);
   pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.4, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4);
 };
+
+// ---------- Kraken (chapter 15): tentacle slams along marked lanes, ink blobs that leave slowing puddles, and a whirlpool that drags you in ----------
+const KRAKEN = { slamLen: 11, whirlR: 8, core: 2.8 };
+BOSS_AI.kraken = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; ai.slams = []; ai.spin = 0; }
+  ai.wave = (ai.wave || 0) + dt;
+  // slammed tentacles lie on the floor for a moment, then lift away
+  for (const s of ai.slams || []) s.t += dt;
+  if (ai.slams) ai.slams = ai.slams.filter(s => s.t < s.dur + 0.7);
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.3 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['slam', 'ink', 'whirl'][ai.next++ % 3];
+        if (k === 'slam') {
+          ai.state = 'raise'; ai.slamHit = false;
+          const base = Math.atan2(dx, dz), n = rage ? 5 : 3;
+          for (let i = 0; i < n; i++) {
+            const rot = base + (i - (n - 1) / 2) * 0.55 + rand(-0.08, 0.08), dur = 0.85 + i * 0.12;
+            ai.slams.push({ rot, t: 0, dur, hit: false, ph: rand(0, 10) });
+            addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.9, len: KRAKEN.slamLen, rot, dur });
+          }
+        } else if (k === 'ink') { ai.state = 'ink'; ai.t = 0.55; ai.volleys = rage ? 2 : 1; }
+        else { ai.state = 'whirlWind'; ai.t = 0.8; addTele({ kind: 'circle', x: e.x, z: e.z, r: KRAKEN.core, dur: 0.8 }); }
+      }
+      break;
+    }
+    case 'raise':
+      // the tentacles rear up over their lanes, then crash down one after another
+      e.vx *= 0.7; e.vz *= 0.7;
+      for (const s of ai.slams) {
+        if (s.hit || s.t < s.dur) continue;
+        s.hit = true;
+        if (!ai.slamHit && laneHit(e.x, e.z, s.rot, KRAKEN.slamLen, 0.9 + HERO_R * 0.5, h[0], h[2])) { ai.slamHit = true; hurtHero(26 * run.info.dmgMul, e.x, e.z); }
+        enemiesInRadius(e.x + Math.sin(s.rot) * 5.5, e.z + Math.cos(s.rot) * 5.5, 6.5, o => { if (!o.boss && laneHit(e.x, e.z, s.rot, KRAKEN.slamLen, 1, o.x, o.z)) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+        for (let k = 2; k < KRAKEN.slamLen; k += 1.8) FX.burst(e.x + Math.sin(s.rot) * k, 0.3, e.z + Math.cos(s.rot) * k, 4, [0.7, 0.9, 1], 4, 0.09, 0.45, 1);
+        G.cam.shake = Math.max(G.cam.shake, 0.15); AUDIO.play('boom', 0.7);
+      }
+      if (ai.slams.every(s => s.hit)) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    case 'ink':
+      // spits ink blobs that splash into dark, sticky puddles
+      e.vx *= 0.7; e.vz *= 0.7; bossFace(e, dt);
+      if (ai.t <= 0) {
+        const n = rage ? 6 : 4, from = bossLocal(e, 0, 0.4, 0.5);
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.8, tz = h[2] + run.vel[2] * 0.8;
+          if (i) { const a = rand(0, TAU), r = rand(2, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.8);
+          const dur = 1.0 + i * 0.07;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.6, dur });
+          run.eShots.push({ kind: 'ink', lob: true, sx: from[0], sy: from[1], sz: from[2], tx: o.x, tz: o.z, x: from[0], y: from[1], z: from[2], t: 0, dur, peak: 4, radius: 1.6, dmg: 18 * run.info.dmgMul, life: dur + 0.5, spin: 0, onLand: inkLand });
+        }
+        AUDIO.play('throw', 0.7);
+        if (--ai.volleys > 0) ai.t = 0.5;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4; }
+      }
+      break;
+    case 'whirlWind':
+      e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 2;
+      if (ai.t <= 0) { ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('zap', 0.6); }
+      break;
+    case 'whirl': {
+      // spins in place: the water swirls round and in, dragging you toward its whirling core
+      e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 4;
+      const ox = e.x - h[0], oz = e.z - h[2], od = Math.hypot(ox, oz) || 1;
+      if (od < KRAKEN.whirlR) {
+        const pull = (rage ? 2.8 : 2.2) * dt * (0.4 + 0.6 * (1 - od / KRAKEN.whirlR)), swirl = 1.3 * dt;
+        h[0] += ox / od * Math.min(pull, od) - oz / od * swirl; h[2] += oz / od * Math.min(pull, od) + ox / od * swirl;
+      }
+      ai.tick -= dt;
+      if (od < KRAKEN.core + HERO_R * 0.5 && ai.tick <= 0) { ai.tick = 0.4; hurtHero(14 * run.info.dmgMul, e.x, e.z); }
+      enemiesInRadius(e.x, e.z, KRAKEN.whirlR, o => { if (o === e || o.boss) return; const qx = e.x - o.x, qz = e.z - o.z, ql = Math.hypot(qx, qz) || 1; o.kx += (qx / ql * 3 - qz / ql * 2) * dt * 4; o.kz += (qz / ql * 3 + qx / ql * 2) * dt * 4; });
+      if (Math.random() < 0.8) { const a = rand(0, TAU), r = rand(2, KRAKEN.whirlR); FX.part(e.x + Math.cos(a) * r, 0.15, e.z + Math.sin(a) * r, -Math.sin(a) * 5 - Math.cos(a) * 2, 0.2, Math.cos(a) * 5 - Math.sin(a) * 2, 0.1, 0.03, 0.6, [0.75, 0.92, 1], 0.8, 1, 0, 0); }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }
+      break;
+    }
+  }
+};
+function inkLand(s) {
+  tempZone('ink', s.tx, s.tz, 2.0, 5);
+  FX.burst(s.tx, 0.4, s.tz, 12, [0.15, 0.1, 0.22], 4, 0.12, 0.5, 2);
+}
+// a tentacle as points: from (x0, y0, z0) out along angle a; lift raises it into an arch, curl coils the tip
+function tentaclePts(x0, y0, z0, a, len, lift, wav, ph, n = 10) {
+  const pts = [], sx = Math.sin(a), cz = Math.cos(a);
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1), dist = u * len, wig = Math.sin(u * 5 + ph) * wav * u;
+    pts.push(x0 + sx * dist + cz * wig, Math.max(0.12, y0 * (1 - u) + lift * Math.sin(u * Math.PI * 0.9) + 0.12), z0 + cz * dist - sx * wig);
+  }
+  return pts;
+}
+BOSS_DRAW.kraken = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, ai = e.ai, s = e.scale;
+  if (R.enemyDraw.kraken) pushEnemy('kraken', false, e.x, e.y || 0, e.z, e.yaw, MODELS.defs.kraken.clips.still.row, s, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (e.portrait) return;
+  bossShadow(e, 0.45);
+  const col = [t[0] * (1 - fl) + fl, t[1] * (1 - fl) + fl, t[2] * (1 - fl) + fl, 1], wide = u => 1 - u * 0.8, tw = 0.26 * s;
+  // the resting arms sprawl around it, curling; while it whirls they sweep round
+  const spin = ai.state === 'whirl' || ai.state === 'whirlWind' ? ai.spin : 0, wave = ai.wave || 0;
+  for (let i = 0; i < 8; i++) {
+    const a = e.yaw + (i + 0.5) / 8 * TAU + spin, bx = e.x + Math.sin(a) * 0.55 * s, bz = e.z + Math.cos(a) * 0.55 * s;
+    const len = (1.0 + 0.15 * Math.sin(wave * 1.3 + i)) * s * (1 - dead * 0.6);
+    R.ribStrip(tentaclePts(bx, 0.15 * s, bz, a + (spin ? 0.6 : 0), len, 0.12 * s, 0.35 * s, wave * 2.2 + i * 1.7), 10, tw * 0.75, col, 1, 0, 1, wide);
+  }
+  // slam tentacles: rear up over the lane, then lie along it
+  for (const sl of ai.slams || []) {
+    const bx = e.x + Math.sin(sl.rot) * 0.6 * s, bz = e.z + Math.cos(sl.rot) * 0.6 * s;
+    let len, lift;
+    if (sl.t < sl.dur) { const u = sl.t / sl.dur; len = KRAKEN.slamLen * (0.35 + 0.15 * u); lift = 3.5 + 2 * u; }
+    else { const u = clamp((sl.t - sl.dur) / 0.7, 0, 1); len = KRAKEN.slamLen * (1 - 0.6 * u * u); lift = 0.2 + u * u * 2.5; }
+    R.ribStrip(tentaclePts(bx, 0.3 * s, bz, sl.rot, len, lift, 0.25, sl.ph, 12), 12, tw, col, 1, 0, 1, wide);
+  }
+  if (ai.state === 'whirl') pushDecal(e.x, e.z, KRAKEN.whirlR, KRAKEN.whirlR, -ai.spin, 3, 0, 0.5, 0.6, 0.85, 1, 0.3, true);
+};
+SHOT_DRAW.ink = s => {
+  pushImp(s.x, s.y, s.z, 0.42, 0, 0, 1, 1, 27, 0, 0, s.t * 4, 1, 0, 0, 1);
+  pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.35, 0, 1, 0, 0, 0.02, 0.02, 0.06, 0.45);
+};

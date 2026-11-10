@@ -541,6 +541,8 @@ function updateEnemies(dt) {
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
     // frozen enemies (Frost Nova, the yeti's breath) stand still and do no harm until they thaw
     if (e.frozen > 0) { e.frozen -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
+    // trapped in a bubble (Bubble Trap): held off the ground, harmless, until it pops
+    else if (e.bubbled > 0) { e.bubbled -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
     else if (e.boss) updateBoss(e, dt);
     else updateEnemyAI(e, dt);
     // knockback
@@ -551,7 +553,7 @@ function updateEnemies(dt) {
     e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
     // hero contact
     const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz), rr = e.radius + HERO_R;
-    if (d < rr && G.hero.melt < 0.5 && !e.hidden && !(e.frozen > 0) && !e.def.flee) {
+    if (d < rr && G.hero.melt < 0.5 && !e.hidden && !(e.frozen > 0) && !(e.bubbled > 0) && !e.def.flee) {
       touching++;
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }

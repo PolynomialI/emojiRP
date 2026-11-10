@@ -89,3 +89,24 @@ ARENA_FEATURES.toys = {
     }
   },
 };
+
+// ---------- Coral Reef: bubbles rising from the clams and the sand, and the shadows of fish swimming over ----------
+ARENA_FEATURES.reef = {
+  init(st, rnd) {
+    st.acc = 0; st.clams = ARENA.props.filter(o => o.kind === 'clam');
+    st.fish = Array.from({ length: 5 }, () => ({ a: rnd() * TAU, r: 4 + rnd() * 8, w: (rnd() < 0.5 ? -1 : 1) * (0.4 + rnd() * 0.35), cx: 0, cz: 0, s: 0.6 + rnd() * 0.6 }));
+  },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 2 : 6);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), 0.1, h[2] + rand(-11, 8), rand(-0.2, 0.2), rand(1.0, 1.8), rand(-0.2, 0.2), rand(0.06, 0.12), 0.02, rand(1.2, 2), [0.85, 0.97, 1], 0.6, 4, 0, 0.2);
+    for (const o of st.clams) if (Math.random() < dt * 3 && onScreen(o.x, o.z, 1)) FX.part(o.x + rand(-0.2, 0.2), 0.5, o.z + rand(-0.2, 0.2), 0, rand(1.2, 2), 0, rand(0.08, 0.14), 0.03, 1.5, [0.9, 1, 1], 0.7, 4, 0, 0.2);
+    for (const f of st.fish) { f.a += f.w * dt; f.cx += (h[0] - f.cx) * dt * 0.3; f.cz += (h[2] - f.cz) * dt * 0.3; }
+  },
+  emit(st) {
+    for (const f of st.fish) {
+      const x = f.cx + Math.cos(f.a) * f.r, z = f.cz + Math.sin(f.a) * f.r, rot = -(f.a + (f.w > 0 ? Math.PI / 2 : -Math.PI / 2)) + Math.PI / 2;
+      pushDecal(x, z, 0.22 * f.s, 0.55 * f.s, rot, 1, 0, 0, 0.02, 0.15, 0.25, 0.2);
+    }
+  },
+};

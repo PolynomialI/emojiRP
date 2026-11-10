@@ -115,6 +115,7 @@ function renderAllIcons() {
     prism: { scale: 0.66, emissive: 0.3, p1: 2 },
     gale: { scale: 0.58, emissive: 0.35, az: -1, eye: [0, 2.3, 1.0] },
     yoyo: { scale: 0.62, emissive: 0.15, eye: [0, 1.5, 2.0] },
+    bubble: { scale: 0.62, emissive: 0.15 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

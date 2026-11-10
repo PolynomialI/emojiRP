@@ -1986,11 +1986,13 @@ Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: 
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
   crystal: 0.02, stalagmite: 0.025, geode: 0.016,
   cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03,
-  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016 });
+  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016,
+  coral: 0.018, kelp: 0.02, clam: 0.02, kraken: 0.022 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
   'crystal', 'stalagmite', 'geode',
   'cloudpuff', 'pillar', 'rainbow', 'stormcloud',
-  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead');
+  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead',
+  'coral', 'kelp', 'clam', 'kraken');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -2253,7 +2255,55 @@ function themeModels2(defs) {
       ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.36, 0.05, Math.sin(a) * 0.36], r: 0.07, col: i % 2 ? red : blue, k: 0.02 }; }),
     ], { ao: 0.5 });
   }
+  // ---------- Coral Reef (chapter 15) ----------
+  {
+    const sand = C('#e8d6a8'), kelpG = C('#3f9a4a'), kelpD = C('#2a7a3a'), shellA = C('#f2b8c8'), shellB = C('#d88aa8'), pearl = C('#fffaf0'), lip = C('#a8486a');
+    // branching coral; takes the tint
+    P('coral', [
+      { s: 'ell', c: [0, 0.06, 0], rr: [0.3, 0.08, 0.28], k: 0.05 },
+      { s: 'cap', a: [0, 0, 0], b: [0.05, 0.75, 0.02], r: 0.09, r2: 0.06, k: 0.04 },
+      { s: 'cap', a: [0.04, 0.4, 0], b: [0.38, 0.85, 0.1], r: 0.07, r2: 0.05, k: 0.04 },
+      { s: 'cap', a: [0.03, 0.3, 0], b: [-0.34, 0.72, -0.08], r: 0.07, r2: 0.05, k: 0.04 },
+      { s: 'cap', a: [0.05, 0.6, 0], b: [-0.12, 1.1, 0.14], r: 0.06, r2: 0.045, k: 0.04 },
+      { s: 'cap', a: [0.2, 0.62, 0.05], b: [0.24, 1.0, -0.2], r: 0.05, r2: 0.04, k: 0.04 },
+      { s: 'cap', a: [0.02, 0.2, 0.02], b: [0.1, 0.55, 0.36], r: 0.06, r2: 0.045, k: 0.04 },
+      ...[[0.38, 0.85, 0.1], [-0.34, 0.72, -0.08], [-0.12, 1.1, 0.14], [0.24, 1.0, -0.2], [0.1, 0.55, 0.36], [0.05, 0.75, 0.02]].map(c => ({ s: 'sph', c, r: 0.075, k: 0.03 })),
+    ], { ao: 0.6 });
+    // a clump of tall kelp blades
+    P('kelp', [
+      ...[[0, 0, 1.6, 0.12], [0.18, 0.08, 1.25, -0.15], [-0.15, -0.06, 1.4, 0.1], [0.05, -0.18, 1.1, 0.18]].flatMap(([x, z, hgt, bend]) => [
+        { s: 'cap', a: [x, 0, z], b: [x + bend, hgt * 0.5, z + bend * 0.5], r: 0.05, r2: 0.045, col: kelpG, k: 0.02 },
+        { s: 'cap', a: [x + bend, hgt * 0.5, z + bend * 0.5], b: [x - bend * 0.5, hgt, z], r: 0.045, r2: 0.02, col: kelpG, k: 0.02 },
+        { s: 'ell', c: [x + bend * 0.7, hgt * 0.62, z + bend * 0.3], rr: [0.09, 0.05, 0.03], col: kelpD, k: 0.02 },
+      ]),
+    ], { ao: 0.5 });
+    // a giant clam, open, with a pearl
+    P('clam', [
+      { s: 'ell', c: [0, 0.14, 0], rr: [0.5, 0.15, 0.42], col: shellA, k: 0.02 },
+      { s: 'ell', c: [0, 0.42, -0.28], rr: [0.5, 0.36, 0.12], col: shellB, k: 0.02 },
+      ...[-0.3, -0.1, 0.1, 0.3].map(x => ({ s: 'cap', a: [x * 0.6, 0.12, -0.3], b: [x, 0.7, -0.32], r: 0.035, col: lip, k: 0.02 })),
+      { s: 'ell', c: [0, 0.24, 0.05], rr: [0.36, 0.05, 0.3], col: lip, k: 0.02 },
+      { s: 'sph', c: [0, 0.36, 0.05], r: 0.13, col: pearl, k: 0 },
+      { s: 'ell', c: [0, 0.03, 0], rr: [0.55, 0.04, 0.48], col: sand, k: 0.04 },
+    ], { ao: 0.6 });
+  }
+  // ---------- Kraken (chapter 15 boss): a great octopus head (takes the tint); its tentacles are drawn as tubes ----------
+  {
+    const yel = C('#ffe14a'), dark = C('#1a1020'), spot = C('#d88ae8'), white = C('#ffffff');
+    P('kraken', [
+      { s: 'ell', c: [0, 0.6, -0.05], rr: [0.52, 0.55, 0.5], k: 0.06 },
+      { s: 'ell', c: [0, 1.05, -0.2], rr: [0.4, 0.42, 0.4], k: 0.14 },
+      { s: 'ell', c: [0, 0.2, 0], rr: [0.6, 0.2, 0.58], k: 0.1 },
+      ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = (i / 8) * TAU; return { s: 'cap', a: [Math.cos(a) * 0.3, 0.2, Math.sin(a) * 0.3], b: [Math.cos(a) * 0.75, 0.05, Math.sin(a) * 0.75], r: 0.14, r2: 0.08, k: 0.06 }; }),
+      { s: 'ell', c: [0.23, 0.64, 0.38], rr: [0.15, 0.17, 0.09], col: yel, k: 0 }, { s: 'ell', c: [-0.23, 0.64, 0.38], rr: [0.15, 0.17, 0.09], col: yel, k: 0 },
+      { s: 'ell', c: [0.23, 0.63, 0.46], rr: [0.035, 0.12, 0.03], col: dark, k: 0 }, { s: 'ell', c: [-0.23, 0.63, 0.46], rr: [0.035, 0.12, 0.03], col: dark, k: 0 },
+      { s: 'sph', c: [0.27, 0.7, 0.45], r: 0.025, col: white, k: 0 }, { s: 'sph', c: [-0.19, 0.7, 0.45], r: 0.025, col: white, k: 0 },
+      { s: 'cap', a: [0.42, 0.86, 0.3], b: [0.1, 0.78, 0.44], r: 0.05, col: dark, k: 0.01 }, { s: 'cap', a: [-0.42, 0.86, 0.3], b: [-0.1, 0.78, 0.44], r: 0.05, col: dark, k: 0.01 },
+      ...[[0.25, 1.2, 0.1, 0.07], [-0.2, 1.3, -0.05, 0.06], [0.05, 1.42, -0.25, 0.08], [0.35, 0.95, -0.3, 0.06], [-0.38, 1.0, -0.25, 0.07]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: spot, k: 0.01 })),
+    ], { ao: 0.5 });
+  }
 }
+
 </script>
 <script>
 // ---- 00-util.js ----
@@ -3858,11 +3908,13 @@ Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: 
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
   crystal: 0.02, stalagmite: 0.025, geode: 0.016,
   cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03,
-  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016 });
+  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016,
+  coral: 0.018, kelp: 0.02, clam: 0.02, kraken: 0.022 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
   'crystal', 'stalagmite', 'geode',
   'cloudpuff', 'pillar', 'rainbow', 'stormcloud',
-  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead');
+  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead',
+  'coral', 'kelp', 'clam', 'kraken');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -4125,7 +4177,55 @@ function themeModels2(defs) {
       ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.36, 0.05, Math.sin(a) * 0.36], r: 0.07, col: i % 2 ? red : blue, k: 0.02 }; }),
     ], { ao: 0.5 });
   }
+  // ---------- Coral Reef (chapter 15) ----------
+  {
+    const sand = C('#e8d6a8'), kelpG = C('#3f9a4a'), kelpD = C('#2a7a3a'), shellA = C('#f2b8c8'), shellB = C('#d88aa8'), pearl = C('#fffaf0'), lip = C('#a8486a');
+    // branching coral; takes the tint
+    P('coral', [
+      { s: 'ell', c: [0, 0.06, 0], rr: [0.3, 0.08, 0.28], k: 0.05 },
+      { s: 'cap', a: [0, 0, 0], b: [0.05, 0.75, 0.02], r: 0.09, r2: 0.06, k: 0.04 },
+      { s: 'cap', a: [0.04, 0.4, 0], b: [0.38, 0.85, 0.1], r: 0.07, r2: 0.05, k: 0.04 },
+      { s: 'cap', a: [0.03, 0.3, 0], b: [-0.34, 0.72, -0.08], r: 0.07, r2: 0.05, k: 0.04 },
+      { s: 'cap', a: [0.05, 0.6, 0], b: [-0.12, 1.1, 0.14], r: 0.06, r2: 0.045, k: 0.04 },
+      { s: 'cap', a: [0.2, 0.62, 0.05], b: [0.24, 1.0, -0.2], r: 0.05, r2: 0.04, k: 0.04 },
+      { s: 'cap', a: [0.02, 0.2, 0.02], b: [0.1, 0.55, 0.36], r: 0.06, r2: 0.045, k: 0.04 },
+      ...[[0.38, 0.85, 0.1], [-0.34, 0.72, -0.08], [-0.12, 1.1, 0.14], [0.24, 1.0, -0.2], [0.1, 0.55, 0.36], [0.05, 0.75, 0.02]].map(c => ({ s: 'sph', c, r: 0.075, k: 0.03 })),
+    ], { ao: 0.6 });
+    // a clump of tall kelp blades
+    P('kelp', [
+      ...[[0, 0, 1.6, 0.12], [0.18, 0.08, 1.25, -0.15], [-0.15, -0.06, 1.4, 0.1], [0.05, -0.18, 1.1, 0.18]].flatMap(([x, z, hgt, bend]) => [
+        { s: 'cap', a: [x, 0, z], b: [x + bend, hgt * 0.5, z + bend * 0.5], r: 0.05, r2: 0.045, col: kelpG, k: 0.02 },
+        { s: 'cap', a: [x + bend, hgt * 0.5, z + bend * 0.5], b: [x - bend * 0.5, hgt, z], r: 0.045, r2: 0.02, col: kelpG, k: 0.02 },
+        { s: 'ell', c: [x + bend * 0.7, hgt * 0.62, z + bend * 0.3], rr: [0.09, 0.05, 0.03], col: kelpD, k: 0.02 },
+      ]),
+    ], { ao: 0.5 });
+    // a giant clam, open, with a pearl
+    P('clam', [
+      { s: 'ell', c: [0, 0.14, 0], rr: [0.5, 0.15, 0.42], col: shellA, k: 0.02 },
+      { s: 'ell', c: [0, 0.42, -0.28], rr: [0.5, 0.36, 0.12], col: shellB, k: 0.02 },
+      ...[-0.3, -0.1, 0.1, 0.3].map(x => ({ s: 'cap', a: [x * 0.6, 0.12, -0.3], b: [x, 0.7, -0.32], r: 0.035, col: lip, k: 0.02 })),
+      { s: 'ell', c: [0, 0.24, 0.05], rr: [0.36, 0.05, 0.3], col: lip, k: 0.02 },
+      { s: 'sph', c: [0, 0.36, 0.05], r: 0.13, col: pearl, k: 0 },
+      { s: 'ell', c: [0, 0.03, 0], rr: [0.55, 0.04, 0.48], col: sand, k: 0.04 },
+    ], { ao: 0.6 });
+  }
+  // ---------- Kraken (chapter 15 boss): a great octopus head (takes the tint); its tentacles are drawn as tubes ----------
+  {
+    const yel = C('#ffe14a'), dark = C('#1a1020'), spot = C('#d88ae8'), white = C('#ffffff');
+    P('kraken', [
+      { s: 'ell', c: [0, 0.6, -0.05], rr: [0.52, 0.55, 0.5], k: 0.06 },
+      { s: 'ell', c: [0, 1.05, -0.2], rr: [0.4, 0.42, 0.4], k: 0.14 },
+      { s: 'ell', c: [0, 0.2, 0], rr: [0.6, 0.2, 0.58], k: 0.1 },
+      ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = (i / 8) * TAU; return { s: 'cap', a: [Math.cos(a) * 0.3, 0.2, Math.sin(a) * 0.3], b: [Math.cos(a) * 0.75, 0.05, Math.sin(a) * 0.75], r: 0.14, r2: 0.08, k: 0.06 }; }),
+      { s: 'ell', c: [0.23, 0.64, 0.38], rr: [0.15, 0.17, 0.09], col: yel, k: 0 }, { s: 'ell', c: [-0.23, 0.64, 0.38], rr: [0.15, 0.17, 0.09], col: yel, k: 0 },
+      { s: 'ell', c: [0.23, 0.63, 0.46], rr: [0.035, 0.12, 0.03], col: dark, k: 0 }, { s: 'ell', c: [-0.23, 0.63, 0.46], rr: [0.035, 0.12, 0.03], col: dark, k: 0 },
+      { s: 'sph', c: [0.27, 0.7, 0.45], r: 0.025, col: white, k: 0 }, { s: 'sph', c: [-0.19, 0.7, 0.45], r: 0.025, col: white, k: 0 },
+      { s: 'cap', a: [0.42, 0.86, 0.3], b: [0.1, 0.78, 0.44], r: 0.05, col: dark, k: 0.01 }, { s: 'cap', a: [-0.42, 0.86, 0.3], b: [-0.1, 0.78, 0.44], r: 0.05, col: dark, k: 0.01 },
+      ...[[0.25, 1.2, 0.1, 0.07], [-0.2, 1.3, -0.05, 0.06], [0.05, 1.42, -0.25, 0.08], [0.35, 0.95, -0.3, 0.06], [-0.38, 1.0, -0.25, 0.07]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: spot, k: 0.01 })),
+    ], { ao: 0.5 });
+  }
 }
+
 
 // ---- 05-glsl.js ----
 // ============================================================
@@ -4481,6 +4581,14 @@ void main() {
     N = normalize(vec3((grain - 0.5) * 0.08, 1.0, 0.0));
     ao = 1.0 - 0.35 * seam;
     gloss = 0.18; sharp = 30.0;
+  } else if (style == 14) {
+    // coral reef: pale sea-floor sand in soft ripples under shimmering caustic light
+    float rip = sin(p.x * 1.6 + texture(uNoise, p * 0.05).g * 6.0) * 0.5 + 0.5;
+    alb = mix(uStoneA, uStoneB, mott * 0.8 + rip * 0.15) * (0.94 + 0.1 * fine);
+    float ca = texture(uNoise, p * 0.14 + vec2(uTime * 0.06, uTime * 0.045)).r + texture(uNoise, p * 0.17 - vec2(uTime * 0.05, -uTime * 0.03)).g;
+    emis = vec3(0.55, 0.95, 1.0) * pow(1.0 - abs(ca - 1.0), 7.0) * 0.6;
+    N = normalize(vec3(cos(p.x * 1.6) * 0.05, 1.0, 0.0));
+    gloss = 0.08;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -5023,6 +5131,8 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     return vec2(d, 2.0);
   }
   if (type == 27) {
+    // P1.x > 0.5: a solid blob of glossy black ink instead of a goo bubble
+    if (P1.x > 0.5) return vec2(length(p) - 0.82 + 0.04 * sin(p.x * 9.0 + ph * 6.0) * sin(p.y * 8.0), 12.0);
     float d = abs(length(p) - 0.82) - 0.035;
     d = min(d, length(p - vec3(-0.32, 0.36, 0.55)) - 0.1);
     return vec2(d, 0.0);
@@ -5097,6 +5207,16 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 47) {
+    // bubble trap: a big bubble with a little orange critter caught inside, and two small bubbles rising beside it
+    float big = abs(length(p - vec3(-0.12, -0.1, 0.0)) - 0.62) - 0.03;
+    big = min(big, length(p - vec3(-0.36, 0.2, 0.42)) - 0.08);
+    float s1 = abs(length(p - vec3(0.55, 0.45, 0.1)) - 0.22) - 0.025;
+    float s2 = abs(length(p - vec3(0.42, 0.85, -0.05)) - 0.13) - 0.02;
+    float critter = length((p - vec3(-0.12, -0.18, 0.0)) * vec3(1.0, 1.25, 1.0)) - 0.24;
+    float b = min(big, min(s1, s2));
+    return vec2(min(b, critter), critter < b ? 5.0 : 0.0);
   }
   if (type == 46) {
     // yo-yo: two rounded discs on a short axle (axle up), spinning, with a stripe on top; P1.x picks the plastic color
@@ -7180,6 +7300,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Yo-yos'], ['range', 'Reach', 'm'], ['cd', 'Cooldown', 's']],
     levels: L10({ dmg: [15, 16, 18, 20, 22, 25, 28, 31, 35, 40], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], range: [4.5, 4.7, 4.9, 5.1, 5.3, 5.6, 5.9, 6.2, 6.6, 7], cd: [1.8, 1.75, 1.7, 1.6, 1.5, 1.45, 1.4, 1.3, 1.2, 1.1] }),
   },
+  bubble: {
+    name: 'Bubble Trap', from: 15, intro: 'Blows bubbles that trap enemies and float them off the ground; when a bubble pops it bursts on everything nearby.', icon: { type: 47, colw: 0 },
+    fields: [['dmg', 'Pop damage'], ['count', 'Bubbles'], ['hold', 'Holds for', 's'], ['radius', 'Pop radius', 'm']],
+    levels: L10({ dmg: [20, 22, 25, 28, 31, 35, 39, 44, 50, 56], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], hold: [1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.6], radius: [1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.4], cd: [2.4, 2.35, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.65, 1.5] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -7276,6 +7401,7 @@ BOSS_TYPES.pumpking = { name: 'Pumpkin King', model: 'pumpking', meshes: ['pumpk
 BOSS_TYPES.geode = { name: 'Geode Titan', model: 'geode', meshes: ['geode', 'icespike'], hp: 4500, speed: 1.9, dmg: 20, scale: 3.0, radius: 1.3, tint: '#6a5a8a', mass: 60, portraitTop: 1.08 };
 BOSS_TYPES.storm = { name: 'Storm King', model: 'stormcloud', meshes: ['stormcloud'], hp: 4400, speed: 2.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#7c86a0', mass: 60, portraitTop: 0.9 };
 BOSS_TYPES.jack = { name: 'Jack-in-the-Box', model: 'jackbox', meshes: ['jackbox', 'jackhead', 'toyblock'], hp: 4600, speed: 2.2, dmg: 20, scale: 2.3, radius: 1.3, tint: '#e83a4a', mass: 60, portraitTop: 1.3 };
+BOSS_TYPES.kraken = { name: 'Kraken', model: 'kraken', meshes: ['kraken'], hp: 4800, speed: 1.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#8a4ab0', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 4200, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4000, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
@@ -7320,6 +7446,8 @@ const ARENAS = [
     props: [['cloudpuff', 5, 1.2, 1.8], ['pillar', 5, 0.38, 0.46], ['rainbow', 1.5, 2.2, 2.6]], zones: [['updraft', 2.4, 2.0, 2.8]], wall: 'cloudwall' },
   { id: 'toys', name: 'Toy Workshop', floor: 13, stoneA: '#d89a5a', stoneB: '#b97a40', grout: '#5a3a1e', accent: '#ff4d5a', fog: '#2a1a10', sky: '#ffe2b8', ground: '#a87040', light: '#fff4e2', spotMin: 0.62, shadowTint: '#4a2a10', rock: '#c8a070', pool: '#7aff5a', poolGlow: 0.15,
     props: [['toyblock', 8, 0.65, 0.85], ['blockstack', 3, 0.55, 0.65], ['drum', 3, 0.55, 0.65]], zones: [['slime', 3, 1.8, 2.8]], wall: 'blockwall', kinds: ['toycar'] },
+  { id: 'reef', name: 'Coral Reef', floor: 14, stoneA: '#c8d8bc', stoneB: '#a4b89c', grout: '#6a7a60', accent: '#5ae8ff', fog: '#06304e', sky: '#5ab4e0', ground: '#1a5a7a', light: '#d8f2ff', spotMin: 0.55, shadowTint: '#062a48', rock: '#5a7a8a', pool: '#2f8a5a', poolGlow: 0.05,
+    props: [['coral', 8, 0.75, 1.0], ['kelp', 6, 0.6, 0.75], ['clam', 2.5, 0.7, 0.9], ['rock', 3, 0.8, 1.2]], zones: [['kelpbed', 3, 2.0, 3.0]], wall: 'reefwall' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -7384,6 +7512,10 @@ const PROP_KINDS = {
   drum: { models: ['drum'], unit: 0.45, block: true, shots: true },
   toycar: { models: ['toycar'], unit: 0.4, block: false },
   blockwall: { models: ['toyblock'], unit: 0.5, block: true, shots: true, tints: ['#ff5a64', '#ffcf3a', '#4f98ff', '#5fd876', '#b07aff'], wallR: [0.9, 1.1] },
+  coral: { models: ['coral'], unit: 0.4, block: true, shots: true, tints: ['#ff6a8a', '#ff9a4a', '#c86aff', '#ff5ac8'], tall: 1.6 },
+  kelp: { models: ['kelp'], unit: 0.3, block: false, tall: 2.4 },
+  clam: { models: ['clam'], unit: 0.5, block: true, shots: true },
+  reefwall: { models: ['rock0', 'rock1', 'rock2'], unit: 0.45, block: true, shots: true, tints: ['#5a8a94', '#6a7a9a', '#4a7a7a'], wallR: [1.0, 1.4] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -7402,10 +7534,12 @@ const ZONE_KINDS = {
   crystalpool: { block: true, col: '#7a5aff', glow: 0.45 },
   updraft: { slow: 1.3, col: '#8fe4ff', glow: 0.35 },
   slime: { slow: 0.6, col: '#7aff5a', glow: 0.15 },
+  kelpbed: { slow: 0.65, col: '#2f8a5a', glow: 0.05 },
+  ink: { slow: 0.55, col: '#1a1428', glow: 0 },
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm', 'jack'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm', 'jack', 'kraken'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
@@ -8334,6 +8468,8 @@ function updateEnemies(dt) {
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
     // frozen enemies (Frost Nova, the yeti's breath) stand still and do no harm until they thaw
     if (e.frozen > 0) { e.frozen -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
+    // trapped in a bubble (Bubble Trap): held off the ground, harmless, until it pops
+    else if (e.bubbled > 0) { e.bubbled -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
     else if (e.boss) updateBoss(e, dt);
     else updateEnemyAI(e, dt);
     // knockback
@@ -8344,7 +8480,7 @@ function updateEnemies(dt) {
     e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
     // hero contact
     const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz), rr = e.radius + HERO_R;
-    if (d < rr && G.hero.melt < 0.5 && !e.hidden && !(e.frozen > 0) && !e.def.flee) {
+    if (d < rr && G.hero.melt < 0.5 && !e.hidden && !(e.frozen > 0) && !(e.bubbled > 0) && !e.def.flee) {
       touching++;
       const push = (rr - d) * (e.boss ? 0.15 : 0.85);
       if (d > 1e-4) { e.x += dx / d * push; e.z += dz / d * push; }
@@ -9404,6 +9540,27 @@ ARENA_FEATURES.toys = {
       if (!onScreen(c.x, c.z, 1)) continue;
       pushEnemy('toycar', false, c.x, Math.sin(c.hop * Math.PI) * 0.25, c.z, Math.PI / 2 - c.dir, row, 1, 1, 0, 0, 0, c.tint[0], c.tint[1], c.tint[2]);
       pushDecal(c.x + 0.06, c.z + 0.05, 0.25, 0.4, -(Math.PI / 2 - c.dir), 1, 0, 0, 0.02, 0.02, 0.05, 0.35);
+    }
+  },
+};
+
+// ---------- Coral Reef: bubbles rising from the clams and the sand, and the shadows of fish swimming over ----------
+ARENA_FEATURES.reef = {
+  init(st, rnd) {
+    st.acc = 0; st.clams = ARENA.props.filter(o => o.kind === 'clam');
+    st.fish = Array.from({ length: 5 }, () => ({ a: rnd() * TAU, r: 4 + rnd() * 8, w: (rnd() < 0.5 ? -1 : 1) * (0.4 + rnd() * 0.35), cx: 0, cz: 0, s: 0.6 + rnd() * 0.6 }));
+  },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 2 : 6);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), 0.1, h[2] + rand(-11, 8), rand(-0.2, 0.2), rand(1.0, 1.8), rand(-0.2, 0.2), rand(0.06, 0.12), 0.02, rand(1.2, 2), [0.85, 0.97, 1], 0.6, 4, 0, 0.2);
+    for (const o of st.clams) if (Math.random() < dt * 3 && onScreen(o.x, o.z, 1)) FX.part(o.x + rand(-0.2, 0.2), 0.5, o.z + rand(-0.2, 0.2), 0, rand(1.2, 2), 0, rand(0.08, 0.14), 0.03, 1.5, [0.9, 1, 1], 0.7, 4, 0, 0.2);
+    for (const f of st.fish) { f.a += f.w * dt; f.cx += (h[0] - f.cx) * dt * 0.3; f.cz += (h[2] - f.cz) * dt * 0.3; }
+  },
+  emit(st) {
+    for (const f of st.fish) {
+      const x = f.cx + Math.cos(f.a) * f.r, z = f.cz + Math.sin(f.a) * f.r, rot = -(f.a + (f.w > 0 ? Math.PI / 2 : -Math.PI / 2)) + Math.PI / 2;
+      pushDecal(x, z, 0.22 * f.s, 0.55 * f.s, rot, 1, 0, 0, 0.02, 0.15, 0.25, 0.2);
     }
   },
 };
@@ -10683,6 +10840,60 @@ SKILL_HOOKS.yoyo = {
       pushImp(y.x, 0.85, y.z, 0.36, y.dx, 0, y.dz, 1, 46, 0, 0.12, y.ph, [0, 2, 4][y.col], 0, 0, 1);
       R.ribStrip([h[0], 1.1, h[2], y.x, 0.9, y.z], 2, 0.035, [1, 1, 1, 0.85], 0);
       pushDecal(y.x + 0.06, y.z + 0.05, 0.3, 0.3, 0, 1, 0, 0, 0.02, 0.03, 0.07, 0.35);
+    }
+  },
+};
+
+// ---------- Bubble Trap (chapter 15): bubbles trap enemies and float them off the ground, then pop, bursting on everything nearby ----------
+SKILL_HOOKS.bubble = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, rad = L.radius * areaMul();
+    st.shots = st.shots || []; st.traps = st.traps || [];
+    st.t = (st.t ?? 0.8) - dt;
+    if (st.t <= 0) {
+      // aim at the nearest enemies not already caught (bosses only once nothing else is near)
+      const near = [];
+      enemiesInRadius(h[0], h[2], 8, e => { if (!(e.bubbled > 0)) near.push([Math.hypot(e.x - h[0], e.z - h[2]) + (e.boss ? 20 : 0), e]); });
+      near.sort((a, b) => a[0] - b[0]);
+      if (near.length) {
+        st.t = L.cd * cdMul();
+        for (let i = 0; i < L.count; i++) st.shots.push({ x: h[0], y: 1.0, z: h[2], tgt: near[i % near.length][1], t: 0, ph: rand(0, 10), vx: 0, vz: 0 });
+        AUDIO.play('pop', 0.4);
+      } else st.t = 0.2;
+    }
+    for (const b of st.shots) {
+      b.t += dt;
+      const e = b.tgt;
+      if (e && !e.dying) { const dx = e.x - b.x, dz = e.z - b.z, l = Math.hypot(dx, dz) || 1; b.vx = dx / l * 9; b.vz = dz / l * 9; }
+      b.x += b.vx * dt; b.z += b.vz * dt; b.y = 1.0 + Math.sin(b.t * 9) * 0.08;
+      if (b.t > 1.6 || arenaSd(b.x, b.z) > 0) { b.done = true; continue; }
+      if (e && !e.dying && Math.hypot(e.x - b.x, e.z - b.z) < 0.6) {
+        b.done = true;
+        if (e.boss || e.bubbled > 0) { hurtEnemy(e, L.dmg * 0.6, 0, 0, { sound: false, color: [0.7, 0.95, 1] }); FX.burst(b.x, 1, b.z, 8, [0.85, 0.97, 1], 3, 0.07, 0.3, 4); }
+        else { e.bubbled = L.hold; st.traps.push({ e, t: L.hold, ph: rand(0, 10) }); }
+      }
+    }
+    st.shots = st.shots.filter(b => !b.done);
+    for (const tr of st.traps) {
+      const e = tr.e;
+      tr.t -= dt;
+      if (!e.dying) e.y = Math.min(0.7, (e.y || 0) + dt * 1.2);
+      if (tr.t <= 0 || e.dying) {
+        // pop: a burst that hits the captive and everything around it
+        tr.done = true; e.y = 0; e.bubbled = 0;
+        enemiesInRadius(e.x, e.z, rad, o => hurtEnemy(o, L.dmg, (o.x - e.x) * 2, (o.z - e.z) * 2, { sound: false, color: [0.7, 0.95, 1] }));
+        FX.burst(e.x, 1.0, e.z, 14, [0.85, 0.97, 1], 5, 0.08, 0.4, 4); FX.ring(e.x, e.z, rad * 1.4, [0.7, 0.95, 1], 0.35);
+        AUDIO.play('pop', 0.5);
+      }
+    }
+    st.traps = st.traps.filter(tr => !tr.done);
+  },
+  emit(s) {
+    const st = s.st, t = G.run.t;
+    for (const b of st.shots || []) pushImp(b.x, b.y, b.z, 0.3, 0, 0, 1, 1, 27, 3, 0.1, b.ph + t, 0, 0, 0, 0.8);
+    for (const tr of st.traps || []) {
+      const e = tr.e, wob = 1 + Math.sin(t * 6 + tr.ph) * 0.04;
+      pushImp(e.x, (e.y || 0) + 0.65 * e.scale, e.z, 0.72 * e.scale * wob, 0, 0, 1, 1, 27, 3, 0.1, tr.ph + t, 0, 0, 0, 0.75);
     }
   },
 };
@@ -12807,6 +13018,127 @@ SHOT_DRAW.block = s => {
   pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.4, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4);
 };
 
+// ---------- Kraken (chapter 15): tentacle slams along marked lanes, ink blobs that leave slowing puddles, and a whirlpool that drags you in ----------
+const KRAKEN = { slamLen: 11, whirlR: 8, core: 2.8 };
+BOSS_AI.kraken = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; ai.slams = []; ai.spin = 0; }
+  ai.wave = (ai.wave || 0) + dt;
+  // slammed tentacles lie on the floor for a moment, then lift away
+  for (const s of ai.slams || []) s.t += dt;
+  if (ai.slams) ai.slams = ai.slams.filter(s => s.t < s.dur + 0.7);
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.3 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['slam', 'ink', 'whirl'][ai.next++ % 3];
+        if (k === 'slam') {
+          ai.state = 'raise'; ai.slamHit = false;
+          const base = Math.atan2(dx, dz), n = rage ? 5 : 3;
+          for (let i = 0; i < n; i++) {
+            const rot = base + (i - (n - 1) / 2) * 0.55 + rand(-0.08, 0.08), dur = 0.85 + i * 0.12;
+            ai.slams.push({ rot, t: 0, dur, hit: false, ph: rand(0, 10) });
+            addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.9, len: KRAKEN.slamLen, rot, dur });
+          }
+        } else if (k === 'ink') { ai.state = 'ink'; ai.t = 0.55; ai.volleys = rage ? 2 : 1; }
+        else { ai.state = 'whirlWind'; ai.t = 0.8; addTele({ kind: 'circle', x: e.x, z: e.z, r: KRAKEN.core, dur: 0.8 }); }
+      }
+      break;
+    }
+    case 'raise':
+      // the tentacles rear up over their lanes, then crash down one after another
+      e.vx *= 0.7; e.vz *= 0.7;
+      for (const s of ai.slams) {
+        if (s.hit || s.t < s.dur) continue;
+        s.hit = true;
+        if (!ai.slamHit && laneHit(e.x, e.z, s.rot, KRAKEN.slamLen, 0.9 + HERO_R * 0.5, h[0], h[2])) { ai.slamHit = true; hurtHero(26 * run.info.dmgMul, e.x, e.z); }
+        enemiesInRadius(e.x + Math.sin(s.rot) * 5.5, e.z + Math.cos(s.rot) * 5.5, 6.5, o => { if (!o.boss && laneHit(e.x, e.z, s.rot, KRAKEN.slamLen, 1, o.x, o.z)) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+        for (let k = 2; k < KRAKEN.slamLen; k += 1.8) FX.burst(e.x + Math.sin(s.rot) * k, 0.3, e.z + Math.cos(s.rot) * k, 4, [0.7, 0.9, 1], 4, 0.09, 0.45, 1);
+        G.cam.shake = Math.max(G.cam.shake, 0.15); AUDIO.play('boom', 0.7);
+      }
+      if (ai.slams.every(s => s.hit)) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    case 'ink':
+      // spits ink blobs that splash into dark, sticky puddles
+      e.vx *= 0.7; e.vz *= 0.7; bossFace(e, dt);
+      if (ai.t <= 0) {
+        const n = rage ? 6 : 4, from = bossLocal(e, 0, 0.4, 0.5);
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.8, tz = h[2] + run.vel[2] * 0.8;
+          if (i) { const a = rand(0, TAU), r = rand(2, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.8);
+          const dur = 1.0 + i * 0.07;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.6, dur });
+          run.eShots.push({ kind: 'ink', lob: true, sx: from[0], sy: from[1], sz: from[2], tx: o.x, tz: o.z, x: from[0], y: from[1], z: from[2], t: 0, dur, peak: 4, radius: 1.6, dmg: 18 * run.info.dmgMul, life: dur + 0.5, spin: 0, onLand: inkLand });
+        }
+        AUDIO.play('throw', 0.7);
+        if (--ai.volleys > 0) ai.t = 0.5;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4; }
+      }
+      break;
+    case 'whirlWind':
+      e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 2;
+      if (ai.t <= 0) { ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('zap', 0.6); }
+      break;
+    case 'whirl': {
+      // spins in place: the water swirls round and in, dragging you toward its whirling core
+      e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 4;
+      const ox = e.x - h[0], oz = e.z - h[2], od = Math.hypot(ox, oz) || 1;
+      if (od < KRAKEN.whirlR) {
+        const pull = (rage ? 2.8 : 2.2) * dt * (0.4 + 0.6 * (1 - od / KRAKEN.whirlR)), swirl = 1.3 * dt;
+        h[0] += ox / od * Math.min(pull, od) - oz / od * swirl; h[2] += oz / od * Math.min(pull, od) + ox / od * swirl;
+      }
+      ai.tick -= dt;
+      if (od < KRAKEN.core + HERO_R * 0.5 && ai.tick <= 0) { ai.tick = 0.4; hurtHero(14 * run.info.dmgMul, e.x, e.z); }
+      enemiesInRadius(e.x, e.z, KRAKEN.whirlR, o => { if (o === e || o.boss) return; const qx = e.x - o.x, qz = e.z - o.z, ql = Math.hypot(qx, qz) || 1; o.kx += (qx / ql * 3 - qz / ql * 2) * dt * 4; o.kz += (qz / ql * 3 + qx / ql * 2) * dt * 4; });
+      if (Math.random() < 0.8) { const a = rand(0, TAU), r = rand(2, KRAKEN.whirlR); FX.part(e.x + Math.cos(a) * r, 0.15, e.z + Math.sin(a) * r, -Math.sin(a) * 5 - Math.cos(a) * 2, 0.2, Math.cos(a) * 5 - Math.sin(a) * 2, 0.1, 0.03, 0.6, [0.75, 0.92, 1], 0.8, 1, 0, 0); }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }
+      break;
+    }
+  }
+};
+function inkLand(s) {
+  tempZone('ink', s.tx, s.tz, 2.0, 5);
+  FX.burst(s.tx, 0.4, s.tz, 12, [0.15, 0.1, 0.22], 4, 0.12, 0.5, 2);
+}
+// a tentacle as points: from (x0, y0, z0) out along angle a; lift raises it into an arch, curl coils the tip
+function tentaclePts(x0, y0, z0, a, len, lift, wav, ph, n = 10) {
+  const pts = [], sx = Math.sin(a), cz = Math.cos(a);
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1), dist = u * len, wig = Math.sin(u * 5 + ph) * wav * u;
+    pts.push(x0 + sx * dist + cz * wig, Math.max(0.12, y0 * (1 - u) + lift * Math.sin(u * Math.PI * 0.9) + 0.12), z0 + cz * dist - sx * wig);
+  }
+  return pts;
+}
+BOSS_DRAW.kraken = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, ai = e.ai, s = e.scale;
+  if (R.enemyDraw.kraken) pushEnemy('kraken', false, e.x, e.y || 0, e.z, e.yaw, MODELS.defs.kraken.clips.still.row, s, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (e.portrait) return;
+  bossShadow(e, 0.45);
+  const col = [t[0] * (1 - fl) + fl, t[1] * (1 - fl) + fl, t[2] * (1 - fl) + fl, 1], wide = u => 1 - u * 0.8, tw = 0.26 * s;
+  // the resting arms sprawl around it, curling; while it whirls they sweep round
+  const spin = ai.state === 'whirl' || ai.state === 'whirlWind' ? ai.spin : 0, wave = ai.wave || 0;
+  for (let i = 0; i < 8; i++) {
+    const a = e.yaw + (i + 0.5) / 8 * TAU + spin, bx = e.x + Math.sin(a) * 0.55 * s, bz = e.z + Math.cos(a) * 0.55 * s;
+    const len = (1.0 + 0.15 * Math.sin(wave * 1.3 + i)) * s * (1 - dead * 0.6);
+    R.ribStrip(tentaclePts(bx, 0.15 * s, bz, a + (spin ? 0.6 : 0), len, 0.12 * s, 0.35 * s, wave * 2.2 + i * 1.7), 10, tw * 0.75, col, 1, 0, 1, wide);
+  }
+  // slam tentacles: rear up over the lane, then lie along it
+  for (const sl of ai.slams || []) {
+    const bx = e.x + Math.sin(sl.rot) * 0.6 * s, bz = e.z + Math.cos(sl.rot) * 0.6 * s;
+    let len, lift;
+    if (sl.t < sl.dur) { const u = sl.t / sl.dur; len = KRAKEN.slamLen * (0.35 + 0.15 * u); lift = 3.5 + 2 * u; }
+    else { const u = clamp((sl.t - sl.dur) / 0.7, 0, 1); len = KRAKEN.slamLen * (1 - 0.6 * u * u); lift = 0.2 + u * u * 2.5; }
+    R.ribStrip(tentaclePts(bx, 0.3 * s, bz, sl.rot, len, lift, 0.25, sl.ph, 12), 12, tw, col, 1, 0, 1, wide);
+  }
+  if (ai.state === 'whirl') pushDecal(e.x, e.z, KRAKEN.whirlR, KRAKEN.whirlR, -ai.spin, 3, 0, 0.5, 0.6, 0.85, 1, 0.3, true);
+};
+SHOT_DRAW.ink = s => {
+  pushImp(s.x, s.y, s.z, 0.42, 0, 0, 1, 1, 27, 0, 0, s.t * 4, 1, 0, 0, 1);
+  pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.35, 0, 1, 0, 0, 0.02, 0.02, 0.06, 0.45);
+};
+
 // ---- 14-ui.js ----
 // ============================================================
 // UI: screens, HUD, level-up cards, chest roulette, overlay drawing
@@ -14123,6 +14455,7 @@ function renderAllIcons() {
     prism: { scale: 0.66, emissive: 0.3, p1: 2 },
     gale: { scale: 0.58, emissive: 0.35, az: -1, eye: [0, 2.3, 1.0] },
     yoyo: { scale: 0.62, emissive: 0.15, eye: [0, 1.5, 2.0] },
+    bubble: { scale: 0.62, emissive: 0.15 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

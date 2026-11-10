@@ -351,6 +351,14 @@ void main() {
     N = normalize(vec3((grain - 0.5) * 0.08, 1.0, 0.0));
     ao = 1.0 - 0.35 * seam;
     gloss = 0.18; sharp = 30.0;
+  } else if (style == 14) {
+    // coral reef: pale sea-floor sand in soft ripples under shimmering caustic light
+    float rip = sin(p.x * 1.6 + texture(uNoise, p * 0.05).g * 6.0) * 0.5 + 0.5;
+    alb = mix(uStoneA, uStoneB, mott * 0.8 + rip * 0.15) * (0.94 + 0.1 * fine);
+    float ca = texture(uNoise, p * 0.14 + vec2(uTime * 0.06, uTime * 0.045)).r + texture(uNoise, p * 0.17 - vec2(uTime * 0.05, -uTime * 0.03)).g;
+    emis = vec3(0.55, 0.95, 1.0) * pow(1.0 - abs(ca - 1.0), 7.0) * 0.6;
+    N = normalize(vec3(cos(p.x * 1.6) * 0.05, 1.0, 0.0));
+    gloss = 0.08;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -893,6 +901,8 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     return vec2(d, 2.0);
   }
   if (type == 27) {
+    // P1.x > 0.5: a solid blob of glossy black ink instead of a goo bubble
+    if (P1.x > 0.5) return vec2(length(p) - 0.82 + 0.04 * sin(p.x * 9.0 + ph * 6.0) * sin(p.y * 8.0), 12.0);
     float d = abs(length(p) - 0.82) - 0.035;
     d = min(d, length(p - vec3(-0.32, 0.36, 0.55)) - 0.1);
     return vec2(d, 0.0);
@@ -967,6 +977,16 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 47) {
+    // bubble trap: a big bubble with a little orange critter caught inside, and two small bubbles rising beside it
+    float big = abs(length(p - vec3(-0.12, -0.1, 0.0)) - 0.62) - 0.03;
+    big = min(big, length(p - vec3(-0.36, 0.2, 0.42)) - 0.08);
+    float s1 = abs(length(p - vec3(0.55, 0.45, 0.1)) - 0.22) - 0.025;
+    float s2 = abs(length(p - vec3(0.42, 0.85, -0.05)) - 0.13) - 0.02;
+    float critter = length((p - vec3(-0.12, -0.18, 0.0)) * vec3(1.0, 1.25, 1.0)) - 0.24;
+    float b = min(big, min(s1, s2));
+    return vec2(min(b, critter), critter < b ? 5.0 : 0.0);
   }
   if (type == 46) {
     // yo-yo: two rounded discs on a short axle (axle up), spinning, with a stripe on top; P1.x picks the plastic color

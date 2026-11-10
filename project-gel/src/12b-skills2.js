@@ -201,3 +201,57 @@ SKILL_HOOKS.yoyo = {
     }
   },
 };
+
+// ---------- Bubble Trap (chapter 15): bubbles trap enemies and float them off the ground, then pop, bursting on everything nearby ----------
+SKILL_HOOKS.bubble = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, rad = L.radius * areaMul();
+    st.shots = st.shots || []; st.traps = st.traps || [];
+    st.t = (st.t ?? 0.8) - dt;
+    if (st.t <= 0) {
+      // aim at the nearest enemies not already caught (bosses only once nothing else is near)
+      const near = [];
+      enemiesInRadius(h[0], h[2], 8, e => { if (!(e.bubbled > 0)) near.push([Math.hypot(e.x - h[0], e.z - h[2]) + (e.boss ? 20 : 0), e]); });
+      near.sort((a, b) => a[0] - b[0]);
+      if (near.length) {
+        st.t = L.cd * cdMul();
+        for (let i = 0; i < L.count; i++) st.shots.push({ x: h[0], y: 1.0, z: h[2], tgt: near[i % near.length][1], t: 0, ph: rand(0, 10), vx: 0, vz: 0 });
+        AUDIO.play('pop', 0.4);
+      } else st.t = 0.2;
+    }
+    for (const b of st.shots) {
+      b.t += dt;
+      const e = b.tgt;
+      if (e && !e.dying) { const dx = e.x - b.x, dz = e.z - b.z, l = Math.hypot(dx, dz) || 1; b.vx = dx / l * 9; b.vz = dz / l * 9; }
+      b.x += b.vx * dt; b.z += b.vz * dt; b.y = 1.0 + Math.sin(b.t * 9) * 0.08;
+      if (b.t > 1.6 || arenaSd(b.x, b.z) > 0) { b.done = true; continue; }
+      if (e && !e.dying && Math.hypot(e.x - b.x, e.z - b.z) < 0.6) {
+        b.done = true;
+        if (e.boss || e.bubbled > 0) { hurtEnemy(e, L.dmg * 0.6, 0, 0, { sound: false, color: [0.7, 0.95, 1] }); FX.burst(b.x, 1, b.z, 8, [0.85, 0.97, 1], 3, 0.07, 0.3, 4); }
+        else { e.bubbled = L.hold; st.traps.push({ e, t: L.hold, ph: rand(0, 10) }); }
+      }
+    }
+    st.shots = st.shots.filter(b => !b.done);
+    for (const tr of st.traps) {
+      const e = tr.e;
+      tr.t -= dt;
+      if (!e.dying) e.y = Math.min(0.7, (e.y || 0) + dt * 1.2);
+      if (tr.t <= 0 || e.dying) {
+        // pop: a burst that hits the captive and everything around it
+        tr.done = true; e.y = 0; e.bubbled = 0;
+        enemiesInRadius(e.x, e.z, rad, o => hurtEnemy(o, L.dmg, (o.x - e.x) * 2, (o.z - e.z) * 2, { sound: false, color: [0.7, 0.95, 1] }));
+        FX.burst(e.x, 1.0, e.z, 14, [0.85, 0.97, 1], 5, 0.08, 0.4, 4); FX.ring(e.x, e.z, rad * 1.4, [0.7, 0.95, 1], 0.35);
+        AUDIO.play('pop', 0.5);
+      }
+    }
+    st.traps = st.traps.filter(tr => !tr.done);
+  },
+  emit(s) {
+    const st = s.st, t = G.run.t;
+    for (const b of st.shots || []) pushImp(b.x, b.y, b.z, 0.3, 0, 0, 1, 1, 27, 3, 0.1, b.ph + t, 0, 0, 0, 0.8);
+    for (const tr of st.traps || []) {
+      const e = tr.e, wob = 1 + Math.sin(t * 6 + tr.ph) * 0.04;
+      pushImp(e.x, (e.y || 0) + 0.65 * e.scale, e.z, 0.72 * e.scale * wob, 0, 0, 1, 1, 27, 3, 0.1, tr.ph + t, 0, 0, 0, 0.75);
+    }
+  },
+};

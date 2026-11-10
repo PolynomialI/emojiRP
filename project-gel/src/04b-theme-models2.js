@@ -6,11 +6,13 @@ Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: 
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
   crystal: 0.02, stalagmite: 0.025, geode: 0.016,
   cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03,
-  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016 });
+  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016,
+  coral: 0.018, kelp: 0.02, clam: 0.02, kraken: 0.022 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
   'crystal', 'stalagmite', 'geode',
   'cloudpuff', 'pillar', 'rainbow', 'stormcloud',
-  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead');
+  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead',
+  'coral', 'kelp', 'clam', 'kraken');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -273,4 +275,52 @@ function themeModels2(defs) {
       ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.36, 0.05, Math.sin(a) * 0.36], r: 0.07, col: i % 2 ? red : blue, k: 0.02 }; }),
     ], { ao: 0.5 });
   }
+  // ---------- Coral Reef (chapter 15) ----------
+  {
+    const sand = C('#e8d6a8'), kelpG = C('#3f9a4a'), kelpD = C('#2a7a3a'), shellA = C('#f2b8c8'), shellB = C('#d88aa8'), pearl = C('#fffaf0'), lip = C('#a8486a');
+    // branching coral; takes the tint
+    P('coral', [
+      { s: 'ell', c: [0, 0.06, 0], rr: [0.3, 0.08, 0.28], k: 0.05 },
+      { s: 'cap', a: [0, 0, 0], b: [0.05, 0.75, 0.02], r: 0.09, r2: 0.06, k: 0.04 },
+      { s: 'cap', a: [0.04, 0.4, 0], b: [0.38, 0.85, 0.1], r: 0.07, r2: 0.05, k: 0.04 },
+      { s: 'cap', a: [0.03, 0.3, 0], b: [-0.34, 0.72, -0.08], r: 0.07, r2: 0.05, k: 0.04 },
+      { s: 'cap', a: [0.05, 0.6, 0], b: [-0.12, 1.1, 0.14], r: 0.06, r2: 0.045, k: 0.04 },
+      { s: 'cap', a: [0.2, 0.62, 0.05], b: [0.24, 1.0, -0.2], r: 0.05, r2: 0.04, k: 0.04 },
+      { s: 'cap', a: [0.02, 0.2, 0.02], b: [0.1, 0.55, 0.36], r: 0.06, r2: 0.045, k: 0.04 },
+      ...[[0.38, 0.85, 0.1], [-0.34, 0.72, -0.08], [-0.12, 1.1, 0.14], [0.24, 1.0, -0.2], [0.1, 0.55, 0.36], [0.05, 0.75, 0.02]].map(c => ({ s: 'sph', c, r: 0.075, k: 0.03 })),
+    ], { ao: 0.6 });
+    // a clump of tall kelp blades
+    P('kelp', [
+      ...[[0, 0, 1.6, 0.12], [0.18, 0.08, 1.25, -0.15], [-0.15, -0.06, 1.4, 0.1], [0.05, -0.18, 1.1, 0.18]].flatMap(([x, z, hgt, bend]) => [
+        { s: 'cap', a: [x, 0, z], b: [x + bend, hgt * 0.5, z + bend * 0.5], r: 0.05, r2: 0.045, col: kelpG, k: 0.02 },
+        { s: 'cap', a: [x + bend, hgt * 0.5, z + bend * 0.5], b: [x - bend * 0.5, hgt, z], r: 0.045, r2: 0.02, col: kelpG, k: 0.02 },
+        { s: 'ell', c: [x + bend * 0.7, hgt * 0.62, z + bend * 0.3], rr: [0.09, 0.05, 0.03], col: kelpD, k: 0.02 },
+      ]),
+    ], { ao: 0.5 });
+    // a giant clam, open, with a pearl
+    P('clam', [
+      { s: 'ell', c: [0, 0.14, 0], rr: [0.5, 0.15, 0.42], col: shellA, k: 0.02 },
+      { s: 'ell', c: [0, 0.42, -0.28], rr: [0.5, 0.36, 0.12], col: shellB, k: 0.02 },
+      ...[-0.3, -0.1, 0.1, 0.3].map(x => ({ s: 'cap', a: [x * 0.6, 0.12, -0.3], b: [x, 0.7, -0.32], r: 0.035, col: lip, k: 0.02 })),
+      { s: 'ell', c: [0, 0.24, 0.05], rr: [0.36, 0.05, 0.3], col: lip, k: 0.02 },
+      { s: 'sph', c: [0, 0.36, 0.05], r: 0.13, col: pearl, k: 0 },
+      { s: 'ell', c: [0, 0.03, 0], rr: [0.55, 0.04, 0.48], col: sand, k: 0.04 },
+    ], { ao: 0.6 });
+  }
+  // ---------- Kraken (chapter 15 boss): a great octopus head (takes the tint); its tentacles are drawn as tubes ----------
+  {
+    const yel = C('#ffe14a'), dark = C('#1a1020'), spot = C('#d88ae8'), white = C('#ffffff');
+    P('kraken', [
+      { s: 'ell', c: [0, 0.6, -0.05], rr: [0.52, 0.55, 0.5], k: 0.06 },
+      { s: 'ell', c: [0, 1.05, -0.2], rr: [0.4, 0.42, 0.4], k: 0.14 },
+      { s: 'ell', c: [0, 0.2, 0], rr: [0.6, 0.2, 0.58], k: 0.1 },
+      ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = (i / 8) * TAU; return { s: 'cap', a: [Math.cos(a) * 0.3, 0.2, Math.sin(a) * 0.3], b: [Math.cos(a) * 0.75, 0.05, Math.sin(a) * 0.75], r: 0.14, r2: 0.08, k: 0.06 }; }),
+      { s: 'ell', c: [0.23, 0.64, 0.38], rr: [0.15, 0.17, 0.09], col: yel, k: 0 }, { s: 'ell', c: [-0.23, 0.64, 0.38], rr: [0.15, 0.17, 0.09], col: yel, k: 0 },
+      { s: 'ell', c: [0.23, 0.63, 0.46], rr: [0.035, 0.12, 0.03], col: dark, k: 0 }, { s: 'ell', c: [-0.23, 0.63, 0.46], rr: [0.035, 0.12, 0.03], col: dark, k: 0 },
+      { s: 'sph', c: [0.27, 0.7, 0.45], r: 0.025, col: white, k: 0 }, { s: 'sph', c: [-0.19, 0.7, 0.45], r: 0.025, col: white, k: 0 },
+      { s: 'cap', a: [0.42, 0.86, 0.3], b: [0.1, 0.78, 0.44], r: 0.05, col: dark, k: 0.01 }, { s: 'cap', a: [-0.42, 0.86, 0.3], b: [-0.1, 0.78, 0.44], r: 0.05, col: dark, k: 0.01 },
+      ...[[0.25, 1.2, 0.1, 0.07], [-0.2, 1.3, -0.05, 0.06], [0.05, 1.42, -0.25, 0.08], [0.35, 0.95, -0.3, 0.06], [-0.38, 1.0, -0.25, 0.07]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: spot, k: 0.01 })),
+    ], { ao: 0.5 });
+  }
 }
+
