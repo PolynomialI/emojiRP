@@ -2,9 +2,11 @@
 // Chapters 11-15: scenery and boss bodies, built with prop() like 04a-theme-models.js.
 // Model units: 1 is about one hero leg. Parts without col take the instance tint.
 // ============================================================
-Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'] });
-Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014 });
-MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking');
+Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'] });
+Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
+  crystal: 0.02, stalagmite: 0.025, geode: 0.016 });
+MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
+  'crystal', 'stalagmite', 'geode');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -91,5 +93,51 @@ function themeModels2(defs) {
     m.parts.push({ s: 'cyl', ax: 'y', c: [hl[0], hl[1] - 0.33, hl[2]], r: 0.075, hh: 0.015, rd: 0.01, col: claw, bone: 4, k: 0 });
     m.top = hd[1] + 0.3; m.bmin = [-0.6, -0.03, -0.55]; m.bmax = [0.6, m.top + 0.05, 0.55]; m.name = 'pumpking'; m.runAmp = 0.6;
     defs.pumpking = m;
+  }
+  // ---------- Crystal Caverns (chapter 12) ----------
+  {
+    const rockD = C('#2a2438');
+    // a cluster of crystal shafts on a dark rock base; the crystals take the tint
+    P('crystal', [
+      { s: 'ell', c: [0, 0.05, 0], rr: [0.42, 0.1, 0.36], col: rockD, k: 0.04 },
+      { s: 'cap', a: [0, 0, 0], b: [0.05, 1.3, 0.02], r: 0.17, r2: 0.02, k: 0.01 },
+      { s: 'cap', a: [0.1, 0, 0.05], b: [0.45, 0.85, 0.12], r: 0.12, r2: 0.015, k: 0.01 },
+      { s: 'cap', a: [-0.08, 0, -0.04], b: [-0.4, 0.95, -0.1], r: 0.13, r2: 0.015, k: 0.01 },
+      { s: 'cap', a: [0.02, 0, -0.08], b: [0.1, 0.7, -0.42], r: 0.1, r2: 0.012, k: 0.01 },
+      { s: 'cap', a: [-0.04, 0, 0.1], b: [-0.18, 0.55, 0.4], r: 0.09, r2: 0.012, k: 0.01 },
+    ], { ao: 0.6 });
+    // a rocky spire; takes the arena's rock color
+    P('stalagmite', [
+      { s: 'rock', c: [0, 0.2, 0], r: 0.35, bump: 0.15, k: 0.05 },
+      { s: 'cap', a: [0, 0.2, 0], b: [0.05, 1.5, 0.03], r: 0.26, r2: 0.03, k: 0.06 },
+      { s: 'cap', a: [0.2, 0.1, 0.1], b: [0.32, 0.7, 0.15], r: 0.13, r2: 0.02, k: 0.04 },
+    ], { ao: 0.8 });
+  }
+  // ---------- Geode Titan (chapter 12 boss): a rock giant split open by crystals, with a glowing heart-stone ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.42, shY: 0.8, headY: 0.98, headR: 0.15, headZ: 0.1, shW: 0.3, hipW: 0.13, elOut: 0.1, upperLen: 0.2, foreLen: 0.2,
+      pelvisR: 0.2, torso: 'ell', torsoRR: [0.32, 0.28, 0.24], neckR: 0.12, armR: 0.11, handR: 0.16, legR: 0.13, k: 0.06 });
+    const J = m.J, hd = J.head, cyan = C('#7af0ff'), pink = C('#ff7ae0'), heart = C('#c8fbff'), eye = C('#ff9af0');
+    m.parts.push({ s: 'rock', c: [0, 0.66, -0.02], r: 0.29, bump: 0.12, bone: 1, k: 0.04 });
+    m.parts.push({ s: 'rock', c: [hd[0], hd[1] + 0.02, hd[2]], r: 0.17, bump: 0.12, bone: 2, k: 0.03 });
+    // the heart-stone in the chest, and crystals bursting out of the back and shoulders
+    m.parts.push({ s: 'sph', c: [0, 0.66, 0.24], r: 0.1, col: heart, bone: 1, k: 0.02 });
+    for (const [x, y, dx, dy, dz, r, col] of [[0, 0.78, 0.0, 0.32, -0.3, 0.1, cyan], [0.15, 0.7, 0.15, 0.24, -0.26, 0.08, pink], [-0.16, 0.68, -0.16, 0.26, -0.24, 0.085, cyan], [0.05, 0.55, 0.05, 0.16, -0.3, 0.07, pink]])
+      m.parts.push({ s: 'cap', a: [x, y, -0.18], b: [x + dx, y + dy, -0.18 + dz], r, r2: 0.012, col, bone: 1, k: 0.01 });
+    for (const sx of [1, -1]) {
+      m.parts.push({ s: 'cap', a: [sx * 0.32, 0.86, 0], b: [sx * 0.46, 1.12, -0.02], r: 0.08, r2: 0.012, col: sx > 0 ? pink : cyan, bone: 1, k: 0.01 });
+      m.parts.push({ s: 'cap', a: [sx * 0.28, 0.88, -0.06], b: [sx * 0.34, 1.06, -0.18], r: 0.06, r2: 0.01, col: sx > 0 ? cyan : pink, bone: 1, k: 0.01 });
+      m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.07, hd[1] + 0.03, hd[2] + 0.15], rr: [0.05, 0.035, 0.03], col: eye, bone: 2, k: 0 });
+    }
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.07, hd[2] + 0.12], hs: [0.13, 0.03, 0.05], rd: 0.02, bone: 2, k: 0.03 });
+    // boulder fists studded with crystal knuckles
+    for (const sd of ['L', 'R']) {
+      const sx = sd === 'L' ? 1 : -1, b = sd === 'L' ? 4 : 6, ha = J['ha' + sd];
+      m.parts.push({ s: 'rock', c: [sx * 0.33, 0.86, -0.02], r: 0.16, bump: 0.16, bone: 1, k: 0.04 });
+      m.parts.push({ s: 'rock', c: [ha[0], ha[1] - 0.03, ha[2] + 0.02], r: 0.19, bump: 0.16, bone: b, k: 0.04 });
+      for (const dx of [-0.07, 0.07]) m.parts.push({ s: 'cap', a: [ha[0] + dx, ha[1] - 0.06, ha[2] + 0.14], b: [ha[0] + dx * 1.3, ha[1] - 0.1, ha[2] + 0.26], r: 0.045, r2: 0.01, col: cyan, bone: b, k: 0.01 });
+    }
+    m.top = hd[1] + 0.2; m.bmin = [-0.72, -0.03, -0.62]; m.bmax = [0.72, m.top + 0.2, 0.6]; m.name = 'geode'; m.runAmp = 0.65;
+    defs.geode = m;
   }
 }

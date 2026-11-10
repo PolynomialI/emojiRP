@@ -55,3 +55,49 @@ SKILL_HOOKS.wisps = {
     }
   },
 };
+
+// ---------- Prism Beam (chapter 12): a beam to the nearest enemy that splits on to the next, cutting through everything on each line ----------
+const PRISM_COLS = [[1, 0.45, 0.9], [0.45, 0.85, 1], [0.6, 1, 0.55], [1, 0.9, 0.45], [0.75, 0.55, 1]];
+SKILL_HOOKS.prism = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos;
+    st.beams = (st.beams || []).filter(b => (b.t += dt) < 0.3);
+    st.t = (st.t ?? 0.6) - dt;
+    if (st.t > 0) return;
+    let tgt = nearestEnemy(h[0], h[2], 8);
+    if (!tgt) { st.t = 0.2; return; }
+    st.t = L.cd * cdMul();
+    const w = L.width * areaMul(), hit = new Set(), pts = [[h[0], 1.1, h[2]]];
+    let x = h[0], z = h[2];
+    for (let i = 0; i <= L.bounces && tgt; i++) {
+      // each line runs on a little past its target, so it also cuts whatever stands behind
+      const dx = tgt.x - x, dz = tgt.z - z, d = Math.hypot(dx, dz) || 1, len = d + 1.2, rot = Math.atan2(dx, dz);
+      enemiesInRadius(x + dx / d * len / 2, z + dz / d * len / 2, len / 2 + w + 0.5, e => {
+        if (hit.has(e) || !laneHit(x, z, rot, len, w + (e.radius || 0.4) * 0.5, e.x, e.z)) return;
+        hit.add(e); hurtEnemy(e, L.dmg, dx / d * 1.5, dz / d * 1.5, { sound: false, color: [1, 0.75, 1] });
+      });
+      hit.add(tgt);
+      pts.push([tgt.x, 0.9, tgt.z]);
+      x = tgt.x; z = tgt.z;
+      // refract to the nearest enemy this beam hasn't touched yet
+      let best = null, bd = 6;
+      enemiesInRadius(x, z, 6, e => { if (hit.has(e)) return; const ed = Math.hypot(e.x - x, e.z - z); if (ed < bd) { bd = ed; best = e; } });
+      tgt = best;
+    }
+    st.beams.push({ pts, t: 0, w });
+    AUDIO.play('zap', 0.4);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.beams) return;
+    for (const b of st.beams) {
+      const a = 1 - b.t / 0.3;
+      for (let i = 0; i < b.pts.length - 1; i++) {
+        const p = b.pts[i], q = b.pts[i + 1], c = PRISM_COLS[i % PRISM_COLS.length], seg = [p[0], p[1], p[2], q[0], q[1], q[2]];
+        R.ribStrip(seg, 2, b.w * 0.45, [1, 1, 1, a], 0);
+        R.ribStrip(seg, 2, b.w * 1.5, [c[0], c[1], c[2], 0.55 * a], 0);
+        pushImp(q[0], q[1], q[2], 0.22 * (0.5 + a), 0, 0, 1, 1, 44, 0, 0.6, G.run.t * 2 + i, 0, 2, 0, a);
+      }
+    }
+  },
+};

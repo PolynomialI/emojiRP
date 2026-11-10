@@ -108,6 +108,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Wisps'], ['cd', 'Darts every', 's'], ['pierce', 'Passes through']],
     levels: L10({ dmg: [12, 13, 15, 16, 18, 20, 22, 25, 28, 32], count: [2, 2, 2, 3, 3, 3, 4, 4, 4, 5], cd: [2.2, 2.1, 2.0, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4], pierce: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6] }),
   },
+  prism: {
+    name: 'Prism Beam', from: 12, intro: 'Fires a beam of light at the nearest enemy that splits from target to target, cutting through everything along each line.', icon: { type: 44, colw: 0 },
+    fields: [['dmg', 'Damage'], ['bounces', 'Splits'], ['cd', 'Cooldown', 's'], ['width', 'Beam width', 'm']],
+    levels: L10({ dmg: [18, 20, 22, 25, 28, 31, 35, 39, 44, 50], bounces: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], cd: [1.8, 1.75, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1, 1.0], width: [0.4, 0.42, 0.44, 0.47, 0.5, 0.53, 0.56, 0.6, 0.64, 0.7] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -201,6 +206,7 @@ const BOSS_TYPES = {
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
 BOSS_TYPES.pumpking = { name: 'Pumpkin King', model: 'pumpking', meshes: ['pumpking', 'pumpkin'], hp: 4300, speed: 2.3, dmg: 20, scale: 2.8, radius: 1.2, tint: '#3a2850', mass: 60, portraitTop: 1.12 };
+BOSS_TYPES.geode = { name: 'Geode Titan', model: 'geode', meshes: ['geode', 'icespike'], hp: 4500, speed: 1.9, dmg: 20, scale: 3.0, radius: 1.3, tint: '#6a5a8a', mass: 60, portraitTop: 1.08 };
 BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 4200, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4000, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
@@ -239,6 +245,8 @@ const ARENAS = [
     props: [['dish', 2.5, 0.55, 0.7], ['lander', 2, 0.42, 0.5], ['habdome', 2, 0.9, 1.2], ['rock', 5, 0.8, 1.3]], zones: [['boost', 2.4, 2.0, 2.8]], wall: 'moonwall' },
   { id: 'graveyard', name: 'Haunted Graveyard', floor: 10, stoneA: '#4a5a3a', stoneB: '#33402c', grout: '#221a14', accent: '#b06aff', fog: '#120c1e', sky: '#6a5a8a', ground: '#1e2420', light: '#e6deff', spotMin: 0.46, shadowTint: '#100a1e', rock: '#6a6a72', pool: '#3a2a5a', poolGlow: 0.1,
     props: [['tombstone', 10, 0.52, 0.64], ['pumpkin', 5, 0.38, 0.48], ['gravetree', 4, 0.42, 0.58], ['rock', 2, 0.8, 1.1]], zones: [['mist', 3, 2.2, 3.4]], wall: 'fence' },
+  { id: 'caverns', name: 'Crystal Caverns', floor: 11, stoneA: '#3a3350', stoneB: '#2a2440', grout: '#120e1e', accent: '#5ae8ff', fog: '#0a0716', sky: '#4a3a7a', ground: '#1c1830', light: '#ebe6ff', spotMin: 0.46, shadowTint: '#0c0820', rock: '#5a5470', pool: '#7a5aff', poolGlow: 0.4,
+    props: [['crystal', 7, 0.5, 0.75], ['stalagmite', 6, 0.5, 0.8], ['rock', 3, 0.8, 1.2]], zones: [['crystalpool', 2.5, 2.0, 3.0]], wall: 'cavewall' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -290,6 +298,10 @@ const PROP_KINDS = {
   pumpkin: { models: ['pumpkin'], unit: 0.36, block: true, shots: true },
   gravetree: { models: ['gravetree'], unit: 0.16, block: true, tall: 2.6 },
   fence: { models: ['fence'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
+  crystal: { models: ['crystal'], unit: 0.4, block: true, shots: true, tints: ['#6ae8ff', '#ff6ad8', '#b07aff'], tall: 1.6 },
+  stalagmite: { models: ['stalagmite'], unit: 0.4, block: true, shots: true, tint: 'rock', tall: 2 },
+  cavewall: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a3450', '#2e2a44', '#463e5e'], wallR: [1.0, 1.2] },
+  crystalspike: { models: ['icespike'], unit: 0.3, block: true, shots: false, tint: '#d58aff', shadow: false },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -305,10 +317,11 @@ const ZONE_KINDS = {
   tidepool: { block: true, col: '#2fb8e0', glow: 0.12 },
   boost: { slow: 1.35, col: '#3ad8ff', glow: 0.55 },
   mist: { slow: 0.7, col: '#7a5aa8', glow: 0.14 },
+  crystalpool: { block: true, col: '#7a5aff', glow: 0.45 },
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;

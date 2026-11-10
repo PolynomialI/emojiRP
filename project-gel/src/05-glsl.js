@@ -310,6 +310,19 @@ void main() {
     alb = mix(alb, lh > 0.92 ? vec3(0.55, 0.22, 0.08) : vec3(0.45, 0.32, 0.1), leaf);
     N = normalize(vec3((blades - 0.5) * 0.3 * grass, 1.0, (fine - 0.5) * 0.3));
     ao = mix(0.8, 1.0, blades);
+  } else if (style == 11) {
+    // crystal caverns: dark stone plates split by glowing crystal veins (cyan here, pink there), with sparkling chips
+    vec3 v = voro(p / 2.6);
+    float vein = 1.0 - smoothstep(0.0, 0.05, v.y);
+    alb = mix(uStoneA, uStoneB, v.z) * (0.8 + 0.25 * fine) * (1.0 - 0.5 * vein);
+    vec3 vc = mix(uAccent, vec3(1.0, 0.45, 0.9), step(0.5, hash12(floor(p / 9.0))));
+    float pulse = 0.7 + 0.3 * sin(uTime * 1.2 + v.z * 9.0);
+    emis = vc * vein * pulse * 0.9;
+    float ch = hash12(floor(p * 6.0));
+    emis += vc * step(0.994, ch) * (1.0 - smoothstep(0.12, 0.3, length(fract(p * 6.0) - 0.5))) * (0.8 + 0.5 * sin(uTime * 4.0 + ch * 30.0));
+    N = normalize(vec3((fine - 0.5) * 0.25, 1.0, (mott - 0.5) * 0.25));
+    ao = mix(0.7, 1.0, smoothstep(0.0, 0.2, v.y));
+    gloss = 0.12; sharp = 40.0;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -925,6 +938,14 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 44) {
+    // prism: a six-sided crystal with pointed ends, turning slowly; gem color from P1.y
+    vec3 q = p; q.xz = rot2(ph * 1.5) * q.xz;
+    vec2 a = abs(q.xz);
+    float rr = max(a.x * 0.866 + a.y * 0.5, a.y);
+    float d = max(rr - 0.34, (abs(q.y) + rr * 1.2 - 0.85) * 0.64);
+    return vec2(d, 1.0);
   }
   if (type == 43) {
     // spirit wisp: a round glowing ghost with a wavy tail streaming back along -z and two dark eyes

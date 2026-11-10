@@ -131,3 +131,110 @@ SHOT_DRAW.ghost = s => {
   pushImp(s.x, s.y + Math.sin(s.ph + s.life * 5) * 0.15, s.z, s.r, s.vx / sp, 0, s.vz / sp, 1, 43, 0, 0.35, s.ph + G.run.t, 1, 0, 0, 0.9);
   pushDecal(s.x + 0.08, s.z + 0.06, s.r * 0.7, s.r * 0.6, 0, 1, 0, 0, 0.05, 0.02, 0.08, 0.25);
 };
+
+// ---------- Geode Titan (chapter 12): crystal shard volleys, lines of crystal spikes that stay as walls, and a spinning prism laser ----------
+const GEODE = { laneLen: 14, laserLen: 13 };
+BOSS_AI.geode = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; }
+  switch (ai.state) {
+    case 'walk': {
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.25 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['shards', 'spikes', 'laser'][ai.next++ % 3];
+        if (k === 'shards') { ai.state = 'throw'; ai.t = ai.dur = 0.6; ai.volleys = rage ? 3 : 2; }
+        else if (k === 'spikes') {
+          ai.state = 'slamWind'; ai.t = ai.dur = 0.9; ai.lanes = [];
+          const base = Math.atan2(dx, dz), n = rage ? 5 : 3, spread = rage ? 0.5 : 0.6;
+          for (let i = 0; i < n; i++) { const rot = base + (i - (n - 1) / 2) * spread; ai.lanes.push(rot); addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.8, len: GEODE.laneLen, rot, dur: ai.dur }); }
+        } else {
+          ai.state = 'laserWind'; ai.t = ai.dur = 0.9; ai.beams = rage ? 3 : 2;
+          ai.laserA = Math.atan2(dx, dz) + Math.PI / ai.beams; ai.laserV = (Math.random() < 0.5 ? 1 : -1) * (rage ? 0.75 : 0.6);
+          for (let i = 0; i < ai.beams; i++) addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.5, len: GEODE.laserLen, rot: ai.laserA + i * TAU / ai.beams, dur: ai.dur });
+        }
+      }
+      break;
+    }
+    case 'throw': {
+      // a fan of crystal shards; alternate volleys fill the gaps of the one before
+      e.clip = 'throw'; e.clipU = clamp(1 - ai.t / ai.dur, 0, 0.999); e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt, 10);
+      if (ai.t <= 0) {
+        const n = rage ? 9 : 7, base = Math.atan2(dx, dz), fan = 0.95, step = fan / (n - 1), from = bossLocal(e, 0, 0.6, 0.35);
+        for (let i = 0; i < n; i++) {
+          const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 9;
+          run.eShots.push({ kind: 'shard', x: from[0], y: 0.9, z: from[2], vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 13 * run.info.dmgMul, r: 0.42, life: 2.2, ph: rand(0, 10) });
+        }
+        AUDIO.play('throw', 0.6);
+        if (--ai.volleys > 0) ai.t = ai.dur = 0.45;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.2; }
+      }
+      break;
+    }
+    case 'slamWind':
+      e.clip = 'slam'; e.clipU = (1 - ai.t / ai.dur) * 0.6; e.vx *= 0.7; e.vz *= 0.7;
+      if (ai.t <= 0) {
+        // crystal spikes burst up along each marked line and stand for a few seconds as walls
+        ai.state = 'slam'; ai.t = 0.6;
+        let hit = false;
+        for (const rot of ai.lanes) {
+          if (!hit && laneHit(e.x, e.z, rot, GEODE.laneLen, 0.8 + HERO_R * 0.5, h[0], h[2])) {
+            hit = true; hurtHero(26 * run.info.dmgMul, e.x, e.z);
+            run.vel[0] += Math.cos(rot) * 7 * (Math.random() < 0.5 ? 1 : -1); run.vel[2] -= Math.sin(rot) * 7;
+          }
+          enemiesInRadius(e.x + Math.sin(rot) * 7, e.z + Math.cos(rot) * 7, 7.5, o => { if (!o.boss && laneHit(e.x, e.z, rot, GEODE.laneLen, 0.9, o.x, o.z)) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+          for (let k = 1.8; k < GEODE.laneLen; k += 1.5) {
+            const x = e.x + Math.sin(rot) * k, z = e.z + Math.cos(rot) * k;
+            if (arenaSd(x, z) < -0.8 && !inRock(x, z) && Math.hypot(x - h[0], z - h[2]) > 1.3) tempProp('crystalspike', x, z, 0.45, rage ? 3.5 : 3);
+            if (Math.random() < 0.5) FX.burst(x, 0.4, z, 3, [0.85, 0.6, 1], 4, 0.08, 0.4, 1);
+          }
+        }
+        FX.ring(e.x, e.z, 4, [0.8, 0.6, 1], 0.5); FX.crack(e.x, e.z, 3, 1.6);
+        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom');
+      }
+      break;
+    case 'slam':
+      e.clip = 'slam'; e.clipU = Math.min(0.999, 0.6 + (0.6 - Math.max(ai.t, 0)) * 0.66);
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    case 'laserWind':
+      e.clip = 'idle'; e.phase += dt; e.vx *= 0.7; e.vz *= 0.7;
+      e.yaw = angleLerp(e.yaw, ai.laserA, Math.min(1, dt * 8));
+      if (ai.t <= 0) { ai.state = 'laser'; ai.t = rage ? 3.4 : 2.8; ai.tick = 0; AUDIO.play('zap'); }
+      break;
+    case 'laser': {
+      // the heart-stone fires beams that sweep slowly around it
+      e.clip = 'idle'; e.phase += dt * 2; e.vx *= 0.7; e.vz *= 0.7;
+      ai.laserA += ai.laserV * dt; e.yaw = ai.laserA;
+      ai.tick -= dt;
+      for (let i = 0; i < ai.beams; i++) {
+        const rot = ai.laserA + i * TAU / ai.beams;
+        if (ai.tick <= 0 && laneHit(e.x, e.z, rot, GEODE.laserLen, 0.45 + HERO_R * 0.5, h[0], h[2])) { ai.tick = 0.3; hurtHero(9 * run.info.dmgMul, e.x, e.z); }
+        if (Math.random() < 0.5) FX.burst(e.x + Math.sin(rot) * GEODE.laserLen, 0.3, e.z + Math.cos(rot) * GEODE.laserLen, 1, [1, 0.6, 1], 2, 0.06, 0.3, 1);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
+      break;
+    }
+  }
+};
+BOSS_DRAW.geode = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, ai = e.ai;
+  if (R.enemyDraw.geode) pushEnemy('geode', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? MODELS.defs.geode.clips.idle.row + 2 : enemyRow(e), e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (e.portrait) return;
+  bossShadow(e);
+  if (dead) return;
+  const heart = bossLocal(e, 0, 0.66, 0.3);
+  FX.glow(heart[0], heart[1], heart[2], ai.state === 'laser' || ai.state === 'laserWind' ? 1.6 : 0.9, [0.6, 0.95, 1], 0.05, 0.55);
+  if (ai.state === 'laser') {
+    for (let i = 0; i < ai.beams; i++) {
+      const rot = ai.laserA + i * TAU / ai.beams, ex = e.x + Math.sin(rot) * GEODE.laserLen, ez = e.z + Math.cos(rot) * GEODE.laserLen;
+      const pts = [heart[0], heart[1], heart[2], e.x + Math.sin(rot) * 2.2, 0.5, e.z + Math.cos(rot) * 2.2, ex, 0.35, ez];
+      R.ribStrip(pts, 3, 0.16, [1, 0.85, 1, 1], 0);
+      R.ribStrip(pts, 3, 0.6, [0.85, 0.4, 1, 0.4], 0);
+    }
+  }
+};
+SHOT_DRAW.shard = s => {
+  pushImp(s.x, s.y, s.z, s.r, 0, 0, 1, 1, 44, 0, 0.35, s.ph + G.run.t * 3, 0, 2, 0, 1);
+  pushDecal(s.x + 0.08, s.z + 0.06, s.r * 0.6, s.r * 0.6, 0, 1, 0, 0, 0.02, 0.0, 0.06, 0.3);
+};
