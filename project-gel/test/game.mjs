@@ -345,7 +345,7 @@ if (mode === 'gear') {
   await page.click('#scOpen'); await page.waitForTimeout(1100); await render(2); await shot('gear-chest-open');
   await page.click('#scDone');
   await page.click('#gFuse'); await render(2); await shot('gear-fuse-empty');
-  for (let i = 0; i < 3; i++) await page.click('#fuseGrid .art[aria-label^="Common Star Wand"]');
+  for (let i = 0; i < 2; i++) await page.click('#fuseGrid .art[aria-label^="Common Star Wand"]');
   await render(1); await shot('gear-fuse-ready');
   console.log('other cards locked while filling:', await page.evaluate(() => [...document.querySelectorAll('#fuseGrid .art')].filter(b => !b.disabled).length));
   await page.click('#fuseGo'); await render(2); await shot('gear-fuse-done');

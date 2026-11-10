@@ -1,5 +1,5 @@
 // ============================================================
-// Gear: artifacts from scroll chests, fusing three into one, the four
+// Gear: artifacts from scroll chests, fusing two into one, the four
 // equip slots, and the stat bonuses of body colors and costumes
 // ============================================================
 
@@ -91,18 +91,19 @@ function rollArtifact() {
   return artKey(id, r);
 }
 function addArtifact(key, n = 1) { const it = G.save.gear.items; it[key] = (it[key] || 0) + n; }
-// three of one artifact and rarity become one of the next rarity; an equipped copy moves up with it
+// two of one artifact and rarity become one of the next rarity; an equipped copy moves up with it
+const FUSE_N = 2;
 function fuseArtifact(key) {
   const g = G.save.gear, { id, r } = artParse(key);
-  if (r >= RARITIES.length - 1 || (g.items[key] || 0) < 3) return null;
-  g.items[key] -= 3;
+  if (r >= RARITIES.length - 1 || (g.items[key] || 0) < FUSE_N) return null;
+  g.items[key] -= FUSE_N;
   if (!g.items[key]) delete g.items[key];
   const next = artKey(id, r + 1);
   addArtifact(next);
   for (const sl in g.eq) if (g.eq[sl] === key && !g.items[key]) g.eq[sl] = next;
   return next;
 }
-const canFuse = () => Object.keys(G.save.gear.items).some(k => G.save.gear.items[k] >= 3 && artParse(k).r < RARITIES.length - 1);
+const canFuse = () => Object.keys(G.save.gear.items).some(k => G.save.gear.items[k] >= FUSE_N && artParse(k).r < RARITIES.length - 1);
 const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
 
 // ---------- screens ----------
@@ -150,7 +151,7 @@ Object.assign(UI, {
     const cards = this.sortedArtKeys().map(k => {
       const { id, r, def } = artParse(k), b = document.createElement('button');
       const worn = g.eq[def.slot] === k;
-      b.className = `art r${r}${worn ? ' worn' : ''}${g.items[k] >= 3 && r < RARITIES.length - 1 ? ' fusable' : ''}`;
+      b.className = `art r${r}${worn ? ' worn' : ''}${g.items[k] >= FUSE_N && r < RARITIES.length - 1 ? ' fusable' : ''}`;
       b.innerHTML = `<i class="badge"><img alt="" src="${slotIcon(def.slot)}"></i><img alt="" src="${gearIcon(id)}"><b>${g.items[k]}</b>`;
       b.setAttribute('aria-label', `${RARITIES[r].name} ${def.name}, ${g.items[k]} owned${worn ? ', equipped' : ''}`);
       b.addEventListener('click', () => { AUDIO.play('click'); this.openArtifact(k); });
@@ -186,7 +187,7 @@ Object.assign(UI, {
     $('artStat').textContent = Object.keys(st).map(k => fmtBonus(k, st[k])).join(' · ');
     const top = r >= RARITIES.length - 1;
     let note = `You have ${n}.`;
-    if (!top) { const nx = artStats(artKey(id, r + 1)); note += ` Fuse 3 into ${RARITIES[r + 1].name}: ${Object.keys(nx).map(k => fmtBonus(k, nx[k])).join(' · ')}`; }
+    if (!top) { const nx = artStats(artKey(id, r + 1)); note += ` Fuse ${FUSE_N} into ${RARITIES[r + 1].name}: ${Object.keys(nx).map(k => fmtBonus(k, nx[k])).join(' · ')}`; }
     else note += ' Legendary is the top rarity.';
     $('artNote').textContent = note;
     const worn = g.eq[def.slot] === key;
@@ -205,10 +206,10 @@ Object.assign(UI, {
     this.renderGear(); this.openArtifact(key);
   },
 
-  // ---------- fuse: three slots, filled from the inventory with the same artifact and rarity ----------
+  // ---------- fuse: two slots, filled from the inventory with the same artifact and rarity ----------
   openFuse(prefill) {
     this.fuseSel = []; this.fuseMade = null;
-    const n = prefill ? Math.min(3, G.save.gear.items[prefill] || 0) : 0;
+    const n = prefill ? Math.min(FUSE_N, G.save.gear.items[prefill] || 0) : 0;
     if (prefill && artParse(prefill).r < RARITIES.length - 1) for (let i = 0; i < n; i++) this.fuseSel.push(prefill);
     this.show('fuseBox', true);
     this.renderFuse();
@@ -224,34 +225,34 @@ Object.assign(UI, {
     const res = $('fuseResult'), show = key || this.fuseMade;
     if (show) {
       const { id, r } = artParse(show), rr = key ? r + 1 : r;
-      res.className = `fslot result art r${rr}${key && sel.length < 3 ? ' faint' : ''}${!key ? ' made' : ''}`;
+      res.className = `fslot result art r${rr}${key && sel.length < FUSE_N ? ' faint' : ''}${!key ? ' made' : ''}`;
       res.innerHTML = `<img alt="" src="${gearIcon(id)}">`;
     } else { res.className = 'fslot result'; res.innerHTML = '<span>?</span>'; }
     const hint = $('fuseHint');
     if (key) {
       const { id, r, def } = artParse(key), nx = artStats(artKey(id, r + 1));
-      hint.textContent = sel.length < 3 ? `Add ${3 - sel.length} more ${RARITIES[r].name} ${def.name}.`
+      hint.textContent = sel.length < FUSE_N ? `Add ${FUSE_N - sel.length} more ${RARITIES[r].name} ${def.name}.`
         : `Fuse into ${RARITIES[r + 1].name} ${def.name}: ${Object.keys(nx).map(k => fmtBonus(k, nx[k])).join(' · ')}`;
     } else if (this.fuseMade) {
       const { r, def } = artParse(this.fuseMade);
       hint.textContent = `You made a ${RARITIES[r].name} ${def.name}!`;
-    } else hint.textContent = 'Tap an artifact below. Three of the same artifact and rarity fuse into the next rarity.';
+    } else hint.textContent = 'Tap an artifact below. Two of the same artifact and rarity fuse into the next rarity.';
     const cards = this.sortedArtKeys().map(k => {
       const { id, r, def } = artParse(k), b = document.createElement('button');
       const left = g.items[k] - sel.filter(x => x === k).length;
       b.className = `art r${r}`;
       b.innerHTML = `<i class="badge"><img alt="" src="${slotIcon(def.slot)}"></i><img alt="" src="${gearIcon(id)}"><b>${left}</b>`;
-      b.disabled = left <= 0 || r >= top || sel.length >= 3 || (key && k !== key);
+      b.disabled = left <= 0 || r >= top || sel.length >= FUSE_N || (key && k !== key);
       b.setAttribute('aria-label', `${RARITIES[r].name} ${def.name}, ${left} left`);
       b.addEventListener('click', () => { this.fuseMade = null; this.fuseSel.push(k); AUDIO.play('pop'); this.renderFuse(); });
       return b;
     });
     $('fuseGrid').replaceChildren(...cards);
-    $('fuseGo').disabled = sel.length < 3;
+    $('fuseGo').disabled = sel.length < FUSE_N;
   },
   fuseGo() {
     const sel = this.fuseSel;
-    if (sel.length < 3 || sel.some(k => k !== sel[0])) return;
+    if (sel.length < FUSE_N || sel.some(k => k !== sel[0])) return;
     const made = fuseArtifact(sel[0]);
     if (!made) return;
     saveGame(); AUDIO.play('chest'); G.hero.impulse(2);

@@ -48,9 +48,9 @@ const SKILLS = {
     levels: L10({ dmg: [12, 13, 14, 15, 17, 19, 21, 23, 25, 28], cd: [3.0, 3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.2, 2.0], strikes: [1, 1, 1, 2, 2, 2, 3, 3, 3, 4], radius: [0.6, 0.6, 0.65, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 1.0], chain: [0, 0, 0, 0, 0, 0, 1, 1, 1, 2] }),
   },
   aura: {
-    name: 'Aura', intro: 'A goo puddle around you burns everything standing in it.', icon: { type: 19, colw: 0 },
+    name: 'Aura', intro: 'A sticky goo puddle around you slows everything in it to a crawl and burns it hard.', icon: { type: 19, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['radius', 'Radius', 'm'], ['slow', 'Slow', '%']],
-    levels: L10({ dmg: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6], radius: [1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.6], slow: [0, 0, 0, 0, 10, 10, 15, 15, 20, 25] }),
+    levels: L10({ dmg: [6, 7, 8, 10, 11, 13, 15, 17, 20, 24], radius: [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8], slow: [30, 32, 35, 38, 40, 43, 46, 50, 55, 60] }),
   },
   worms: {
     name: 'Worms', intro: 'Goo worms tunnel under the floor and bite enemies.', icon: { type: 5, colw: 3 },
@@ -135,18 +135,18 @@ const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 // Evolutions: a skill at max level plus its partner ability turns into a stronger, named form, through a chest.
 // boost(L) gets the skill's level-10 stats and returns the ones the evolved form changes.
 const EVOLUTIONS = {
-  ball: { with: 'multishot', name: 'Goo Gatling', desc: 'Twice the fire rate, two more balls that pierce further, all molten gold.', boost: L => ({ dmg: Math.round(L.dmg * 1.3), cd: L.cd * 0.5, count: L.count + 2, pierce: L.pierce + 2 }) },
-  fists: { with: 'power', name: 'Titan Fists', desc: 'Heavier, longer punches that send out big shockwaves.', boost: L => ({ dmg: Math.round(L.dmg * 1.8), cd: L.cd * 0.8, reach: +(L.reach * 1.35).toFixed(1), shock: 2.2 }) },
-  grenade: { with: 'reach', name: 'Cluster Bomb', desc: 'Three more grenades with much bigger blasts.', boost: L => ({ dmg: Math.round(L.dmg * 1.5), count: L.count + 3, radius: +(L.radius * 1.35).toFixed(1) }) },
-  missile: { with: 'haste', name: 'Missile Swarm', desc: 'Four more golden missiles, fired faster, with wide splash.', boost: L => ({ count: L.count + 4, cd: L.cd * 0.65, splash: +(L.splash * 1.8).toFixed(1) }) },
-  blade: { with: 'speed', name: 'Buzzsaw Halo', desc: 'Three more blades, spinning wider and faster, cutting deeper.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 3, radius: +(L.radius * 1.3).toFixed(1), spin: Math.round(L.spin * 1.5) }) },
-  lightning: { with: 'magnet', name: 'Thunder God', desc: 'Three more strikes that chain much further.', boost: L => ({ dmg: Math.round(L.dmg * 1.4), strikes: L.strikes + 3, chain: L.chain + 3, radius: +(L.radius * 1.6).toFixed(1) }) },
-  aura: { with: 'thick', name: 'Toxic Bog', desc: 'A huge, sticky puddle that burns twice as hard and slows to a crawl.', boost: L => ({ dmg: Math.round(L.dmg * 2.2), radius: +(L.radius * 1.6).toFixed(1), slow: 50 }) },
-  frostnova: { with: 'armor', name: 'Absolute Zero', desc: 'A wider, harder freeze; frozen enemies take 50% more damage from everything.', boost: L => ({ dmg: L.dmg * 2, radius: +(L.radius * 1.5).toFixed(1), freeze: +(L.freeze * 1.6).toFixed(1), cd: +(L.cd * 0.85).toFixed(1) }) },
-  meteor: { with: 'growth', name: 'Armageddon', desc: 'Three more meteors, bigger, and much more often.', boost: L => ({ count: L.count + 3, radius: +(L.radius * 1.25).toFixed(1), cd: +(L.cd * 0.6).toFixed(1) }) },
-  wave: { with: 'regen', name: 'Tsunami', desc: 'Bigger, harder waves; every enemy they hit heals you a little.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 1, width: +(L.width * 1.5).toFixed(1) }) },
-  bouncy: { with: 'sugar', name: 'Jawbreaker', desc: 'Huge candy-hard balls that bounce six more times.', boost: L => ({ dmg: Math.round(L.dmg * 1.6), count: L.count + 1, bounces: L.bounces + 6, size: +(L.size * 1.4).toFixed(2) }) },
-  axe: { with: 'thorns', name: 'Bramble Axes', desc: 'Three more axes, thrown faster and farther.', boost: L => ({ dmg: Math.round(L.dmg * 1.5), count: L.count + 3, cd: +(L.cd * 0.7).toFixed(2), range: +(L.range * 1.2).toFixed(1) }) },
+  ball: { with: 'multishot', name: 'Goo Gatling', desc: 'A bit faster, one more ball, all molten gold.', boost: L => ({ dmg: Math.round(L.dmg * 1.1), cd: +(L.cd * 0.85).toFixed(2), count: L.count + 1 }) },
+  fists: { with: 'power', name: 'Titan Fists', desc: 'Heavier, slightly longer punches with bigger shockwaves.', boost: L => ({ dmg: Math.round(L.dmg * 1.2), reach: +(L.reach * 1.1).toFixed(1), shock: 1.3 }) },
+  grenade: { with: 'reach', name: 'Cluster Bomb', desc: 'One more grenade with a slightly bigger blast.', boost: L => ({ dmg: Math.round(L.dmg * 1.15), count: L.count + 1, radius: +(L.radius * 1.1).toFixed(1) }) },
+  missile: { with: 'haste', name: 'Missile Swarm', desc: 'One more golden missile, a little faster, with wider splash.', boost: L => ({ count: L.count + 1, cd: +(L.cd * 0.9).toFixed(2), splash: +(L.splash * 1.2).toFixed(1) }) },
+  blade: { with: 'speed', name: 'Buzzsaw Halo', desc: 'One more blade, spinning a little wider and faster.', boost: L => ({ dmg: Math.round(L.dmg * 1.15), count: L.count + 1, radius: +(L.radius * 1.1).toFixed(1), spin: Math.round(L.spin * 1.1) }) },
+  lightning: { with: 'magnet', name: 'Thunder God', desc: 'One more strike that chains one step further.', boost: L => ({ dmg: Math.round(L.dmg * 1.15), strikes: L.strikes + 1, chain: L.chain + 1 }) },
+  aura: { with: 'thick', name: 'Toxic Bog', desc: 'A wider, stickier puddle that burns a little harder.', boost: L => ({ dmg: Math.round(L.dmg * 1.25), radius: +(L.radius * 1.15).toFixed(1), slow: Math.min(70, L.slow + 10) }) },
+  frostnova: { with: 'armor', name: 'Absolute Zero', desc: 'A wider, longer freeze; frozen enemies take 20% more damage from everything.', boost: L => ({ dmg: Math.round(L.dmg * 1.25), radius: +(L.radius * 1.15).toFixed(1), freeze: +(L.freeze * 1.2).toFixed(1) }) },
+  meteor: { with: 'growth', name: 'Armageddon', desc: 'One more meteor, a little bigger and a little more often.', boost: L => ({ count: L.count + 1, radius: +(L.radius * 1.1).toFixed(1), cd: +(L.cd * 0.9).toFixed(1) }) },
+  wave: { with: 'regen', name: 'Tsunami', desc: 'Wider, harder waves; each enemy they hit heals you a tiny bit.', boost: L => ({ dmg: Math.round(L.dmg * 1.2), width: +(L.width * 1.15).toFixed(1) }) },
+  bouncy: { with: 'sugar', name: 'Jawbreaker', desc: 'Bigger candy-hard balls that bounce three more times.', boost: L => ({ dmg: Math.round(L.dmg * 1.15), bounces: L.bounces + 3, size: +(L.size * 1.15).toFixed(2) }) },
+  axe: { with: 'thorns', name: 'Bramble Axes', desc: 'One more axe, thrown a little farther.', boost: L => ({ dmg: Math.round(L.dmg * 1.15), count: L.count + 1, range: +(L.range * 1.1).toFixed(1) }) },
 };
 function featuredPowerup(chapter) {
   const want = ((chapter - 1) % 10) + 1;
@@ -329,46 +329,46 @@ const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(ME
 // Body colors. "top" makes a two-tone gradient from the feet up. "boost" is a small stat bonus (see STAT_INFO).
 const SKINS = [
   { id: 'classic', name: 'Classic', cost: 0, base: '#18d2ff', accent: '#7b55f5', rim: '#8ef3ff' },
-  { id: 'lime', name: 'Lime', cost: 300, base: '#7be04a', accent: '#1f9e7a', rim: '#d8ffb0', boost: { speed: 3 } },
-  { id: 'bubblegum', name: 'Bubblegum', cost: 500, base: '#ff7ac8', accent: '#9a4dff', rim: '#ffd3f0', boost: { hp: 5 } },
-  { id: 'sunny', name: 'Sunny', cost: 700, base: '#ffd23a', accent: '#ff8a1f', rim: '#fff3b0', boost: { xp: 5 } },
-  { id: 'cherry', name: 'Cherry', cost: 900, base: '#ff4d6d', accent: '#9a2bd6', rim: '#ffc2cc', boost: { dmg: 4 } },
-  { id: 'grape', name: 'Grape', cost: 1200, base: '#9c6bff', accent: '#ff5fb8', rim: '#e0ccff', boost: { cd: 4 } },
-  { id: 'mint', name: 'Mint', cost: 1500, base: '#3ef0b8', accent: '#1a8cff', rim: '#c8fff0', boost: { regen: 0.1 } },
-  { id: 'snow', name: 'Snow', cost: 1800, base: '#eaf4ff', accent: '#7fb8ff', rim: '#ffffff', boost: { armor: 5 } },
-  { id: 'night', name: 'Night', cost: 2200, base: '#34343f', accent: '#ff5fb8', rim: '#a0a0b8', boost: { dmg: 5 } },
-  { id: 'galaxy', name: 'Galaxy', cost: 3000, base: '#3f7bff', top: '#b45cff', accent: '#ff5fb8', rim: '#d6c8ff', boost: { area: 6 } },
-  { id: 'sunset', name: 'Sunset', cost: 3500, base: '#ff6f91', top: '#ffd23a', accent: '#ff8a1f', rim: '#ffe0c0', boost: { gold: 10 } },
-  { id: 'ocean', name: 'Ocean', cost: 4000, base: '#1a8cff', top: '#3ef0b8', accent: '#7b55f5', rim: '#c8fff8', boost: { magnet: 25 } },
+  { id: 'lime', name: 'Lime', cost: 200, base: '#7be04a', accent: '#1f9e7a', rim: '#d8ffb0', boost: { speed: 3 } },
+  { id: 'bubblegum', name: 'Bubblegum', cost: 300, base: '#ff7ac8', accent: '#9a4dff', rim: '#ffd3f0', boost: { hp: 5 } },
+  { id: 'sunny', name: 'Sunny', cost: 400, base: '#ffd23a', accent: '#ff8a1f', rim: '#fff3b0', boost: { xp: 5 } },
+  { id: 'cherry', name: 'Cherry', cost: 550, base: '#ff4d6d', accent: '#9a2bd6', rim: '#ffc2cc', boost: { dmg: 4 } },
+  { id: 'grape', name: 'Grape', cost: 700, base: '#9c6bff', accent: '#ff5fb8', rim: '#e0ccff', boost: { cd: 4 } },
+  { id: 'mint', name: 'Mint', cost: 900, base: '#3ef0b8', accent: '#1a8cff', rim: '#c8fff0', boost: { regen: 0.1 } },
+  { id: 'snow', name: 'Snow', cost: 1100, base: '#eaf4ff', accent: '#7fb8ff', rim: '#ffffff', boost: { armor: 5 } },
+  { id: 'night', name: 'Night', cost: 1300, base: '#34343f', accent: '#ff5fb8', rim: '#a0a0b8', boost: { dmg: 5 } },
+  { id: 'galaxy', name: 'Galaxy', cost: 1800, base: '#3f7bff', top: '#b45cff', accent: '#ff5fb8', rim: '#d6c8ff', boost: { area: 6 } },
+  { id: 'sunset', name: 'Sunset', cost: 2100, base: '#ff6f91', top: '#ffd23a', accent: '#ff8a1f', rim: '#ffe0c0', boost: { gold: 10 } },
+  { id: 'ocean', name: 'Ocean', cost: 2400, base: '#1a8cff', top: '#3ef0b8', accent: '#7b55f5', rim: '#c8fff8', boost: { magnet: 25 } },
 ];
 // Costumes are extra goo shapes on the hero, offsets in hero units from the head (or pelvis).
 // Parts: ['sph', anchor, pos, r, k, col] | ['cap', anchor, a, b, r1, r2, k, col, sway] | ['ell', anchor, pos, radii, k, col]
 // col: 'b' = body color, 0-3 = this costume's palette. sway lets a tip lag and bob with the head.
 const COSTUMES = [
   { id: 'none', name: 'No costume', cost: 0, pal: [], parts: [] },
-  { id: 'bunny', name: 'Bunny', cost: 400, boost: { speed: 4 }, pal: ['#ffffff'], parts: [
+  { id: 'bunny', name: 'Bunny', cost: 250, boost: { speed: 4 }, pal: ['#ffffff'], parts: [
     ['cap', 'head', [0.09, 0.15, -0.02], [0.15, 0.56, -0.07], 0.078, 0.062, 0.05, 'b', 0.05],
     ['cap', 'head', [-0.09, 0.15, -0.02], [-0.15, 0.56, -0.07], 0.078, 0.062, 0.05, 'b', 0.05],
   ] },
-  { id: 'cat', name: 'Cat', cost: 600, boost: { xp: 6 }, pal: ['#1c1a22', '#ff9ac8'], parts: [
+  { id: 'cat', name: 'Cat', cost: 350, boost: { xp: 6 }, pal: ['#1c1a22', '#ff9ac8'], parts: [
     ['cap', 'head', [0.11, 0.14, 0.0], [0.17, 0.34, 0.02], 0.09, 0.018, 0.04, 'b'],
     ['cap', 'head', [-0.11, 0.14, 0.0], [-0.17, 0.34, 0.02], 0.09, 0.018, 0.04, 'b'],
     ['sph', 'head', [0, -0.02, 0.225], 0.03, 0.015, 1],
   ] },
-  { id: 'bear', name: 'Bear', cost: 800, boost: { hp: 6 }, pal: ['#1c1a22', '#ffe2b8'], parts: [
+  { id: 'bear', name: 'Bear', cost: 500, boost: { hp: 6 }, pal: ['#1c1a22', '#ffe2b8'], parts: [
     ['sph', 'head', [0.17, 0.16, -0.02], 0.085, 0.04, 'b'],
     ['sph', 'head', [-0.17, 0.16, -0.02], 0.085, 0.04, 'b'],
     ['ell', 'head', [0, -0.05, 0.19], [0.1, 0.07, 0.07], 0.03, 1],
     ['sph', 'head', [0, -0.01, 0.255], 0.035, 0.012, 0],
   ] },
-  { id: 'chick', name: 'Chick', cost: 1000, boost: { magnet: 25 }, pal: ['#16141c', '#ffb020'], parts: [
+  { id: 'chick', name: 'Chick', cost: 600, boost: { magnet: 25 }, pal: ['#16141c', '#ffb020'], parts: [
     ['cap', 'head', [0, -0.02, 0.19], [0, -0.04, 0.34], 0.065, 0.012, 0.025, 1],
     ['sph', 'head', [0.085, 0.07, 0.195], 0.042, 0.012, 0],
     ['sph', 'head', [-0.085, 0.07, 0.195], 0.042, 0.012, 0],
     ['cap', 'head', [0, 0.19, 0.0], [0.05, 0.33, 0.04], 0.03, 0.01, 0.03, 'b', 0.03],
     ['cap', 'head', [0, 0.19, 0.0], [-0.04, 0.31, 0.06], 0.03, 0.01, 0.03, 'b', 0.03],
   ] },
-  { id: 'frog', name: 'Frog', cost: 1200, boost: { area: 5 }, pal: ['#16141c', '#ffffff'], parts: [
+  { id: 'frog', name: 'Frog', cost: 700, boost: { area: 5 }, pal: ['#16141c', '#ffffff'], parts: [
     ['sph', 'head', [0.1, 0.17, 0.07], 0.08, 0.05, 'b'],
     ['sph', 'head', [-0.1, 0.17, 0.07], 0.08, 0.05, 'b'],
     ['sph', 'head', [0.1, 0.19, 0.12], 0.055, 0.012, 1],
@@ -376,7 +376,7 @@ const COSTUMES = [
     ['sph', 'head', [0.1, 0.2, 0.172], 0.03, 0.008, 0],
     ['sph', 'head', [-0.1, 0.2, 0.172], 0.03, 0.008, 0],
   ] },
-  { id: 'panda', name: 'Panda', cost: 1500, boost: { armor: 5 }, pal: ['#16141c', '#f6f6f2'], parts: [
+  { id: 'panda', name: 'Panda', cost: 900, boost: { armor: 5 }, pal: ['#16141c', '#f6f6f2'], parts: [
     ['sph', 'head', [0, 0.005, 0.0], 0.238, 0.02, 1],
     ['sph', 'head', [0.165, 0.165, -0.02], 0.072, 0.025, 0],
     ['sph', 'head', [-0.165, 0.165, -0.02], 0.072, 0.025, 0],
@@ -384,18 +384,18 @@ const COSTUMES = [
     ['ell', 'head', [-0.08, 0.035, 0.19], [0.06, 0.075, 0.05], 0.012, 0],
     ['sph', 'head', [0, -0.045, 0.235], 0.03, 0.01, 0],
   ] },
-  { id: 'devil', name: 'Devil', cost: 2000, boost: { dmg: 5 }, pal: ['#e8283c'], parts: [
+  { id: 'devil', name: 'Devil', cost: 1200, boost: { dmg: 5 }, pal: ['#e8283c'], parts: [
     ['cap', 'head', [0.1, 0.15, 0.03], [0.16, 0.31, 0.0], 0.05, 0.01, 0.03, 0],
     ['cap', 'head', [-0.1, 0.15, 0.03], [-0.16, 0.31, 0.0], 0.05, 0.01, 0.03, 0],
     ['cap', 'pelvis', [0, -0.05, -0.22], [0, -0.2, -0.44], 0.04, 0.03, 0.04, 0, 0.06],
     ['ell', 'pelvis', [0, -0.12, -0.56], [0.07, 0.07, 0.04], 0.03, 0],
   ] },
-  { id: 'unicorn', name: 'Unicorn', cost: 2500, boost: { cd: 5 }, pal: ['#ffd040', '#ffffff'], parts: [
+  { id: 'unicorn', name: 'Unicorn', cost: 1500, boost: { cd: 5 }, pal: ['#ffd040', '#ffffff'], parts: [
     ['cap', 'head', [0, 0.16, 0.09], [0, 0.44, 0.16], 0.05, 0.008, 0.03, 0],
     ['cap', 'head', [0.12, 0.14, -0.02], [0.16, 0.27, -0.04], 0.06, 0.02, 0.03, 'b'],
     ['cap', 'head', [-0.12, 0.14, -0.02], [-0.16, 0.27, -0.04], 0.06, 0.02, 0.03, 'b'],
   ] },
-  { id: 'party', name: 'Party Hat', cost: 3000, boost: { gold: 12 }, pal: ['#ff4fa8', '#ffd040'], parts: [
+  { id: 'party', name: 'Party Hat', cost: 1800, boost: { gold: 12 }, pal: ['#ff4fa8', '#ffd040'], parts: [
     ['cap', 'head', [0.02, 0.17, 0.0], [0.06, 0.5, -0.03], 0.13, 0.012, 0.02, 0],
     ['sph', 'head', [0.065, 0.53, -0.035], 0.045, 0.015, 1, 0.03],
   ] },
@@ -417,13 +417,13 @@ const STAT_INFO = {
 };
 const fmtBonus = (k, v) => `+${+v.toFixed(2)}% ${STAT_INFO[k].name}`;
 
-// Artifacts: found in scroll chests, fused three-into-one up the rarity ladder, one equipped per slot
+// Artifacts: found in scroll chests, fused two-into-one up the rarity ladder, one equipped per slot
 const RARITIES = [
   { id: 'common', name: 'Common', mul: 1, odds: 0.62 },
-  { id: 'uncommon', name: 'Uncommon', mul: 1.6, odds: 0.25 },
-  { id: 'rare', name: 'Rare', mul: 2.4, odds: 0.095 },
-  { id: 'epic', name: 'Epic', mul: 3.5, odds: 0.03 },
-  { id: 'legendary', name: 'Legendary', mul: 5, odds: 0.005 },
+  { id: 'uncommon', name: 'Uncommon', mul: 1.5, odds: 0.25 },
+  { id: 'rare', name: 'Rare', mul: 2.1, odds: 0.095 },
+  { id: 'epic', name: 'Epic', mul: 2.8, odds: 0.03 },
+  { id: 'legendary', name: 'Legendary', mul: 3.6, odds: 0.005 },
 ];
 const GEAR_SLOTS = [
   { id: 'weapon', name: 'Weapon' }, { id: 'armor', name: 'Armor' },
@@ -431,18 +431,18 @@ const GEAR_SLOTS = [
 ];
 // stats are the common values; higher rarities multiply them by RARITIES[r].mul
 const ARTIFACTS = {
-  sword: { name: 'Goo Sword', slot: 'weapon', stats: { dmg: 4, hp: 3 } },
+  sword: { name: 'Goo Sword', slot: 'weapon', stats: { dmg: 4, hp: 4 } },
   wand: { name: 'Star Wand', slot: 'weapon', stats: { dmg: 6 } },
   bow: { name: 'Twig Bow', slot: 'weapon', stats: { dmg: 3, cd: 3 } },
   cloak: { name: 'Hero Cloak', slot: 'armor', stats: { hp: 8 } },
-  plate: { name: 'Steel Plate', slot: 'armor', stats: { armor: 5 } },
+  plate: { name: 'Steel Plate', slot: 'armor', stats: { armor: 4 } },
   vest: { name: 'Leather Vest', slot: 'armor', stats: { hp: 4, speed: 3 } },
-  goldRing: { name: 'Gold Ring', slot: 'ring', stats: { hp: 4 } },
-  silverRing: { name: 'Silver Ring', slot: 'ring', stats: { xp: 5 } },
-  rubyRing: { name: 'Ruby Ring', slot: 'ring', stats: { regen: 0.1 } },
-  skull: { name: 'Skull Necklace', slot: 'necklace', stats: { dmg: 4 } },
+  goldRing: { name: 'Gold Ring', slot: 'ring', stats: { hp: 3, dmg: 2 } },
+  silverRing: { name: 'Silver Ring', slot: 'ring', stats: { xp: 6 } },
+  rubyRing: { name: 'Ruby Ring', slot: 'ring', stats: { regen: 0.06 } },
+  skull: { name: 'Skull Necklace', slot: 'necklace', stats: { dmg: 5 } },
   moon: { name: 'Moon Pendant', slot: 'necklace', stats: { cd: 4 } },
-  clover: { name: 'Clover Charm', slot: 'necklace', stats: { gold: 8 } },
+  clover: { name: 'Clover Charm', slot: 'necklace', stats: { gold: 8, magnet: 10 } },
 };
 const artKey = (id, r) => id + ':' + r;
 const artParse = key => { const [id, r] = key.split(':'); return { id, r: Number(r), def: ARTIFACTS[id] }; };

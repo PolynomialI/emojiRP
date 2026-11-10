@@ -278,7 +278,7 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   if (e.dying || e.hp <= 0) return false;
   dmg *= G.run.stats.dmgMul;
   if (e.boss && e.dizzy > 0) dmg *= 1.5;
-  if (e.frozen > 0 && G.run.absZero) dmg *= 1.5;
+  if (e.frozen > 0 && G.run.absZero) dmg *= 1.2;
   e.hp -= dmg;
   // flash white on a hit, but under constant fire strobe instead of staying solid white
   if (!(e.flashCd > 0)) { e.flash = 0.07; e.flashCd = 0.16; }
@@ -365,7 +365,7 @@ function reviveHero() {
 
 // ---------- gems and pickups ----------
 // tier 0 is the small blue crystal, tier 1 the big green emerald
-const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.02;
+const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.028;
 function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {

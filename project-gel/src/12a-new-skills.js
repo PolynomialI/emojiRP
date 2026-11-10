@@ -329,7 +329,7 @@ SKILL_HOOKS.wave = {
         if (e.waveHit !== v.id) {
           e.waveHit = v.id; hurtEnemy(e, L.dmg, 0, 0, { sound: false, color: [0.5, 0.85, 1] });
           // Tsunami: every enemy hit heals a little, up to 6% of max health per wave
-          if (s.evo && (v.healed || 0) < 0.06) { v.healed = (v.healed || 0) + 0.004; run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.004); }
+          if (s.evo && (v.healed || 0) < 0.03) { v.healed = (v.healed || 0) + 0.002; run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.002); }
         }
         if (!e.boss) { e.kx += (v.dx * WAVE.speed * 1.2 - e.kx) * Math.min(1, dt * 8); e.kz += (v.dz * WAVE.speed * 1.2 - e.kz) * Math.min(1, dt * 8); }
       });

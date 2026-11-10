@@ -383,7 +383,7 @@ SKILL_HOOKS.aura = {
       if (L.slow) { e.slowMul = Math.min(e.slowMul, 1 - L.slow / 100); e.slowT = 0.3; }
     });
     if (st.t <= 0) {
-      st.t = 0.5;
+      st.t = 0.4;
       enemiesInRadius(h[0], h[2], R2, e => { hurtEnemy(e, L.dmg, 0, 0, { sound: false, color: [0.6, 1, 1] }); e.squashV -= 1; });
       for (let i = 0; i < 3; i++) { const a = rand(0, TAU), r = rand(0.5, R2 * 0.9); FX.part(h[0] + Math.cos(a) * r, 0.05, h[2] + Math.sin(a) * r, 0, 0.8, 0, 0.09, 0.02, 0.6, COLORS.cyanHi, 0.8, 0, 0, 0); }
     }
