@@ -165,6 +165,31 @@ Where things live:
 - Neon Drone zaps chain to nearby enemies.
 - New-boss health is flatter (3400-4200 base).
 
+## Home screen, balance pass, cosmetics (latest round)
+
+**Home screen** (markup and CSS in `src/index.html`; scene code `updateHome`, `homeFoes`, `emitHomeFoes`, `homeCamera` in `src/17-main.js`):
+- Wide screens: the blob's stage on the left with the chapter picker under it (big arrows, the boss portrait, name and best time), and a column of big buttons on the right (Play, Endless, Upgrades, Gear, Blobs, Chapters, Settings).
+- Phones: title, blob, chapter picker, then Play and five big tiles on the white wave.
+- Dragging the stage spins the blob all the way round, with a little spin kept on release; a tap still pokes it.
+- Faded orange and purple grunts walk in from behind the blob (as the camera sees it); every 1.3-2.8 s it turns, shoots goo at the nearest one and pops it.
+- The camera frames the hero inside `#heroTap`, the same way the gear screen frames `#gearStage`.
+
+**Balance pass:**
+- Aura: 6-24 damage per tick every 0.4 s, 30-60% slow, radius 1.8-2.8 m.
+- Evolutions now give modest boosts (about +10-25%) instead of large ones.
+- Rarity multipliers: 1, 1.5, 2.1, 2.8, 3.6.
+- Some artifact stats were evened out.
+- Fusing takes two of the same artifact and rarity (`FUSE_N` in `src/14a-gear.js`).
+- Cosmetics cost about 40% less.
+- Scrolls drop a bit more often (`SCROLL_CHANCE` 0.028).
+
+**Cosmetics:**
+- 30 colors and 38 costumes, both sorted by price. Costume parts are SDF shapes on the raymarched hero; keep each costume to 8 parts or fewer (`HERO_MAXP` is 40 shapes in all).
+- Hero icons are drawn a few at a time by `pumpHeroIcons` (`src/16-icons.js`): in the background on the home screen while frames are quick, and two a frame while the Blobs screen waits. Only the Blobs tile icon is drawn at boot.
+- `test/_cos.mjs` (git-ignored scratch) renders a contact sheet of costumes from four angles (`IDS=fox,owl`), or the colors (`SKINS=1`).
+
+**High quality:** caps resolution at 1.5x, keeps MSAA and bloom, and lowers resolution toward 1x if frames run slow. It used to render at full device resolution without adapting, which made the screen stutter.
+
 ## Balance (bot results; the bot is a mediocre player who dodges poorly)
 
 Measured after the 100x100 arena, emeralds and long legs:
@@ -232,11 +257,12 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `check-dash.mjs`: distance, invulnerability, cooldown and the button.
   - `check-gooblin.mjs`: appears, flees, edge arrow, loot when caught, escape.
   - `check-endless.mjs`: the unlock, tiers, a boss that doesn't end the run, results and best time.
+  - `check-home.mjs [wide|phone|chromebook]`: drag-to-spin, the blob shooting the background foes, the chapter arrows, and a screenshot.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.
   - `roster`: every enemy type in a row, plain and elite.
   - `blob`: the Choose your blob screen, including a purchase.
-  - `gear`: the inventory, a scroll chest, the three-slot fuse screen and equipping, then checks the run picks up the bonuses.
+  - `gear`: the inventory, a scroll chest, the two-slot fuse screen and equipping, then checks the run picks up the bonuses.
   - `dev`: unlocks the dev console by typing, toggles it with backtick and runs commands at home and in a run.
   - `drops`: crystals, emeralds, a scroll, the other pickups, two blob mines and a grenade up close.
   - `gait`: the hero running in place on the home screen, one stride as a contact sheet.
