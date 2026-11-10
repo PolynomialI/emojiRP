@@ -86,7 +86,6 @@ function initInput(canvas) {
     AUDIO.unlock();
     if ((k === 'escape' || k === 'p') && !e.repeat) { if (G.state === 'run') pauseGame(); else if (G.state === 'pause') resumeGame(); }
     if (G.state === 'levelup' && (k === '1' || k === '2' || k === '3')) UI.pick(Number(k) - 1);
-    if ((k === ' ' || k === 'shift') && !e.repeat) tryDash();
   });
   window.addEventListener('keyup', e => INPUT.keys.delete(e.key.toLowerCase()));
   window.addEventListener('blur', () => { INPUT.keys.clear(); INPUT.stick.active = false; if (G.state === 'run') pauseGame(); });
@@ -104,7 +103,7 @@ function initInput(canvas) {
   canvas.addEventListener('pointercancel', end);
 }
 function readInput() {
-  let x = 0, z = 0, dashQueued = false;
+  let x = 0, z = 0;
   const K = INPUT.keys, S = INPUT.stick;
   if (K.has('a') || K.has('arrowleft')) x -= 1;
   if (K.has('d') || K.has('arrowright')) x += 1;
@@ -120,16 +119,10 @@ function readInput() {
       if (!p) continue;
       const ax = p.axes[0] || 0, ay = p.axes[1] || 0, m = Math.hypot(ax, ay);
       if (m > 0.15) { const s = Math.min(1, (m - 0.15) / 0.85); x = ax / m * s; z = ay / m * s; }
-      // the A button dashes, once per press
-      const a = !!(p.buttons[0] && p.buttons[0].pressed);
-      if (a && !INPUT.padDash) dashQueued = true;
-      INPUT.padDash = a;
       break;
     }
   }
   G.input.x = x; G.input.z = z;
-  if (dashQueued) { dashQueued = false; tryDash(); }
-  if ((x || z) && G.state === 'run') INPUT.moved = true;
 }
 
 // ---------- settings and quality ----------
@@ -183,10 +176,6 @@ function beginChapter(n, opts) {
   const go = () => {
     startRun(n, opts);
     updateCamera(0, true); updateView();
-    const hint = $('hint');
-    hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Drag anywhere to move · tap DASH to dodge' : 'Move with WASD, the arrow keys, or drag · Space to dash';
-    hint.hidden = !G.save.tutorial;
-    INPUT.moved = false;
   };
   if (req.every(m => R.enemyDraw[m])) { go(); return; }
   $('prep').hidden = false;
@@ -416,7 +405,6 @@ function loop(now) {
     if (G.state === 'run' && G.run.pending > 0) UI.openLevelUp();
     else if (G.state === 'run' && G.run.chestQueued > 0) UI.openChest();
     if (s === 'victory') { G.stateT += dt; if (G.stateT > 2.6) finishRun(true); }
-    if (INPUT.moved && !$('hint').hidden) { $('hint').hidden = true; G.save.tutorial = false; saveGame(); }
   } else if (s === 'dying') {
     G.stateT += dt;
     G.hero.update(dt, [0, 0, 0], false);

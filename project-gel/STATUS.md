@@ -116,7 +116,7 @@ Where things live:
 - Floor styles 0-9, the zone shader, and impostors 32-39: `src/05-glsl.js`.
 - Telegraph kinds: `circle`, `lane`, and `cone` (decal type 10).
 
-## Evolutions, Goo Dash, Golden Gooblin, Endless
+## Evolutions, Golden Gooblin, Endless
 
 **Evolutions** (`EVOLUTIONS` in `src/10-data.js`; logic in `src/11-game.js`):
 - Each of the 12 abilities pairs with one skill. A skill at max level plus its partner evolves, through a chest, into a named form with boosted stats.
@@ -141,11 +141,7 @@ Where things live:
 - Level-up cards name each pairing. Evolved HUD tiles get a gold frame, and Goo Gatling and Missile Swarm shots turn gold.
 - `skillL(s)` returns a slot's current stats (its level row, or the evolved row).
 
-**Goo Dash:**
-- Triggered by Space, Shift, the gamepad A button, or the on-screen button at bottom right.
-- Moves the blob about 4.2 m in 0.18 s, with 0.32 s of invulnerability and a goo trail.
-- 3 s cooldown, shown as a wedge on the button. Tuned in `DASH` in `src/11-game.js`.
-- The test bot dashes out of telegraphed attacks.
+**Goo Dash** was removed at the player's request, along with the "Move with WASD..." hint at the start of a run.
 
 **Golden Gooblin** (`src/11c-events.js`):
 - Most runs get one between 70 s and 230 s. It pops up nearby and flees.
@@ -210,7 +206,7 @@ After the ten chapter themes (new bosses with base health 3400-4200; chapter sca
 | 2 | level 3 | 1/2 | the Sand Worm fight took about 85 s (at base health 3900; now 3400) |
 | 6 | level 6 | 1/2, then 0/3 | most losses come before the boss; at base health 6100 one Yeti fight took 213 s, so health was lowered |
 
-With Goo Dash, evolutions and the flatter boss health:
+With Goo Dash (since removed), evolutions and the flatter boss health:
 
 | Chapter | Upgrades | Bot wins | Notes |
 |---|---|---|---|
@@ -254,7 +250,6 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `evos` (`IDS=ball,fists,...`, `FRAMES=240`): for each skill, maxes it and its partner, opens the golden chest, and watches the evolved form against a crowd.
   - `perf` accepts `CH=<chapter>` to measure the run on that chapter's map.
 - **Standalone checks** (`node test/<name>.mjs`):
-  - `check-dash.mjs`: distance, invulnerability, cooldown and the button.
   - `check-gooblin.mjs`: appears, flees, edge arrow, loot when caught, escape.
   - `check-endless.mjs`: the unlock, tiers, a boss that doesn't end the run, results and best time.
   - `check-home.mjs [wide|phone|chromebook]`: drag-to-spin, the blob shooting the background foes, the chapter arrows, and a screenshot.

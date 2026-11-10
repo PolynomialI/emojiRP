@@ -226,7 +226,6 @@ if (mode === 'input') {
   await render(1); await shot('input-joystick');
   await page.mouse.up();
   let d = await pos(); console.log('drag left moved x by', (d[0] - c[0]).toFixed(2), '(want about -2)');
-  console.log('hint hidden after moving:', await page.evaluate(() => document.getElementById('hint').hidden));
   await page.keyboard.press('Escape'); await run(1);
   console.log('Esc ->', await page.evaluate(() => G.state));
   await page.keyboard.press('Escape'); await run(1);

@@ -157,24 +157,6 @@ function startRun(chapter, opts = {}) {
   setState('run');
 }
 
-// ---------- goo dash: a quick burst with a moment of invulnerability ----------
-const DASH = { dist: 4.2, time: 0.18, cd: 3, invuln: 0.32 };
-function tryDash() {
-  const run = G.run;
-  if (G.state !== 'run' || !run || run.dash || run.dashCd > 0 || run.rootT > 0) return false;
-  let dx = G.input.x, dz = G.input.z;
-  if (!dx && !dz) [dx, dz] = run.lastDir || [0, -1];
-  const l = Math.hypot(dx, dz) || 1, h = G.hero.pos;
-  run.dash = { dx: dx / l, dz: dz / l, t: DASH.time, splat: 0 };
-  run.dashCd = DASH.cd;
-  run.invuln = Math.max(run.invuln, DASH.invuln);
-  G.hero.impulse(2.5);
-  FX.ring(h[0], h[2], 1.8, COLORS.cyanHi, 0.3, 0.8);
-  FX.droplets(h[0], 0.5, h[2], 8, 0, 3, 0.06, null);
-  AUDIO.play('throw', 1.4);
-  return true;
-}
-
 function slotOf(id) { return G.run.slots.find(s => s.id === id); }
 function lvlOf(id) { const s = slotOf(id); return s ? s.lvl : 0; }
 function addOrLevel(id) {
@@ -443,19 +425,8 @@ function updateRun(dt) {
     run.burnT = (run.burnT || 0) - dt;
     if (run.burnT <= 0) { run.burnT = 0.5; hurtHero(Z.burn * 0.5 * run.info.dmgMul, h[0], h[2] + 0.01); FX.burst(h[0], 0.3, h[2], 6, [1, 0.5, 0.1], 2, 0.1, 0.4, 0); }
   }
-  if (G.input.x || G.input.z) run.lastDir = [G.input.x, G.input.z];
-  run.dashCd = Math.max(0, (run.dashCd || 0) - dt);
-  if (run.dash) {
-    // mid-dash: a fixed burst along the dash line, leaving a streak of goo
-    const D = run.dash, sp = DASH.dist / DASH.time;
-    run.vel[0] = D.dx * sp; run.vel[2] = D.dz * sp;
-    D.t -= dt; D.splat -= dt;
-    if (D.splat <= 0) { D.splat = 0.04; FX.splat(h[0], h[2], 0.45, R.goo.base, 1.2); }
-    if (D.t <= 0) { run.dash = null; run.vel[0] *= 0.35; run.vel[2] *= 0.35; }
-  } else {
-    run.vel[0] += (G.input.x * top - run.vel[0]) * k;
-    run.vel[2] += (G.input.z * top - run.vel[2]) * k;
-  }
+  run.vel[0] += (G.input.x * top - run.vel[0]) * k;
+  run.vel[2] += (G.input.z * top - run.vel[2]) * k;
   h[0] += run.vel[0] * dt; h[2] += run.vel[2] * dt;
   HERO_PT.x = h[0]; HERO_PT.z = h[2];
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }

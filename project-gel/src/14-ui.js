@@ -17,7 +17,6 @@ const UI = {
     document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => { AUDIO.play('click'); this.openTab('home'); }));
     $('btnSettings').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openSettings(); });
     $('btnPause').addEventListener('click', () => pauseGame());
-    $('btnDash').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); tryDash(); });
     $('btnResume').addEventListener('click', () => resumeGame());
     $('btnPauseSettings').addEventListener('click', () => this.openSettings());
     $('btnQuit').addEventListener('click', () => { $('quitConfirm').hidden = false; $('pauseActions').hidden = true; });
@@ -265,14 +264,6 @@ const UI = {
     if (L.xp !== xpPct) { L.xp = xpPct; $('xpFill').style.width = `calc(${xpPct} - 4px)`; }
     this.setText('lv', $('xpText'), 'LEVEL ' + run.level);
     this.setText('coins', $('hudCoinsVal'), fmtNum(run.coins));
-    // dash cooldown wedge, with a little pop when it comes back
-    const cd = (run.dashCd || 0) / DASH.cd, cdS = cd.toFixed(2);
-    if (L.dash !== cdS) {
-      const b = $('btnDash');
-      b.style.setProperty('--cd', cdS);
-      if (cd === 0 && L.dash !== undefined) { b.classList.remove('ready'); void b.offsetWidth; b.classList.add('ready'); }
-      L.dash = cdS;
-    }
     const sig = run.slots.map(s => s.id + s.lvl + (s.evo ? '*' : '')).join(',');
     if (sig !== this.slotSig) {
       this.slotSig = sig;
