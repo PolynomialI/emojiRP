@@ -73,7 +73,7 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - **Verified in headless Chromium:** every test mode below runs with no script errors and nothing invalid sent to the GPU.
 
 ## Chapter themes
-Each chapter of a 10-chapter cycle gets its own map, boss and power-up; chapters 11+ repeat them with stronger stats.
+Each chapter of a 15-chapter cycle gets its own map, boss and power-up; chapters 16+ repeat them with stronger stats.
 Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Conductor) as a second boss.
 
 | Ch | Map | Boss | New power-up (offered from this chapter on) | State |
@@ -88,6 +88,11 @@ Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Condu
 | 8 | Jungle Swamp (swamp slows, fireflies) | Vine Hydra | Thorns (ability) | done |
 | 9 | Pirate Beach (tide pools, shipwreck) | Captain Crab | Tidal Wave (skill) | done |
 | 10 | Moon Base (energy pads speed you up) | UFO Overlord + Charger | Black Hole (skill) | done |
+| 11 | Haunted Graveyard (mist slows, jack-o'-lanterns, will-o'-wisps) | Pumpkin King | Spirit Wisps (skill) | done |
+| 12 | Crystal Caverns (glowing crystal veins, crystal pools) | Geode Titan | Prism Beam (skill) | done |
+| 13 | Sky Islands (cloud floor, rainbows, updrafts speed you up) | Storm King | Gale Crescents (skill) | done |
+| 14 | Toy Workshop (play rugs, toy slime slows, wind-up cars) | Jack-in-the-Box | Yo-Yo (skill) | done |
+| 15 | Coral Reef (caustic light, kelp beds slow, ink puddles) | Kraken + Twins | Bubble Trap (skill) | done |
 
 Boss mechanics in short:
 - Sand Worm: burrows and breaches under you.
@@ -99,21 +104,26 @@ Boss mechanics in short:
 - Vine Hydra: heads snap along lanes and spit seeds, and roots snare you.
 - Captain Crab: claw snaps, a walking cannon line, homing bubbles and a sideways dash.
 - UFO Overlord: a tractor beam, sweeping lasers and beamed-down invaders.
+- Pumpkin King: jack-o'-lantern bombs, rings of red ghosts with a gap, and fading into the mist to pounce on a marked spot.
+- Geode Titan: fans of crystal shards, lines of crystal spikes that stay as walls, and sweeping prism lasers.
+- Storm King: lightning on marked circles in waves, a wind gust along a lane that shoves you, and twisters that chase you. It floats, and its face stays turned to the camera.
+- Jack-in-the-Box: hops after you, punches its head out on the spring along a lane, pounces on a marked circle, and flings toy blocks that land as walls.
+- Kraken: tentacle slams along lanes, ink blobs that leave slowing puddles, and a whirlpool that drags you toward its core.
 
 Every boss has a rage phase below half health.
 
 Other additions:
 - Tall scenery fades when it hides the hero.
-- Frozen enemies (from Frost Nova or the yeti's breath) stand still and do no harm.
+- Frozen enemies (from Frost Nova or the yeti's breath) stand still and do no harm. Enemies caught by Bubble Trap (`e.bubbled`) do the same, without the icy tint.
 
 Where things live:
 - Data: `ARENAS`, `PROP_KINDS`, `ZONE_KINDS`, `BOSS_TYPES`, `CHAPTER_BOSSES`, and `from:` on `SKILLS`/`PASSIVES` in `src/10-data.js`.
-- Scenery and boss meshes: `src/04a-theme-models.js`.
+- Scenery and boss meshes: `src/04a-theme-models.js` (chapters 1-10) and `src/04b-theme-models2.js` (11-15). Both are also fed to the mesh worker by `build.mjs`.
 - Arena building, obstacles and zones: `src/11a-arena.js`.
-- Per-theme set pieces and moving parts (`ARENA_LAYOUTS`, `ARENA_FEATURES`): `src/11b-themes.js`.
-- New power-ups: `src/12a-new-skills.js`.
-- Boss AI and drawing (`BOSS_AI`, `BOSS_DRAW`), plus `tempZone`/`tempProp`: `src/13a-bosses.js`.
-- Floor styles 0-9, the zone shader, and impostors 32-39: `src/05-glsl.js`.
+- Per-theme set pieces and moving parts (`ARENA_LAYOUTS`, `ARENA_FEATURES`): `src/11b-themes.js` (1-10) and `src/11d-themes2.js` (11-15).
+- Chapter power-ups: `src/12a-new-skills.js` (2-10) and `src/12b-skills2.js` (11-15).
+- Boss AI and drawing (`BOSS_AI`, `BOSS_DRAW`), plus `tempZone`/`tempProp`: `src/13a-bosses.js` (2-10) and `src/13b-bosses2.js` (11-15). New enemy shot kinds draw through `SHOT_DRAW[kind]`; lobbed shots set `lob: true` and an optional `onLand(s)`.
+- Floor styles 0-14, the zone shader, and impostors 32-47: `src/05-glsl.js`. Impostors 43-47 are the wisp (red with P1.x for enemy ghosts), prism, wind crescent, yo-yo and bubble cluster; type 27 with P1.x is a black ink blob and type 32 with P1.x a white twister.
 - Telegraph kinds: `circle`, `lane`, and `cone` (decal type 10).
 
 ## Evolutions, Golden Gooblin, Endless
@@ -236,7 +246,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
 
 ## Build and test
 - **Build:**
-  - `node build.mjs` writes `dist/project-gel.html`, the single playable file. It also injects `00-util.js`, `03-sdfmesh.js`, `04-models.js` and `04a-theme-models.js` as the mesh worker source.
+  - `node build.mjs` writes `dist/project-gel.html`, the single playable file. It also injects `00-util.js`, `03-sdfmesh.js`, `04-models.js`, `04a-theme-models.js` and `04b-theme-models2.js` as the mesh worker source.
   - `node build.mjs visual` writes `test/visual.html`, an engine-only test scene. Screenshot it with `node test/visual.mjs [scene|close|punch|bosses|items|arenas]`.
 - **Game tests:** `node test/game.mjs <mode> ...` (Playwright from `/opt/node22/lib/node_modules/playwright`, headless Chromium with SwiftShader).
   - `boot [--phone]`: the home screen and each menu.
@@ -245,7 +255,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
     - `NOREVIVE=1` skips the revive.
     - `MAP=<size>` sets the arena width for the runs (default 100).
   - `skills [--group=a,b] [--phone]`: every skill at max level against a crowd.
-  - `bosses` (`ONLY=6` limits it): each chapter's boss fight, chapters 1-10.
+  - `bosses` (`ONLY=6` limits it): each chapter's boss fight, chapters 1-15.
   - `powerups` (`IDS=frostnova,meteor`, `FRAMES=150`): each chapter power-up at max level in its own chapter, with a crowd.
   - `evos` (`IDS=ball,fists,...`, `FRAMES=240`): for each skill, maxes it and its partner, opens the golden chest, and watches the evolved form against a crowd.
   - `perf` accepts `CH=<chapter>` to measure the run on that chapter's map.
@@ -253,6 +263,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `check-gooblin.mjs`: appears, flees, edge arrow, loot when caught, escape.
   - `check-endless.mjs`: the unlock, tiers, a boss that doesn't end the run, results and best time.
   - `check-home.mjs [wide|phone|chromebook]`: drag-to-spin, the blob shooting the background foes, the chapter arrows, and a screenshot.
+- **Scratch scripts** (git-ignored `test/_*.mjs`, recreate as needed): `_boss.mjs` (`CH=13 STEPS=60,75,90`) forces each attack of a chapter's boss and photographs it; `_cos.mjs` renders costume or color sheets; `_icon.mjs` (`IDS=gale,yoyo`) shows skill icons; `_chap.mjs` (`CH=13`) photographs the Chapters screen.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.
   - `roster`: every enemy type in a row, plain and elite.
