@@ -121,28 +121,61 @@ function renderAllIcons() {
   const mspecial = { damage: { scale: 0.62 }, health: { scale: 0.6, emissive: 0.15 }, offline: { scale: 0.62 }, speed: { ax: 1, ay: 0.1, az: 0.15, stretch: 1.25, scale: 0.6 }, magnet: { scale: 0.62 } };
   for (const id in META_UPGRADES) { const ic = META_UPGRADES[id].icon; renderIcon('meta-' + id, ic.type, ic.colw, mspecial[id] || {}); }
   renderIcon('chapters', 20, 0, { scale: 0.62, emissive: 0.1 });
-  renderHeroIcons();
+  renderHeroIcons(['costume-bunny']);
+  queueHeroIcons(allHeroIconKeys(), false);
   iconEnd();
   R.resetStreams();
 }
 
-// The real jelly hero, posed at the origin: one icon per body color and per costume
-function renderHeroIcons() {
+// The real jelly hero, posed at the origin: one icon per body color ('skin-<id>') and per costume ('costume-<id>').
+// Only the Blobs menu tile is drawn at boot. The rest are drawn a few at a time (pumpHeroIcons): in the background on
+// the home screen while frames are quick, and two a frame while the Blobs screen waits on them, so it never stalls.
+const HERO_ICONS = { queue: [], wall: 0, hero: null };
+function renderHeroIcons(keys) {
+  keys = keys.filter(k => !ICONS.map[k]);
+  if (!keys.length) return;
   const keep = { base: R.goo.base, accent: R.goo.accent, rim: R.goo.rim };
-  const h = new Hero();
-  h.reset(0, 0); h.setArmCount(2); h.yaw = 0.35;
-  for (let i = 0; i < 45; i++) h.update(1 / 60, [0, 0, 0], true);
-  const shot = key => { h.buildPrims(); R.resetStreams(); ICONS.map[key] = iconCapture([0, 1.9, 3.9], [0, 1.42, 0], 0.55, h.out); };
+  let h = HERO_ICONS.hero;
+  if (!h) {
+    h = HERO_ICONS.hero = new Hero();
+    h.reset(0, 0); h.setArmCount(2); h.yaw = 0.35;
+    for (let i = 0; i < 45; i++) h.update(1 / 60, [0, 0, 0], true);
+  }
+  // costume icons frame the head and shoulders, where the costume is; colors show the whole blob
+  const shot = key => {
+    h.buildPrims(); R.resetStreams();
+    const head = key.startsWith('costume-');
+    ICONS.map[key] = iconCapture(head ? [0, 2.1, 2.75] : [0, 1.9, 3.9], head ? [0, 1.6, 0] : [0, 1.42, 0], 0.55, h.out);
+  };
   const paint = s => {
     R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
     const g = h.out.grad; if (s.top) { g.set(hexToRgb(s.top)); g[3] = 1; } else g[3] = 0;
   };
-  h.setCostume('none');
-  for (const s of SKINS) { paint(s); shot('skin-' + s.id); }
-  paint(SKINS[0]);
-  for (const c of COSTUMES) { h.setCostume(c.id); shot('costume-' + c.id); }
-  h.setCostume('none'); shot('hero');
+  for (const key of keys) {
+    const skin = key.startsWith('skin-'), id = key.slice(skin ? 5 : 8);
+    if (skin) { paint(SKINS.find(s => s.id === id) || SKINS[0]); h.setCostume('none'); }
+    else { paint(SKINS[0]); h.setCostume(id); }
+    shot(key);
+  }
   R.goo.base = keep.base; R.goo.accent = keep.accent; R.goo.rim = keep.rim;
+}
+const allHeroIconKeys = () => [...SKINS.map(s => 'skin-' + s.id), ...COSTUMES.map(c => 'costume-' + c.id)];
+// urgent keys (the Blobs screen's list) jump the queue, in order
+function queueHeroIcons(keys, urgent) {
+  const want = keys.filter(k => !ICONS.map[k]);
+  const q = HERO_ICONS.queue.filter(k => !want.includes(k));
+  HERO_ICONS.queue = urgent ? [...want, ...q] : [...q, ...want];
+}
+// once a frame, on the home screens, before the scene is drawn
+function pumpHeroIcons() {
+  const q = HERO_ICONS.queue, wall = performance.now(), quick = wall - HERO_ICONS.wall < 20;
+  HERO_ICONS.wall = wall;
+  if (!q.length || G.state !== 'home') return;
+  const n = UI.menuTab === 'skins' ? 2 : quick ? 1 : 0;
+  if (!n) return;
+  const keys = q.splice(0, n);
+  iconBegin(); renderHeroIcons(keys); iconEnd(); R.resetStreams();
+  if (UI.menuTab === 'skins') UI.skinIconsReady(keys);
 }
 
 const BOSS_OF_MODEL = { stomper: 'stomper', hurler: 'hurler', charger: 'charger', twin: 'twins', conductor: 'conductor' };

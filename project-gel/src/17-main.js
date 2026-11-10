@@ -425,6 +425,7 @@ function loop(now) {
     if (G.stateT > 1.3) { if (!G.run.revived) setState('revive'); else finishRun(false); }
   } else if (s === 'home') {
     updateHome(dt);
+    pumpHeroIcons();
     homeCamera(dt);
   } else if (G.run) updateCamera(0, false, true);
   if (s !== 'loading') renderFrame();

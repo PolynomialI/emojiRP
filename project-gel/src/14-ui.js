@@ -158,6 +158,11 @@ const UI = {
   },
 
   // ---------- skins ----------
+  skinIconsReady(keys) {
+    document.querySelectorAll('#skinGrid img[data-hero-icon]').forEach(img => {
+      if (keys.includes(img.dataset.heroIcon)) { img.src = ICONS.map[img.dataset.heroIcon]; img.classList.remove('pending'); }
+    });
+  },
   renderSkins() {
     const sv = G.save, grid = $('skinGrid'), colors = this.blobTab !== 'costumes';
     if (!this.skinPreview) this.skinPreview = sv.skin;
@@ -166,11 +171,14 @@ const UI = {
     document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.bt === 'colors') === colors)));
     const list = colors ? SKINS : COSTUMES, owned = colors ? sv.skins : sv.costumes, worn = colors ? sv.skin : sv.costume;
     const sel = colors ? this.skinPreview : this.costumePreview;
+    queueHeroIcons(list.map(s => (colors ? 'skin-' : 'costume-') + s.id), true);
     grid.replaceChildren(...list.map(s => {
       const b = document.createElement('button');
       b.className = 'skin' + (s.id === sel ? ' sel' : '');
       b.innerHTML = `<img alt=""><span></span><em class="boost"></em><small></small>`;
-      b.querySelector('img').src = ICONS.get((colors ? 'skin-' : 'costume-') + s.id);
+      // icons not drawn yet fill in as pumpHeroIcons makes them
+      const key = (colors ? 'skin-' : 'costume-') + s.id, img = b.querySelector('img');
+      img.dataset.heroIcon = key; if (ICONS.map[key]) img.src = ICONS.map[key]; else img.classList.add('pending');
       b.querySelector('span').textContent = s.name;
       b.querySelector('.boost').textContent = s.boost ? fmtBoost(s.boost) : 'No bonus';
       const sm = b.querySelector('small');
