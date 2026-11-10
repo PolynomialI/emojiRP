@@ -47,13 +47,14 @@ function updateStorms(dt) {
 }
 function emitStorms() {
   const run = G.run;
+  const slot = slotOf('sandstorm'), evo = !!(slot && slot.evo); // Hurricane: golden funnels
   if (!run.storms) return;
   for (const w of run.storms) {
     if (!onScreen(w.x, w.z, 3)) continue;
     const grow = Math.min(1, w.t / 0.35) * Math.min(1, (w.life - w.t) / 0.4), sc = w.r * 0.55 * grow;
     if (sc < 0.02) continue;
     // a spinning goo funnel wrapped in sand ribbons
-    pushImp(w.x, sc * 1.05, w.z, sc, 0, 0, 1, 1, 32, 0, 0.15, w.t * 1.6 + w.ph, 0, 0, 0, 0.6);
+    pushImp(w.x, sc * 1.05, w.z, sc, 0, 0, 1, 1, 32, evo ? 6 : 0, evo ? 0.3 : 0.15, w.t * 1.6 + w.ph, 0, 0, 0, 0.6);
     for (let k = 0; k < 3; k++) {
       const pts = [], n = 18;
       for (let j = 0; j < n; j++) {

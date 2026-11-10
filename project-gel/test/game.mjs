@@ -493,7 +493,7 @@ if (mode === 'powerups') {
 if (mode === 'evos') {
   // each evolution: max the skill and its partner, see the golden chest, open it, then watch the evolved skill work
   const ids = (process.env.IDS || 'ball').split(',');
-  await page.evaluate(() => { G.save.chapter = Math.max(G.save.chapter, 10); G.save.selected = 10; UI.refreshHome(); });
+  await page.evaluate(() => { G.save.chapter = Math.max(G.save.chapter, 15); G.save.selected = 15; UI.refreshHome(); });
   for (const id of ids) {
     await page.click('#btnPlay');
     await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });

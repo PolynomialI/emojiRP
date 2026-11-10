@@ -195,7 +195,7 @@ SKILL_HOOKS.yoyo = {
     const st = s.st, h = G.hero.pos;
     if (!st.yo) return;
     for (const y of st.yo) {
-      pushImp(y.x, 0.85, y.z, 0.36, y.dx, 0, y.dz, 1, 46, 0, 0.12, y.ph, [0, 2, 4][y.col], 0, 0, 1);
+      pushImp(y.x, 0.85, y.z, 0.36, y.dx, 0, y.dz, 1, 46, 0, s.evo ? 0.3 : 0.12, y.ph, s.evo ? 1 : [0, 2, 4][y.col], 0, 0, 1);
       R.ribStrip([h[0], 1.1, h[2], y.x, 0.9, y.z], 2, 0.035, [1, 1, 1, 0.85], 0);
       pushDecal(y.x + 0.06, y.z + 0.05, 0.3, 0.3, 0, 1, 0, 0, 0.02, 0.03, 0.07, 0.35);
     }
@@ -248,10 +248,11 @@ SKILL_HOOKS.bubble = {
   },
   emit(s) {
     const st = s.st, t = G.run.t;
-    for (const b of st.shots || []) pushImp(b.x, b.y, b.z, 0.3, 0, 0, 1, 1, 27, 3, 0.1, b.ph + t, 0, 0, 0, 0.8);
+    const cw = s.evo ? 6 : 3;
+    for (const b of st.shots || []) pushImp(b.x, b.y, b.z, 0.3, 0, 0, 1, 1, 27, cw, 0.1, b.ph + t, 0, 0, 0, 0.8);
     for (const tr of st.traps || []) {
       const e = tr.e, wob = 1 + Math.sin(t * 6 + tr.ph) * 0.04;
-      pushImp(e.x, (e.y || 0) + 0.65 * e.scale, e.z, 0.72 * e.scale * wob, 0, 0, 1, 1, 27, 3, 0.1, tr.ph + t, 0, 0, 0, 0.75);
+      pushImp(e.x, (e.y || 0) + 0.65 * e.scale, e.z, 0.72 * e.scale * wob, 0, 0, 1, 1, 27, cw, 0.1, tr.ph + t, 0, 0, 0, 0.75);
     }
   },
 };

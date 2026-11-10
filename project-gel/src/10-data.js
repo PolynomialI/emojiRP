@@ -172,6 +172,19 @@ const EVOLUTIONS = {
   wave: { with: 'regen', name: 'Tsunami', desc: 'Wider, harder waves; each enemy they hit heals you a tiny bit.', boost: L => ({ dmg: Math.round(L.dmg * 1.2), width: +(L.width * 1.15).toFixed(1) }) },
   bouncy: { with: 'sugar', name: 'Jawbreaker', desc: 'Bigger candy-hard balls that bounce three more times.', boost: L => ({ dmg: Math.round(L.dmg * 1.15), bounces: L.bounces + 3, size: +(L.size * 1.15).toFixed(2) }) },
   axe: { with: 'thorns', name: 'Bramble Axes', desc: 'One more axe, thrown a little farther.', boost: L => ({ dmg: Math.round(L.dmg * 1.15), count: L.count + 1, range: +(L.range * 1.1).toFixed(1) }) },
+  mine: { with: 'thick', name: 'Goo Minefield', desc: 'Two more mines on the floor, each with a slightly bigger blast.', boost: L => ({ dmg: Math.round(L.dmg * 1.1), max: L.max + 2, radius: +(L.radius * 1.15).toFixed(1) }) },
+  worms: { with: 'regen', name: 'Mega Worms', desc: 'One more worm, and they all bite a little harder.', boost: L => ({ count: L.count + 1, dmg: Math.round(L.dmg * 1.15) }) },
+  buddies: { with: 'growth', name: 'Blob Squad', desc: 'One more buddy, and they stick around a little longer.', boost: L => ({ count: L.count + 1, life: L.life + 2 }) },
+  laser: { with: 'power', name: 'Hyper Beam', desc: 'One more jet, each a touch stronger.', boost: L => ({ beams: L.beams + 1, dmg: L.dmg + 1 }) },
+  shield: { with: 'armor', name: 'Bubble Fortress', desc: 'Absorbs one more hit, regrows a little faster and pops harder.', boost: L => ({ hits: L.hits + 1, recharge: +(L.recharge * 0.85).toFixed(1), pop: Math.round(L.pop * 1.25) }) },
+  sandstorm: { with: 'speed', name: 'Hurricane', desc: 'One more golden tornado, a little wider.', boost: L => ({ count: L.count + 1, radius: +(L.radius * 1.1).toFixed(1) }) },
+  drone: { with: 'haste', name: 'Drone Swarm', desc: 'One more drone, and every zap chains one step further.', boost: L => ({ count: L.count + 1, chain: L.chain + 1 }) },
+  blackhole: { with: 'magnet', name: 'Singularity', desc: 'A wider pull and a harder collapse.', boost: L => ({ dmg: Math.round(L.dmg * 1.2), radius: +(L.radius * 1.15).toFixed(1) }) },
+  wisps: { with: 'thorns', name: 'Phantom Legion', desc: 'Two more wisps, and each passes through two more enemies.', boost: L => ({ count: L.count + 2, pierce: L.pierce + 2 }) },
+  prism: { with: 'reach', name: 'Rainbow Cannon', desc: 'The beam splits two more times and is a little wider.', boost: L => ({ bounces: L.bounces + 2, width: +(L.width * 1.2).toFixed(2) }) },
+  gale: { with: 'multishot', name: 'Tempest', desc: 'One more crescent, a little bigger.', boost: L => ({ count: L.count + 1, size: +(L.size * 1.15).toFixed(2) }) },
+  yoyo: { with: 'sugar', name: 'Double Loop', desc: 'One more golden yo-yo with a little more reach.', boost: L => ({ count: L.count + 1, range: +(L.range * 1.1).toFixed(1) }) },
+  bubble: { with: 'haste', name: 'Bubble Storm', desc: 'One more golden bubble with a slightly bigger pop.', boost: L => ({ count: L.count + 1, radius: +(L.radius * 1.15).toFixed(1) }) },
 };
 function featuredPowerup(chapter) {
   const want = ((chapter - 1) % CHAPTER_BOSSES.length) + 1;

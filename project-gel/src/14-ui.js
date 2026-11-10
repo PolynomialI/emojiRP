@@ -616,8 +616,11 @@ function fmtStat(v, unit) {
 // a line under a card naming the evolution this skill or ability is part of
 function evoHint(id) {
   if (EVOLUTIONS[id]) { const E = EVOLUTIONS[id]; return `<br><span class="evohint">★ Max level + ${PASSIVES[E.with].name} → ${E.name}</span>`; }
-  for (const k in EVOLUTIONS) if (EVOLUTIONS[k].with === id) return `<br><span class="evohint">★ Evolves a maxed ${SKILLS[k].name} into ${EVOLUTIONS[k].name}</span>`;
-  return '';
+  // an ability can be the partner of several skills: name the ones in this run first, and at most two
+  const mine = Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].with === id && !(G.run && slotOf(k) && slotOf(k).evo));
+  if (!mine.length) return '';
+  mine.sort((a, b) => (G.run && slotOf(b) ? 1 : 0) - (G.run && slotOf(a) ? 1 : 0));
+  return `<br><span class="evohint">★ Evolves a maxed ${mine.slice(0, 2).map(k => `${SKILLS[k].name} into ${EVOLUTIONS[k].name}`).join(', or ')}</span>`;
 }
 function describeChoice(c) {
   const d = describeChoiceBase(c);
