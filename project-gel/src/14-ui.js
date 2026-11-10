@@ -37,7 +37,27 @@ const UI = {
       const k = sw.dataset.set; G.save.settings[k] = !G.save.settings[k]; this.syncSettings(); applySettings(); saveGame(); AUDIO.play('click');
     }));
     document.querySelectorAll('#qualitySeg button').forEach(b => b.addEventListener('click', () => { G.save.settings.quality = b.dataset.q; this.syncSettings(); applySettings(); saveGame(); AUDIO.play('click'); }));
-    $('heroTap').addEventListener('pointerdown', () => { AUDIO.unlock(); pokeHero(); });
+    // the home blob: drag sideways to spin it all the way round (it keeps a little spin when let go); a tap pokes it
+    const tap = $('heroTap');
+    tap.addEventListener('pointerdown', e => {
+      AUDIO.unlock(); tap.setPointerCapture(e.pointerId);
+      HOME.drag = { x: e.clientX, t: performance.now(), moved: 0 }; HOME.yaw = G.hero.yaw; HOME.spinV = 0; HOME.aim = null;
+    });
+    tap.addEventListener('pointermove', e => {
+      const d = HOME.drag;
+      if (!d) return;
+      const dx = e.clientX - d.x, now = performance.now(), dts = Math.max(0.008, (now - d.t) / 1000);
+      d.x = e.clientX; d.t = now; d.moved += Math.abs(dx);
+      HOME.yaw += dx * 0.012; HOME.spinV = clamp(lerp(HOME.spinV, dx * 0.012 / dts, 0.5), -12, 12);
+    });
+    const release = () => {
+      const d = HOME.drag;
+      if (!d) return;
+      HOME.drag = null; HOME.idle = 0;
+      if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
+      else if (performance.now() - d.t > 90) HOME.spinV = 0;
+    };
+    tap.addEventListener('pointerup', release); tap.addEventListener('pointercancel', release);
     $('skinAction').addEventListener('click', () => this.skinAction());
     document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
     this.initGear();
@@ -96,7 +116,15 @@ const UI = {
     eb.textContent = sv.endlessBest ? `ENDLESS · best ${fmtTime(sv.endlessBest)}` : 'ENDLESS';
     $('chPrev').disabled = sv.selected <= 1;
     $('chNext').disabled = sv.selected >= sv.chapter;
+    this.homePortrait();
     applyArena(info.arena);
+  },
+  // the selected chapter's boss portrait in the picker, once its meshes have loaded
+  homePortrait() {
+    const boss = chapterInfo(G.save.selected).bosses[0], img = $('chBoss');
+    let icon = ICONS.map['boss-' + boss];
+    if (!icon && bossMeshes(boss).every(m => R.enemyDraw[m])) { renderBossPortraitOf(boss); icon = ICONS.map['boss-' + boss]; }
+    if (icon) { if (img.getAttribute('src') !== icon) img.src = icon; img.hidden = false; } else img.hidden = true;
   },
 
   // ---------- upgrades ----------

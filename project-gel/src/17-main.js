@@ -3,7 +3,8 @@
 // ============================================================
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
 const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, cap: 60, software: false };
-const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0 };
+// home scene: camera framing, the blob's spin (drag) and aim, and the faded foes it shoots in the background
+const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], shots: [], portT: 0 };
 const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
@@ -207,6 +208,7 @@ function resetHeroForHome() {
 }
 function goHome() {
   G.run = null; G.numbers.length = 0; G.bolts.length = 0; FX.clear();
+  HOME.yaw = HOME.spinV = 0; HOME.aim = null; HOME.shots.length = 0;
   R.frame.hurt = 0; R.frame.lowHp = 0;
   resetHeroForHome();
   applySkin(G.save.skin);
@@ -217,14 +219,104 @@ function goHome() {
 
 // ---------- home scene ----------
 function updateHome(dt) {
-  HOME.t += dt;
-  const hero = G.hero;
+  HOME.t += dt; HOME.idle += dt;
+  const hero = G.hero, onHome = UI.menuTab === 'home';
   hero.pos[0] = 0; hero.pos[1] = 0; hero.pos[2] = 0;
-  hero.yaw = angleLerp(hero.yaw, Math.sin(HOME.t * 0.4) * 0.3, Math.min(1, dt * 2));
+  if (!HOME.drag) { HOME.yaw += HOME.spinV * dt; HOME.spinV *= Math.exp(-dt * 2.5); }
+  if (!onHome) HOME.aim = null;
+  // facing: where the player spun it (with a gentle sway once left alone), or toward the foe it is shooting
+  const sway = Math.sin(HOME.t * 0.4) * 0.3 * clamp(HOME.idle - 1, 0, 1);
+  if (HOME.drag) hero.yaw = HOME.yaw;
+  else hero.yaw = angleLerp(hero.yaw, HOME.aim ? HOME.aim.yaw : HOME.yaw + sway, Math.min(1, dt * (HOME.aim ? 9 : 3)));
   HOME.actT -= dt;
-  if (HOME.actT <= 0) { HOME.actT = rand(3.5, 6.5); homeAction(false); }
+  if (onHome) homeFoes(dt);
+  else if (HOME.actT <= 0) { HOME.actT = rand(3.5, 6.5); homeAction(false); }
+  // the chapter picker's boss portrait appears once the boss meshes have loaded
+  if (onHome && $('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1; UI.homePortrait(); }
   hero.update(dt, [0, 0, 0], true);
   FX.update(dt);
+}
+// Background foes: faded orange and purple grunts walk in from behind; the blob turns and shoots goo at them
+const HOME_FOE_MODELS = ['stickman', 'sprinter', 'helmet', 'spear'];
+const HOME_FOE_COLS = [[1, 0.55, 0.16], [0.68, 0.42, 1]];
+function spawnHomeFoe(f, first) {
+  // behind the blob as the camera sees it (the camera sits off to one side on wide screens), spread to fit the view
+  const c = R.cam.pos, w = clamp(0.3 * R.w / R.h, 0.15, 0.45);
+  const a = Math.atan2(-c[0], -c[2]) + rand(-w, w), r = first ? rand(10, 14) : rand(14.5, 16.5);
+  return Object.assign(f, { x: Math.sin(a) * r, z: Math.cos(a) * r, model: pick(HOME_FOE_MODELS), col: pick(HOME_FOE_COLS), phase: Math.random(),
+    speed: rand(0.7, 1.1), stop: rand(9, 11.5), yaw: 0, moving: true, appear: first ? 1 : 0, flash: 0, dying: 0, targeted: false });
+}
+function homeFoes(dt) {
+  const F = HOME.foes, hero = G.hero;
+  if (!HOME.frac) return; // wait until the camera has framed the stage: foes spawn behind the blob as it sees it
+  while (F.length < 5) F.push(spawnHomeFoe({}, true));
+  for (const f of F) {
+    f.appear = Math.min(1, f.appear + dt * 1.2); f.flash = Math.max(0, f.flash - dt * 3);
+    // a popped foe lies flat for a moment, then a new one walks in from the back
+    if (f.dying) { f.dying += dt * 1.6; if (f.dying >= 1.8) spawnHomeFoe(f, false); continue; }
+    const d = Math.hypot(f.x, f.z) || 1;
+    f.yaw = Math.atan2(-f.x, -f.z);
+    f.moving = d > f.stop;
+    if (f.moving) { f.x -= f.x / d * f.speed * dt; f.z -= f.z / d * f.speed * dt; f.phase += dt * f.speed * 1.5; }
+    else f.phase += dt * 0.7;
+  }
+  // goo shots home in on their foe
+  for (const s of HOME.shots) {
+    const f = s.foe, dx = f.x - s.x, dy = 0.75 - s.y, dz = f.z - s.z, l = Math.hypot(dx, dy, dz) || 1;
+    s.t += dt;
+    if (l < 0.5 || s.t > 1.8 || f.dying) {
+      s.dead = true;
+      if (!f.dying) {
+        f.dying = 0.001; f.flash = 1; f.targeted = false;
+        FX.burst(f.x, 0.8, f.z, 12, f.col, 4, 0.07, 0.35, 1, 0.4);
+        FX.glow(f.x, 0.8, f.z, 1.1, f.col, 0.2);
+        FX.burst(s.x, s.y, s.z, 6, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 3, 0.05, 0.25, 1, 0.3);
+      }
+      continue;
+    }
+    const sp = 14;
+    s.vx = dx / l * sp; s.vy = dy / l * sp; s.vz = dz / l * sp;
+    s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+    s.trail.unshift([s.x, s.y, s.z]); if (s.trail.length > 7) s.trail.pop();
+  }
+  HOME.shots = HOME.shots.filter(s => !s.dead);
+  // aim at the nearest walker now and then (never while the player is spinning the blob)
+  const a = HOME.aim;
+  if (a) {
+    a.t += dt; a.yaw = Math.atan2(a.foe.x, a.foe.z);
+    const facing = Math.abs(angleLerp(hero.yaw, a.yaw, 1) - hero.yaw) < 0.3;
+    if (!a.fired && (facing || a.t > 0.7)) {
+      a.fired = a.t; const f = a.foe, tw = [f.x, 0.75, f.z];
+      const go = from => HOME.shots.push({ x: from[0], y: from[1], z: from[2], vx: 0, vy: 0, vz: 0, t: 0, trail: [], foe: f, ph: Math.random() * 10 });
+      const arm = hero.freeArm(tw);
+      if (arm >= 0) hero.thrust(arm, tw, 0.17, 0, wp => go(wp)); else go(hero.jointWorld('chest'));
+    }
+    if (a.fired && a.t > a.fired + 0.55) HOME.aim = null;
+  } else if ((HOME.shootT -= dt) <= 0 && !HOME.drag && HOME.idle > 1.5) {
+    let best = null, bd = 1e9;
+    for (const f of F) {
+      const d = Math.hypot(f.x, f.z);
+      if (!f.dying && !f.targeted && f.appear >= 1 && d < 13 && d < bd) { bd = d; best = f; }
+    }
+    HOME.shootT = rand(1.3, 2.8);
+    if (best) { best.targeted = true; HOME.aim = { foe: best, t: 0, yaw: Math.atan2(best.x, best.z), fired: 0 }; }
+  }
+}
+function emitHomeFoes() {
+  for (const f of HOME.foes) {
+    const m = MODELS.defs && MODELS.defs[f.model];
+    if (!m || !R.enemyDraw[f.model]) continue;
+    const c = f.moving || f.dying ? m.clips.run : (m.clips.idle || m.clips.run);
+    const row = c.row + Math.floor((f.phase - Math.floor(f.phase)) * c.frames);
+    const sc = 1.3 * (0.25 + 0.75 * f.appear), dead = clamp(f.dying, 0, 1);
+    // washed toward cream so they read as background, flashing white when hit, dissolving once flattened
+    pushEnemy(f.model, false, f.x, 0, f.z, f.yaw, row, sc, 1, dead, Math.max(0.32, f.flash * 0.9), 0, f.col[0], f.col[1], f.col[2], clamp((f.dying - 0.9) * 1.2, 0, 1));
+    pushDecal(f.x + 0.05, f.z + 0.04, 0.34 * sc, 0.46 * sc, 0, 1, 0, 0, 0.05, 0.2, 0.5, 0.22 * (1 - clamp(f.dying - 0.9, 0, 1)));
+  }
+  for (const s of HOME.shots) {
+    pushImp(s.x, s.y, s.z, 0.17, s.vx, s.vy, s.vz, 1.35, 0, 0, 0.25, s.ph + s.t, 0, 0, 0, 1);
+    trailRibbon(s.trail, 0.13, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
+  }
 }
 function homeAction(loud) {
   const hero = G.hero, r = Math.random();
@@ -253,9 +345,11 @@ function homeCamera(dt) {
   let wantLift = skins ? (portrait ? 0.22 : wide ? 0.02 : 0.16) : 0;
   let wantSide = skins && wide ? 0.21 : 0;
   // on the gear screen the hero stands in the middle of the equip-slot stage
-  const st = UI.menuTab === 'gear' && $('gearStage').getBoundingClientRect();
+  // on home the hero stands in the middle of its stage (above the chapter picker)
+  const stEl = UI.menuTab === 'gear' ? $('gearStage') : UI.menuTab === 'home' && G.state === 'home' ? $('heroTap') : null;
+  const st = stEl && stEl.getBoundingClientRect();
   if (st && st.height > 0 && R.cssH > 0) {
-    wantFrac = clamp(st.height * 0.92 / R.cssH, 0.12, 0.6);
+    wantFrac = clamp(st.height * (UI.menuTab === 'home' ? 0.78 : 0.92) / R.cssH, 0.12, 0.6);
     wantLift = (R.cssH / 2 - (st.top + st.height * 0.5)) / R.cssH;
     wantSide = (R.cssW / 2 - (st.left + st.width * 0.5)) / R.cssW;
   }
@@ -286,6 +380,7 @@ function renderFrame() {
     Object.assign(f, HOME_LIGHT);
     f.spot = [0, 0, 0, 50]; f.fogRange = [200, 400]; f.hurt = 0; f.lowHp = 0;
     pushDecal(h[0] + 0.08, h[2] + 0.04, 0.95, 0.6, 0, 1, 0, 0, 0.02, 0.2, 0.55, 0.42);
+    if (UI.menuTab === 'home' && G.state === 'home') emitHomeFoes();
   }
   FX.emit();
   R.drawScene();
