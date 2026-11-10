@@ -135,7 +135,7 @@ if (mode === 'skills') {
 }
 if (mode === 'bosses') {
   // jump straight to each boss fight and photograph its signature attack
-  for (const n of (process.env.ONLY || '1,2,3,4,5,6,7,8,9,10').split(',').map(Number)) {
+  for (const n of (process.env.ONLY || '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15').split(',').map(Number)) {
     await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); }, n);
     await page.click('#btnPlay');
     await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
@@ -238,7 +238,7 @@ if (mode === 'input') {
 }
 if (mode === 'arenas') {
   // each chapter's map, 40 seconds into a run with a few skills, plus a wide view from high up
-  for (const n of (process.env.ONLY || '1,2,3,4,5,6,7,8,9,10').split(',').map(Number)) {
+  for (const n of (process.env.ONLY || '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15').split(',').map(Number)) {
     await page.evaluate(n => { G.save.chapter = Math.max(G.save.chapter, n); G.save.selected = n; UI.refreshHome(); }, n);
     await page.click('#btnPlay');
     await page.waitForFunction(() => G.state === 'run', null, { timeout: 60000, polling: 100 });
