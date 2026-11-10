@@ -70,6 +70,8 @@ function bossWalk(e, dt, tx, tz, speed) {
 // New bosses register their behaviour here: BOSS_AI[id](e, dt, distToHero, dx, dz) after the drop-in,
 // and BOSS_DRAW[id](e) when they are not a single animated mesh
 const BOSS_AI = {}, BOSS_DRAW = {};
+// drawing for enemy shot kinds added by later chapters: SHOT_DRAW[kind](shot)
+const SHOT_DRAW = {};
 function updateBoss(e, dt) {
   const ai = e.ai, h = G.hero.pos, run = G.run;
   ai.t -= dt;
@@ -361,6 +363,7 @@ function emitRunScene() {
       pushDecal(s.x + 0.1, s.z + 0.08, 0.35, 0.18, -Math.atan2(vx, vz), 1, 0, 0, 0.01, 0.02, 0.05, 0.35);
     }
     else if (s.kind === 'boulder') { pushImp(s.x, s.y, s.z, 0.6, Math.sin(s.spin), Math.cos(s.spin), 0.3, 1, 13, 0, 0, 0, 0, 0, 0, 1); pushDecal(s.x + 0.2, s.z + 0.15, 0.6, 0.45, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.45); }
+    else if (SHOT_DRAW[s.kind]) SHOT_DRAW[s.kind](s);
   }
   // archers' aim lines
   for (const e of run.enemies) {

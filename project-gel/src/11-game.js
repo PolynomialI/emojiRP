@@ -749,7 +749,7 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
-    if (s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma' || s.kind === 'cannon') {
+    if (s.lob || s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma' || s.kind === 'cannon') {
       // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1);
@@ -764,6 +764,7 @@ function updateEnemyShots(dt) {
         FX.burst(s.tx, 0.3, s.tz, 10, [0.55, 0.5, 0.45], 4, 0.14, 0.5, 2);
         // magma splashes into a puddle of lava that burns for a while
         if (s.kind === 'magma') { tempZone('lava', s.tx, s.tz, s.pool, s.stay); FX.burst(s.tx, 0.4, s.tz, 14, [1, 0.55, 0.15], 5, 0.12, 0.6, 0); }
+        if (s.onLand) s.onLand(s);
         G.cam.shake = Math.max(G.cam.shake, 0.1);
         AUDIO.play('boom');
       }

@@ -1221,6 +1221,7 @@ function modelDefs() {
   rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
   rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
   themeModels(defs);
+  themeModels2(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -1974,6 +1975,102 @@ function themeModels(defs) {
       { s: 'cap', a: [0.08, 0.56, 0], b: [0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 }, { s: 'cap', a: [-0.08, 0.56, 0], b: [-0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 },
       { s: 'sph', c: [0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 }, { s: 'sph', c: [-0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 },
     ]);
+  }
+}
+
+// ============================================================
+// Chapters 11-15: scenery and boss bodies, built with prop() like 04a-theme-models.js.
+// Model units: 1 is about one hero leg. Parts without col take the instance tint.
+// ============================================================
+Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'] });
+Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014 });
+MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking');
+
+function themeModels2(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  // ---------- Haunted Graveyard (chapter 11) ----------
+  {
+    const moss = C('#4f6a3a'), iron = C('#24222c'), ironHi = C('#4a4658'), stone = C('#6c6a74'), orange = C('#ff8a1f'), stem = C('#4f6a2a'), lit = C('#ffd34a'), bark = C('#2c2632');
+    // a rounded headstone with a carved cross and a little moss; the stone takes the tint
+    P('tombstone0', [
+      { s: 'box', c: [0, 0.42, 0], hs: [0.3, 0.42, 0.08], rd: 0.05, k: 0.02 },
+      { s: 'cyl', ax: 'z', c: [0, 0.84, 0], r: 0.3, hh: 0.08, rd: 0.05, k: 0.03 },
+      { s: 'box', c: [0, 0.05, 0.02], hs: [0.38, 0.05, 0.16], rd: 0.03, k: 0.02 },
+      { s: 'box', c: [0, 0.62, 0.085], hs: [0.03, 0.15, 0.03], rd: 0.01, sub: true, k: 0.01 },
+      { s: 'box', c: [0, 0.68, 0.085], hs: [0.1, 0.03, 0.03], rd: 0.01, sub: true, k: 0.01 },
+      { s: 'sph', c: [0.2, 0.98, 0.02], r: 0.09, col: moss, k: 0.04 },
+      { s: 'sph', c: [-0.26, 0.12, 0.1], r: 0.08, col: moss, k: 0.04 },
+    ], { ao: 0.8 });
+    // a stone cross on a plinth
+    P('tombstone1', [
+      { s: 'box', c: [0, 0.6, 0], hs: [0.08, 0.5, 0.08], rd: 0.025, k: 0.01 },
+      { s: 'box', c: [0, 0.8, 0], hs: [0.3, 0.075, 0.08], rd: 0.025, k: 0.01 },
+      { s: 'box', c: [0, 0.08, 0], hs: [0.24, 0.08, 0.2], rd: 0.03, k: 0.02 },
+      { s: 'sph', c: [0.08, 0.88, 0.06], r: 0.06, col: moss, k: 0.03 },
+    ], { ao: 0.8 });
+    // a jack-o'-lantern: ribbed and lit from inside
+    P('pumpkin', [
+      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'ell', c: [Math.cos(a) * 0.12, 0.3, Math.sin(a) * 0.12], rr: [0.24, 0.28, 0.24], col: orange, k: 0.03 }; }),
+      { s: 'cap', a: [0, 0.52, 0], b: [0.05, 0.7, 0.02], r: 0.05, r2: 0.035, col: stem, k: 0.02 },
+      { s: 'ell', c: [0.11, 0.38, 0.33], rr: [0.06, 0.065, 0.03], col: lit, k: 0 },
+      { s: 'ell', c: [-0.11, 0.38, 0.33], rr: [0.06, 0.065, 0.03], col: lit, k: 0 },
+      { s: 'ell', c: [0, 0.2, 0.33], rr: [0.15, 0.045, 0.03], col: lit, k: 0 },
+    ]);
+    // a wrought-iron fence panel between stone posts (wall ring)
+    P('fence', [
+      ...[-0.36, -0.12, 0.12, 0.36].map(x => ({ s: 'cap', a: [x, 0, 0], b: [x, 0.95, 0], r: 0.025, col: iron, k: 0 })),
+      ...[-0.36, -0.12, 0.12, 0.36].map(x => ({ s: 'cap', a: [x, 0.95, 0], b: [x, 1.1, 0], r: 0.045, r2: 0.006, col: ironHi, k: 0.01 })),
+      { s: 'box', c: [0, 0.3, 0], hs: [0.48, 0.022, 0.02], rd: 0.01, col: iron, k: 0 },
+      { s: 'box', c: [0, 0.8, 0], hs: [0.48, 0.022, 0.02], rd: 0.01, col: iron, k: 0 },
+      { s: 'box', c: [0.52, 0.55, 0], hs: [0.09, 0.55, 0.09], rd: 0.02, col: stone, k: 0.01 },
+      { s: 'sph', c: [0.52, 1.15, 0], r: 0.09, col: stone, k: 0.02 },
+    ], { ao: 0.7 });
+    // a twisted, leafless tree
+    P('gravetree', [
+      { s: 'cap', a: [0, 0, 0], b: [0.08, 1.3, 0], r: 0.11, r2: 0.05, col: bark, k: 0.03 },
+      { s: 'cap', a: [0.06, 0.85, 0], b: [0.46, 1.2, 0.08], r: 0.05, r2: 0.018, col: bark, k: 0.02 },
+      { s: 'cap', a: [0.46, 1.2, 0.08], b: [0.6, 1.12, 0.1], r: 0.018, r2: 0.01, col: bark, k: 0.01 },
+      { s: 'cap', a: [0.05, 0.65, 0], b: [-0.38, 1.0, -0.08], r: 0.05, r2: 0.018, col: bark, k: 0.02 },
+      { s: 'cap', a: [-0.38, 1.0, -0.08], b: [-0.5, 1.22, -0.02], r: 0.018, r2: 0.01, col: bark, k: 0.01 },
+      { s: 'cap', a: [0.08, 1.2, 0], b: [-0.1, 1.6, 0.12], r: 0.04, r2: 0.012, col: bark, k: 0.02 },
+      ...[[0.16, 0.08, 0.04], [-0.12, 0.06, 0.14], [0.02, 0.05, -0.18]].map(([x, y, z]) => ({ s: 'cap', a: [0, 0.12, 0], b: [x * 2, y, z * 2], r: 0.06, r2: 0.025, col: bark, k: 0.04 })),
+    ]);
+  }
+  // ---------- Pumpkin King (chapter 11 boss): a tall robed figure with a jack-o'-lantern head, a crown and a lantern ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.46, shY: 0.84, headY: 1.04, headR: 0.15, headZ: 0.03, shW: 0.2, hipW: 0.09, elOut: 0.08, upperLen: 0.21, foreLen: 0.21,
+      pelvisR: 0.14, torso: 'ell', torsoRR: [0.21, 0.26, 0.17], neckR: 0.06, armR: 0.06, handR: 0.07, legR: 0.07, k: 0.05 });
+    const J = m.J, hd = J.head, orange = C('#ff8a1f'), lit = C('#ffd34a'), stem = C('#4f6a2a'), gold = C('#ffc93a'), claw = C('#1a1420'), glass = C('#ffe9a0');
+    // the robe flares out over the legs, and a high cape collar rises behind the head
+    m.parts.push({ s: 'cap', a: [0, 0.55, 0], b: [0, 0.1, 0], r: 0.17, r2: 0.3, bone: 0, k: 0.05 });
+    m.parts.push({ s: 'ell', c: [0, 0.62, -0.17], rr: [0.27, 0.36, 0.05], bone: 1, k: 0.04 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [sx * 0.14, 0.86, -0.1], b: [sx * 0.24, 1.12, -0.14], r: 0.06, r2: 0.012, bone: 1, k: 0.03 });
+    // the pumpkin head: six ribs around the head, a stem, and a lit face
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * TAU;
+      m.parts.push({ s: 'ell', c: [hd[0] + Math.cos(a) * 0.075, hd[1], hd[2] + Math.sin(a) * 0.075], rr: [0.15, 0.17, 0.15], col: orange, bone: 2, k: 0.03 });
+    }
+    m.parts.push({ s: 'cap', a: [hd[0], hd[1] + 0.15, hd[2]], b: [hd[0] + 0.04, hd[1] + 0.26, hd[2]], r: 0.035, r2: 0.025, col: stem, bone: 2, k: 0.02 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.08, hd[1] + 0.05, hd[2] + 0.2], rr: [0.05, 0.055, 0.025], col: lit, bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - 0.07, hd[2] + 0.2], rr: [0.12, 0.035, 0.025], col: lit, bone: 2, k: 0 });
+    // a spiky gold crown
+    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.13, hd[2]], R: 0.12, r: 0.025, a0: -Math.PI, a1: Math.PI, col: gold, bone: 2, k: 0 });
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * TAU + 0.3;
+      m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.12, hd[1] + 0.13, hd[2] + Math.sin(a) * 0.12], b: [hd[0] + Math.cos(a) * 0.13, hd[1] + 0.24, hd[2] + Math.sin(a) * 0.13], r: 0.025, r2: 0.008, col: gold, bone: 2, k: 0.01 });
+    }
+    // bony claws, and a glowing lantern swinging from the left hand
+    for (const sd of ['L', 'R']) {
+      const ha = J['ha' + sd], b = sd === 'L' ? 4 : 6;
+      for (const dx of [-0.04, 0, 0.04]) m.parts.push({ s: 'cap', a: [ha[0] + dx, ha[1] - 0.04, ha[2] + 0.03], b: [ha[0] + dx * 1.4, ha[1] - 0.15, ha[2] + 0.08], r: 0.018, r2: 0.006, col: claw, bone: b, k: 0 });
+    }
+    const hl = J.haL;
+    m.parts.push({ s: 'cap', a: [hl[0], hl[1] - 0.05, hl[2]], b: [hl[0], hl[1] - 0.16, hl[2]], r: 0.012, col: claw, bone: 4, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hl[0], hl[1] - 0.24, hl[2]], r: 0.065, hh: 0.08, rd: 0.02, col: glass, bone: 4, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hl[0], hl[1] - 0.15, hl[2]], r: 0.075, hh: 0.015, rd: 0.01, col: claw, bone: 4, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hl[0], hl[1] - 0.33, hl[2]], r: 0.075, hh: 0.015, rd: 0.01, col: claw, bone: 4, k: 0 });
+    m.top = hd[1] + 0.3; m.bmin = [-0.6, -0.03, -0.55]; m.bmax = [0.6, m.top + 0.05, 0.55]; m.name = 'pumpking'; m.runAmp = 0.6;
+    defs.pumpking = m;
   }
 }
 </script>
@@ -2813,6 +2910,7 @@ function modelDefs() {
   rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
   rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
   themeModels(defs);
+  themeModels2(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -3570,6 +3668,103 @@ function themeModels(defs) {
   }
 }
 
+// ---- 04b-theme-models2.js ----
+// ============================================================
+// Chapters 11-15: scenery and boss bodies, built with prop() like 04a-theme-models.js.
+// Model units: 1 is about one hero leg. Parts without col take the instance tint.
+// ============================================================
+Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'] });
+Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014 });
+MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking');
+
+function themeModels2(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  // ---------- Haunted Graveyard (chapter 11) ----------
+  {
+    const moss = C('#4f6a3a'), iron = C('#24222c'), ironHi = C('#4a4658'), stone = C('#6c6a74'), orange = C('#ff8a1f'), stem = C('#4f6a2a'), lit = C('#ffd34a'), bark = C('#2c2632');
+    // a rounded headstone with a carved cross and a little moss; the stone takes the tint
+    P('tombstone0', [
+      { s: 'box', c: [0, 0.42, 0], hs: [0.3, 0.42, 0.08], rd: 0.05, k: 0.02 },
+      { s: 'cyl', ax: 'z', c: [0, 0.84, 0], r: 0.3, hh: 0.08, rd: 0.05, k: 0.03 },
+      { s: 'box', c: [0, 0.05, 0.02], hs: [0.38, 0.05, 0.16], rd: 0.03, k: 0.02 },
+      { s: 'box', c: [0, 0.62, 0.085], hs: [0.03, 0.15, 0.03], rd: 0.01, sub: true, k: 0.01 },
+      { s: 'box', c: [0, 0.68, 0.085], hs: [0.1, 0.03, 0.03], rd: 0.01, sub: true, k: 0.01 },
+      { s: 'sph', c: [0.2, 0.98, 0.02], r: 0.09, col: moss, k: 0.04 },
+      { s: 'sph', c: [-0.26, 0.12, 0.1], r: 0.08, col: moss, k: 0.04 },
+    ], { ao: 0.8 });
+    // a stone cross on a plinth
+    P('tombstone1', [
+      { s: 'box', c: [0, 0.6, 0], hs: [0.08, 0.5, 0.08], rd: 0.025, k: 0.01 },
+      { s: 'box', c: [0, 0.8, 0], hs: [0.3, 0.075, 0.08], rd: 0.025, k: 0.01 },
+      { s: 'box', c: [0, 0.08, 0], hs: [0.24, 0.08, 0.2], rd: 0.03, k: 0.02 },
+      { s: 'sph', c: [0.08, 0.88, 0.06], r: 0.06, col: moss, k: 0.03 },
+    ], { ao: 0.8 });
+    // a jack-o'-lantern: ribbed and lit from inside
+    P('pumpkin', [
+      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'ell', c: [Math.cos(a) * 0.12, 0.3, Math.sin(a) * 0.12], rr: [0.24, 0.28, 0.24], col: orange, k: 0.03 }; }),
+      { s: 'cap', a: [0, 0.52, 0], b: [0.05, 0.7, 0.02], r: 0.05, r2: 0.035, col: stem, k: 0.02 },
+      { s: 'ell', c: [0.11, 0.38, 0.33], rr: [0.06, 0.065, 0.03], col: lit, k: 0 },
+      { s: 'ell', c: [-0.11, 0.38, 0.33], rr: [0.06, 0.065, 0.03], col: lit, k: 0 },
+      { s: 'ell', c: [0, 0.2, 0.33], rr: [0.15, 0.045, 0.03], col: lit, k: 0 },
+    ]);
+    // a wrought-iron fence panel between stone posts (wall ring)
+    P('fence', [
+      ...[-0.36, -0.12, 0.12, 0.36].map(x => ({ s: 'cap', a: [x, 0, 0], b: [x, 0.95, 0], r: 0.025, col: iron, k: 0 })),
+      ...[-0.36, -0.12, 0.12, 0.36].map(x => ({ s: 'cap', a: [x, 0.95, 0], b: [x, 1.1, 0], r: 0.045, r2: 0.006, col: ironHi, k: 0.01 })),
+      { s: 'box', c: [0, 0.3, 0], hs: [0.48, 0.022, 0.02], rd: 0.01, col: iron, k: 0 },
+      { s: 'box', c: [0, 0.8, 0], hs: [0.48, 0.022, 0.02], rd: 0.01, col: iron, k: 0 },
+      { s: 'box', c: [0.52, 0.55, 0], hs: [0.09, 0.55, 0.09], rd: 0.02, col: stone, k: 0.01 },
+      { s: 'sph', c: [0.52, 1.15, 0], r: 0.09, col: stone, k: 0.02 },
+    ], { ao: 0.7 });
+    // a twisted, leafless tree
+    P('gravetree', [
+      { s: 'cap', a: [0, 0, 0], b: [0.08, 1.3, 0], r: 0.11, r2: 0.05, col: bark, k: 0.03 },
+      { s: 'cap', a: [0.06, 0.85, 0], b: [0.46, 1.2, 0.08], r: 0.05, r2: 0.018, col: bark, k: 0.02 },
+      { s: 'cap', a: [0.46, 1.2, 0.08], b: [0.6, 1.12, 0.1], r: 0.018, r2: 0.01, col: bark, k: 0.01 },
+      { s: 'cap', a: [0.05, 0.65, 0], b: [-0.38, 1.0, -0.08], r: 0.05, r2: 0.018, col: bark, k: 0.02 },
+      { s: 'cap', a: [-0.38, 1.0, -0.08], b: [-0.5, 1.22, -0.02], r: 0.018, r2: 0.01, col: bark, k: 0.01 },
+      { s: 'cap', a: [0.08, 1.2, 0], b: [-0.1, 1.6, 0.12], r: 0.04, r2: 0.012, col: bark, k: 0.02 },
+      ...[[0.16, 0.08, 0.04], [-0.12, 0.06, 0.14], [0.02, 0.05, -0.18]].map(([x, y, z]) => ({ s: 'cap', a: [0, 0.12, 0], b: [x * 2, y, z * 2], r: 0.06, r2: 0.025, col: bark, k: 0.04 })),
+    ]);
+  }
+  // ---------- Pumpkin King (chapter 11 boss): a tall robed figure with a jack-o'-lantern head, a crown and a lantern ----------
+  {
+    const m = makeHumanoid({ ...STICK, hipY: 0.46, shY: 0.84, headY: 1.04, headR: 0.15, headZ: 0.03, shW: 0.2, hipW: 0.09, elOut: 0.08, upperLen: 0.21, foreLen: 0.21,
+      pelvisR: 0.14, torso: 'ell', torsoRR: [0.21, 0.26, 0.17], neckR: 0.06, armR: 0.06, handR: 0.07, legR: 0.07, k: 0.05 });
+    const J = m.J, hd = J.head, orange = C('#ff8a1f'), lit = C('#ffd34a'), stem = C('#4f6a2a'), gold = C('#ffc93a'), claw = C('#1a1420'), glass = C('#ffe9a0');
+    // the robe flares out over the legs, and a high cape collar rises behind the head
+    m.parts.push({ s: 'cap', a: [0, 0.55, 0], b: [0, 0.1, 0], r: 0.17, r2: 0.3, bone: 0, k: 0.05 });
+    m.parts.push({ s: 'ell', c: [0, 0.62, -0.17], rr: [0.27, 0.36, 0.05], bone: 1, k: 0.04 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [sx * 0.14, 0.86, -0.1], b: [sx * 0.24, 1.12, -0.14], r: 0.06, r2: 0.012, bone: 1, k: 0.03 });
+    // the pumpkin head: six ribs around the head, a stem, and a lit face
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * TAU;
+      m.parts.push({ s: 'ell', c: [hd[0] + Math.cos(a) * 0.075, hd[1], hd[2] + Math.sin(a) * 0.075], rr: [0.15, 0.17, 0.15], col: orange, bone: 2, k: 0.03 });
+    }
+    m.parts.push({ s: 'cap', a: [hd[0], hd[1] + 0.15, hd[2]], b: [hd[0] + 0.04, hd[1] + 0.26, hd[2]], r: 0.035, r2: 0.025, col: stem, bone: 2, k: 0.02 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.08, hd[1] + 0.05, hd[2] + 0.2], rr: [0.05, 0.055, 0.025], col: lit, bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - 0.07, hd[2] + 0.2], rr: [0.12, 0.035, 0.025], col: lit, bone: 2, k: 0 });
+    // a spiky gold crown
+    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.13, hd[2]], R: 0.12, r: 0.025, a0: -Math.PI, a1: Math.PI, col: gold, bone: 2, k: 0 });
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * TAU + 0.3;
+      m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.12, hd[1] + 0.13, hd[2] + Math.sin(a) * 0.12], b: [hd[0] + Math.cos(a) * 0.13, hd[1] + 0.24, hd[2] + Math.sin(a) * 0.13], r: 0.025, r2: 0.008, col: gold, bone: 2, k: 0.01 });
+    }
+    // bony claws, and a glowing lantern swinging from the left hand
+    for (const sd of ['L', 'R']) {
+      const ha = J['ha' + sd], b = sd === 'L' ? 4 : 6;
+      for (const dx of [-0.04, 0, 0.04]) m.parts.push({ s: 'cap', a: [ha[0] + dx, ha[1] - 0.04, ha[2] + 0.03], b: [ha[0] + dx * 1.4, ha[1] - 0.15, ha[2] + 0.08], r: 0.018, r2: 0.006, col: claw, bone: b, k: 0 });
+    }
+    const hl = J.haL;
+    m.parts.push({ s: 'cap', a: [hl[0], hl[1] - 0.05, hl[2]], b: [hl[0], hl[1] - 0.16, hl[2]], r: 0.012, col: claw, bone: 4, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hl[0], hl[1] - 0.24, hl[2]], r: 0.065, hh: 0.08, rd: 0.02, col: glass, bone: 4, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hl[0], hl[1] - 0.15, hl[2]], r: 0.075, hh: 0.015, rd: 0.01, col: claw, bone: 4, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hl[0], hl[1] - 0.33, hl[2]], r: 0.075, hh: 0.015, rd: 0.01, col: claw, bone: 4, k: 0 });
+    m.top = hd[1] + 0.3; m.bmin = [-0.6, -0.03, -0.55]; m.bmax = [0.6, m.top + 0.05, 0.55]; m.name = 'pumpking'; m.runAmp = 0.6;
+    defs.pumpking = m;
+  }
+}
+
 // ---- 05-glsl.js ----
 // ============================================================
 // GLSL sources
@@ -3871,6 +4066,18 @@ void main() {
     N = normalize(vec3(tilt.x, 1.0, tilt.y));
     alb = mix(uStoneA, uStoneB, mott) * (0.9 + 0.15 * fine) * (1.0 - 0.25 * bowl) * (1.0 + 0.15 * rim);
     ao = 1.0 - 0.2 * bowl;
+  } else if (style == 10) {
+    // graveyard: dark soil under patchy dead grass, with fallen leaves scattered about
+    float grass = smoothstep(0.35, 0.65, texture(uNoise, p * 0.05).g);
+    float blades = texture(uNoise, p * vec2(2.2, 2.7)).b;
+    alb = mix(uGrout * (0.85 + 0.3 * fine), mix(uStoneA, uStoneB, mott) * (0.75 + 0.4 * blades), grass);
+    vec2 lc = floor(p / 0.7), lf = fract(p / 0.7) - 0.5;
+    float lh = hash12(lc);
+    vec2 lo = (vec2(hash12(lc + 1.3), hash12(lc + 2.7)) - 0.5) * 0.5;
+    float leaf = step(0.8, lh) * (1.0 - smoothstep(0.08, 0.13, length((lf - lo) * vec2(1.0, 1.8))));
+    alb = mix(alb, lh > 0.92 ? vec3(0.55, 0.22, 0.08) : vec3(0.45, 0.32, 0.1), leaf);
+    N = normalize(vec3((blades - 0.5) * 0.3 * grass, 1.0, (fine - 0.5) * 0.3));
+    ao = mix(0.8, 1.0, blades);
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -4486,6 +4693,17 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 43) {
+    // spirit wisp: a round glowing ghost with a wavy tail streaming back along -z and two dark eyes
+    float wv = sin(p.z * 7.0 + ph * 10.0) * 0.1 * clamp(-p.z + 0.2, 0.0, 1.0);
+    float head = length(p - vec3(0.0, 0.0, 0.22)) - 0.42;
+    float tail = sdRoundCone(p - vec3(wv, 0.0, 0.0), vec3(0.0, 0.0, 0.15), vec3(0.0, 0.0, -0.85), 0.36, 0.035);
+    float d = smin(head, tail, 0.15);
+    vec3 e = vec3(abs(p.x) - 0.15, p.y - 0.2, p.z - 0.5);
+    float eye = length(e * vec3(1.0, 0.75, 1.0)) - 0.085;
+    // P1.x > 0.5: a hostile red ghost
+    return vec2(d, eye < 0.03 ? 12.0 : P1.x > 0.5 ? 10.0 : 7.0);
   }
   if (type == 42) {
     // black hole: a glossy black core inside a tilted, glowing accretion ring that spins
@@ -6511,6 +6729,11 @@ const SKILLS = {
     fields: [['dmg', 'Collapse damage'], ['radius', 'Pull radius', 'm'], ['life', 'Lasts', 's'], ['cd', 'Cooldown', 's']],
     levels: L10({ dmg: [40, 46, 52, 58, 66, 74, 82, 92, 104, 120], radius: [3.5, 3.7, 3.9, 4.1, 4.3, 4.5, 4.8, 5.1, 5.4, 5.8], life: [2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8, 3.0, 3.2], cd: [9, 8.7, 8.4, 8.1, 7.8, 7.5, 7.2, 6.9, 6.6, 6.2] }),
   },
+  wisps: {
+    name: 'Spirit Wisps', from: 11, intro: 'Friendly ghost wisps circle you, dart through the nearest enemies, then drift back to you.', icon: { type: 43, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Wisps'], ['cd', 'Darts every', 's'], ['pierce', 'Passes through']],
+    levels: L10({ dmg: [12, 13, 15, 16, 18, 20, 22, 25, 28, 32], count: [2, 2, 2, 3, 3, 3, 4, 4, 4, 5], cd: [2.2, 2.1, 2.0, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4], pierce: [2, 2, 3, 3, 3, 4, 4, 5, 5, 6] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -6557,7 +6780,7 @@ const EVOLUTIONS = {
   axe: { with: 'thorns', name: 'Bramble Axes', desc: 'One more axe, thrown a little farther.', boost: L => ({ dmg: Math.round(L.dmg * 1.15), count: L.count + 1, range: +(L.range * 1.1).toFixed(1) }) },
 };
 function featuredPowerup(chapter) {
-  const want = ((chapter - 1) % 10) + 1;
+  const want = ((chapter - 1) % CHAPTER_BOSSES.length) + 1;
   if (want < 2) return null;
   for (const id in SKILLS) if (SKILLS[id].from === want) return id;
   for (const id in PASSIVES) if (PASSIVES[id].from === want) return id;
@@ -6603,6 +6826,7 @@ const BOSS_TYPES = {
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
 };
 // Chapter bosses beyond the first are drawn and driven in 13a-bosses.js (noDrop: they make their own entrance)
+BOSS_TYPES.pumpking = { name: 'Pumpkin King', model: 'pumpking', meshes: ['pumpking', 'pumpkin'], hp: 4300, speed: 2.3, dmg: 20, scale: 2.8, radius: 1.2, tint: '#3a2850', mass: 60, portraitTop: 1.12 };
 BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 4200, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4000, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
@@ -6639,6 +6863,8 @@ const ARENAS = [
     props: [['palm', 6, 0.42, 0.55], ['barrel', 3, 0.3, 0.36], ['crate', 3, 0.34, 0.4], ['rock', 3, 0.8, 1.2], ['starfish', 4, 0.3, 0.4]], zones: [['tidepool', 3, 2.0, 3.0]], wall: 'post' },
   { id: 'moon', name: 'Moon Base', floor: 9, stoneA: '#b8bcc8', stoneB: '#979dab', grout: '#3a3e4a', accent: '#7af0ff', fog: '#05060f', sky: '#3a4070', ground: '#2a2e40', light: '#eef2ff', spotMin: 0.5, shadowTint: '#0a0c20', rock: '#7c808c', pool: '#3ad8ff', poolGlow: 0.5,
     props: [['dish', 2.5, 0.55, 0.7], ['lander', 2, 0.42, 0.5], ['habdome', 2, 0.9, 1.2], ['rock', 5, 0.8, 1.3]], zones: [['boost', 2.4, 2.0, 2.8]], wall: 'moonwall' },
+  { id: 'graveyard', name: 'Haunted Graveyard', floor: 10, stoneA: '#4a5a3a', stoneB: '#33402c', grout: '#221a14', accent: '#b06aff', fog: '#120c1e', sky: '#6a5a8a', ground: '#1e2420', light: '#e6deff', spotMin: 0.46, shadowTint: '#100a1e', rock: '#6a6a72', pool: '#3a2a5a', poolGlow: 0.1,
+    props: [['tombstone', 10, 0.52, 0.64], ['pumpkin', 5, 0.38, 0.48], ['gravetree', 4, 0.42, 0.58], ['rock', 2, 0.8, 1.1]], zones: [['mist', 3, 2.2, 3.4]], wall: 'fence' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -6686,6 +6912,10 @@ const PROP_KINDS = {
   habdome: { models: ['habdome'], unit: 0.6, block: true, shots: true },
   moonwall: { models: ['moonwall'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
   basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
+  tombstone: { models: ['tombstone0', 'tombstone0', 'tombstone1'], unit: 0.4, block: true, shots: true, tints: ['#8a8c96', '#777a84', '#9a98a4'], tall: 1.6 },
+  pumpkin: { models: ['pumpkin'], unit: 0.36, block: true, shots: true },
+  gravetree: { models: ['gravetree'], unit: 0.16, block: true, tall: 2.6 },
+  fence: { models: ['fence'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -6700,10 +6930,11 @@ const ZONE_KINDS = {
   swamp: { slow: 0.6, col: '#56702c', glow: 0.03 },
   tidepool: { block: true, col: '#2fb8e0', glow: 0.12 },
   boost: { slow: 1.35, col: '#3ad8ff', glow: 0.55 },
+  mist: { slow: 0.7, col: '#7a5aa8', glow: 0.14 },
 };
 
-// Each chapter of a 10-chapter cycle has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo'];
+// Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
@@ -7840,7 +8071,7 @@ function updateEnemyShots(dt) {
       }
       continue;
     }
-    if (s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma' || s.kind === 'cannon') {
+    if (s.lob || s.kind === 'boulder' || s.kind === 'rocket' || s.kind === 'magma' || s.kind === 'cannon') {
       // lobbed shots: fly in an arc to a telegraphed spot and burst there
       s.t += dt;
       const u = clamp(s.t / s.dur, 0, 1);
@@ -7855,6 +8086,7 @@ function updateEnemyShots(dt) {
         FX.burst(s.tx, 0.3, s.tz, 10, [0.55, 0.5, 0.45], 4, 0.14, 0.5, 2);
         // magma splashes into a puddle of lava that burns for a while
         if (s.kind === 'magma') { tempZone('lava', s.tx, s.tz, s.pool, s.stay); FX.burst(s.tx, 0.4, s.tz, 14, [1, 0.55, 0.15], 5, 0.12, 0.6, 0); }
+        if (s.onLand) s.onLand(s);
         G.cam.shake = Math.max(G.cam.shake, 0.1);
         AUDIO.play('boom');
       }
@@ -8611,6 +8843,29 @@ function endlessBossDown(run) {
   run.bosses = []; run.bossStarted = false; run.bossTotalHp = 0;
   UI.toast('Boss down! Keep going!', 2);
 }
+
+// ---- 11d-themes2.js ----
+// ============================================================
+// Chapters 11-15: set pieces and moving parts (layouts and features for 11a-arena.js)
+// ============================================================
+
+// ---------- Haunted Graveyard: will-o'-wisps drifting between the graves, and the jack-o'-lanterns flickering ----------
+ARENA_FEATURES.graveyard = {
+  init(st) { st.lanterns = ARENA.props.filter(o => o.kind === 'pumpkin'); st.acc = 0; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 1.5 : 4);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.3, 1.6), h[2] + rand(-11, 8), rand(-0.4, 0.4), rand(0.05, 0.3), rand(-0.4, 0.4), rand(0.1, 0.16), 0.03, rand(2, 3.5), [0.72, 0.58, 1], 1, 0, 0, 0.2);
+  },
+  emit(st) {
+    const t = G.run ? G.run.t : 0;
+    for (const o of st.lanterns) {
+      if (!onScreen(o.x, o.z, 2)) continue;
+      const sc = o.r / PROP_KINDS.pumpkin.unit, fl = 0.75 + 0.25 * Math.sin(t * 9 + o.ph * 5) * Math.sin(t * 5.3 + o.ph);
+      FX.glow(o.x, 0.35 * sc, o.z, 1.1 * sc, [1, 0.6, 0.2], 0.05, 0.55 * fl);
+    }
+  },
+};
 
 // ---- 12-skills.js ----
 // ============================================================
@@ -9686,6 +9941,65 @@ SKILL_HOOKS.blackhole = {
   },
 };
 
+// ---- 12b-skills2.js ----
+// ============================================================
+// Chapter power-ups for chapters 11-15 (data in SKILLS, 10-data.js). Cheap to draw: impostors, ribbons, decals.
+// ============================================================
+
+// ---------- Spirit Wisps (chapter 11): ghost wisps circle you, dart through a line of enemies and drift back ----------
+SKILL_HOOKS.wisps = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, n = L.count;
+    st.w = st.w || [];
+    // new wisps join with their dart timers spread out, so they don't all fly at once
+    while (st.w.length < n) st.w.push({ x: h[0], y: 1.3, z: h[2], state: 'orbit', cd: 0.4 + st.w.length * 0.5, ph: rand(0, 10), trail: [], hits: null });
+    st.a = (st.a || 0) + dt * 2.4;
+    st.w.forEach((w, i) => {
+      const a = st.a + (i / n) * TAU, ox = h[0] + Math.cos(a) * 1.4, oz = h[2] + Math.sin(a) * 1.4, oy = 1.25 + Math.sin(st.a * 2 + i) * 0.15;
+      if (w.state === 'orbit') {
+        const k = Math.min(1, dt * 10);
+        w.x += (ox - w.x) * k; w.y += (oy - w.y) * k; w.z += (oz - w.z) * k;
+        w.vx = -Math.sin(a); w.vz = Math.cos(a);
+        w.cd -= dt;
+        if (w.cd <= 0) {
+          const tgt = nearestEnemy(w.x, w.z, 7.5);
+          if (tgt) {
+            const dx = tgt.x - w.x, dz = tgt.z - w.z, d = Math.hypot(dx, dz) || 1;
+            w.state = 'dart'; w.vx = dx / d; w.vz = dz / d; w.left = d + 2.5; w.hits = new Set(); w.pierce = L.pierce;
+            AUDIO.play('pop', 0.35);
+          } else w.cd = 0.25;
+        }
+      } else if (w.state === 'dart') {
+        // straight through the line of enemies; each one is hit once
+        const step = 15 * dt;
+        w.x += w.vx * step; w.z += w.vz * step; w.y += (0.9 - w.y) * Math.min(1, dt * 8); w.left -= step;
+        enemiesInRadius(w.x, w.z, 0.55, e => {
+          if (w.pierce <= 0 || w.hits.has(e)) return;
+          w.hits.add(e); w.pierce--;
+          hurtEnemy(e, L.dmg, w.vx * 2, w.vz * 2, { sound: false, color: [0.85, 0.9, 1] });
+          FX.burst(e.x, 0.9, e.z, 5, [0.85, 0.92, 1], 3, 0.06, 0.3, 1);
+        });
+        if (w.left <= 0 || w.pierce <= 0 || arenaSd(w.x, w.z) > -0.3) w.state = 'back';
+      } else {
+        // drift home to its place in the circle
+        const dx = ox - w.x, dz = oz - w.z, d = Math.hypot(dx, dz);
+        if (d < 0.4) { w.state = 'orbit'; w.cd = L.cd * cdMul(); }
+        else { const sp = Math.min(d, 11 * dt); w.x += dx / d * sp; w.z += dz / d * sp; w.y += (oy - w.y) * Math.min(1, dt * 4); w.vx = dx / d; w.vz = dz / d; }
+      }
+      w.trail.unshift([w.x, w.y, w.z]); if (w.trail.length > 8) w.trail.pop();
+    });
+  },
+  emit(s) {
+    const st = s.st, t = G.run.t;
+    if (!st.w) return;
+    for (const w of st.w) {
+      const big = w.state === 'dart' ? 1.15 : 1;
+      pushImp(w.x, w.y, w.z, 0.38 * big, w.vx, 0, w.vz, 1, 43, 0, 0.45, w.ph + t, 0, 0, 0, 0.92);
+      trailRibbon(w.trail, 0.16, [0.75, 0.85, 1], w.state === 'dart' ? 0.55 : 0.25);
+    }
+  },
+};
+
 // ---- 13-enemies.js ----
 // ============================================================
 // Bosses, telegraphs, and drawing every entity into the scene
@@ -9759,6 +10073,8 @@ function bossWalk(e, dt, tx, tz, speed) {
 // New bosses register their behaviour here: BOSS_AI[id](e, dt, distToHero, dx, dz) after the drop-in,
 // and BOSS_DRAW[id](e) when they are not a single animated mesh
 const BOSS_AI = {}, BOSS_DRAW = {};
+// drawing for enemy shot kinds added by later chapters: SHOT_DRAW[kind](shot)
+const SHOT_DRAW = {};
 function updateBoss(e, dt) {
   const ai = e.ai, h = G.hero.pos, run = G.run;
   ai.t -= dt;
@@ -10050,6 +10366,7 @@ function emitRunScene() {
       pushDecal(s.x + 0.1, s.z + 0.08, 0.35, 0.18, -Math.atan2(vx, vz), 1, 0, 0, 0.01, 0.02, 0.05, 0.35);
     }
     else if (s.kind === 'boulder') { pushImp(s.x, s.y, s.z, 0.6, Math.sin(s.spin), Math.cos(s.spin), 0.3, 1, 13, 0, 0, 0, 0, 0, 0, 1); pushDecal(s.x + 0.2, s.z + 0.15, 0.6, 0.45, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.45); }
+    else if (SHOT_DRAW[s.kind]) SHOT_DRAW[s.kind](s);
   }
   // archers' aim lines
   for (const e of run.enemies) {
@@ -11277,6 +11594,141 @@ BOSS_DRAW.ufo = function (e) {
     }
   }
   for (const p of ai.drops || []) R.ribStrip([p.x, 0.1, p.z, p.x, 9, p.z], 2, 0.9 * (1 - p.t / 1.1) + 0.2, [0.5, 1, 0.6, 0.35], 0);
+};
+
+// ---- 13b-bosses2.js ----
+// ============================================================
+// Chapter bosses 11-15: behaviour (BOSS_AI) and drawing (BOSS_DRAW), plus their custom shots (SHOT_DRAW).
+// Stats live in BOSS_TYPES (10-data.js). Lobbed shots set lob: true and an optional onLand(s).
+// ============================================================
+
+// a boss's shadow on the floor, faded with the boss
+function bossShadow(e, a = 0.5) {
+  const L = R.frame.lightDir;
+  pushDecal(e.x - L[0] * 0.5, e.z - L[2] * 0.5, 0.4 * e.scale, 0.52 * e.scale, -Math.atan2(L[0], L[2]), 1, 0, 0, 0.01, 0.03, 0.07, a);
+}
+// a point offset in the boss's own frame (x to its left, z ahead), in world space
+function bossLocal(e, lx, ly, lz) {
+  const c = Math.cos(e.yaw), s = Math.sin(e.yaw), k = e.scale;
+  return [e.x + (c * lx + s * lz) * k, ly * k, e.z + (-s * lx + c * lz) * k];
+}
+
+// ---------- Pumpkin King (chapter 11): lobs jack-o'-lantern bombs, looses rings of ghosts, and vanishes to pounce from the mist ----------
+BOSS_AI.pumpking = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.8; }
+  switch (ai.state) {
+    case 'walk': {
+      e.hidden = false; ai.fade = Math.max(0, (ai.fade || 0) - dt * 3);
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.25 : 1)); bossFace(e, dt);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['pumpkins', 'ghosts', 'haunt'][ai.next++ % 3];
+        if (k === 'pumpkins') { ai.state = 'throw'; ai.t = ai.dur = 0.7; ai.volleys = rage ? 2 : 1; }
+        else if (k === 'ghosts') { ai.state = 'summon'; ai.t = 0.8; ai.rings = rage ? 3 : 2; ai.spin = rand(0, TAU); }
+        else { ai.state = 'vanish'; ai.t = 0.5; ai.pounces = rage ? 2 : 1; }
+      }
+      break;
+    }
+    case 'throw': {
+      // jack-o'-lantern bombs: one where you are heading, the rest scattered around you
+      e.clip = 'throw'; e.clipU = clamp(1 - ai.t / ai.dur, 0, 0.999); e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      if (ai.t <= 0) {
+        const n = rage ? 6 : 4, hand = bossLocal(e, -0.3, 1.0, 0.1);
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.8, tz = h[2] + run.vel[2] * 0.8;
+          if (i) { const a = rand(0, TAU), r = rand(2, 5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.8);
+          const dur = 1.05 + i * 0.07;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.6, dur });
+          run.eShots.push({ kind: 'pumpkin', lob: true, sx: hand[0], sy: hand[1], sz: hand[2], tx: o.x, tz: o.z, x: hand[0], y: hand[1], z: hand[2], t: 0, dur, peak: 4, radius: 1.6, dmg: 22 * run.info.dmgMul, life: dur + 0.5, spin: rand(0, TAU), onLand: pumpkinBurst });
+        }
+        AUDIO.play('throw', 0.8);
+        if (--ai.volleys > 0) ai.t = ai.dur = 0.55;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4; }
+      }
+      break;
+    }
+    case 'summon': {
+      // a ring of ghosts drifts outward; a gap in each ring lets you slip through
+      e.clip = 'idle'; e.phase += dt * 2; e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt);
+      if (Math.random() < 0.6) FX.part(e.x + rand(-1, 1), rand(0.5, 2.5), e.z + rand(-1, 1), 0, 1, 0, 0.12, 0.05, 0.6, [0.75, 0.5, 1], 1, 1, 0, 0);
+      if (ai.t <= 0) {
+        const n = rage ? 16 : 12, gap = Math.floor(rand(0, n)), sp = rage ? 5 : 4.2;
+        for (let i = 0; i < n; i++) {
+          if (i === gap || i === (gap + 1) % n) continue;
+          const a = ai.spin + (i / n) * TAU;
+          run.eShots.push({ kind: 'ghost', x: e.x + Math.sin(a) * 1.2, y: 1.0, z: e.z + Math.cos(a) * 1.2, vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 12 * run.info.dmgMul, r: 0.52, life: 4, ph: rand(0, 10) });
+        }
+        ai.spin += TAU / n / 2;
+        AUDIO.play('zap', 0.5);
+        if (--ai.rings > 0) ai.t = 0.7;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.2; }
+      }
+      break;
+    }
+    case 'vanish':
+      // fades into the mist...
+      e.clip = 'idle'; e.phase += dt; e.vx *= 0.7; e.vz *= 0.7;
+      ai.fade = clamp(1 - ai.t / 0.5, 0, 1);
+      if (ai.t <= 0) {
+        e.hidden = true; ai.state = 'stalk'; ai.t = rage ? 0.85 : 1.0;
+        const o = { x: h[0] + run.vel[0] * 0.5, z: h[2] + run.vel[2] * 0.5 }; resolveCircle(o, e.radius);
+        ai.tx = o.x; ai.tz = o.z;
+        addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 2.6, dur: ai.t });
+        FX.smoke(e.x, 1, e.z, 2, [0.5, 0.4, 0.7], 0.8, 1.2);
+      }
+      break;
+    case 'stalk':
+      // ...and lands on the marked spot
+      ai.fade = 1;
+      if (ai.t <= 0) {
+        e.x = ai.tx; e.z = ai.tz; e.hidden = false; e.vx = e.vz = 0;
+        ai.state = 'pounce'; ai.t = 0.45; ai.fade = 0.6;
+        e.yaw = Math.atan2(h[0] - e.x, h[2] - e.z);
+        const hd = Math.hypot(h[0] - e.x, h[2] - e.z);
+        if (hd < 2.6 + HERO_R * 0.5) { hurtHero(28 * run.info.dmgMul, e.x, e.z); const l = hd || 1; run.vel[0] += (h[0] - e.x) / l * 9; run.vel[2] += (h[2] - e.z) / l * 9; }
+        enemiesInRadius(e.x, e.z, 2.6, o => { if (o !== e && !o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+        FX.ring(e.x, e.z, 5.2, [0.7, 0.5, 1], 0.5); FX.burst(e.x, 0.5, e.z, 18, [0.75, 0.55, 1], 6, 0.12, 0.6, 1);
+        G.cam.shake = Math.max(G.cam.shake, 0.2); AUDIO.play('boom');
+      }
+      break;
+    case 'pounce':
+      e.clip = 'slam'; e.clipU = Math.min(0.999, 0.55 + (0.45 - Math.max(ai.t, 0))); e.vx *= 0.7; e.vz *= 0.7;
+      ai.fade = Math.max(0, ai.fade - dt * 3);
+      if (ai.t <= 0) {
+        if (--ai.pounces > 0) { ai.state = 'vanish'; ai.t = 0.4; }
+        else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }
+      }
+      break;
+  }
+};
+function pumpkinBurst(s) {
+  FX.burst(s.tx, 0.5, s.tz, 16, [1, 0.6, 0.15], 6, 0.12, 0.6, 0);
+  FX.glow(s.tx, 0.6, s.tz, 2.4, [1, 0.6, 0.2], 0.25);
+  enemiesInRadius(s.tx, s.tz, s.radius, o => { if (!o.boss) hurtEnemy(o, 18, 0, 0, { sound: false }); });
+}
+BOSS_DRAW.pumpking = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint;
+  const fade = e.portrait || dead ? 0 : clamp(e.ai.fade || 0, 0, 1);
+  if (R.enemyDraw.pumpking && fade < 0.97) pushEnemy('pumpking', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? MODELS.defs.pumpking.clips.idle.row + 2 : enemyRow(e), e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2], fade * 0.9);
+  if (e.portrait) return;
+  bossShadow(e, 0.5 * (1 - fade));
+  // the lantern in its left hand flickers
+  if (!dead && fade < 0.6) {
+    const p = bossLocal(e, 0.3, 0.2, 0.05), f = 0.7 + 0.3 * Math.sin(G.run.t * 11) * Math.sin(G.run.t * 6.3);
+    FX.glow(p[0], p[1], p[2], 1.0, [1, 0.75, 0.3], 0.05, 0.7 * f * (1 - fade));
+  }
+};
+SHOT_DRAW.pumpkin = s => {
+  if (R.enemyDraw.pumpkin) pushEnemy('pumpkin', false, s.x, s.y - 0.35, s.z, s.spin, MODELS.defs.pumpkin.clips.still.row, 1.0, 1, 0, 0, 0, 1, 1, 1);
+  FX.glow(s.x, s.y, s.z, 0.9, [1, 0.6, 0.2], 0.05, 0.5);
+  pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.35, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4);
+};
+SHOT_DRAW.ghost = s => {
+  const sp = Math.hypot(s.vx, s.vz) || 1;
+  pushImp(s.x, s.y + Math.sin(s.ph + s.life * 5) * 0.15, s.z, s.r, s.vx / sp, 0, s.vz / sp, 1, 43, 0, 0.35, s.ph + G.run.t, 1, 0, 0, 0.9);
+  pushDecal(s.x + 0.08, s.z + 0.06, s.r * 0.7, s.r * 0.6, 0, 1, 0, 0, 0.05, 0.02, 0.08, 0.25);
 };
 
 // ---- 14-ui.js ----
@@ -12591,6 +13043,7 @@ function renderAllIcons() {
     meteor: { scale: 0.66, ax: -0.75, ay: -0.6, az: 0.25, emissive: 0.1 },
     wave: { scale: 0.64, emissive: 0.15 },
     blackhole: { scale: 0.62, emissive: 0.3 },
+    wisps: { scale: 0.6, emissive: 0.45, ax: 0.8, az: 0.6 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

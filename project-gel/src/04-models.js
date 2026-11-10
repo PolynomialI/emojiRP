@@ -232,6 +232,7 @@ function modelDefs() {
   rock('rock1', [{ c: [-0.12, 0.12, 0], r: 0.36, bump: 0.15 }, { c: [0.2, 0.1, -0.05], r: 0.32, bump: 0.12 }, { c: [0.02, 0.36, 0.02], r: 0.2, bump: 0.18 }]);
   rock('rock2', [{ c: [0, 0.2, 0], r: 0.4, bump: 0.1 }, { c: [-0.25, 0.04, 0.2], r: 0.2, bump: 0.2 }, { c: [0.2, 0.02, -0.25], r: 0.17, bump: 0.2 }]);
   themeModels(defs);
+  themeModels2(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)

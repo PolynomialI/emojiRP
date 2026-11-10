@@ -298,6 +298,18 @@ void main() {
     N = normalize(vec3(tilt.x, 1.0, tilt.y));
     alb = mix(uStoneA, uStoneB, mott) * (0.9 + 0.15 * fine) * (1.0 - 0.25 * bowl) * (1.0 + 0.15 * rim);
     ao = 1.0 - 0.2 * bowl;
+  } else if (style == 10) {
+    // graveyard: dark soil under patchy dead grass, with fallen leaves scattered about
+    float grass = smoothstep(0.35, 0.65, texture(uNoise, p * 0.05).g);
+    float blades = texture(uNoise, p * vec2(2.2, 2.7)).b;
+    alb = mix(uGrout * (0.85 + 0.3 * fine), mix(uStoneA, uStoneB, mott) * (0.75 + 0.4 * blades), grass);
+    vec2 lc = floor(p / 0.7), lf = fract(p / 0.7) - 0.5;
+    float lh = hash12(lc);
+    vec2 lo = (vec2(hash12(lc + 1.3), hash12(lc + 2.7)) - 0.5) * 0.5;
+    float leaf = step(0.8, lh) * (1.0 - smoothstep(0.08, 0.13, length((lf - lo) * vec2(1.0, 1.8))));
+    alb = mix(alb, lh > 0.92 ? vec3(0.55, 0.22, 0.08) : vec3(0.45, 0.32, 0.1), leaf);
+    N = normalize(vec3((blades - 0.5) * 0.3 * grass, 1.0, (fine - 0.5) * 0.3));
+    ao = mix(0.8, 1.0, blades);
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -913,6 +925,17 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
+  }
+  if (type == 43) {
+    // spirit wisp: a round glowing ghost with a wavy tail streaming back along -z and two dark eyes
+    float wv = sin(p.z * 7.0 + ph * 10.0) * 0.1 * clamp(-p.z + 0.2, 0.0, 1.0);
+    float head = length(p - vec3(0.0, 0.0, 0.22)) - 0.42;
+    float tail = sdRoundCone(p - vec3(wv, 0.0, 0.0), vec3(0.0, 0.0, 0.15), vec3(0.0, 0.0, -0.85), 0.36, 0.035);
+    float d = smin(head, tail, 0.15);
+    vec3 e = vec3(abs(p.x) - 0.15, p.y - 0.2, p.z - 0.5);
+    float eye = length(e * vec3(1.0, 0.75, 1.0)) - 0.085;
+    // P1.x > 0.5: a hostile red ghost
+    return vec2(d, eye < 0.03 ? 12.0 : P1.x > 0.5 ? 10.0 : 7.0);
   }
   if (type == 42) {
     // black hole: a glossy black core inside a tilted, glowing accretion ring that spins

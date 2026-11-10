@@ -111,6 +111,7 @@ function renderAllIcons() {
     meteor: { scale: 0.66, ax: -0.75, ay: -0.6, az: 0.25, emissive: 0.1 },
     wave: { scale: 0.64, emissive: 0.15 },
     blackhole: { scale: 0.62, emissive: 0.3 },
+    wisps: { scale: 0.6, emissive: 0.45, ax: 0.8, az: 0.6 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {
