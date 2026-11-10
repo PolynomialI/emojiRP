@@ -331,6 +331,26 @@ void main() {
     alb = mix(uStoneB, uStoneA, smoothstep(0.25, 0.75, b1)) * (0.94 + 0.1 * puff);
     ao = mix(0.78, 1.0, smoothstep(0.2, 0.7, b1));
     gloss = 0.05;
+  } else if (style == 13) {
+    // toy workshop: warm wooden floorboards with grain, and now and then a round play rug in bright rings
+    vec2 q = p / vec2(0.55, 3.2);
+    float row = floor(q.x), along = p.y / 3.2 + hash12(vec2(row, 7.0)), plank = floor(along);
+    float h = hash12(vec2(row, plank));
+    float gx = fract(q.x), gy = fract(along);
+    float seam = 1.0 - smoothstep(0.0, 0.035, min(min(gx, 1.0 - gx) * 0.55, min(gy, 1.0 - gy) * 3.2));
+    float grain = texture(uNoise, vec2(p.x * 2.0, p.y * 0.15) + h * 10.0).g;
+    alb = mix(uStoneA, uStoneB, h) * (0.85 + 0.25 * grain) * (1.0 - 0.45 * seam);
+    vec2 rc = floor(p / 18.0), rf = p - (rc + 0.5) * 18.0;
+    float rh = hash12(rc + 5.0), rr = length(rf - (vec2(hash12(rc + 1.1), hash12(rc + 2.2)) - 0.5) * 6.0);
+    if (rh > 0.5 && rr < 4.6) {
+      float band = mod(floor(rr / 0.9), 3.0);
+      vec3 rug = band < 0.5 ? uAccent : band < 1.5 ? vec3(1.0, 0.82, 0.25) : vec3(0.3, 0.6, 1.0);
+      alb = rug * (0.85 + 0.2 * texture(uNoise, p * 1.4).g) * (1.0 - 0.25 * (1.0 - smoothstep(0.0, 0.08, abs(fract(rr / 0.9) - 0.5) - 0.42)));
+      seam = 0.0;
+    }
+    N = normalize(vec3((grain - 0.5) * 0.08, 1.0, 0.0));
+    ao = 1.0 - 0.35 * seam;
+    gloss = 0.18; sharp = 30.0;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -946,6 +966,19 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (eye < d) { d = eye; m = length(e - vec3(-0.02, 0.0, 0.11)) < 0.085 ? 12.0 : 7.0; }
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
+  if (type == 46) {
+    // yo-yo: two rounded discs on a short axle (axle up), spinning, with a stripe on top; P1.x picks the plastic color
+    vec3 q = p; q.xz = rot2(ph * 9.0) * q.xz;
+    vec3 a = vec3(q.x, abs(q.y) - 0.22, q.z);
+    float disc = sdCyl(a, 0.62, 0.15, 0.1);
+    float axle = sdCyl(q, 0.12, 0.12, 0.02);
+    float d = min(disc, axle);
+    float rr = length(q.xz);
+    float m = 13.0 + floor(P1.x + 0.5) * 0.1;
+    if (rr > 0.53 || rr < 0.18) m = 14.0;
+    else if (abs(q.x) < 0.07 && q.z > 0.0) m = 13.1;
     return vec2(d, m);
   }
   if (type == 45) {

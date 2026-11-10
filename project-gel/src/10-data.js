@@ -118,6 +118,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Crescents'], ['cd', 'Cooldown', 's'], ['size', 'Size', 'm']],
     levels: L10({ dmg: [14, 16, 18, 20, 22, 25, 28, 31, 35, 40], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], cd: [2.0, 1.95, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2], size: [1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.36, 1.43, 1.5] }),
   },
+  yoyo: {
+    name: 'Yo-Yo', from: 14, intro: 'Flings yo-yos at enemies; they spin out, hang for a moment and zip back, hitting everything on the way out and back.', icon: { type: 46, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Yo-yos'], ['range', 'Reach', 'm'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [15, 16, 18, 20, 22, 25, 28, 31, 35, 40], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], range: [4.5, 4.7, 4.9, 5.1, 5.3, 5.6, 5.9, 6.2, 6.6, 7], cd: [1.8, 1.75, 1.7, 1.6, 1.5, 1.45, 1.4, 1.3, 1.2, 1.1] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -213,6 +218,7 @@ const BOSS_TYPES = {
 BOSS_TYPES.pumpking = { name: 'Pumpkin King', model: 'pumpking', meshes: ['pumpking', 'pumpkin'], hp: 4300, speed: 2.3, dmg: 20, scale: 2.8, radius: 1.2, tint: '#3a2850', mass: 60, portraitTop: 1.12 };
 BOSS_TYPES.geode = { name: 'Geode Titan', model: 'geode', meshes: ['geode', 'icespike'], hp: 4500, speed: 1.9, dmg: 20, scale: 3.0, radius: 1.3, tint: '#6a5a8a', mass: 60, portraitTop: 1.08 };
 BOSS_TYPES.storm = { name: 'Storm King', model: 'stormcloud', meshes: ['stormcloud'], hp: 4400, speed: 2.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#7c86a0', mass: 60, portraitTop: 0.9 };
+BOSS_TYPES.jack = { name: 'Jack-in-the-Box', model: 'jackbox', meshes: ['jackbox', 'jackhead', 'toyblock'], hp: 4600, speed: 2.2, dmg: 20, scale: 2.3, radius: 1.3, tint: '#e83a4a', mass: 60, portraitTop: 1.3 };
 BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 4200, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4000, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
@@ -255,6 +261,8 @@ const ARENAS = [
     props: [['crystal', 7, 0.5, 0.75], ['stalagmite', 6, 0.5, 0.8], ['rock', 3, 0.8, 1.2]], zones: [['crystalpool', 2.5, 2.0, 3.0]], wall: 'cavewall' },
   { id: 'sky', name: 'Sky Islands', floor: 12, stoneA: '#ffffff', stoneB: '#e2ebf8', grout: '#a8bcd8', accent: '#ffd86a', fog: '#7fb0e8', sky: '#c4e2ff', ground: '#e8f0ff', light: '#fffaf0', spotMin: 0.72, shadowTint: '#5a78b0', rock: '#e8eef8', pool: '#9fd8ff', poolGlow: 0.3,
     props: [['cloudpuff', 5, 1.2, 1.8], ['pillar', 5, 0.38, 0.46], ['rainbow', 1.5, 2.2, 2.6]], zones: [['updraft', 2.4, 2.0, 2.8]], wall: 'cloudwall' },
+  { id: 'toys', name: 'Toy Workshop', floor: 13, stoneA: '#d89a5a', stoneB: '#b97a40', grout: '#5a3a1e', accent: '#ff4d5a', fog: '#2a1a10', sky: '#ffe2b8', ground: '#a87040', light: '#fff4e2', spotMin: 0.62, shadowTint: '#4a2a10', rock: '#c8a070', pool: '#7aff5a', poolGlow: 0.15,
+    props: [['toyblock', 8, 0.65, 0.85], ['blockstack', 3, 0.55, 0.65], ['drum', 3, 0.55, 0.65]], zones: [['slime', 3, 1.8, 2.8]], wall: 'blockwall', kinds: ['toycar'] },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -314,6 +322,11 @@ const PROP_KINDS = {
   pillar: { models: ['pillar'], unit: 0.3, block: true, shots: true, tall: 2.2 },
   rainbow: { models: ['rainbow'], unit: 1.0, block: false, shadow: false, tall: 2 },
   cloudwall: { models: ['cloudpuff'], unit: 0.6, block: true, shots: true, tints: ['#ffffff', '#f2f6ff', '#e8f0ff'], wallR: [1.1, 1.4] },
+  toyblock: { models: ['toyblock'], unit: 0.5, block: true, shots: true, tints: ['#ff5a64', '#ffcf3a', '#4f98ff', '#5fd876', '#b07aff', '#ff9a3a'] },
+  blockstack: { models: ['blockstack'], unit: 0.42, block: true, shots: true, tall: 2.4 },
+  drum: { models: ['drum'], unit: 0.45, block: true, shots: true },
+  toycar: { models: ['toycar'], unit: 0.4, block: false },
+  blockwall: { models: ['toyblock'], unit: 0.5, block: true, shots: true, tints: ['#ff5a64', '#ffcf3a', '#4f98ff', '#5fd876', '#b07aff'], wallR: [0.9, 1.1] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -331,10 +344,11 @@ const ZONE_KINDS = {
   mist: { slow: 0.7, col: '#7a5aa8', glow: 0.14 },
   crystalpool: { block: true, col: '#7a5aff', glow: 0.45 },
   updraft: { slow: 1.3, col: '#8fe4ff', glow: 0.35 },
+  slime: { slow: 0.6, col: '#7aff5a', glow: 0.15 },
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm', 'jack'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;

@@ -57,3 +57,35 @@ ARENA_FEATURES.sky = {
     }
   },
 };
+
+// ---------- Toy Workshop: wind-up cars zip across the floor and bounce off anything in their way (and off you) ----------
+ARENA_FEATURES.toys = {
+  init(st) { st.cars = []; st.spawnT = 1; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.spawnT -= dt;
+    if (st.cars.length < 5 && st.spawnT <= 0) {
+      st.spawnT = rand(1, 2.4);
+      const a = rand(0, TAU), c = { x: h[0] + Math.cos(a) * 16, z: h[2] + Math.sin(a) * 13, dir: a + Math.PI + rand(-0.5, 0.5), sp: rand(4, 6.5), life: 9, tint: hexToRgb(pick(PROP_KINDS.toyblock.tints)), hop: 0 };
+      if (arenaSd(c.x, c.z) < -1) st.cars.push(c);
+    }
+    for (const c of st.cars) {
+      c.life -= dt; c.hop = Math.max(0, c.hop - dt * 4);
+      c.x += Math.cos(c.dir) * c.sp * dt; c.z += Math.sin(c.dir) * c.sp * dt;
+      if (resolveCircle(c, 0.3)) { c.dir += Math.PI + rand(-0.6, 0.6); c.hop = 1; }
+      const hx = c.x - h[0], hz = c.z - h[2];
+      if (Math.hypot(hx, hz) < 0.3 + HERO_R) { c.dir = Math.atan2(hz, hx) + rand(-0.4, 0.4); c.hop = 1; }
+      if (Math.random() < 0.15) FX.smoke(c.x - Math.cos(c.dir) * 0.35, 0.15, c.z - Math.sin(c.dir) * 0.35, 0.2, [1, 1, 1], 0.4, 0.2);
+    }
+    st.cars = st.cars.filter(c => c.life > 0 && arenaSd(c.x, c.z) < 0);
+  },
+  emit(st) {
+    if (!R.enemyDraw.toycar) return;
+    const row = MODELS.defs.toycar.clips.still.row;
+    for (const c of st.cars) {
+      if (!onScreen(c.x, c.z, 1)) continue;
+      pushEnemy('toycar', false, c.x, Math.sin(c.hop * Math.PI) * 0.25, c.z, Math.PI / 2 - c.dir, row, 1, 1, 0, 0, 0, c.tint[0], c.tint[1], c.tint[2]);
+      pushDecal(c.x + 0.06, c.z + 0.05, 0.25, 0.4, -(Math.PI / 2 - c.dir), 1, 0, 0, 0.02, 0.02, 0.05, 0.35);
+    }
+  },
+};

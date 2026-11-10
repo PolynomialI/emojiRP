@@ -1985,10 +1985,12 @@ function themeModels(defs) {
 Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'] });
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
   crystal: 0.02, stalagmite: 0.025, geode: 0.016,
-  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03 });
+  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03,
+  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
   'crystal', 'stalagmite', 'geode',
-  'cloudpuff', 'pillar', 'rainbow', 'stormcloud');
+  'cloudpuff', 'pillar', 'rainbow', 'stormcloud',
+  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -2168,6 +2170,87 @@ function themeModels2(defs) {
       { s: 'ell', c: [0, 0.5, 0.47], rr: [0.15, 0.025, 0.04], col: white, k: 0 },
       { s: 'cap', a: [0.5, 0.95, 0.1], b: [0.62, 0.78, 0.15], r: 0.035, col: bolt, k: 0 }, { s: 'cap', a: [0.62, 0.78, 0.15], b: [0.56, 0.8, 0.16], r: 0.03, col: bolt, k: 0 },
       { s: 'cap', a: [0.56, 0.8, 0.16], b: [0.7, 0.6, 0.2], r: 0.03, r2: 0.01, col: bolt, k: 0 },
+    ], { ao: 0.5 });
+  }
+  // ---------- Toy Workshop (chapter 14) ----------
+  {
+    const cream = C('#fff3d6'), navy = C('#2a3a8a'), red = C('#ff4d5a'), yel = C('#ffcf3a'), blue = C('#3f8cff'), green = C('#4fd06a'), gold = C('#ffc93a'), white = C('#ffffff'), dark = C('#22222c'), wood = C('#b07840');
+    // a wooden letter block: the block takes the tint, with cream panels and raised letters
+    P('toyblock', [
+      { s: 'box', c: [0, 0.35, 0], hs: [0.35, 0.35, 0.35], rd: 0.05, k: 0.01 },
+      { s: 'box', c: [0, 0.35, 0.34], hs: [0.27, 0.27, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0.34, 0.35, 0], hs: [0.02, 0.27, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [-0.34, 0.35, 0], hs: [0.02, 0.27, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0, 0.35, -0.34], hs: [0.27, 0.27, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0, 0.69, 0], hs: [0.27, 0.02, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      // A on the front, B-ish dots on the sides, a C on the back
+      { s: 'cap', a: [-0.13, 0.18, 0.37], b: [0, 0.52, 0.37], r: 0.035, col: navy, k: 0 }, { s: 'cap', a: [0.13, 0.18, 0.37], b: [0, 0.52, 0.37], r: 0.035, col: navy, k: 0 },
+      { s: 'cap', a: [-0.07, 0.3, 0.37], b: [0.07, 0.3, 0.37], r: 0.03, col: navy, k: 0 },
+      { s: 'ell', c: [0.37, 0.42, 0], rr: [0.02, 0.09, 0.09], col: red, k: 0 }, { s: 'ell', c: [0.37, 0.24, 0], rr: [0.02, 0.09, 0.09], col: red, k: 0 },
+      { s: 'ell', c: [-0.37, 0.35, 0], rr: [0.02, 0.13, 0.13], col: green, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.35, -0.37], R: 0.13, r: 0.035, a0: -2.5, a1: 2.5, col: blue, k: 0 },
+    ], { ao: 0.7 });
+    // three blocks stacked a little crooked
+    P('blockstack', [
+      { s: 'box', c: [0, 0.3, 0], hs: [0.3, 0.3, 0.3], rd: 0.045, col: red, k: 0.005 },
+      { s: 'box', c: [0, 0.3, 0.29], hs: [0.22, 0.22, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0.07, 0.88, 0.04], hs: [0.27, 0.27, 0.27], rd: 0.045, col: blue, k: 0.005 },
+      { s: 'box', c: [0.07, 0.88, 0.3], hs: [0.2, 0.2, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [-0.04, 1.39, 0], hs: [0.24, 0.24, 0.24], rd: 0.04, col: yel, k: 0.005 },
+      { s: 'box', c: [-0.04, 1.39, 0.23], hs: [0.17, 0.17, 0.02], rd: 0.03, col: cream, k: 0.005 },
+    ], { ao: 0.7 });
+    // a toy drum with gold rims, a zigzag cord and crossed drumsticks
+    P('drum', [
+      { s: 'cyl', ax: 'y', c: [0, 0.36, 0], r: 0.42, hh: 0.32, rd: 0.03, col: red, k: 0.01 },
+      { s: 'cyl', ax: 'y', c: [0, 0.69, 0], r: 0.4, hh: 0.015, rd: 0.01, col: cream, k: 0.005 },
+      { s: 'tor', ax: 'y', c: [0, 0.66, 0], R: 0.43, r: 0.035, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.06, 0], R: 0.43, r: 0.035, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      ...Array.from({ length: 10 }, (_, i) => { const a0 = (i / 10) * TAU, a1 = ((i + 0.5) / 10) * TAU, up = i % 2; return { s: 'cap', a: [Math.cos(a0) * 0.43, 0.1, Math.sin(a0) * 0.43], b: [Math.cos(a1) * 0.43, 0.62, Math.sin(a1) * 0.43], r: 0.015, col: white, k: 0 }; }),
+      { s: 'cap', a: [-0.3, 0.74, -0.1], b: [0.25, 0.86, 0.2], r: 0.025, col: wood, k: 0 }, { s: 'sph', c: [0.25, 0.86, 0.2], r: 0.05, col: cream, k: 0 },
+      { s: 'cap', a: [-0.25, 0.74, 0.2], b: [0.3, 0.84, -0.15], r: 0.025, col: wood, k: 0 }, { s: 'sph', c: [0.3, 0.84, -0.15], r: 0.05, col: cream, k: 0 },
+    ], { ao: 0.7 });
+    // a wind-up toy car; the body takes the tint
+    P('toycar', [
+      { s: 'box', c: [0, 0.22, 0], hs: [0.22, 0.1, 0.4], rd: 0.07, k: 0.02 },
+      { s: 'box', c: [0, 0.36, -0.04], hs: [0.17, 0.08, 0.2], rd: 0.06, k: 0.02 },
+      { s: 'box', c: [0, 0.37, 0.15], hs: [0.15, 0.05, 0.02], rd: 0.02, col: C('#bfe8ff'), k: 0 },
+      ...[[1, 1], [-1, 1], [1, -1], [-1, -1]].map(([sx, sz]) => ({ s: 'cyl', ax: 'x', c: [sx * 0.2, 0.1, sz * 0.25], r: 0.1, hh: 0.05, rd: 0.03, col: dark, k: 0 })),
+      { s: 'cap', a: [0, 0.3, -0.42], b: [0, 0.3, -0.5], r: 0.02, col: gold, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.38, -0.52], R: 0.07, r: 0.02, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+    ], { ao: 0.6 });
+  }
+  // ---------- Jack-in-the-Box (chapter 14 boss): a crank-box (takes the tint) and a clown head on a spring ----------
+  {
+    const gold = C('#ffc93a'), yel = C('#ffe14a'), blue = C('#3f8cff'), steel = C('#b8c0d0'), white = C('#fffaf2'), red = C('#ff3b4a'), dark = C('#1c1424'), pink = C('#ff9ab8'), purple = C('#9a5aff');
+    P('jackbox', [
+      { s: 'box', c: [0, 0.5, 0], hs: [0.5, 0.5, 0.5], rd: 0.06, k: 0.01 },
+      ...[[1, 1], [-1, 1], [1, -1], [-1, -1]].map(([sx, sz]) => ({ s: 'cap', a: [sx * 0.5, 0.02, sz * 0.5], b: [sx * 0.5, 0.98, sz * 0.5], r: 0.05, col: gold, k: 0.01 })),
+      { s: 'ell', c: [0, 0.5, 0.51], rr: [0.2, 0.26, 0.03], col: yel, k: 0 }, { s: 'ell', c: [0.51, 0.5, 0], rr: [0.03, 0.26, 0.2], col: blue, k: 0 },
+      { s: 'ell', c: [-0.51, 0.5, 0], rr: [0.03, 0.26, 0.2], col: yel, k: 0 }, { s: 'ell', c: [0, 0.5, -0.51], rr: [0.2, 0.26, 0.03], col: blue, k: 0 },
+      // the crank on its right side, and the lid standing open at the back
+      { s: 'cap', a: [-0.5, 0.55, 0], b: [-0.7, 0.55, 0], r: 0.04, col: steel, k: 0 },
+      { s: 'cap', a: [-0.7, 0.55, 0], b: [-0.7, 0.3, 0.12], r: 0.035, col: steel, k: 0 },
+      { s: 'sph', c: [-0.7, 0.28, 0.13], r: 0.07, col: red, k: 0 },
+      { s: 'box', c: [0, 1.42, -0.52], hs: [0.5, 0.44, 0.04], rd: 0.04, k: 0.01 },
+      { s: 'ell', c: [0, 1.42, -0.48], rr: [0.18, 0.18, 0.02], col: yel, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.0, 0], r: 0.2, hh: 0.03, rd: 0.02, col: steel, k: 0 },
+    ], { ao: 0.6 });
+    // the clown head: white face, red nose, grin, a jester's hat with bells and a ruffled collar
+    P('jackhead', [
+      { s: 'sph', c: [0, 0.38, 0], r: 0.34, col: white, k: 0.02 },
+      { s: 'sph', c: [0, 0.38, 0.33], r: 0.09, col: red, k: 0 },
+      { s: 'ell', c: [0.12, 0.5, 0.27], rr: [0.06, 0.08, 0.04], col: dark, k: 0 }, { s: 'ell', c: [-0.12, 0.5, 0.27], rr: [0.06, 0.08, 0.04], col: dark, k: 0 },
+      { s: 'sph', c: [0.135, 0.53, 0.305], r: 0.022, col: white, k: 0 }, { s: 'sph', c: [-0.105, 0.53, 0.305], r: 0.022, col: white, k: 0 },
+      { s: 'ell', c: [0, 0.23, 0.27], rr: [0.19, 0.06, 0.06], col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.255, 0.3], rr: [0.15, 0.022, 0.03], col: white, k: 0 },
+      { s: 'ell', c: [0.2, 0.32, 0.22], rr: [0.06, 0.04, 0.04], col: pink, k: 0 }, { s: 'ell', c: [-0.2, 0.32, 0.22], rr: [0.06, 0.04, 0.04], col: pink, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.25, r: 0.06, a0: -Math.PI, a1: Math.PI, col: yel, k: 0.01 },
+      { s: 'cap', a: [0, 0.64, 0], b: [0, 1.05, -0.12], r: 0.17, r2: 0.03, col: purple, k: 0.03 },
+      { s: 'cap', a: [0.1, 0.64, 0], b: [0.48, 0.92, 0.02], r: 0.13, r2: 0.03, col: red, k: 0.03 },
+      { s: 'cap', a: [-0.1, 0.64, 0], b: [-0.48, 0.92, 0.02], r: 0.13, r2: 0.03, col: blue, k: 0.03 },
+      { s: 'sph', c: [0, 1.08, -0.13], r: 0.06, col: gold, k: 0 }, { s: 'sph', c: [0.51, 0.93, 0.02], r: 0.06, col: gold, k: 0 }, { s: 'sph', c: [-0.51, 0.93, 0.02], r: 0.06, col: gold, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.05, 0], R: 0.3, r: 0.08, a0: -Math.PI, a1: Math.PI, col: white, k: 0.02 },
+      ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.36, 0.05, Math.sin(a) * 0.36], r: 0.07, col: i % 2 ? red : blue, k: 0.02 }; }),
     ], { ao: 0.5 });
   }
 }
@@ -3774,10 +3857,12 @@ function themeModels(defs) {
 Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'] });
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
   crystal: 0.02, stalagmite: 0.025, geode: 0.016,
-  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03 });
+  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03,
+  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
   'crystal', 'stalagmite', 'geode',
-  'cloudpuff', 'pillar', 'rainbow', 'stormcloud');
+  'cloudpuff', 'pillar', 'rainbow', 'stormcloud',
+  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -3957,6 +4042,87 @@ function themeModels2(defs) {
       { s: 'ell', c: [0, 0.5, 0.47], rr: [0.15, 0.025, 0.04], col: white, k: 0 },
       { s: 'cap', a: [0.5, 0.95, 0.1], b: [0.62, 0.78, 0.15], r: 0.035, col: bolt, k: 0 }, { s: 'cap', a: [0.62, 0.78, 0.15], b: [0.56, 0.8, 0.16], r: 0.03, col: bolt, k: 0 },
       { s: 'cap', a: [0.56, 0.8, 0.16], b: [0.7, 0.6, 0.2], r: 0.03, r2: 0.01, col: bolt, k: 0 },
+    ], { ao: 0.5 });
+  }
+  // ---------- Toy Workshop (chapter 14) ----------
+  {
+    const cream = C('#fff3d6'), navy = C('#2a3a8a'), red = C('#ff4d5a'), yel = C('#ffcf3a'), blue = C('#3f8cff'), green = C('#4fd06a'), gold = C('#ffc93a'), white = C('#ffffff'), dark = C('#22222c'), wood = C('#b07840');
+    // a wooden letter block: the block takes the tint, with cream panels and raised letters
+    P('toyblock', [
+      { s: 'box', c: [0, 0.35, 0], hs: [0.35, 0.35, 0.35], rd: 0.05, k: 0.01 },
+      { s: 'box', c: [0, 0.35, 0.34], hs: [0.27, 0.27, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0.34, 0.35, 0], hs: [0.02, 0.27, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [-0.34, 0.35, 0], hs: [0.02, 0.27, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0, 0.35, -0.34], hs: [0.27, 0.27, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0, 0.69, 0], hs: [0.27, 0.02, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      // A on the front, B-ish dots on the sides, a C on the back
+      { s: 'cap', a: [-0.13, 0.18, 0.37], b: [0, 0.52, 0.37], r: 0.035, col: navy, k: 0 }, { s: 'cap', a: [0.13, 0.18, 0.37], b: [0, 0.52, 0.37], r: 0.035, col: navy, k: 0 },
+      { s: 'cap', a: [-0.07, 0.3, 0.37], b: [0.07, 0.3, 0.37], r: 0.03, col: navy, k: 0 },
+      { s: 'ell', c: [0.37, 0.42, 0], rr: [0.02, 0.09, 0.09], col: red, k: 0 }, { s: 'ell', c: [0.37, 0.24, 0], rr: [0.02, 0.09, 0.09], col: red, k: 0 },
+      { s: 'ell', c: [-0.37, 0.35, 0], rr: [0.02, 0.13, 0.13], col: green, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.35, -0.37], R: 0.13, r: 0.035, a0: -2.5, a1: 2.5, col: blue, k: 0 },
+    ], { ao: 0.7 });
+    // three blocks stacked a little crooked
+    P('blockstack', [
+      { s: 'box', c: [0, 0.3, 0], hs: [0.3, 0.3, 0.3], rd: 0.045, col: red, k: 0.005 },
+      { s: 'box', c: [0, 0.3, 0.29], hs: [0.22, 0.22, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0.07, 0.88, 0.04], hs: [0.27, 0.27, 0.27], rd: 0.045, col: blue, k: 0.005 },
+      { s: 'box', c: [0.07, 0.88, 0.3], hs: [0.2, 0.2, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [-0.04, 1.39, 0], hs: [0.24, 0.24, 0.24], rd: 0.04, col: yel, k: 0.005 },
+      { s: 'box', c: [-0.04, 1.39, 0.23], hs: [0.17, 0.17, 0.02], rd: 0.03, col: cream, k: 0.005 },
+    ], { ao: 0.7 });
+    // a toy drum with gold rims, a zigzag cord and crossed drumsticks
+    P('drum', [
+      { s: 'cyl', ax: 'y', c: [0, 0.36, 0], r: 0.42, hh: 0.32, rd: 0.03, col: red, k: 0.01 },
+      { s: 'cyl', ax: 'y', c: [0, 0.69, 0], r: 0.4, hh: 0.015, rd: 0.01, col: cream, k: 0.005 },
+      { s: 'tor', ax: 'y', c: [0, 0.66, 0], R: 0.43, r: 0.035, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.06, 0], R: 0.43, r: 0.035, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      ...Array.from({ length: 10 }, (_, i) => { const a0 = (i / 10) * TAU, a1 = ((i + 0.5) / 10) * TAU, up = i % 2; return { s: 'cap', a: [Math.cos(a0) * 0.43, 0.1, Math.sin(a0) * 0.43], b: [Math.cos(a1) * 0.43, 0.62, Math.sin(a1) * 0.43], r: 0.015, col: white, k: 0 }; }),
+      { s: 'cap', a: [-0.3, 0.74, -0.1], b: [0.25, 0.86, 0.2], r: 0.025, col: wood, k: 0 }, { s: 'sph', c: [0.25, 0.86, 0.2], r: 0.05, col: cream, k: 0 },
+      { s: 'cap', a: [-0.25, 0.74, 0.2], b: [0.3, 0.84, -0.15], r: 0.025, col: wood, k: 0 }, { s: 'sph', c: [0.3, 0.84, -0.15], r: 0.05, col: cream, k: 0 },
+    ], { ao: 0.7 });
+    // a wind-up toy car; the body takes the tint
+    P('toycar', [
+      { s: 'box', c: [0, 0.22, 0], hs: [0.22, 0.1, 0.4], rd: 0.07, k: 0.02 },
+      { s: 'box', c: [0, 0.36, -0.04], hs: [0.17, 0.08, 0.2], rd: 0.06, k: 0.02 },
+      { s: 'box', c: [0, 0.37, 0.15], hs: [0.15, 0.05, 0.02], rd: 0.02, col: C('#bfe8ff'), k: 0 },
+      ...[[1, 1], [-1, 1], [1, -1], [-1, -1]].map(([sx, sz]) => ({ s: 'cyl', ax: 'x', c: [sx * 0.2, 0.1, sz * 0.25], r: 0.1, hh: 0.05, rd: 0.03, col: dark, k: 0 })),
+      { s: 'cap', a: [0, 0.3, -0.42], b: [0, 0.3, -0.5], r: 0.02, col: gold, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.38, -0.52], R: 0.07, r: 0.02, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+    ], { ao: 0.6 });
+  }
+  // ---------- Jack-in-the-Box (chapter 14 boss): a crank-box (takes the tint) and a clown head on a spring ----------
+  {
+    const gold = C('#ffc93a'), yel = C('#ffe14a'), blue = C('#3f8cff'), steel = C('#b8c0d0'), white = C('#fffaf2'), red = C('#ff3b4a'), dark = C('#1c1424'), pink = C('#ff9ab8'), purple = C('#9a5aff');
+    P('jackbox', [
+      { s: 'box', c: [0, 0.5, 0], hs: [0.5, 0.5, 0.5], rd: 0.06, k: 0.01 },
+      ...[[1, 1], [-1, 1], [1, -1], [-1, -1]].map(([sx, sz]) => ({ s: 'cap', a: [sx * 0.5, 0.02, sz * 0.5], b: [sx * 0.5, 0.98, sz * 0.5], r: 0.05, col: gold, k: 0.01 })),
+      { s: 'ell', c: [0, 0.5, 0.51], rr: [0.2, 0.26, 0.03], col: yel, k: 0 }, { s: 'ell', c: [0.51, 0.5, 0], rr: [0.03, 0.26, 0.2], col: blue, k: 0 },
+      { s: 'ell', c: [-0.51, 0.5, 0], rr: [0.03, 0.26, 0.2], col: yel, k: 0 }, { s: 'ell', c: [0, 0.5, -0.51], rr: [0.2, 0.26, 0.03], col: blue, k: 0 },
+      // the crank on its right side, and the lid standing open at the back
+      { s: 'cap', a: [-0.5, 0.55, 0], b: [-0.7, 0.55, 0], r: 0.04, col: steel, k: 0 },
+      { s: 'cap', a: [-0.7, 0.55, 0], b: [-0.7, 0.3, 0.12], r: 0.035, col: steel, k: 0 },
+      { s: 'sph', c: [-0.7, 0.28, 0.13], r: 0.07, col: red, k: 0 },
+      { s: 'box', c: [0, 1.42, -0.52], hs: [0.5, 0.44, 0.04], rd: 0.04, k: 0.01 },
+      { s: 'ell', c: [0, 1.42, -0.48], rr: [0.18, 0.18, 0.02], col: yel, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.0, 0], r: 0.2, hh: 0.03, rd: 0.02, col: steel, k: 0 },
+    ], { ao: 0.6 });
+    // the clown head: white face, red nose, grin, a jester's hat with bells and a ruffled collar
+    P('jackhead', [
+      { s: 'sph', c: [0, 0.38, 0], r: 0.34, col: white, k: 0.02 },
+      { s: 'sph', c: [0, 0.38, 0.33], r: 0.09, col: red, k: 0 },
+      { s: 'ell', c: [0.12, 0.5, 0.27], rr: [0.06, 0.08, 0.04], col: dark, k: 0 }, { s: 'ell', c: [-0.12, 0.5, 0.27], rr: [0.06, 0.08, 0.04], col: dark, k: 0 },
+      { s: 'sph', c: [0.135, 0.53, 0.305], r: 0.022, col: white, k: 0 }, { s: 'sph', c: [-0.105, 0.53, 0.305], r: 0.022, col: white, k: 0 },
+      { s: 'ell', c: [0, 0.23, 0.27], rr: [0.19, 0.06, 0.06], col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.255, 0.3], rr: [0.15, 0.022, 0.03], col: white, k: 0 },
+      { s: 'ell', c: [0.2, 0.32, 0.22], rr: [0.06, 0.04, 0.04], col: pink, k: 0 }, { s: 'ell', c: [-0.2, 0.32, 0.22], rr: [0.06, 0.04, 0.04], col: pink, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.25, r: 0.06, a0: -Math.PI, a1: Math.PI, col: yel, k: 0.01 },
+      { s: 'cap', a: [0, 0.64, 0], b: [0, 1.05, -0.12], r: 0.17, r2: 0.03, col: purple, k: 0.03 },
+      { s: 'cap', a: [0.1, 0.64, 0], b: [0.48, 0.92, 0.02], r: 0.13, r2: 0.03, col: red, k: 0.03 },
+      { s: 'cap', a: [-0.1, 0.64, 0], b: [-0.48, 0.92, 0.02], r: 0.13, r2: 0.03, col: blue, k: 0.03 },
+      { s: 'sph', c: [0, 1.08, -0.13], r: 0.06, col: gold, k: 0 }, { s: 'sph', c: [0.51, 0.93, 0.02], r: 0.06, col: gold, k: 0 }, { s: 'sph', c: [-0.51, 0.93, 0.02], r: 0.06, col: gold, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.05, 0], R: 0.3, r: 0.08, a0: -Math.PI, a1: Math.PI, col: white, k: 0.02 },
+      ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.36, 0.05, Math.sin(a) * 0.36], r: 0.07, col: i % 2 ? red : blue, k: 0.02 }; }),
     ], { ao: 0.5 });
   }
 }
@@ -4295,6 +4461,26 @@ void main() {
     alb = mix(uStoneB, uStoneA, smoothstep(0.25, 0.75, b1)) * (0.94 + 0.1 * puff);
     ao = mix(0.78, 1.0, smoothstep(0.2, 0.7, b1));
     gloss = 0.05;
+  } else if (style == 13) {
+    // toy workshop: warm wooden floorboards with grain, and now and then a round play rug in bright rings
+    vec2 q = p / vec2(0.55, 3.2);
+    float row = floor(q.x), along = p.y / 3.2 + hash12(vec2(row, 7.0)), plank = floor(along);
+    float h = hash12(vec2(row, plank));
+    float gx = fract(q.x), gy = fract(along);
+    float seam = 1.0 - smoothstep(0.0, 0.035, min(min(gx, 1.0 - gx) * 0.55, min(gy, 1.0 - gy) * 3.2));
+    float grain = texture(uNoise, vec2(p.x * 2.0, p.y * 0.15) + h * 10.0).g;
+    alb = mix(uStoneA, uStoneB, h) * (0.85 + 0.25 * grain) * (1.0 - 0.45 * seam);
+    vec2 rc = floor(p / 18.0), rf = p - (rc + 0.5) * 18.0;
+    float rh = hash12(rc + 5.0), rr = length(rf - (vec2(hash12(rc + 1.1), hash12(rc + 2.2)) - 0.5) * 6.0);
+    if (rh > 0.5 && rr < 4.6) {
+      float band = mod(floor(rr / 0.9), 3.0);
+      vec3 rug = band < 0.5 ? uAccent : band < 1.5 ? vec3(1.0, 0.82, 0.25) : vec3(0.3, 0.6, 1.0);
+      alb = rug * (0.85 + 0.2 * texture(uNoise, p * 1.4).g) * (1.0 - 0.25 * (1.0 - smoothstep(0.0, 0.08, abs(fract(rr / 0.9) - 0.5) - 0.42)));
+      seam = 0.0;
+    }
+    N = normalize(vec3((grain - 0.5) * 0.08, 1.0, 0.0));
+    ao = 1.0 - 0.35 * seam;
+    gloss = 0.18; sharp = 30.0;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -4910,6 +5096,19 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (eye < d) { d = eye; m = length(e - vec3(-0.02, 0.0, 0.11)) < 0.085 ? 12.0 : 7.0; }
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
+  if (type == 46) {
+    // yo-yo: two rounded discs on a short axle (axle up), spinning, with a stripe on top; P1.x picks the plastic color
+    vec3 q = p; q.xz = rot2(ph * 9.0) * q.xz;
+    vec3 a = vec3(q.x, abs(q.y) - 0.22, q.z);
+    float disc = sdCyl(a, 0.62, 0.15, 0.1);
+    float axle = sdCyl(q, 0.12, 0.12, 0.02);
+    float d = min(disc, axle);
+    float rr = length(q.xz);
+    float m = 13.0 + floor(P1.x + 0.5) * 0.1;
+    if (rr > 0.53 || rr < 0.18) m = 14.0;
+    else if (abs(q.x) < 0.07 && q.z > 0.0) m = 13.1;
     return vec2(d, m);
   }
   if (type == 45) {
@@ -6976,6 +7175,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Crescents'], ['cd', 'Cooldown', 's'], ['size', 'Size', 'm']],
     levels: L10({ dmg: [14, 16, 18, 20, 22, 25, 28, 31, 35, 40], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], cd: [2.0, 1.95, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2], size: [1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.36, 1.43, 1.5] }),
   },
+  yoyo: {
+    name: 'Yo-Yo', from: 14, intro: 'Flings yo-yos at enemies; they spin out, hang for a moment and zip back, hitting everything on the way out and back.', icon: { type: 46, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Yo-yos'], ['range', 'Reach', 'm'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [15, 16, 18, 20, 22, 25, 28, 31, 35, 40], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], range: [4.5, 4.7, 4.9, 5.1, 5.3, 5.6, 5.9, 6.2, 6.6, 7], cd: [1.8, 1.75, 1.7, 1.6, 1.5, 1.45, 1.4, 1.3, 1.2, 1.1] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -7071,6 +7275,7 @@ const BOSS_TYPES = {
 BOSS_TYPES.pumpking = { name: 'Pumpkin King', model: 'pumpking', meshes: ['pumpking', 'pumpkin'], hp: 4300, speed: 2.3, dmg: 20, scale: 2.8, radius: 1.2, tint: '#3a2850', mass: 60, portraitTop: 1.12 };
 BOSS_TYPES.geode = { name: 'Geode Titan', model: 'geode', meshes: ['geode', 'icespike'], hp: 4500, speed: 1.9, dmg: 20, scale: 3.0, radius: 1.3, tint: '#6a5a8a', mass: 60, portraitTop: 1.08 };
 BOSS_TYPES.storm = { name: 'Storm King', model: 'stormcloud', meshes: ['stormcloud'], hp: 4400, speed: 2.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#7c86a0', mass: 60, portraitTop: 0.9 };
+BOSS_TYPES.jack = { name: 'Jack-in-the-Box', model: 'jackbox', meshes: ['jackbox', 'jackhead', 'toyblock'], hp: 4600, speed: 2.2, dmg: 20, scale: 2.3, radius: 1.3, tint: '#e83a4a', mass: 60, portraitTop: 1.3 };
 BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 4200, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4000, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
@@ -7113,6 +7318,8 @@ const ARENAS = [
     props: [['crystal', 7, 0.5, 0.75], ['stalagmite', 6, 0.5, 0.8], ['rock', 3, 0.8, 1.2]], zones: [['crystalpool', 2.5, 2.0, 3.0]], wall: 'cavewall' },
   { id: 'sky', name: 'Sky Islands', floor: 12, stoneA: '#ffffff', stoneB: '#e2ebf8', grout: '#a8bcd8', accent: '#ffd86a', fog: '#7fb0e8', sky: '#c4e2ff', ground: '#e8f0ff', light: '#fffaf0', spotMin: 0.72, shadowTint: '#5a78b0', rock: '#e8eef8', pool: '#9fd8ff', poolGlow: 0.3,
     props: [['cloudpuff', 5, 1.2, 1.8], ['pillar', 5, 0.38, 0.46], ['rainbow', 1.5, 2.2, 2.6]], zones: [['updraft', 2.4, 2.0, 2.8]], wall: 'cloudwall' },
+  { id: 'toys', name: 'Toy Workshop', floor: 13, stoneA: '#d89a5a', stoneB: '#b97a40', grout: '#5a3a1e', accent: '#ff4d5a', fog: '#2a1a10', sky: '#ffe2b8', ground: '#a87040', light: '#fff4e2', spotMin: 0.62, shadowTint: '#4a2a10', rock: '#c8a070', pool: '#7aff5a', poolGlow: 0.15,
+    props: [['toyblock', 8, 0.65, 0.85], ['blockstack', 3, 0.55, 0.65], ['drum', 3, 0.55, 0.65]], zones: [['slime', 3, 1.8, 2.8]], wall: 'blockwall', kinds: ['toycar'] },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -7172,6 +7379,11 @@ const PROP_KINDS = {
   pillar: { models: ['pillar'], unit: 0.3, block: true, shots: true, tall: 2.2 },
   rainbow: { models: ['rainbow'], unit: 1.0, block: false, shadow: false, tall: 2 },
   cloudwall: { models: ['cloudpuff'], unit: 0.6, block: true, shots: true, tints: ['#ffffff', '#f2f6ff', '#e8f0ff'], wallR: [1.1, 1.4] },
+  toyblock: { models: ['toyblock'], unit: 0.5, block: true, shots: true, tints: ['#ff5a64', '#ffcf3a', '#4f98ff', '#5fd876', '#b07aff', '#ff9a3a'] },
+  blockstack: { models: ['blockstack'], unit: 0.42, block: true, shots: true, tall: 2.4 },
+  drum: { models: ['drum'], unit: 0.45, block: true, shots: true },
+  toycar: { models: ['toycar'], unit: 0.4, block: false },
+  blockwall: { models: ['toyblock'], unit: 0.5, block: true, shots: true, tints: ['#ff5a64', '#ffcf3a', '#4f98ff', '#5fd876', '#b07aff'], wallR: [0.9, 1.1] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
 const ZONE_KINDS = {
@@ -7189,10 +7401,11 @@ const ZONE_KINDS = {
   mist: { slow: 0.7, col: '#7a5aa8', glow: 0.14 },
   crystalpool: { block: true, col: '#7a5aff', glow: 0.45 },
   updraft: { slow: 1.3, col: '#8fe4ff', glow: 0.35 },
+  slime: { slow: 0.6, col: '#7aff5a', glow: 0.15 },
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm', 'jack'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
@@ -9163,6 +9376,38 @@ ARENA_FEATURES.sky = {
   },
 };
 
+// ---------- Toy Workshop: wind-up cars zip across the floor and bounce off anything in their way (and off you) ----------
+ARENA_FEATURES.toys = {
+  init(st) { st.cars = []; st.spawnT = 1; },
+  update(st, dt) {
+    const h = G.hero.pos;
+    st.spawnT -= dt;
+    if (st.cars.length < 5 && st.spawnT <= 0) {
+      st.spawnT = rand(1, 2.4);
+      const a = rand(0, TAU), c = { x: h[0] + Math.cos(a) * 16, z: h[2] + Math.sin(a) * 13, dir: a + Math.PI + rand(-0.5, 0.5), sp: rand(4, 6.5), life: 9, tint: hexToRgb(pick(PROP_KINDS.toyblock.tints)), hop: 0 };
+      if (arenaSd(c.x, c.z) < -1) st.cars.push(c);
+    }
+    for (const c of st.cars) {
+      c.life -= dt; c.hop = Math.max(0, c.hop - dt * 4);
+      c.x += Math.cos(c.dir) * c.sp * dt; c.z += Math.sin(c.dir) * c.sp * dt;
+      if (resolveCircle(c, 0.3)) { c.dir += Math.PI + rand(-0.6, 0.6); c.hop = 1; }
+      const hx = c.x - h[0], hz = c.z - h[2];
+      if (Math.hypot(hx, hz) < 0.3 + HERO_R) { c.dir = Math.atan2(hz, hx) + rand(-0.4, 0.4); c.hop = 1; }
+      if (Math.random() < 0.15) FX.smoke(c.x - Math.cos(c.dir) * 0.35, 0.15, c.z - Math.sin(c.dir) * 0.35, 0.2, [1, 1, 1], 0.4, 0.2);
+    }
+    st.cars = st.cars.filter(c => c.life > 0 && arenaSd(c.x, c.z) < 0);
+  },
+  emit(st) {
+    if (!R.enemyDraw.toycar) return;
+    const row = MODELS.defs.toycar.clips.still.row;
+    for (const c of st.cars) {
+      if (!onScreen(c.x, c.z, 1)) continue;
+      pushEnemy('toycar', false, c.x, Math.sin(c.hop * Math.PI) * 0.25, c.z, Math.PI / 2 - c.dir, row, 1, 1, 0, 0, 0, c.tint[0], c.tint[1], c.tint[2]);
+      pushDecal(c.x + 0.06, c.z + 0.05, 0.25, 0.4, -(Math.PI / 2 - c.dir), 1, 0, 0, 0.02, 0.02, 0.05, 0.35);
+    }
+  },
+};
+
 // ---- 12-skills.js ----
 // ============================================================
 // Skills: behaviors, hero body actions, projectiles and visuals
@@ -10382,6 +10627,62 @@ SKILL_HOOKS.gale = {
       const a = Math.min(1, (b.life - b.t) / 0.15);
       pushImp(b.x, 0.85, b.z, 0.62 * b.size, b.dx, 0, b.dz, 1, 45, 0, 0.5, b.ph, 0, 0, 0, 0.85 * a);
       pushDecal(b.x, b.z, 0.7 * b.size, 0.3 * b.size, -Math.atan2(b.dx, b.dz), 1, 0, 0, 0.1, 0.2, 0.4, 0.15 * a);
+    }
+  },
+};
+
+// ---------- Yo-Yo (chapter 14): yo-yos spin out at enemies, hang for a moment and zip back, hitting everything both ways ----------
+SKILL_HOOKS.yoyo = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, range = L.range * areaMul();
+    st.yo = st.yo || [];
+    st.t = (st.t ?? 0.5) - dt;
+    if (st.t <= 0 && !st.yo.length) {
+      // the nearest few enemies, one yo-yo each
+      const near = [];
+      enemiesInRadius(h[0], h[2], range + 1, e => near.push([Math.hypot(e.x - h[0], e.z - h[2]), e]));
+      near.sort((a, b) => a[0] - b[0]);
+      if (near.length) {
+        st.t = L.cd * cdMul();
+        for (let i = 0; i < L.count; i++) {
+          const e = near[i] ? near[i][1] : near[0][1], spread = near[i] ? 0 : (i % 2 ? 1 : -1) * 0.5;
+          const a = Math.atan2(e.x - h[0], e.z - h[2]) + spread;
+          st.yo.push({ x: h[0], z: h[2], dx: Math.sin(a), dz: Math.cos(a), d: 0, state: 'out', t: 0, hits: new Set(), ph: rand(0, 10), col: i % 3 });
+        }
+        AUDIO.play('throw', 0.35);
+      } else st.t = 0.2;
+    }
+    for (const y of st.yo) {
+      y.ph += dt;
+      if (y.state === 'out') {
+        y.d = Math.min(range, y.d + 16 * dt);
+        y.x = h[0] + y.dx * y.d; y.z = h[2] + y.dz * y.d;
+        if (y.d >= range || arenaSd(y.x, y.z) > -0.3) { y.state = 'hang'; y.t = 0.15; }
+      } else if (y.state === 'hang') {
+        y.x = h[0] + y.dx * y.d; y.z = h[2] + y.dz * y.d;
+        if ((y.t -= dt) <= 0) { y.state = 'back'; y.hits = new Set(); }
+      } else {
+        // reels back to wherever you are now
+        y.d -= 18 * dt;
+        y.x = h[0] + y.dx * Math.max(0, y.d); y.z = h[2] + y.dz * Math.max(0, y.d);
+        if (y.d <= 0.3) y.done = true;
+      }
+      enemiesInRadius(y.x, y.z, 0.75, e => {
+        if (y.hits.has(e)) return;
+        y.hits.add(e);
+        hurtEnemy(e, L.dmg, y.dx * (y.state === 'back' ? -3 : 3), y.dz * (y.state === 'back' ? -3 : 3), { sound: false });
+        FX.burst(e.x, 0.8, e.z, 4, [1, 0.9, 0.6], 3, 0.06, 0.25, 1);
+      });
+    }
+    st.yo = st.yo.filter(y => !y.done);
+  },
+  emit(s) {
+    const st = s.st, h = G.hero.pos;
+    if (!st.yo) return;
+    for (const y of st.yo) {
+      pushImp(y.x, 0.85, y.z, 0.36, y.dx, 0, y.dz, 1, 46, 0, 0.12, y.ph, [0, 2, 4][y.col], 0, 0, 1);
+      R.ribStrip([h[0], 1.1, h[2], y.x, 0.9, y.z], 2, 0.035, [1, 1, 1, 0.85], 0);
+      pushDecal(y.x + 0.06, y.z + 0.05, 0.3, 0.3, 0, 1, 0, 0, 0.02, 0.03, 0.07, 0.35);
     }
   },
 };
@@ -12365,6 +12666,147 @@ BOSS_DRAW.storm = function (e) {
   }
 };
 
+// ---------- Jack-in-the-Box (chapter 14): hops after you, punches its head out on the spring, pounces, and tosses toy blocks that stay as walls ----------
+const JACK = { reach: 9, top: 1.0 };
+BOSS_AI.jack = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e), s = e.scale, k = Math.min(1, dt * 8);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; ai.ext = 0.55; ai.hop = 0; ai.out = 0; }
+  ai.wob = (ai.wob || 0) + dt;
+  switch (ai.state) {
+    case 'walk': {
+      // hops along on the box, its head bobbing on the spring
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.25 : 1)); bossFace(e, dt);
+      ai.hop += dt * 5.5;
+      e.y = Math.abs(Math.sin(ai.hop)) * 0.3 * s;
+      ai.ext = lerp(ai.ext, 0.55 + 0.12 * Math.sin(ai.wob * 4), k); ai.out = 0;
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        e.y = 0;
+        const kind = ['punch', 'pounce', 'toys'][ai.next++ % 3];
+        if (kind === 'punch') { ai.punches = rage ? 3 : 2; jackAim(e, ai, 0.75); }
+        else if (kind === 'pounce') { ai.state = 'crouch'; ai.t = 0.5; ai.jumps = rage ? 3 : 2; }
+        else { ai.state = 'open'; ai.t = 0.6; ai.volleys = rage ? 2 : 1; }
+      }
+      break;
+    }
+    case 'aim':
+      // the head winds down into the box, tracking you for a moment, then locks on
+      e.vx *= 0.7; e.vz *= 0.7; e.y = 0;
+      if (ai.t > 0.3) { ai.rot = turnToward(ai.rot, Math.atan2(dx, dz), dt * 2.2); ai.tele.rot = ai.rot; ai.tele.x = e.x; ai.tele.z = e.z; }
+      e.yaw = angleLerp(e.yaw, ai.rot, k); ai.ext = lerp(ai.ext, 0.15, k);
+      if (ai.t <= 0) { ai.state = 'punch'; ai.t = ai.dur = 0.55; ai.hit = false; ai.hits = new Set(); AUDIO.play('throw'); }
+      break;
+    case 'punch': {
+      // BOING: out fast along the lane, back slowly
+      const u = 1 - Math.max(ai.t, 0) / ai.dur, reach = u < 0.25 ? u / 0.25 : 1 - (u - 0.25) / 0.75;
+      ai.out = reach * JACK.reach;
+      if (u < 0.3) {
+        if (!ai.hit && laneHit(e.x, e.z, ai.rot, ai.out, 1.0 + HERO_R * 0.5, h[0], h[2])) {
+          ai.hit = true; hurtHero(26 * run.info.dmgMul, e.x, e.z); run.vel[0] += Math.sin(ai.rot) * 12; run.vel[2] += Math.cos(ai.rot) * 12;
+        }
+        enemiesInRadius(e.x + Math.sin(ai.rot) * ai.out, e.z + Math.cos(ai.rot) * ai.out, 1.2, o => { if (!o.boss && !ai.hits.has(o)) { ai.hits.add(o); hurtEnemy(o, 20, Math.sin(ai.rot) * 8, Math.cos(ai.rot) * 8, { sound: false }); } });
+      }
+      if (ai.t <= 0) {
+        ai.out = 0;
+        if (--ai.punches > 0) jackAim(e, ai, 0.5);
+        else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.2; }
+      }
+      break;
+    }
+    case 'crouch':
+      // squashes down on its springs, then leaps at you
+      e.vx *= 0.7; e.vz *= 0.7; bossFace(e, dt);
+      e.squash = 1 - 0.25 * (1 - Math.max(ai.t, 0) / 0.5); ai.ext = lerp(ai.ext, 0.2, k);
+      if (ai.t <= 0) {
+        const o = { x: h[0] + run.vel[0] * 0.6, z: h[2] + run.vel[2] * 0.6 }; resolveCircle(o, e.radius);
+        ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z;
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 2.4, dur: 0.8 });
+        ai.state = 'leap'; ai.t = ai.dur = 0.8; e.hidden = true; e.squash = 1.15; AUDIO.play('throw', 0.8);
+      }
+      break;
+    case 'leap': {
+      const u = 1 - Math.max(ai.t, 0) / ai.dur;
+      e.x = lerp(ai.sx, ai.tx, u); e.z = lerp(ai.sz, ai.tz, u); e.y = Math.sin(u * Math.PI) * 4.2;
+      ai.ext = lerp(ai.ext, 0.9, k);
+      if (ai.t <= 0) {
+        e.y = 0; e.hidden = false; e.squash = 0.7; e.vx = e.vz = 0;
+        const hd = Math.hypot(h[0] - e.x, h[2] - e.z);
+        if (hd < 2.4 + HERO_R * 0.5) { hurtHero(28 * run.info.dmgMul, e.x, e.z); const l = hd || 1; run.vel[0] += (h[0] - e.x) / l * 10; run.vel[2] += (h[2] - e.z) / l * 10; }
+        enemiesInRadius(e.x, e.z, 2.4, o => { if (o !== e && !o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+        FX.ring(e.x, e.z, 5, [1, 0.8, 0.5], 0.5); FX.burst(e.x, 0.3, e.z, 16, [1, 0.85, 0.4], 6, 0.12, 0.5, 1);
+        G.cam.shake = Math.max(G.cam.shake, 0.22); AUDIO.play('boom');
+        if (--ai.jumps > 0) { ai.state = 'crouch'; ai.t = 0.35; }
+        else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }
+      }
+      break;
+    }
+    case 'open':
+      // pops right up and flings toy blocks that land as walls
+      e.vx *= 0.7; e.vz *= 0.7; bossFace(e, dt); e.y = 0;
+      ai.ext = lerp(ai.ext, 1.05, k);
+      if (ai.t <= 0) {
+        const n = rage ? 8 : 6, from = [e.x, (JACK.top + 1) * s, e.z];
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.8, tz = h[2] + run.vel[2] * 0.8;
+          if (i) { const a = rand(0, TAU), r = rand(1.8, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.7);
+          const dur = 1.0 + i * 0.06;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.1, dur });
+          run.eShots.push({ kind: 'block', lob: true, sx: from[0], sy: from[1], sz: from[2], tx: o.x, tz: o.z, x: from[0], y: from[1], z: from[2], t: 0, dur, peak: 3.5, radius: 1.1, dmg: 20 * run.info.dmgMul, life: dur + 0.5, spin: rand(0, TAU), tint: hexToRgb(pick(PROP_KINDS.toyblock.tints)), onLand: blockLand });
+        }
+        AUDIO.play('throw', 0.8);
+        if (--ai.volleys > 0) ai.t = 0.6;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4; }
+      }
+      break;
+  }
+};
+function jackAim(e, ai, t) {
+  const h = G.hero.pos;
+  ai.state = 'aim'; ai.t = t; ai.rot = Math.atan2(h[0] - e.x, h[2] - e.z);
+  ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 1.0, len: JACK.reach, rot: ai.rot, dur: t });
+}
+function blockLand(s) {
+  // the block stays where it lands as a short-lived wall (unless it landed on you)
+  if (Math.hypot(G.hero.pos[0] - s.tx, G.hero.pos[2] - s.tz) > 1.2) { const o = tempProp('toyblock', s.tx, s.tz, 0.55, 4); o.tint = s.tint; o.yaw = s.spin; }
+  enemiesInRadius(s.tx, s.tz, s.radius, o => { if (!o.boss) hurtEnemy(o, 16, 0, 0, { sound: false }); });
+}
+// points along a coil spring from a to b
+function springPts(a, b, rad, turns, n) {
+  const ax = b[0] - a[0], ay = b[1] - a[1], az = b[2] - a[2], l = Math.hypot(ax, ay, az) || 1;
+  const fx = ax / l, fy = ay / l, fz = az / l;
+  // two directions across the spring's axis
+  let ux = -fz, uy = 0, uz = fx; if (Math.hypot(ux, uz) < 0.1) { ux = 1; uy = 0; uz = 0; }
+  const ul = Math.hypot(ux, uy, uz); ux /= ul; uy /= ul; uz /= ul;
+  const vx = fy * uz - fz * uy, vy = fz * ux - fx * uz, vz = fx * uy - fy * ux;
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, a2 = u * turns * TAU, c = Math.cos(a2) * rad, sn = Math.sin(a2) * rad;
+    pts.push(a[0] + ax * u + ux * c + vx * sn, a[1] + ay * u + uy * c + vy * sn, a[2] + az * u + uz * c + vz * sn);
+  }
+  return pts;
+}
+BOSS_DRAW.jack = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, ai = e.ai, s = e.scale, y0 = e.y || 0;
+  if (R.enemyDraw.jackbox) pushEnemy('jackbox', false, e.x, y0, e.z, e.yaw, MODELS.defs.jackbox.clips.still.row, s, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  const top = [e.x, y0 + JACK.top * s * (e.squash || 1), e.z];
+  let hp;
+  if (ai.out > 0.05) hp = [e.x + Math.sin(ai.rot) * ai.out, top[1] + 0.1 * s, e.z + Math.cos(ai.rot) * ai.out];
+  else {
+    const ext = (e.portrait ? 0.12 : (ai.ext ?? 0.55) * (1 - dead)) * s, sway = e.portrait ? 0 : Math.sin((ai.wob || 0) * 3) * 0.08 * s;
+    hp = [top[0] + Math.cos(e.yaw) * sway, top[1] + ext, top[2] - Math.sin(e.yaw) * sway];
+  }
+  if (R.enemyDraw.jackhead) pushEnemy('jackhead', false, hp[0], hp[1], hp[2], e.yaw, MODELS.defs.jackhead.clips.still.row, s * 0.85, 1, dead, fl, 0, 1, 1, 1);
+  if (e.portrait) return;
+  if (Math.hypot(hp[0] - top[0], hp[1] - top[1], hp[2] - top[2]) > 0.2) R.ribStrip(springPts(top, hp, 0.17 * s, 7, 42), 43, 0.045 * s, [0.75, 0.78, 0.86, 1], 1, 0, 1);
+  bossShadow(e, 0.5 * (1 - clamp(y0 / 5, 0, 0.6)));
+  if (ai.out > 0.05) pushDecal(hp[0], hp[2], 0.5 * s * 0.4, 0.5 * s * 0.4, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.4);
+};
+SHOT_DRAW.block = s => {
+  if (R.enemyDraw.toyblock) pushEnemy('toyblock', false, s.x, s.y - 0.4, s.z, s.spin, MODELS.defs.toyblock.clips.still.row, 1.1, 1, 0, 0, 0, s.tint[0], s.tint[1], s.tint[2]);
+  pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.4, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4);
+};
+
 // ---- 14-ui.js ----
 // ============================================================
 // UI: screens, HUD, level-up cards, chest roulette, overlay drawing
@@ -13680,6 +14122,7 @@ function renderAllIcons() {
     wisps: { scale: 0.6, emissive: 0.45, ax: 0.8, az: 0.6 },
     prism: { scale: 0.66, emissive: 0.3, p1: 2 },
     gale: { scale: 0.58, emissive: 0.35, az: -1, eye: [0, 2.3, 1.0] },
+    yoyo: { scale: 0.62, emissive: 0.15, eye: [0, 1.5, 2.0] },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

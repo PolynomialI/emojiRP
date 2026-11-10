@@ -5,10 +5,12 @@
 Object.assign(THEME_CLIPS, { pumpking: ['run', 'slam', 'idle', 'throw'], geode: ['run', 'slam', 'idle', 'throw'] });
 Object.assign(THEME_CELLS, { tombstone0: 0.025, tombstone1: 0.022, pumpkin: 0.018, fence: 0.016, gravetree: 0.016, pumpking: 0.014,
   crystal: 0.02, stalagmite: 0.025, geode: 0.016,
-  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03 });
+  cloudpuff: 0.045, pillar: 0.022, rainbow: 0.022, stormcloud: 0.03,
+  toyblock: 0.025, blockstack: 0.028, drum: 0.02, toycar: 0.018, jackbox: 0.025, jackhead: 0.016 });
 MESH_ORDER.push('tombstone0', 'tombstone1', 'pumpkin', 'fence', 'gravetree', 'pumpking',
   'crystal', 'stalagmite', 'geode',
-  'cloudpuff', 'pillar', 'rainbow', 'stormcloud');
+  'cloudpuff', 'pillar', 'rainbow', 'stormcloud',
+  'toyblock', 'blockstack', 'drum', 'toycar', 'jackbox', 'jackhead');
 
 function themeModels2(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -188,6 +190,87 @@ function themeModels2(defs) {
       { s: 'ell', c: [0, 0.5, 0.47], rr: [0.15, 0.025, 0.04], col: white, k: 0 },
       { s: 'cap', a: [0.5, 0.95, 0.1], b: [0.62, 0.78, 0.15], r: 0.035, col: bolt, k: 0 }, { s: 'cap', a: [0.62, 0.78, 0.15], b: [0.56, 0.8, 0.16], r: 0.03, col: bolt, k: 0 },
       { s: 'cap', a: [0.56, 0.8, 0.16], b: [0.7, 0.6, 0.2], r: 0.03, r2: 0.01, col: bolt, k: 0 },
+    ], { ao: 0.5 });
+  }
+  // ---------- Toy Workshop (chapter 14) ----------
+  {
+    const cream = C('#fff3d6'), navy = C('#2a3a8a'), red = C('#ff4d5a'), yel = C('#ffcf3a'), blue = C('#3f8cff'), green = C('#4fd06a'), gold = C('#ffc93a'), white = C('#ffffff'), dark = C('#22222c'), wood = C('#b07840');
+    // a wooden letter block: the block takes the tint, with cream panels and raised letters
+    P('toyblock', [
+      { s: 'box', c: [0, 0.35, 0], hs: [0.35, 0.35, 0.35], rd: 0.05, k: 0.01 },
+      { s: 'box', c: [0, 0.35, 0.34], hs: [0.27, 0.27, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0.34, 0.35, 0], hs: [0.02, 0.27, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [-0.34, 0.35, 0], hs: [0.02, 0.27, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0, 0.35, -0.34], hs: [0.27, 0.27, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0, 0.69, 0], hs: [0.27, 0.02, 0.27], rd: 0.03, col: cream, k: 0.005 },
+      // A on the front, B-ish dots on the sides, a C on the back
+      { s: 'cap', a: [-0.13, 0.18, 0.37], b: [0, 0.52, 0.37], r: 0.035, col: navy, k: 0 }, { s: 'cap', a: [0.13, 0.18, 0.37], b: [0, 0.52, 0.37], r: 0.035, col: navy, k: 0 },
+      { s: 'cap', a: [-0.07, 0.3, 0.37], b: [0.07, 0.3, 0.37], r: 0.03, col: navy, k: 0 },
+      { s: 'ell', c: [0.37, 0.42, 0], rr: [0.02, 0.09, 0.09], col: red, k: 0 }, { s: 'ell', c: [0.37, 0.24, 0], rr: [0.02, 0.09, 0.09], col: red, k: 0 },
+      { s: 'ell', c: [-0.37, 0.35, 0], rr: [0.02, 0.13, 0.13], col: green, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.35, -0.37], R: 0.13, r: 0.035, a0: -2.5, a1: 2.5, col: blue, k: 0 },
+    ], { ao: 0.7 });
+    // three blocks stacked a little crooked
+    P('blockstack', [
+      { s: 'box', c: [0, 0.3, 0], hs: [0.3, 0.3, 0.3], rd: 0.045, col: red, k: 0.005 },
+      { s: 'box', c: [0, 0.3, 0.29], hs: [0.22, 0.22, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [0.07, 0.88, 0.04], hs: [0.27, 0.27, 0.27], rd: 0.045, col: blue, k: 0.005 },
+      { s: 'box', c: [0.07, 0.88, 0.3], hs: [0.2, 0.2, 0.02], rd: 0.03, col: cream, k: 0.005 },
+      { s: 'box', c: [-0.04, 1.39, 0], hs: [0.24, 0.24, 0.24], rd: 0.04, col: yel, k: 0.005 },
+      { s: 'box', c: [-0.04, 1.39, 0.23], hs: [0.17, 0.17, 0.02], rd: 0.03, col: cream, k: 0.005 },
+    ], { ao: 0.7 });
+    // a toy drum with gold rims, a zigzag cord and crossed drumsticks
+    P('drum', [
+      { s: 'cyl', ax: 'y', c: [0, 0.36, 0], r: 0.42, hh: 0.32, rd: 0.03, col: red, k: 0.01 },
+      { s: 'cyl', ax: 'y', c: [0, 0.69, 0], r: 0.4, hh: 0.015, rd: 0.01, col: cream, k: 0.005 },
+      { s: 'tor', ax: 'y', c: [0, 0.66, 0], R: 0.43, r: 0.035, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.06, 0], R: 0.43, r: 0.035, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      ...Array.from({ length: 10 }, (_, i) => { const a0 = (i / 10) * TAU, a1 = ((i + 0.5) / 10) * TAU, up = i % 2; return { s: 'cap', a: [Math.cos(a0) * 0.43, 0.1, Math.sin(a0) * 0.43], b: [Math.cos(a1) * 0.43, 0.62, Math.sin(a1) * 0.43], r: 0.015, col: white, k: 0 }; }),
+      { s: 'cap', a: [-0.3, 0.74, -0.1], b: [0.25, 0.86, 0.2], r: 0.025, col: wood, k: 0 }, { s: 'sph', c: [0.25, 0.86, 0.2], r: 0.05, col: cream, k: 0 },
+      { s: 'cap', a: [-0.25, 0.74, 0.2], b: [0.3, 0.84, -0.15], r: 0.025, col: wood, k: 0 }, { s: 'sph', c: [0.3, 0.84, -0.15], r: 0.05, col: cream, k: 0 },
+    ], { ao: 0.7 });
+    // a wind-up toy car; the body takes the tint
+    P('toycar', [
+      { s: 'box', c: [0, 0.22, 0], hs: [0.22, 0.1, 0.4], rd: 0.07, k: 0.02 },
+      { s: 'box', c: [0, 0.36, -0.04], hs: [0.17, 0.08, 0.2], rd: 0.06, k: 0.02 },
+      { s: 'box', c: [0, 0.37, 0.15], hs: [0.15, 0.05, 0.02], rd: 0.02, col: C('#bfe8ff'), k: 0 },
+      ...[[1, 1], [-1, 1], [1, -1], [-1, -1]].map(([sx, sz]) => ({ s: 'cyl', ax: 'x', c: [sx * 0.2, 0.1, sz * 0.25], r: 0.1, hh: 0.05, rd: 0.03, col: dark, k: 0 })),
+      { s: 'cap', a: [0, 0.3, -0.42], b: [0, 0.3, -0.5], r: 0.02, col: gold, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.38, -0.52], R: 0.07, r: 0.02, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+    ], { ao: 0.6 });
+  }
+  // ---------- Jack-in-the-Box (chapter 14 boss): a crank-box (takes the tint) and a clown head on a spring ----------
+  {
+    const gold = C('#ffc93a'), yel = C('#ffe14a'), blue = C('#3f8cff'), steel = C('#b8c0d0'), white = C('#fffaf2'), red = C('#ff3b4a'), dark = C('#1c1424'), pink = C('#ff9ab8'), purple = C('#9a5aff');
+    P('jackbox', [
+      { s: 'box', c: [0, 0.5, 0], hs: [0.5, 0.5, 0.5], rd: 0.06, k: 0.01 },
+      ...[[1, 1], [-1, 1], [1, -1], [-1, -1]].map(([sx, sz]) => ({ s: 'cap', a: [sx * 0.5, 0.02, sz * 0.5], b: [sx * 0.5, 0.98, sz * 0.5], r: 0.05, col: gold, k: 0.01 })),
+      { s: 'ell', c: [0, 0.5, 0.51], rr: [0.2, 0.26, 0.03], col: yel, k: 0 }, { s: 'ell', c: [0.51, 0.5, 0], rr: [0.03, 0.26, 0.2], col: blue, k: 0 },
+      { s: 'ell', c: [-0.51, 0.5, 0], rr: [0.03, 0.26, 0.2], col: yel, k: 0 }, { s: 'ell', c: [0, 0.5, -0.51], rr: [0.2, 0.26, 0.03], col: blue, k: 0 },
+      // the crank on its right side, and the lid standing open at the back
+      { s: 'cap', a: [-0.5, 0.55, 0], b: [-0.7, 0.55, 0], r: 0.04, col: steel, k: 0 },
+      { s: 'cap', a: [-0.7, 0.55, 0], b: [-0.7, 0.3, 0.12], r: 0.035, col: steel, k: 0 },
+      { s: 'sph', c: [-0.7, 0.28, 0.13], r: 0.07, col: red, k: 0 },
+      { s: 'box', c: [0, 1.42, -0.52], hs: [0.5, 0.44, 0.04], rd: 0.04, k: 0.01 },
+      { s: 'ell', c: [0, 1.42, -0.48], rr: [0.18, 0.18, 0.02], col: yel, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.0, 0], r: 0.2, hh: 0.03, rd: 0.02, col: steel, k: 0 },
+    ], { ao: 0.6 });
+    // the clown head: white face, red nose, grin, a jester's hat with bells and a ruffled collar
+    P('jackhead', [
+      { s: 'sph', c: [0, 0.38, 0], r: 0.34, col: white, k: 0.02 },
+      { s: 'sph', c: [0, 0.38, 0.33], r: 0.09, col: red, k: 0 },
+      { s: 'ell', c: [0.12, 0.5, 0.27], rr: [0.06, 0.08, 0.04], col: dark, k: 0 }, { s: 'ell', c: [-0.12, 0.5, 0.27], rr: [0.06, 0.08, 0.04], col: dark, k: 0 },
+      { s: 'sph', c: [0.135, 0.53, 0.305], r: 0.022, col: white, k: 0 }, { s: 'sph', c: [-0.105, 0.53, 0.305], r: 0.022, col: white, k: 0 },
+      { s: 'ell', c: [0, 0.23, 0.27], rr: [0.19, 0.06, 0.06], col: dark, k: 0 },
+      { s: 'ell', c: [0, 0.255, 0.3], rr: [0.15, 0.022, 0.03], col: white, k: 0 },
+      { s: 'ell', c: [0.2, 0.32, 0.22], rr: [0.06, 0.04, 0.04], col: pink, k: 0 }, { s: 'ell', c: [-0.2, 0.32, 0.22], rr: [0.06, 0.04, 0.04], col: pink, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.62, 0], R: 0.25, r: 0.06, a0: -Math.PI, a1: Math.PI, col: yel, k: 0.01 },
+      { s: 'cap', a: [0, 0.64, 0], b: [0, 1.05, -0.12], r: 0.17, r2: 0.03, col: purple, k: 0.03 },
+      { s: 'cap', a: [0.1, 0.64, 0], b: [0.48, 0.92, 0.02], r: 0.13, r2: 0.03, col: red, k: 0.03 },
+      { s: 'cap', a: [-0.1, 0.64, 0], b: [-0.48, 0.92, 0.02], r: 0.13, r2: 0.03, col: blue, k: 0.03 },
+      { s: 'sph', c: [0, 1.08, -0.13], r: 0.06, col: gold, k: 0 }, { s: 'sph', c: [0.51, 0.93, 0.02], r: 0.06, col: gold, k: 0 }, { s: 'sph', c: [-0.51, 0.93, 0.02], r: 0.06, col: gold, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.05, 0], R: 0.3, r: 0.08, a0: -Math.PI, a1: Math.PI, col: white, k: 0.02 },
+      ...Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.36, 0.05, Math.sin(a) * 0.36], r: 0.07, col: i % 2 ? red : blue, k: 0.02 }; }),
     ], { ao: 0.5 });
   }
 }

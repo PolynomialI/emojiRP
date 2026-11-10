@@ -379,3 +379,144 @@ BOSS_DRAW.storm = function (e) {
     R.ribStrip(b.pts, n, 0.5, [1, 0.9, 0.5, 0.4 * a], 0);
   }
 };
+
+// ---------- Jack-in-the-Box (chapter 14): hops after you, punches its head out on the spring, pounces, and tosses toy blocks that stay as walls ----------
+const JACK = { reach: 9, top: 1.0 };
+BOSS_AI.jack = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e), s = e.scale, k = Math.min(1, dt * 8);
+  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.6; ai.ext = 0.55; ai.hop = 0; ai.out = 0; }
+  ai.wob = (ai.wob || 0) + dt;
+  switch (ai.state) {
+    case 'walk': {
+      // hops along on the box, its head bobbing on the spring
+      bossWalk(e, dt, h[0], h[2], e.speed * (rage ? 1.25 : 1)); bossFace(e, dt);
+      ai.hop += dt * 5.5;
+      e.y = Math.abs(Math.sin(ai.hop)) * 0.3 * s;
+      ai.ext = lerp(ai.ext, 0.55 + 0.12 * Math.sin(ai.wob * 4), k); ai.out = 0;
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        e.y = 0;
+        const kind = ['punch', 'pounce', 'toys'][ai.next++ % 3];
+        if (kind === 'punch') { ai.punches = rage ? 3 : 2; jackAim(e, ai, 0.75); }
+        else if (kind === 'pounce') { ai.state = 'crouch'; ai.t = 0.5; ai.jumps = rage ? 3 : 2; }
+        else { ai.state = 'open'; ai.t = 0.6; ai.volleys = rage ? 2 : 1; }
+      }
+      break;
+    }
+    case 'aim':
+      // the head winds down into the box, tracking you for a moment, then locks on
+      e.vx *= 0.7; e.vz *= 0.7; e.y = 0;
+      if (ai.t > 0.3) { ai.rot = turnToward(ai.rot, Math.atan2(dx, dz), dt * 2.2); ai.tele.rot = ai.rot; ai.tele.x = e.x; ai.tele.z = e.z; }
+      e.yaw = angleLerp(e.yaw, ai.rot, k); ai.ext = lerp(ai.ext, 0.15, k);
+      if (ai.t <= 0) { ai.state = 'punch'; ai.t = ai.dur = 0.55; ai.hit = false; ai.hits = new Set(); AUDIO.play('throw'); }
+      break;
+    case 'punch': {
+      // BOING: out fast along the lane, back slowly
+      const u = 1 - Math.max(ai.t, 0) / ai.dur, reach = u < 0.25 ? u / 0.25 : 1 - (u - 0.25) / 0.75;
+      ai.out = reach * JACK.reach;
+      if (u < 0.3) {
+        if (!ai.hit && laneHit(e.x, e.z, ai.rot, ai.out, 1.0 + HERO_R * 0.5, h[0], h[2])) {
+          ai.hit = true; hurtHero(26 * run.info.dmgMul, e.x, e.z); run.vel[0] += Math.sin(ai.rot) * 12; run.vel[2] += Math.cos(ai.rot) * 12;
+        }
+        enemiesInRadius(e.x + Math.sin(ai.rot) * ai.out, e.z + Math.cos(ai.rot) * ai.out, 1.2, o => { if (!o.boss && !ai.hits.has(o)) { ai.hits.add(o); hurtEnemy(o, 20, Math.sin(ai.rot) * 8, Math.cos(ai.rot) * 8, { sound: false }); } });
+      }
+      if (ai.t <= 0) {
+        ai.out = 0;
+        if (--ai.punches > 0) jackAim(e, ai, 0.5);
+        else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.2; }
+      }
+      break;
+    }
+    case 'crouch':
+      // squashes down on its springs, then leaps at you
+      e.vx *= 0.7; e.vz *= 0.7; bossFace(e, dt);
+      e.squash = 1 - 0.25 * (1 - Math.max(ai.t, 0) / 0.5); ai.ext = lerp(ai.ext, 0.2, k);
+      if (ai.t <= 0) {
+        const o = { x: h[0] + run.vel[0] * 0.6, z: h[2] + run.vel[2] * 0.6 }; resolveCircle(o, e.radius);
+        ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z;
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 2.4, dur: 0.8 });
+        ai.state = 'leap'; ai.t = ai.dur = 0.8; e.hidden = true; e.squash = 1.15; AUDIO.play('throw', 0.8);
+      }
+      break;
+    case 'leap': {
+      const u = 1 - Math.max(ai.t, 0) / ai.dur;
+      e.x = lerp(ai.sx, ai.tx, u); e.z = lerp(ai.sz, ai.tz, u); e.y = Math.sin(u * Math.PI) * 4.2;
+      ai.ext = lerp(ai.ext, 0.9, k);
+      if (ai.t <= 0) {
+        e.y = 0; e.hidden = false; e.squash = 0.7; e.vx = e.vz = 0;
+        const hd = Math.hypot(h[0] - e.x, h[2] - e.z);
+        if (hd < 2.4 + HERO_R * 0.5) { hurtHero(28 * run.info.dmgMul, e.x, e.z); const l = hd || 1; run.vel[0] += (h[0] - e.x) / l * 10; run.vel[2] += (h[2] - e.z) / l * 10; }
+        enemiesInRadius(e.x, e.z, 2.4, o => { if (o !== e && !o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
+        FX.ring(e.x, e.z, 5, [1, 0.8, 0.5], 0.5); FX.burst(e.x, 0.3, e.z, 16, [1, 0.85, 0.4], 6, 0.12, 0.5, 1);
+        G.cam.shake = Math.max(G.cam.shake, 0.22); AUDIO.play('boom');
+        if (--ai.jumps > 0) { ai.state = 'crouch'; ai.t = 0.35; }
+        else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }
+      }
+      break;
+    }
+    case 'open':
+      // pops right up and flings toy blocks that land as walls
+      e.vx *= 0.7; e.vz *= 0.7; bossFace(e, dt); e.y = 0;
+      ai.ext = lerp(ai.ext, 1.05, k);
+      if (ai.t <= 0) {
+        const n = rage ? 8 : 6, from = [e.x, (JACK.top + 1) * s, e.z];
+        for (let i = 0; i < n; i++) {
+          let tx = h[0] + run.vel[0] * 0.8, tz = h[2] + run.vel[2] * 0.8;
+          if (i) { const a = rand(0, TAU), r = rand(1.8, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+          const o = { x: tx, z: tz }; resolveCircle(o, 0.7);
+          const dur = 1.0 + i * 0.06;
+          addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.1, dur });
+          run.eShots.push({ kind: 'block', lob: true, sx: from[0], sy: from[1], sz: from[2], tx: o.x, tz: o.z, x: from[0], y: from[1], z: from[2], t: 0, dur, peak: 3.5, radius: 1.1, dmg: 20 * run.info.dmgMul, life: dur + 0.5, spin: rand(0, TAU), tint: hexToRgb(pick(PROP_KINDS.toyblock.tints)), onLand: blockLand });
+        }
+        AUDIO.play('throw', 0.8);
+        if (--ai.volleys > 0) ai.t = 0.6;
+        else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.4; }
+      }
+      break;
+  }
+};
+function jackAim(e, ai, t) {
+  const h = G.hero.pos;
+  ai.state = 'aim'; ai.t = t; ai.rot = Math.atan2(h[0] - e.x, h[2] - e.z);
+  ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 1.0, len: JACK.reach, rot: ai.rot, dur: t });
+}
+function blockLand(s) {
+  // the block stays where it lands as a short-lived wall (unless it landed on you)
+  if (Math.hypot(G.hero.pos[0] - s.tx, G.hero.pos[2] - s.tz) > 1.2) { const o = tempProp('toyblock', s.tx, s.tz, 0.55, 4); o.tint = s.tint; o.yaw = s.spin; }
+  enemiesInRadius(s.tx, s.tz, s.radius, o => { if (!o.boss) hurtEnemy(o, 16, 0, 0, { sound: false }); });
+}
+// points along a coil spring from a to b
+function springPts(a, b, rad, turns, n) {
+  const ax = b[0] - a[0], ay = b[1] - a[1], az = b[2] - a[2], l = Math.hypot(ax, ay, az) || 1;
+  const fx = ax / l, fy = ay / l, fz = az / l;
+  // two directions across the spring's axis
+  let ux = -fz, uy = 0, uz = fx; if (Math.hypot(ux, uz) < 0.1) { ux = 1; uy = 0; uz = 0; }
+  const ul = Math.hypot(ux, uy, uz); ux /= ul; uy /= ul; uz /= ul;
+  const vx = fy * uz - fz * uy, vy = fz * ux - fx * uz, vz = fx * uy - fy * ux;
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, a2 = u * turns * TAU, c = Math.cos(a2) * rad, sn = Math.sin(a2) * rad;
+    pts.push(a[0] + ax * u + ux * c + vx * sn, a[1] + ay * u + uy * c + vy * sn, a[2] + az * u + uz * c + vz * sn);
+  }
+  return pts;
+}
+BOSS_DRAW.jack = function (e) {
+  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, ai = e.ai, s = e.scale, y0 = e.y || 0;
+  if (R.enemyDraw.jackbox) pushEnemy('jackbox', false, e.x, y0, e.z, e.yaw, MODELS.defs.jackbox.clips.still.row, s, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  const top = [e.x, y0 + JACK.top * s * (e.squash || 1), e.z];
+  let hp;
+  if (ai.out > 0.05) hp = [e.x + Math.sin(ai.rot) * ai.out, top[1] + 0.1 * s, e.z + Math.cos(ai.rot) * ai.out];
+  else {
+    const ext = (e.portrait ? 0.12 : (ai.ext ?? 0.55) * (1 - dead)) * s, sway = e.portrait ? 0 : Math.sin((ai.wob || 0) * 3) * 0.08 * s;
+    hp = [top[0] + Math.cos(e.yaw) * sway, top[1] + ext, top[2] - Math.sin(e.yaw) * sway];
+  }
+  if (R.enemyDraw.jackhead) pushEnemy('jackhead', false, hp[0], hp[1], hp[2], e.yaw, MODELS.defs.jackhead.clips.still.row, s * 0.85, 1, dead, fl, 0, 1, 1, 1);
+  if (e.portrait) return;
+  if (Math.hypot(hp[0] - top[0], hp[1] - top[1], hp[2] - top[2]) > 0.2) R.ribStrip(springPts(top, hp, 0.17 * s, 7, 42), 43, 0.045 * s, [0.75, 0.78, 0.86, 1], 1, 0, 1);
+  bossShadow(e, 0.5 * (1 - clamp(y0 / 5, 0, 0.6)));
+  if (ai.out > 0.05) pushDecal(hp[0], hp[2], 0.5 * s * 0.4, 0.5 * s * 0.4, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.4);
+};
+SHOT_DRAW.block = s => {
+  if (R.enemyDraw.toyblock) pushEnemy('toyblock', false, s.x, s.y - 0.4, s.z, s.spin, MODELS.defs.toyblock.clips.still.row, 1.1, 1, 0, 0, 0, s.tint[0], s.tint[1], s.tint[2]);
+  pushDecal(s.x + 0.15, s.z + 0.1, 0.45, 0.4, 0, 1, 0, 0, 0.01, 0.02, 0.05, 0.4);
+};

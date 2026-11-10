@@ -145,3 +145,59 @@ SKILL_HOOKS.gale = {
     }
   },
 };
+
+// ---------- Yo-Yo (chapter 14): yo-yos spin out at enemies, hang for a moment and zip back, hitting everything both ways ----------
+SKILL_HOOKS.yoyo = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, range = L.range * areaMul();
+    st.yo = st.yo || [];
+    st.t = (st.t ?? 0.5) - dt;
+    if (st.t <= 0 && !st.yo.length) {
+      // the nearest few enemies, one yo-yo each
+      const near = [];
+      enemiesInRadius(h[0], h[2], range + 1, e => near.push([Math.hypot(e.x - h[0], e.z - h[2]), e]));
+      near.sort((a, b) => a[0] - b[0]);
+      if (near.length) {
+        st.t = L.cd * cdMul();
+        for (let i = 0; i < L.count; i++) {
+          const e = near[i] ? near[i][1] : near[0][1], spread = near[i] ? 0 : (i % 2 ? 1 : -1) * 0.5;
+          const a = Math.atan2(e.x - h[0], e.z - h[2]) + spread;
+          st.yo.push({ x: h[0], z: h[2], dx: Math.sin(a), dz: Math.cos(a), d: 0, state: 'out', t: 0, hits: new Set(), ph: rand(0, 10), col: i % 3 });
+        }
+        AUDIO.play('throw', 0.35);
+      } else st.t = 0.2;
+    }
+    for (const y of st.yo) {
+      y.ph += dt;
+      if (y.state === 'out') {
+        y.d = Math.min(range, y.d + 16 * dt);
+        y.x = h[0] + y.dx * y.d; y.z = h[2] + y.dz * y.d;
+        if (y.d >= range || arenaSd(y.x, y.z) > -0.3) { y.state = 'hang'; y.t = 0.15; }
+      } else if (y.state === 'hang') {
+        y.x = h[0] + y.dx * y.d; y.z = h[2] + y.dz * y.d;
+        if ((y.t -= dt) <= 0) { y.state = 'back'; y.hits = new Set(); }
+      } else {
+        // reels back to wherever you are now
+        y.d -= 18 * dt;
+        y.x = h[0] + y.dx * Math.max(0, y.d); y.z = h[2] + y.dz * Math.max(0, y.d);
+        if (y.d <= 0.3) y.done = true;
+      }
+      enemiesInRadius(y.x, y.z, 0.75, e => {
+        if (y.hits.has(e)) return;
+        y.hits.add(e);
+        hurtEnemy(e, L.dmg, y.dx * (y.state === 'back' ? -3 : 3), y.dz * (y.state === 'back' ? -3 : 3), { sound: false });
+        FX.burst(e.x, 0.8, e.z, 4, [1, 0.9, 0.6], 3, 0.06, 0.25, 1);
+      });
+    }
+    st.yo = st.yo.filter(y => !y.done);
+  },
+  emit(s) {
+    const st = s.st, h = G.hero.pos;
+    if (!st.yo) return;
+    for (const y of st.yo) {
+      pushImp(y.x, 0.85, y.z, 0.36, y.dx, 0, y.dz, 1, 46, 0, 0.12, y.ph, [0, 2, 4][y.col], 0, 0, 1);
+      R.ribStrip([h[0], 1.1, h[2], y.x, 0.9, y.z], 2, 0.035, [1, 1, 1, 0.85], 0);
+      pushDecal(y.x + 0.06, y.z + 0.05, 0.3, 0.3, 0, 1, 0, 0, 0.02, 0.03, 0.07, 0.35);
+    }
+  },
+};
