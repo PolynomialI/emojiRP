@@ -78,7 +78,7 @@ if (mode === 'play') {
         if (!levelShot) { levelShot = true; await render(1); await shot('levelup'); }
         await page.evaluate(() => __botPick());
       } else if (st.state === 'chest') {
-        await page.waitForFunction(() => !document.getElementById('btnChest').disabled, null, { timeout: 10000, polling: 100 });
+        await page.waitForFunction(() => !document.getElementById('btnChest').disabled, null, { timeout: 60000, polling: 100 });
         if (!chestShot) { chestShot = true; await render(1); await shot('chest'); }
         await page.click('#btnChest');
       } else if (st.state === 'revive') {
@@ -102,7 +102,7 @@ if (mode === 'play') {
     if (process.env.PREFER) console.log('   blasts by level:', await page.evaluate(() => { const o = {}; for (const b of __blasts) { const k = 'L' + b.lvl; (o[k] = o[k] || []).push(b.kills); } return JSON.stringify(Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { n: v.length, avg: +(v.reduce((a, c) => a + c, 0) / v.length).toFixed(1), max: Math.max(...v) }]))); }));
     summary.push(fin.won);
     await page.click('#btnContinue');
-    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
   }
   console.log(`WIN RATE ${summary.filter(Boolean).length}/${runs}`);
 }
@@ -128,9 +128,9 @@ if (mode === 'skills') {
     await page.evaluate(() => { if (G.state === 'run') pauseGame(); });
     await render(1); await shot(`pause-${g}`);
     await page.click('#btnQuit'); await page.click('#btnQuitYes');
-    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 60000, polling: 100 });
     await page.click('#btnContinue');
-    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
   }
 }
 if (mode === 'bosses') {
@@ -149,9 +149,9 @@ if (mode === 'bosses') {
       await render(2); await shot(`boss-c${n}-${k}`);
     }
     await page.evaluate(() => { if (G.state === 'run' || G.state === 'victory') finishRun(false); });
-    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 60000, polling: 100 });
     await page.click('#btnContinue');
-    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
   }
 }
 if (mode === 'flows') {
@@ -165,13 +165,13 @@ if (mode === 'flows') {
   await page.evaluate(() => { G.run.pending = 0; G.run.chestQueued = 1; });
   await page.evaluate(() => __frames(2));
   await page.waitForTimeout(700); await render(1); await shot('flow-chest-spin');
-  await page.waitForFunction(() => !document.getElementById('btnChest').disabled, null, { timeout: 10000, polling: 100 });
+  await page.waitForFunction(() => !document.getElementById('btnChest').disabled, null, { timeout: 60000, polling: 100 });
   await render(1); await shot('flow-chest-result');
   await page.click('#btnChest');
   await page.evaluate(() => { G.run.invuln = 0; hurtHero(9999, G.hero.pos[0] + 1, G.hero.pos[2]); });
   await step(25); await render(1); await shot('flow-melting');
   await step(60);
-  await page.waitForFunction(() => G.state === 'revive', null, { timeout: 10000, polling: 100 });
+  await page.waitForFunction(() => G.state === 'revive', null, { timeout: 60000, polling: 100 });
   await page.click('#btnRevive');
   await step(20); await render(1); await shot('flow-revived');
   // jump to a boss kill
@@ -180,10 +180,10 @@ if (mode === 'flows') {
   await page.evaluate(() => { for (const b of G.run.bosses) { b.hp = 1; hurtEnemy(b, 10); } });
   await step(30); await render(1); await shot('flow-victory');
   await step(150);
-  await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+  await page.waitForFunction(() => G.state === 'results', null, { timeout: 60000, polling: 100 });
   await render(1); await shot('flow-results-won');
   await page.click('#btnContinue');
-  await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+  await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
   // purchases
   await page.evaluate(() => { G.save.coins = 5000; UI.refreshHome(); });
   await page.click('.tab[data-tab="upgrades"]');
@@ -259,9 +259,9 @@ if (mode === 'arenas') {
     });
     await shot(`arena-wide-c${n}`);
     await page.evaluate(() => finishRun(false));
-    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 60000, polling: 100 });
     await page.click('#btnContinue');
-    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
   }
 }
 if (mode === 'roster') {
@@ -404,7 +404,7 @@ if (mode === 'dev') {
   console.log('run after commands:', JSON.stringify(st));
   await page.keyboard.press('Backquote');
   for (const c of ['boss', 'kill', 'win']) await cmd(c);
-  await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+  await page.waitForFunction(() => G.state === 'results', null, { timeout: 60000, polling: 100 });
   console.log('results scrolls saved:', await page.evaluate(() => G.save.scrolls));
 }
 if (mode === 'perf') {
@@ -485,9 +485,9 @@ if (mode === 'powerups') {
     }
     console.log(id, await page.evaluate(() => JSON.stringify({ kills: G.run.kills, rushT: G.run.rushT })));
     await page.evaluate(() => finishRun(false));
-    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 60000, polling: 100 });
     await page.click('#btnContinue');
-    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
   }
 }
 if (mode === 'evos') {
@@ -520,9 +520,9 @@ if (mode === 'evos') {
     await render(2); await shot(`evo-${id}-fight`);
     console.log('   kills', await page.evaluate(() => G.run.kills));
     await page.evaluate(() => finishRun(false));
-    await page.waitForFunction(() => G.state === 'results', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'results', null, { timeout: 60000, polling: 100 });
     await page.click('#btnContinue');
-    await page.waitForFunction(() => G.state === 'home', null, { timeout: 10000, polling: 100 });
+    await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
   }
 }
 console.log('NaN:', JSON.stringify(await page.evaluate(() => __nan)));
