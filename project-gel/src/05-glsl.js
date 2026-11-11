@@ -286,18 +286,35 @@ void main() {
     N = normalize(vec3(cos(p.x * 2.2) * 0.04, 1.0, 0.0));
     gloss = 0.05 + wet * 0.3; sharp = 40.0;
   } else if (style == 9) {
-    // moon: grey regolith pocked with craters
-    vec2 c = floor(p / 7.0), f = fract(p / 7.0) * 7.0 - 3.5;
-    float h = hash12(c), cr = 1.0 + h * 1.4;
-    vec2 off = (vec2(hash12(c + 4.1), hash12(c + 8.3)) - 0.5) * max(7.0 - cr * 2.5, 0.0);
-    vec2 d = f - off;
-    float r = length(d) / cr;
-    float bowl = step(0.4, h) * (1.0 - smoothstep(0.85, 1.0, r));
-    float rim = step(0.4, h) * smoothstep(0.75, 1.0, r) * (1.0 - smoothstep(1.0, 1.25, r));
-    vec2 nd = r > 1e-3 ? d / (r * cr) : vec2(0.0), tilt = nd * (bowl * -0.6 + rim * 0.5);
-    N = normalize(vec3(tilt.x, 1.0, tilt.y));
-    alb = mix(uStoneA, uStoneB, mott) * (0.9 + 0.15 * fine) * (1.0 - 0.25 * bowl) * (1.0 + 0.15 * rim);
-    ao = 1.0 - 0.2 * bowl;
+    // wild west: sun-baked dirt with paler dusty drifts; a pair of soft wagon ruts down Main Street (z ~ 2) and
+    // Church Street (z ~ -13.5), dried-mud cracks out on the open ground, a scatter of pebbles, and the laid stone
+    // ring of the bandstand square at (0, 5)
+    float drift = texture(uNoise, p * 0.022).g;
+    alb = mix(uStoneB, uStoneA, smoothstep(0.25, 0.8, mott * 0.7 + drift * 0.5)) * (0.93 + 0.1 * fine);
+    float wob = (texture(uNoise, vec2(p.x * 0.013, 0.37)).r - 0.5) * 1.4;
+    float sz = abs(p.y - 2.0 - wob), sz2 = abs(p.y + 13.5 - wob * 0.6);
+    float lane = min(abs(sz - 0.9), abs(sz2 - 0.9));
+    float rut = (1.0 - smoothstep(0.05, 0.18, lane)) * smoothstep(5.5, 7.0, length(p - vec2(0.0, 5.0))) * smoothstep(0.2, 0.55, texture(uNoise, p * vec2(0.03, 0.2)).b);
+    float street = 1.0 - smoothstep(3.5, 5.5, min(sz, sz2));
+    alb *= 1.0 - 0.09 * rut;
+    alb = mix(alb, alb * vec3(1.05, 1.03, 0.98), street * 0.5);
+    // dried mud cracks in patches away from the streets
+    vec3 v = voro(p * 0.8);
+    float crack = (1.0 - smoothstep(0.0, 0.05, v.y)) * (1.0 - street) * smoothstep(0.55, 0.72, texture(uNoise, p * 0.03 + 0.31).r);
+    alb *= 1.0 - 0.32 * crack;
+    // small round pebbles
+    vec2 pc = floor(p * 1.5), pf = fract(p * 1.5) - 0.5 - (vec2(hash12(pc + 1.7), hash12(pc + 5.3)) - 0.5) * 0.6;
+    float peb = step(0.95, hash12(pc)) * (1.0 - smoothstep(0.05, 0.085, length(pf)));
+    alb = mix(alb, mix(uGrout * 1.9, uStoneA * 1.12, hash12(pc + 9.1)), peb * 0.75);
+    // the square: smoother pale ground inside a ring of laid stones
+    float sq = length(p - vec2(0.0, 5.0));
+    float ring = 1.0 - smoothstep(0.0, 0.08, abs(sq - 6.4) - 0.45);
+    float joint = 1.0 - smoothstep(0.0, 0.06, min(abs(fract(atan(p.y - 5.0, p.x) * 6.4 / 0.8) - 0.5), abs(fract((sq - 5.95) / 0.9 + 0.5) - 0.5)) - 0.44);
+    alb = mix(alb, mix(uStoneA * 1.08, alb, 0.3), (1.0 - smoothstep(5.8, 6.0, sq)) * 0.5);
+    alb = mix(alb, vec3(0.64, 0.57, 0.5) * (0.85 + 0.25 * fine) * (1.0 - 0.35 * joint), ring);
+    N = normalize(vec3((fine - 0.5) * 0.12 + peb * pf.x * 0.9, 1.0, (mott - 0.5) * 0.12 + peb * pf.y * 0.9));
+    ao = 1.0 - 0.1 * rut - 0.25 * crack - 0.2 * joint * ring;
+    gloss = 0.03;
   } else if (style == 10) {
     // graveyard: dark soil under patchy dead grass, with fallen leaves scattered about
     float grass = smoothstep(0.35, 0.65, texture(uNoise, p * 0.05).g);

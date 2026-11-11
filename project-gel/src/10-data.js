@@ -233,7 +233,13 @@ const ENEMY_TYPES = {
   magmite: { model: 'magmite', hp: 18, speed: 1.8, dmg: 5, shot: 6, xp: 2, radius: 0.42, scale: 1.35, tint: '#ff5a1f', mass: 1.1, ranged: true, shotKind: 'ember' },
   frog: { model: 'frog', hp: 20, speed: 2.0, dmg: 5, xp: 2, radius: 0.42, scale: 1.35, tint: '#5ad04a', mass: 1.1, ai: 'lunge', hit: 10 },
   seagull: { model: 'seagull', hp: 12, speed: 3.0, dmg: 4, xp: 1, radius: 0.4, scale: 1.3, tint: '#f4f6fa', mass: 0.6, weave: 0.8, float: 0.5 },
-  martian: { model: 'martian', hp: 16, speed: 2.0, dmg: 4, shot: 6, xp: 2, radius: 0.38, scale: 1.25, tint: '#7ef06a', mass: 0.9, ranged: true, shotKind: 'spark' },
+  // chapter 10, the Wild West town: rattlesnakes weave in and strike, wild horses gallop through, gunslingers shoot,
+  // pack mules rear up and stamp, and bison paw the ground and charge in a straight line (ai: 'charge')
+  snake: { model: 'snake', hp: 12, speed: 3.1, dmg: 4, xp: 1, radius: 0.4, scale: 1.3, tint: '#d8b06a', mass: 0.6, weave: 1.1, ai: 'lunge', hit: 9 },
+  horse: { model: 'horse', hp: 22, speed: 3.9, dmg: 5, xp: 2, radius: 0.5, scale: 1.45, tint: '#8a5230', mass: 1.6, weave: 0.45 },
+  gunslinger: { model: 'gunslinger', hp: 16, speed: 2.0, dmg: 4, shot: 6, xp: 2, radius: 0.4, scale: 1.35, tint: '#f2a03a', mass: 1, ranged: true, shotKind: 'bullet', shotSpeed: 13 },
+  mule: { model: 'mule', hp: 30, speed: 2.2, dmg: 6, xp: 3, radius: 0.5, scale: 1.4, tint: '#8c7c6c', mass: 2, ai: 'chop', hit: 13, wind: 0.55 },
+  bison: { model: 'bison', hp: 60, speed: 1.9, dmg: 8, xp: 4, radius: 0.65, scale: 1.7, tint: '#5e3c26', mass: 4, ai: 'charge', hit: 16 },
   // ---------- theme enemies (see THEME_ENEMIES): weave = sways side to side as it comes; float = hovers; ghost = see-through, drifts through scenery ----------
   ghost: { model: 'ghost', hp: 14, speed: 2.45, dmg: 4, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
   zombie: { model: 'stickman', hp: 44, speed: 1.3, dmg: 8, xp: 3, radius: 0.42, scale: 1.45, tint: '#8fd67a', mass: 1.8 },
@@ -255,7 +261,7 @@ const THEME_ENEMIES = {
   volcano: { magmite: [30, 0.24] },
   jungle: { frog: [25, 0.3] },
   beach: { seagull: [20, 0.3] },
-  moon: { martian: [25, 0.26] },
+  west: { snake: [15, 0.26], horse: [30, 0.2], gunslinger: [45, 0.22], mule: [70, 0.18], bison: [110, 0.13] },
   graveyard: { ghost: [20, 0.3], zombie: [70, 0.18] },
   caverns: { crystalbug: [45, 0.26] },
   sky: { cloudling: [35, 0.24] },
@@ -283,7 +289,7 @@ BOSS_TYPES.geode = { name: 'Geode Titan', model: 'geode', meshes: ['geode', 'ice
 BOSS_TYPES.storm = { name: 'Storm King', model: 'stormcloud', meshes: ['stormcloud'], hp: 4400, speed: 2.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#7c86a0', mass: 60, portraitTop: 1.3 };
 BOSS_TYPES.jack = { name: 'Jack-in-the-Box', model: 'jackbox', meshes: ['jackbox', 'jackhead', 'toyblock'], hp: 4600, speed: 2.2, dmg: 20, scale: 2.3, radius: 1.3, tint: '#e83a4a', mass: 60, portraitTop: 2.0 };
 BOSS_TYPES.kraken = { name: 'Kraken', model: 'kraken', meshes: ['kraken'], hp: 4800, speed: 1.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#8a4ab0', mass: 60, portraitTop: 1.45 };
-BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 4200, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
+BOSS_TYPES.outlaw = { name: 'The Outlaw', model: 'outlaw', meshes: ['outlaw', 'dynamite', 'bison'], hp: 4200, speed: 2.7, dmg: 20, scale: 2.6, radius: 1.0, tint: '#8f5bd8', mass: 60, portraitTop: 1.15 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4000, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
 BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 3900, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
@@ -300,7 +306,7 @@ const BOSS_HINTS = {
   wreckbot: 'Wrecking-ball swings, rockets and lane slams.', bigbounce: 'Hops onto marked circles, then rolls like a pinball.',
   jellyqueen: 'Jelly spirals, slime minions and belly flops.', yeti: 'Freezing breath, icicles and a spike ring with gaps.',
   magma: 'Lava fissures and magma lobs. Brittle after it erupts.', hydra: 'Its heads snap along marked lanes.',
-  crab: 'Claw snaps, cannon fire and homing bubbles.', ufo: 'A tractor beam, sweeping lasers and invaders.',
+  crab: 'Claw snaps, cannon fire and homing bubbles.', outlaw: 'Fans the hammer, lobs dynamite and whistles up a stampede.',
   pumpking: 'Pumpkin bombs, ghost rings and pounces from the mist.', geode: 'Crystal shards, spike walls and sweeping lasers.',
   storm: 'Lightning, gusts of wind and twisters.', jack: 'Spring punches, pounces and tumbling toy blocks.',
   kraken: 'Tentacle slams, ink puddles and a whirlpool.',
@@ -330,8 +336,9 @@ const ARENAS = [
     props: [['jtree', 6, 0.45, 0.6], ['mushroom', 4, 0.5, 0.75], ['fern', 6, 0.6, 0.9], ['rock', 3, 0.8, 1.2]], zones: [['swamp', 3, 2.8, 4.2]], wall: 'bamboo' },
   { id: 'beach', name: 'Pirate Beach', floor: 8, stoneA: '#f2dcae', stoneB: '#d6b480', grout: '#8a6a44', accent: '#4fd8ff', fog: '#123a4a', sky: '#bfe8ff', ground: '#c8a878', light: '#fff6e4', spotMin: 0.62, shadowTint: '#3a4a6a', rock: '#9a8a7a', pool: '#2fb0d8', poolGlow: 0.1,
     props: [['palm', 6, 0.42, 0.55], ['barrel', 3, 0.3, 0.36], ['crate', 3, 0.34, 0.4], ['rock', 3, 0.8, 1.2], ['starfish', 4, 0.3, 0.4]], zones: [['tidepool', 3, 2.0, 3.0]], wall: 'post' },
-  { id: 'moon', name: 'Moon Base', floor: 9, stoneA: '#b8bcc8', stoneB: '#979dab', grout: '#3a3e4a', accent: '#7af0ff', fog: '#05060f', sky: '#3a4070', ground: '#2a2e40', light: '#eef2ff', spotMin: 0.5, shadowTint: '#0a0c20', rock: '#7c808c', pool: '#3ad8ff', poolGlow: 0.5,
-    props: [['dish', 2.5, 0.55, 0.7], ['lander', 2, 0.42, 0.5], ['habdome', 2, 0.9, 1.2], ['rock', 5, 0.8, 1.3]], zones: [['boost', 2.4, 2.0, 2.8]], wall: 'moonwall' },
+  { id: 'west', name: 'Wild West Town', floor: 9, stoneA: '#d6a86c', stoneB: '#c08d54', grout: '#6e4628', accent: '#ffb347', fog: '#3a1c10', sky: '#ffc488', ground: '#a8743e', light: '#fff0d8', spotMin: 0.62, shadowTint: '#4a2410', rock: '#b08a62', pool: '#1a120c', poolGlow: 0,
+    props: [['haybale', 2.4, 0.7, 0.9], ['wagon', 0.6, 1.3, 1.5], ['trough', 1.4, 0.55, 0.65]], zones: [['oil', 1, 2.0, 2.8]], wall: 'railfence',
+    kinds: ['saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp', 'derrick'] },
   { id: 'graveyard', name: 'Haunted Graveyard', floor: 10, stoneA: '#4a5a3a', stoneB: '#33402c', grout: '#221a14', accent: '#b06aff', fog: '#120c1e', sky: '#6a5a8a', ground: '#1e2420', light: '#e6deff', spotMin: 0.46, shadowTint: '#100a1e', rock: '#6a6a72', pool: '#3a2a5a', poolGlow: 0.1,
     props: [['tombstone', 10, 0.52, 0.64], ['pumpkin', 5, 0.38, 0.48], ['gravetree', 4, 0.42, 0.58], ['rock', 2, 0.8, 1.1]], zones: [['mist', 3, 2.2, 3.4]], wall: 'fence' },
   { id: 'caverns', name: 'Crystal Caverns', floor: 11, stoneA: '#3a3350', stoneB: '#2a2440', grout: '#120e1e', accent: '#5ae8ff', fog: '#0a0716', sky: '#4a3a7a', ground: '#1c1830', light: '#ebe6ff', spotMin: 0.46, shadowTint: '#0c0820', rock: '#5a5470', pool: '#7a5aff', poolGlow: 0.4,
@@ -387,10 +394,23 @@ const PROP_KINDS = {
   starfish: { models: ['starfish'], unit: 0.35, block: false, tints: ['#ff7a5a', '#ffb03a', '#c860ff', '#ff5a8a'], shadow: false },
   post: { models: ['post'], unit: 0.4, block: true, shots: true, wallR: [0.9, 1.05] },
   wreck: { models: ['wreck'], unit: 0.5, block: true, shots: true, shadow: false, tall: 3 },
-  dish: { models: ['dish'], unit: 0.4, block: true, shots: true, tall: 2 },
-  lander: { models: ['lander'], unit: 0.3, block: true, shots: true, tall: 3 },
-  habdome: { models: ['habdome'], unit: 0.6, block: true, shots: true },
-  moonwall: { models: ['moonwall'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
+  // Wild West Town: the buildings are placed by its layout as boxes (scale = width, height for the see-through fade)
+  saloon: { models: ['saloon'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  bank: { models: ['bank'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  sheriff: { models: ['sheriff'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  store: { models: ['store'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  hotel: { models: ['hotel'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  barn: { models: ['barn'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  church: { models: ['church'], unit: 0.5, block: true, shots: true, shadow: false, tall: 20 },
+  watertower: { models: ['watertower'], unit: 0.5, block: true, shots: true, tall: 4 },
+  gazebo: { models: ['gazebo'], unit: 0.5, block: true, shots: true, tall: 1.9 },
+  well: { models: ['well'], unit: 0.4, block: true, shots: true },
+  oillamp: { models: ['oillamp'], unit: 0.14, block: true, shots: false, shadow: false, tall: 11 },
+  haybale: { models: ['haybale'], unit: 0.45, block: true, shots: true },
+  wagon: { models: ['wagon'], unit: 0.55, block: true, shots: true, tall: 1.5 },
+  trough: { models: ['trough'], unit: 0.4, block: true, shots: true },
+  derrick: { models: ['derrick'], unit: 0.35, block: true, shots: false, tall: 6 },
+  railfence: { models: ['railfence'], unit: 0.5, block: true, shots: true, shadow: false, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
   basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
   tombstone: { models: ['tombstone0', 'tombstone0', 'tombstone1'], unit: 0.4, block: true, shots: true, tints: ['#8a8c96', '#777a84', '#9a98a4'], tall: 1.6 },
   pumpkin: { models: ['pumpkin'], unit: 0.36, block: true, shots: true },
@@ -426,7 +446,7 @@ const ZONE_KINDS = {
   lava: { burn: 16, slow: 0.85, col: '#f04a0c', glow: 0.3 },
   swamp: { slow: 0.6, col: '#56702c', glow: 0.03 },
   tidepool: { block: true, col: '#2fb8e0', glow: 0.12 },
-  boost: { slow: 1.35, col: '#3ad8ff', glow: 0.55 },
+  oil: { slide: true, col: '#1a120c', glow: 0 },
   mist: { slow: 0.7, col: '#7a5aa8', glow: 0.14 },
   crystalpool: { block: true, col: '#7a5aff', glow: 0.45 },
   updraft: { slow: 1.3, col: '#8fe4ff', glow: 0.35 },
@@ -436,7 +456,7 @@ const ZONE_KINDS = {
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm', 'jack', 'kraken'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 // every chapter is unique: the game ends after the last one (no repeats with stronger stats)
 const CHAPTER_COUNT = ARENAS.length;

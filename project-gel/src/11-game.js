@@ -634,7 +634,7 @@ function updateEnemyAI(e, dt) {
       if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 3.2; }
     } else {
       e.reload -= dt;
-      if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) { e.aim = 0.001; AUDIO.play('throw'); }
+      if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) { e.aim = 0.001; if (e.def.shotKind !== 'bullet') AUDIO.play('throw'); }
       if (d < 4.5) want = -e.speed * 0.6;
     }
   }
@@ -659,6 +659,10 @@ function startEnemyAct(e, d, dx, dz) {
     addTele({ kind: 'circle', x: a.cx, z: a.cz, r: a.r, dur: D.wind || 0.55 });
   } else if (D.ai === 'toss' && d > 3.5 && d < 8.5 && onScreen(e.x, e.z, -0.5)) {
     a = { kind: 'toss', clip: 'throw' };
+  } else if (D.ai === 'charge' && d > 2 && d < 7.5 && onScreen(e.x, e.z, -0.3)) {
+    // paws the ground over a long lane warning, then thunders straight down it
+    a = { kind: 'charge', clip: 'slam', dir: [dx, dz] };
+    addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.6, len: 8.5, rot: Math.atan2(dx, dz), dur: 0.75 });
   } else if (D.ai === 'bomb' && d < 1.6) {
     a = { kind: 'bomb', clip: 'idle' };
     addTele({ kind: 'circle', x: e.x, z: e.z, r: 1.8, dur: 0.75 });
@@ -701,6 +705,15 @@ function enemyAct(e, dt, d, dx, dz) {
     else if (!a.done) { a.done = true; a.u = 0.62; throwJavelin(e, D.hit * mul); }
     else if (a.t < 0.85) a.u = 0.62 + (a.t - 0.5) / 0.35 * 0.37;
     else { e.act = null; e.cool = 3.2; }
+  } else if (a.kind === 'charge') {
+    e.yaw = angleLerp(e.yaw, Math.atan2(a.dir[0], a.dir[1]), Math.min(1, dt * 14));
+    if (a.t < 0.75) a.u = a.t / 0.75 * 0.5;
+    else if (a.t < 1.33) {
+      a.clip = 'run'; a.u = (a.t * 3.2) % 1;
+      e.x += a.dir[0] * 14 * dt; e.z += a.dir[1] * 14 * dt;
+      if (!a.hit && Math.hypot(h[0] - e.x, h[2] - e.z) < e.radius + HERO_R + 0.25) { a.hit = true; hurtHero(D.hit * mul, e.x, e.z); run.vel[0] += a.dir[0] * 8; run.vel[2] += a.dir[1] * 8; }
+      if (Math.random() < 0.6) FX.burst(e.x - a.dir[0] * 0.5, 0.15, e.z - a.dir[1] * 0.5, 1, [0.78, 0.62, 0.45], 2, 0.12, 0.45, 2);
+    } else { e.act = null; e.cool = 4.2; }
   } else if (a.kind === 'bomb') {
     e.flash = Math.sin(a.t * 32) > 0 ? 0.05 : 0;
     a.u = (a.t * 2) % 1;
@@ -729,8 +742,9 @@ function throwJavelin(e, dmg) {
 }
 
 function fireArrow(e) {
+  if (e.def.shotKind === 'bullet') AUDIO.play('bang');
   const h = G.hero.pos, dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
-  G.run.eShots.push({ kind: e.def.shotKind || 'arrow', ph: rand(0, 10), x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * 10, vy: 0, vz: dz / d * 10, dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
+  G.run.eShots.push({ kind: e.def.shotKind || 'arrow', ph: rand(0, 10), x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * (e.def.shotSpeed || 10), vy: 0, vz: dz / d * (e.def.shotSpeed || 10), dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
 }
 
 function updateEnemyShots(dt) {

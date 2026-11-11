@@ -87,7 +87,7 @@ Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Condu
 | 7 | Volcano (lava burns, erupting vents) | Magma Golem | Meteor (skill) | done |
 | 8 | Jungle Swamp (swamp slows, fireflies) | Vine Hydra | Thorns (ability) | done |
 | 9 | Pirate Beach (tide pools, shipwreck) | Captain Crab | Tidal Wave (skill) | done |
-| 10 | Moon Base (energy pads speed you up) | UFO Overlord + Charger | Black Hole (skill) | done |
+| 10 | Wild West Town (saloons, banks, a bandstand square, a corral, oil slicks you slide on; rattlesnakes, wild horses, gunslingers, pack mules, charging bison; Thunder Bison miniboss) | The Outlaw | Black Hole (skill) | done |
 | 11 | Haunted Graveyard (mist slows, jack-o'-lanterns, will-o'-wisps) | Pumpkin King | Spirit Wisps (skill) | done |
 | 12 | Crystal Caverns (glowing crystal veins, crystal pools) | Geode Titan | Prism Beam (skill) | done |
 | 13 | Sky Islands (cloud floor, rainbows, updrafts speed you up) | Storm King | Gale Crescents (skill) | done |
@@ -103,7 +103,7 @@ Boss mechanics in short:
 - Magma Golem: lava fissures and magma lobs; after its eruption it is cooled and takes extra damage.
 - Vine Hydra: heads snap along lanes and spit seeds, and roots snare you.
 - Captain Crab: claw snaps, a walking cannon line, homing bubbles and a sideways dash.
-- UFO Overlord: a tractor beam, sweeping lasers and beamed-down invaders.
+- The Outlaw: keeps his distance and circles; fans the hammer (a marked cone of bullets, 2-3 volleys), lobs dynamite on marked circles, and whistles up a bison stampede along marked lanes with gaps to stand in. Buildings, hay and wagons stop his bullets.
 - Pumpkin King: jack-o'-lantern bombs, rings of red ghosts with a gap, and fading into the mist to pounce on a marked spot.
 - Geode Titan: fans of crystal shards, lines of crystal spikes that stay as walls, and sweeping prism lasers.
 - Storm King: lightning on marked circles in waves, a wind gust along a lane that shoves you, and twisters that chase you. It floats, and its face stays turned to the camera.
@@ -307,7 +307,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `check-goals.mjs [wide|phone]`: run counters, the toast and menu dot, claiming once, the goal colors not for sale, screenshots.
   - `check-rush.mjs`: Boss Rush from the unlock through all 15 bosses (cards, picks, healing) to CHAMPION, then a lost rush.
   - `check-parallel.mjs`: fakes `KHR_parallel_shader_compile`, then checks that every shader finishes in the background and that nothing queries one early.
-- **Scratch scripts** (git-ignored `test/_*.mjs`, recreate as needed): `_boss.mjs` (`CH=13 STEPS=60,75,90`) forces each attack of a chapter's boss and photographs it; `_cos.mjs` renders costume or color sheets; `_icon.mjs` (`IDS=gale,yoyo`) shows skill icons; `_chap.mjs` (`CH=13`) photographs the Chapters screen.
+- **Scratch scripts** (git-ignored `test/_*.mjs`, recreate as needed): `_west.mjs` photographs the Wild West town from several spots, its creatures attacking and each of The Outlaw's attacks; `_boss.mjs` (`CH=13 STEPS=60,75,90`) forces each attack of a chapter's boss and photographs it; `_cos.mjs` renders costume or color sheets; `_icon.mjs` (`IDS=gale,yoyo`) shows skill icons; `_chap.mjs` (`CH=13`) photographs the Chapters screen.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.
   - `roster`: every enemy type in a row, plain and elite.

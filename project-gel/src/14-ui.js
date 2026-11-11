@@ -449,6 +449,7 @@ const UI = {
     setTimeout(() => this.revealChest(), 2000);
   },
   revealChest() {
+    if (!G.run) return; // the run ended while the chest was spinning
     const res = $('chRes'), rows = [];
     if (this.chestEvo) {
       const id = this.chestEvo, E = EVOLUTIONS[id];

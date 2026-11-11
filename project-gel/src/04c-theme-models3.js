@@ -1,11 +1,11 @@
 // ============================================================
-// Chapters 1-10: each map's own enemy, and the Stone Plaza's own obstacles. Built with prop() like
+// Chapters 1-9: each map's own enemy (chapter 10's are in 04d), and the Stone Plaza's own obstacles. Built with prop() like
 // 04a/04b. Model units: 1 is about one hero leg. Parts without col take the instance tint.
 // ============================================================
-Object.assign(THEME_CLIPS, { pigeon: ['run'], scarab: ['run'], rat: ['run'], balloon: ['run'], gummy: ['run'], penguin: ['run'], magmite: ['run'], frog: ['run'], seagull: ['run'], martian: ['run'] });
+Object.assign(THEME_CLIPS, { pigeon: ['run'], scarab: ['run'], rat: ['run'], balloon: ['run'], gummy: ['run'], penguin: ['run'], magmite: ['run'], frog: ['run'], seagull: ['run'] });
 Object.assign(THEME_CELLS, { statue: 0.022, fountain: 0.03, bench: 0.022,
-  pigeon: 0.018, scarab: 0.018, rat: 0.016, balloon: 0.02, gummy: 0.02, penguin: 0.02, magmite: 0.02, frog: 0.018, seagull: 0.018, martian: 0.018 });
-MESH_ORDER.push('statue', 'fountain', 'bench', 'pigeon', 'scarab', 'rat', 'balloon', 'gummy', 'penguin', 'magmite', 'frog', 'seagull', 'martian');
+  pigeon: 0.018, scarab: 0.018, rat: 0.016, balloon: 0.02, gummy: 0.02, penguin: 0.02, magmite: 0.02, frog: 0.018, seagull: 0.018 });
+MESH_ORDER.push('statue', 'fountain', 'bench', 'pigeon', 'scarab', 'rat', 'balloon', 'gummy', 'penguin', 'magmite', 'frog', 'seagull');
 
 function themeModels3(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -145,17 +145,4 @@ function themeModels3(defs) {
     { s: 'ell', c: [0, 0.5, -0.36], rr: [0.1, 0.03, 0.12], col: C('#a8b4c4'), k: 0.03 },
     { s: 'cap', a: [0.06, 0.34, 0], b: [0.06, 0.16, 0.02], r: 0.02, col: orange, k: 0.01 }, { s: 'cap', a: [-0.06, 0.34, 0], b: [-0.06, 0.16, 0.02], r: 0.02, col: orange, k: 0.01 },
   ], { ao: 0.4 });
-  // moon martian: a little green alien (the tint) with a big head, black eyes, an antenna and a ray gun
-  P('martian', [
-    { s: 'ell', c: [0, 0.32, 0], rr: [0.16, 0.22, 0.14], k: 0.05 },
-    { s: 'ell', c: [0, 0.72, 0.02], rr: [0.26, 0.22, 0.22], k: 0.06 },
-    { s: 'ell', c: [0.11, 0.72, 0.18], rr: [0.08, 0.05, 0.05], col: dark, k: 0 }, { s: 'ell', c: [-0.11, 0.72, 0.18], rr: [0.08, 0.05, 0.05], col: dark, k: 0 },
-    { s: 'sph', c: [0.13, 0.74, 0.22], r: 0.015, col: white, k: 0 }, { s: 'sph', c: [-0.09, 0.74, 0.22], r: 0.015, col: white, k: 0 },
-    { s: 'cap', a: [0, 0.92, 0], b: [0.06, 1.08, -0.02], r: 0.015, k: 0.01 }, { s: 'sph', c: [0.06, 1.1, -0.02], r: 0.04, col: C('#ff5fb8'), k: 0 },
-    { s: 'cap', a: [0.14, 0.42, 0], b: [0.24, 0.36, 0.2], r: 0.04, k: 0.03 },
-    { s: 'box', c: [0.26, 0.37, 0.28], hs: [0.04, 0.05, 0.1], rd: 0.02, col: C('#c8d0e0'), k: 0.01 },
-    { s: 'sph', c: [0.26, 0.38, 0.4], r: 0.035, col: C('#5af0ff'), k: 0 },
-    { s: 'cap', a: [-0.14, 0.42, 0], b: [-0.2, 0.24, 0.04], r: 0.04, k: 0.03 },
-    { s: 'cap', a: [0.07, 0.14, 0], b: [0.08, 0.02, 0.06], r: 0.05, k: 0.03 }, { s: 'cap', a: [-0.07, 0.14, 0], b: [-0.08, 0.02, 0.06], r: 0.05, k: 0.03 },
-  ], { ao: 0.5 });
 }

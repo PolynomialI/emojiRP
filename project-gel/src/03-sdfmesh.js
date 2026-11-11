@@ -53,6 +53,17 @@ function partDist(pt, x, y, z) {
       const qx = Math.abs(x - pt.c[0]) - pt.hs[0] + pt.rd, qy = Math.abs(y - pt.c[1]) - pt.hs[1] + pt.rd, qz = Math.abs(z - pt.c[2]) - pt.hs[2] + pt.rd;
       return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - pt.rd;
     }
+    case 'gable': {
+      // a pitched roof: an isosceles triangle (half base w, height h, base at c.y) run along 'ax' ('z', or 'x') for half length hh
+      let px, pz;
+      if (pt.ax === 'x') { px = Math.abs(z - pt.c[2]); pz = Math.abs(x - pt.c[0]) - pt.hh; } else { px = Math.abs(x - pt.c[0]); pz = Math.abs(z - pt.c[2]) - pt.hh; }
+      const py = pt.c[1] + pt.h - y, qx = pt.w, qy = pt.h;
+      const ta = clamp((px * qx + py * qy) / (qx * qx + qy * qy), 0, 1), ax = px - qx * ta, ay = py - qy * ta;
+      const bx = px - qx * clamp(px / qx, 0, 1), by = py - qy;
+      const dd = Math.min(ax * ax + ay * ay, bx * bx + by * by), sg = Math.min(py * qx - px * qy, qy - py);
+      const d2 = -Math.sqrt(dd) * Math.sign(sg);
+      return Math.min(Math.max(d2, pz), 0) + Math.hypot(Math.max(d2, 0), Math.max(pz, 0));
+    }
     case 'rock': {
       // lumpy sphere: sphere plus low-frequency bumps
       const dx = x - pt.c[0], dy = y - pt.c[1], dz = z - pt.c[2];
@@ -73,6 +84,7 @@ function partBounds(pt) {
     case 'tor': return [pt.c, pt.R + pt.r];
     case 'box': return [pt.c, Math.hypot(...pt.hs)];
     case 'rock': return [pt.c, pt.r * (1 + pt.bump * 0.8)];
+    case 'gable': return [[pt.c[0], pt.c[1] + pt.h / 2, pt.c[2]], Math.hypot(pt.w, pt.h / 2, pt.hh)];
   }
   return [[0, 0, 0], 1e9];
 }

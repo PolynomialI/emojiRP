@@ -234,6 +234,7 @@ function modelDefs() {
   themeModels(defs);
   themeModels2(defs);
   themeModels3(defs);
+  westModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -265,6 +266,8 @@ function crownModel(base) {
 // ------------------------------------------------------------
 const CLIPS = {
   run: { frames: 32, fn(t, m) {
+    if (m.quad) return quadRun(t, m);
+    if (m.snake) return snakeRun(t);
     const ph = t * TAU, s = Math.sin(ph), c = Math.cos(ph), A = m.runAmp || 1, lean = m.lean || 0.14;
     const armL = m.shieldArm ? 0.15 : 1;
     return { root: [0, 0.028 * Math.cos(2 * ph) - 0.01, 0], rot: [
@@ -280,13 +283,15 @@ const CLIPS = {
     return { root: [0, 0.006 * s, 0], rot: [[0, 0, 0], [0.04 + 0.02 * s, 0, 0], [-0.03, 0.08 * s, 0], [0.05, 0, 0.14 + 0.03 * s], [-0.35, 0, 0],
       [0.05, 0, -0.14 - 0.03 * s], [-0.35, 0, 0], [0, 0, 0.02], [0.05, 0, 0], [0, 0, -0.02], [0.05, 0, 0]] };
   } },
-  aim: { frames: 16, fn(t) {
+  aim: { frames: 16, fn(t, m) {
+    if (m.gun) return gunAim(t, m);
     const draw = smoothstep(0, 0.7, t) * (1 - smoothstep(0.75, 0.85, t));
     return { root: [0, -0.01, 0], rot: [[0, -0.3, 0], [0.06, -0.15, 0], [-0.08, 0.35, 0],
       [-1.4, 0, 0.1], [-0.08, 0, 0], [-1.25, 0, -0.35], [-0.2 - 1.2 * draw, 0.6 * draw, 0],
       [-0.12, 0, 0.05], [0.18, 0, 0], [0.1, 0, -0.05], [0.12, 0, 0]] };
   } },
-  slam: { frames: 24, fn(t) {
+  slam: { frames: 24, fn(t, m) {
+    if (m.quad) return quadBuck(t);
     const up = smoothstep(0, 0.55, t), down = smoothstep(0.55, 0.68, t), rec = smoothstep(0.8, 1, t);
     const arm = lerp(lerp(0, -2.7, up), -0.5, down) * (1 - rec) + rec * 0;
     const lean = lerp(lerp(0, -0.25, up), 0.45, down) * (1 - rec);
@@ -295,7 +300,8 @@ const CLIPS = {
       [arm, 0, 0.25], [-0.3 * (1 - down), 0, 0], [arm, 0, -0.25], [-0.3 * (1 - down), 0, 0],
       [-0.3 * down * (1 - rec), 0, 0.08], [0.5 * down * (1 - rec), 0, 0], [-0.3 * down * (1 - rec), 0, -0.08], [0.5 * down * (1 - rec), 0, 0]] };
   } },
-  throw: { frames: 24, fn(t) {
+  throw: { frames: 24, fn(t, m) {
+    if (m.snake) return snakeStrike(t);
     const back = smoothstep(0, 0.55, t), fwd = smoothstep(0.55, 0.7, t), rec = smoothstep(0.75, 1, t);
     const k = 1 - rec;
     const armR = (lerp(0, -2.6, back) + 2.0 * fwd) * k;

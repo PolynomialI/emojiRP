@@ -53,7 +53,7 @@ const res = await page.evaluate(() => {
 });
 for (const l of res.log) console.log('   ', JSON.stringify(l));
 const order = res.log.map(l => l.types[0]).join(',');
-check(res.log.length === 15 && order === 'stomper,sandworm,wreckbot,bigbounce,jellyqueen,yeti,magma,hydra,crab,ufo,pumpking,geode,storm,jack,kraken', 'every chapter boss in order');
+check(res.log.length === 15 && order === 'stomper,sandworm,wreckbot,bigbounce,jellyqueen,yeti,magma,hydra,crab,outlaw,pumpking,geode,storm,jack,kraken', 'every chapter boss in order');
 check(res.log.slice(0, -1).every(l => l.picks === 3 && l.healed > 0.6), 'between bosses: 3 picks and 35% health back');
 check(res.log.every(l => l.card), 'an intro card for every boss');
 check(res.state === 'results' && res.best === 15 && res.time > 0 && /CHAMPION/.test(res.title || ''), `full clear: ${res.title}, best ${res.best}, time ${res.time}, reward ${res.reward}`);

@@ -8,8 +8,7 @@ const THEME_CELLS = { gooblin: 0.018, lollipop: 0.018, candycane: 0.02, gumdrop:
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
   jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
-  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02,
-  dish: 0.02, lander: 0.02, habdome: 0.03, moonwall: 0.025, ufo: 0.02, alien: 0.014 };
+  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('gooblin', 'cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
@@ -18,8 +17,7 @@ MESH_ORDER.push('gooblin', 'cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhea
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
   'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
   'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg',
-  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg',
-  'dish', 'lander', 'habdome', 'moonwall', 'ufo', 'alien');
+  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- the Golden Gooblin: a gold blob with a loot sack, grinning; the body takes the tint ----------
@@ -518,65 +516,6 @@ function themeModels(defs) {
     P('crableg', [
       { s: 'cap', a: [0, 0.4, 0], b: [0, 0.58, 0.35], r: 0.06, k: 0.02 },
       { s: 'cap', a: [0, 0.58, 0.35], b: [0, 0.02, 0.62], r: 0.05, r2: 0.02, k: 0.02 },
-    ]);
-  }
-  // ---------- Moon Base ----------
-  {
-    const metal = C('#d8dce6'), metalD = C('#8a90a0'), dark = C('#2a2e3a'), red = C('#ff4a5a'), glow = C('#7af0ff'), yel = C('#ffcf3a'), glass = C('#3a5a8a');
-    // a radar dish looking up at the sky
-    P('dish', [
-      { s: 'cyl', ax: 'y', c: [0, 0.08, 0], r: 0.3, hh: 0.08, rd: 0.03, col: metalD, k: 0 },
-      { s: 'cap', a: [0, 0.1, 0], b: [0, 0.75, 0], r: 0.06, col: metalD, k: 0.02 },
-      { s: 'ell', c: [0, 0.85, 0], rr: [0.48, 0.1, 0.48], col: metal, k: 0.02 },
-      { s: 'tor', ax: 'y', c: [0, 0.9, 0], R: 0.46, r: 0.03, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
-      { s: 'cap', a: [0, 0.9, 0], b: [0, 1.25, 0], r: 0.025, col: dark, k: 0 },
-      { s: 'sph', c: [0, 1.27, 0], r: 0.05, col: red, k: 0 },
-    ]);
-    // a little moon lander rocket
-    P('lander', [
-      { s: 'cap', a: [0, 0.25, 0], b: [0, 1.2, 0], r: 0.24, r2: 0.2, col: metal, k: 0.02 },
-      { s: 'cap', a: [0, 1.2, 0], b: [0, 1.6, 0], r: 0.2, r2: 0.03, col: red, k: 0.02 },
-      { s: 'sph', c: [0, 1.0, 0.2], r: 0.08, col: glass, k: 0 },
-      { s: 'tor', ax: 'z', c: [0, 1.0, 0.2], R: 0.085, r: 0.02, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
-      ...[0, 2.09, 4.19].map(a => ({ s: 'cap', a: [Math.cos(a) * 0.2, 0.5, Math.sin(a) * 0.2], b: [Math.cos(a) * 0.42, 0.02, Math.sin(a) * 0.42], r: 0.05, r2: 0.03, col: red, k: 0.02 })),
-      { s: 'cyl', ax: 'y', c: [0, 0.2, 0], r: 0.14, hh: 0.06, rd: 0.02, col: dark, k: 0 },
-    ]);
-    // a habitat dome with a ring of windows and a door
-    P('habdome', [
-      { s: 'ell', c: [0, 0.05, 0], rr: [0.6, 0.48, 0.6], col: metal, k: 0.02 },
-      { s: 'cyl', ax: 'y', c: [0, 0.04, 0], r: 0.62, hh: 0.05, rd: 0.02, col: metalD, k: 0.01 },
-      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.5, 0.25, Math.sin(a) * 0.5], r: 0.07, col: glow, k: 0 }; }),
-      { s: 'box', c: [0, 0.15, 0.58], hs: [0.12, 0.15, 0.05], rd: 0.03, col: metalD, k: 0.01 },
-      { s: 'sph', c: [0, 0.5, 0], r: 0.08, col: yel, k: 0 },
-    ]);
-    // the base perimeter: metal panels with a hazard stripe and a light, facing in
-    P('moonwall', [
-      { s: 'box', c: [0, 0.42, 0], hs: [0.5, 0.42, 0.12], rd: 0.04, col: metalD, k: 0 },
-      { s: 'box', c: [0, 0.62, 0.121], hs: [0.46, 0.05, 0.005], rd: 0, col: yel, k: 0 },
-      { s: 'box', c: [0, 0.05, 0], hs: [0.5, 0.05, 0.2], rd: 0.02, col: dark, k: 0.01 },
-      { s: 'sph', c: [0.36, 0.84, 0.05], r: 0.05, col: glow, k: 0 },
-    ], { ao: 0.8 });
-  }
-  // ---------- UFO Overlord (chapter 10 boss): a spinning saucer (takes the tint) and its little green pilot ----------
-  {
-    const metal = C('#e2e6f0'), dark = C('#2a2440'), lightY = C('#ffe060'), lightC = C('#7af0ff'), green = C('#7dff6a'), eye = C('#101018');
-    P('ufo', [
-      { s: 'ell', c: [0, 0.5, 0], rr: [0.92, 0.16, 0.92], k: 0.04 },
-      { s: 'ell', c: [0, 0.4, 0], rr: [0.55, 0.14, 0.55], col: metal, k: 0.04 },
-      { s: 'tor', ax: 'y', c: [0, 0.5, 0], R: 0.86, r: 0.05, a0: -Math.PI, a1: Math.PI, col: metal, k: 0.01 },
-      ...Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.9, 0.5, Math.sin(a) * 0.9], r: 0.055, col: i % 2 ? lightY : lightC, k: 0 }; }),
-      { s: 'cyl', ax: 'y', c: [0, 0.66, 0], r: 0.36, hh: 0.04, rd: 0.03, col: dark, k: 0.01 },
-      { s: 'tor', ax: 'y', c: [0, 0.69, 0], R: 0.36, r: 0.04, a0: -Math.PI, a1: Math.PI, col: metal, k: 0 },
-      { s: 'sph', c: [0, 0.28, 0], r: 0.2, col: lightC, k: 0.03 },
-    ]);
-    // the pilot: a big green head with huge black eyes and antennae, sitting in the cockpit
-    P('alien', [
-      { s: 'cap', a: [0, 0.0, 0], b: [0, 0.2, 0], r: 0.12, col: green, k: 0.03 },
-      { s: 'ell', c: [0, 0.38, 0.02], rr: [0.26, 0.22, 0.22], col: green, k: 0.05 },
-      { s: 'ell', c: [0, 0.28, 0.12], rr: [0.13, 0.12, 0.12], col: green, k: 0.06 },
-      { s: 'ell', c: [0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 }, { s: 'ell', c: [-0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 },
-      { s: 'cap', a: [0.08, 0.56, 0], b: [0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 }, { s: 'cap', a: [-0.08, 0.56, 0], b: [-0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 },
-      { s: 'sph', c: [0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 }, { s: 'sph', c: [-0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 },
     ]);
   }
 }

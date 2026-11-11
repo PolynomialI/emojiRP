@@ -895,6 +895,17 @@ function partDist(pt, x, y, z) {
       const qx = Math.abs(x - pt.c[0]) - pt.hs[0] + pt.rd, qy = Math.abs(y - pt.c[1]) - pt.hs[1] + pt.rd, qz = Math.abs(z - pt.c[2]) - pt.hs[2] + pt.rd;
       return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - pt.rd;
     }
+    case 'gable': {
+      // a pitched roof: an isosceles triangle (half base w, height h, base at c.y) run along 'ax' ('z', or 'x') for half length hh
+      let px, pz;
+      if (pt.ax === 'x') { px = Math.abs(z - pt.c[2]); pz = Math.abs(x - pt.c[0]) - pt.hh; } else { px = Math.abs(x - pt.c[0]); pz = Math.abs(z - pt.c[2]) - pt.hh; }
+      const py = pt.c[1] + pt.h - y, qx = pt.w, qy = pt.h;
+      const ta = clamp((px * qx + py * qy) / (qx * qx + qy * qy), 0, 1), ax = px - qx * ta, ay = py - qy * ta;
+      const bx = px - qx * clamp(px / qx, 0, 1), by = py - qy;
+      const dd = Math.min(ax * ax + ay * ay, bx * bx + by * by), sg = Math.min(py * qx - px * qy, qy - py);
+      const d2 = -Math.sqrt(dd) * Math.sign(sg);
+      return Math.min(Math.max(d2, pz), 0) + Math.hypot(Math.max(d2, 0), Math.max(pz, 0));
+    }
     case 'rock': {
       // lumpy sphere: sphere plus low-frequency bumps
       const dx = x - pt.c[0], dy = y - pt.c[1], dz = z - pt.c[2];
@@ -915,6 +926,7 @@ function partBounds(pt) {
     case 'tor': return [pt.c, pt.R + pt.r];
     case 'box': return [pt.c, Math.hypot(...pt.hs)];
     case 'rock': return [pt.c, pt.r * (1 + pt.bump * 0.8)];
+    case 'gable': return [[pt.c[0], pt.c[1] + pt.h / 2, pt.c[2]], Math.hypot(pt.w, pt.h / 2, pt.hh)];
   }
   return [[0, 0, 0], 1e9];
 }
@@ -1315,6 +1327,7 @@ function modelDefs() {
   themeModels(defs);
   themeModels2(defs);
   themeModels3(defs);
+  westModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -1346,6 +1359,8 @@ function crownModel(base) {
 // ------------------------------------------------------------
 const CLIPS = {
   run: { frames: 32, fn(t, m) {
+    if (m.quad) return quadRun(t, m);
+    if (m.snake) return snakeRun(t);
     const ph = t * TAU, s = Math.sin(ph), c = Math.cos(ph), A = m.runAmp || 1, lean = m.lean || 0.14;
     const armL = m.shieldArm ? 0.15 : 1;
     return { root: [0, 0.028 * Math.cos(2 * ph) - 0.01, 0], rot: [
@@ -1361,13 +1376,15 @@ const CLIPS = {
     return { root: [0, 0.006 * s, 0], rot: [[0, 0, 0], [0.04 + 0.02 * s, 0, 0], [-0.03, 0.08 * s, 0], [0.05, 0, 0.14 + 0.03 * s], [-0.35, 0, 0],
       [0.05, 0, -0.14 - 0.03 * s], [-0.35, 0, 0], [0, 0, 0.02], [0.05, 0, 0], [0, 0, -0.02], [0.05, 0, 0]] };
   } },
-  aim: { frames: 16, fn(t) {
+  aim: { frames: 16, fn(t, m) {
+    if (m.gun) return gunAim(t, m);
     const draw = smoothstep(0, 0.7, t) * (1 - smoothstep(0.75, 0.85, t));
     return { root: [0, -0.01, 0], rot: [[0, -0.3, 0], [0.06, -0.15, 0], [-0.08, 0.35, 0],
       [-1.4, 0, 0.1], [-0.08, 0, 0], [-1.25, 0, -0.35], [-0.2 - 1.2 * draw, 0.6 * draw, 0],
       [-0.12, 0, 0.05], [0.18, 0, 0], [0.1, 0, -0.05], [0.12, 0, 0]] };
   } },
-  slam: { frames: 24, fn(t) {
+  slam: { frames: 24, fn(t, m) {
+    if (m.quad) return quadBuck(t);
     const up = smoothstep(0, 0.55, t), down = smoothstep(0.55, 0.68, t), rec = smoothstep(0.8, 1, t);
     const arm = lerp(lerp(0, -2.7, up), -0.5, down) * (1 - rec) + rec * 0;
     const lean = lerp(lerp(0, -0.25, up), 0.45, down) * (1 - rec);
@@ -1376,7 +1393,8 @@ const CLIPS = {
       [arm, 0, 0.25], [-0.3 * (1 - down), 0, 0], [arm, 0, -0.25], [-0.3 * (1 - down), 0, 0],
       [-0.3 * down * (1 - rec), 0, 0.08], [0.5 * down * (1 - rec), 0, 0], [-0.3 * down * (1 - rec), 0, -0.08], [0.5 * down * (1 - rec), 0, 0]] };
   } },
-  throw: { frames: 24, fn(t) {
+  throw: { frames: 24, fn(t, m) {
+    if (m.snake) return snakeStrike(t);
     const back = smoothstep(0, 0.55, t), fwd = smoothstep(0.55, 0.7, t), rec = smoothstep(0.75, 1, t);
     const k = 1 - rec;
     const armR = (lerp(0, -2.6, back) + 2.0 * fwd) * k;
@@ -1498,8 +1516,7 @@ const THEME_CELLS = { gooblin: 0.018, lollipop: 0.018, candycane: 0.02, gumdrop:
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
   jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
-  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02,
-  dish: 0.02, lander: 0.02, habdome: 0.03, moonwall: 0.025, ufo: 0.02, alien: 0.014 };
+  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('gooblin', 'cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
@@ -1508,8 +1525,7 @@ MESH_ORDER.push('gooblin', 'cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhea
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
   'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
   'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg',
-  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg',
-  'dish', 'lander', 'habdome', 'moonwall', 'ufo', 'alien');
+  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- the Golden Gooblin: a gold blob with a loot sack, grinning; the body takes the tint ----------
@@ -2010,65 +2026,6 @@ function themeModels(defs) {
       { s: 'cap', a: [0, 0.58, 0.35], b: [0, 0.02, 0.62], r: 0.05, r2: 0.02, k: 0.02 },
     ]);
   }
-  // ---------- Moon Base ----------
-  {
-    const metal = C('#d8dce6'), metalD = C('#8a90a0'), dark = C('#2a2e3a'), red = C('#ff4a5a'), glow = C('#7af0ff'), yel = C('#ffcf3a'), glass = C('#3a5a8a');
-    // a radar dish looking up at the sky
-    P('dish', [
-      { s: 'cyl', ax: 'y', c: [0, 0.08, 0], r: 0.3, hh: 0.08, rd: 0.03, col: metalD, k: 0 },
-      { s: 'cap', a: [0, 0.1, 0], b: [0, 0.75, 0], r: 0.06, col: metalD, k: 0.02 },
-      { s: 'ell', c: [0, 0.85, 0], rr: [0.48, 0.1, 0.48], col: metal, k: 0.02 },
-      { s: 'tor', ax: 'y', c: [0, 0.9, 0], R: 0.46, r: 0.03, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
-      { s: 'cap', a: [0, 0.9, 0], b: [0, 1.25, 0], r: 0.025, col: dark, k: 0 },
-      { s: 'sph', c: [0, 1.27, 0], r: 0.05, col: red, k: 0 },
-    ]);
-    // a little moon lander rocket
-    P('lander', [
-      { s: 'cap', a: [0, 0.25, 0], b: [0, 1.2, 0], r: 0.24, r2: 0.2, col: metal, k: 0.02 },
-      { s: 'cap', a: [0, 1.2, 0], b: [0, 1.6, 0], r: 0.2, r2: 0.03, col: red, k: 0.02 },
-      { s: 'sph', c: [0, 1.0, 0.2], r: 0.08, col: glass, k: 0 },
-      { s: 'tor', ax: 'z', c: [0, 1.0, 0.2], R: 0.085, r: 0.02, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
-      ...[0, 2.09, 4.19].map(a => ({ s: 'cap', a: [Math.cos(a) * 0.2, 0.5, Math.sin(a) * 0.2], b: [Math.cos(a) * 0.42, 0.02, Math.sin(a) * 0.42], r: 0.05, r2: 0.03, col: red, k: 0.02 })),
-      { s: 'cyl', ax: 'y', c: [0, 0.2, 0], r: 0.14, hh: 0.06, rd: 0.02, col: dark, k: 0 },
-    ]);
-    // a habitat dome with a ring of windows and a door
-    P('habdome', [
-      { s: 'ell', c: [0, 0.05, 0], rr: [0.6, 0.48, 0.6], col: metal, k: 0.02 },
-      { s: 'cyl', ax: 'y', c: [0, 0.04, 0], r: 0.62, hh: 0.05, rd: 0.02, col: metalD, k: 0.01 },
-      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.5, 0.25, Math.sin(a) * 0.5], r: 0.07, col: glow, k: 0 }; }),
-      { s: 'box', c: [0, 0.15, 0.58], hs: [0.12, 0.15, 0.05], rd: 0.03, col: metalD, k: 0.01 },
-      { s: 'sph', c: [0, 0.5, 0], r: 0.08, col: yel, k: 0 },
-    ]);
-    // the base perimeter: metal panels with a hazard stripe and a light, facing in
-    P('moonwall', [
-      { s: 'box', c: [0, 0.42, 0], hs: [0.5, 0.42, 0.12], rd: 0.04, col: metalD, k: 0 },
-      { s: 'box', c: [0, 0.62, 0.121], hs: [0.46, 0.05, 0.005], rd: 0, col: yel, k: 0 },
-      { s: 'box', c: [0, 0.05, 0], hs: [0.5, 0.05, 0.2], rd: 0.02, col: dark, k: 0.01 },
-      { s: 'sph', c: [0.36, 0.84, 0.05], r: 0.05, col: glow, k: 0 },
-    ], { ao: 0.8 });
-  }
-  // ---------- UFO Overlord (chapter 10 boss): a spinning saucer (takes the tint) and its little green pilot ----------
-  {
-    const metal = C('#e2e6f0'), dark = C('#2a2440'), lightY = C('#ffe060'), lightC = C('#7af0ff'), green = C('#7dff6a'), eye = C('#101018');
-    P('ufo', [
-      { s: 'ell', c: [0, 0.5, 0], rr: [0.92, 0.16, 0.92], k: 0.04 },
-      { s: 'ell', c: [0, 0.4, 0], rr: [0.55, 0.14, 0.55], col: metal, k: 0.04 },
-      { s: 'tor', ax: 'y', c: [0, 0.5, 0], R: 0.86, r: 0.05, a0: -Math.PI, a1: Math.PI, col: metal, k: 0.01 },
-      ...Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.9, 0.5, Math.sin(a) * 0.9], r: 0.055, col: i % 2 ? lightY : lightC, k: 0 }; }),
-      { s: 'cyl', ax: 'y', c: [0, 0.66, 0], r: 0.36, hh: 0.04, rd: 0.03, col: dark, k: 0.01 },
-      { s: 'tor', ax: 'y', c: [0, 0.69, 0], R: 0.36, r: 0.04, a0: -Math.PI, a1: Math.PI, col: metal, k: 0 },
-      { s: 'sph', c: [0, 0.28, 0], r: 0.2, col: lightC, k: 0.03 },
-    ]);
-    // the pilot: a big green head with huge black eyes and antennae, sitting in the cockpit
-    P('alien', [
-      { s: 'cap', a: [0, 0.0, 0], b: [0, 0.2, 0], r: 0.12, col: green, k: 0.03 },
-      { s: 'ell', c: [0, 0.38, 0.02], rr: [0.26, 0.22, 0.22], col: green, k: 0.05 },
-      { s: 'ell', c: [0, 0.28, 0.12], rr: [0.13, 0.12, 0.12], col: green, k: 0.06 },
-      { s: 'ell', c: [0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 }, { s: 'ell', c: [-0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 },
-      { s: 'cap', a: [0.08, 0.56, 0], b: [0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 }, { s: 'cap', a: [-0.08, 0.56, 0], b: [-0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 },
-      { s: 'sph', c: [0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 }, { s: 'sph', c: [-0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 },
-    ]);
-  }
 }
 
 // ============================================================
@@ -2470,13 +2427,13 @@ function themeModels2(defs) {
 }
 
 // ============================================================
-// Chapters 1-10: each map's own enemy, and the Stone Plaza's own obstacles. Built with prop() like
+// Chapters 1-9: each map's own enemy (chapter 10's are in 04d), and the Stone Plaza's own obstacles. Built with prop() like
 // 04a/04b. Model units: 1 is about one hero leg. Parts without col take the instance tint.
 // ============================================================
-Object.assign(THEME_CLIPS, { pigeon: ['run'], scarab: ['run'], rat: ['run'], balloon: ['run'], gummy: ['run'], penguin: ['run'], magmite: ['run'], frog: ['run'], seagull: ['run'], martian: ['run'] });
+Object.assign(THEME_CLIPS, { pigeon: ['run'], scarab: ['run'], rat: ['run'], balloon: ['run'], gummy: ['run'], penguin: ['run'], magmite: ['run'], frog: ['run'], seagull: ['run'] });
 Object.assign(THEME_CELLS, { statue: 0.022, fountain: 0.03, bench: 0.022,
-  pigeon: 0.018, scarab: 0.018, rat: 0.016, balloon: 0.02, gummy: 0.02, penguin: 0.02, magmite: 0.02, frog: 0.018, seagull: 0.018, martian: 0.018 });
-MESH_ORDER.push('statue', 'fountain', 'bench', 'pigeon', 'scarab', 'rat', 'balloon', 'gummy', 'penguin', 'magmite', 'frog', 'seagull', 'martian');
+  pigeon: 0.018, scarab: 0.018, rat: 0.016, balloon: 0.02, gummy: 0.02, penguin: 0.02, magmite: 0.02, frog: 0.018, seagull: 0.018 });
+MESH_ORDER.push('statue', 'fountain', 'bench', 'pigeon', 'scarab', 'rat', 'balloon', 'gummy', 'penguin', 'magmite', 'frog', 'seagull');
 
 function themeModels3(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -2616,19 +2573,570 @@ function themeModels3(defs) {
     { s: 'ell', c: [0, 0.5, -0.36], rr: [0.1, 0.03, 0.12], col: C('#a8b4c4'), k: 0.03 },
     { s: 'cap', a: [0.06, 0.34, 0], b: [0.06, 0.16, 0.02], r: 0.02, col: orange, k: 0.01 }, { s: 'cap', a: [-0.06, 0.34, 0], b: [-0.06, 0.16, 0.02], r: 0.02, col: orange, k: 0.01 },
   ], { ao: 0.4 });
-  // moon martian: a little green alien (the tint) with a big head, black eyes, an antenna and a ray gun
-  P('martian', [
-    { s: 'ell', c: [0, 0.32, 0], rr: [0.16, 0.22, 0.14], k: 0.05 },
-    { s: 'ell', c: [0, 0.72, 0.02], rr: [0.26, 0.22, 0.22], k: 0.06 },
-    { s: 'ell', c: [0.11, 0.72, 0.18], rr: [0.08, 0.05, 0.05], col: dark, k: 0 }, { s: 'ell', c: [-0.11, 0.72, 0.18], rr: [0.08, 0.05, 0.05], col: dark, k: 0 },
-    { s: 'sph', c: [0.13, 0.74, 0.22], r: 0.015, col: white, k: 0 }, { s: 'sph', c: [-0.09, 0.74, 0.22], r: 0.015, col: white, k: 0 },
-    { s: 'cap', a: [0, 0.92, 0], b: [0.06, 1.08, -0.02], r: 0.015, k: 0.01 }, { s: 'sph', c: [0.06, 1.1, -0.02], r: 0.04, col: C('#ff5fb8'), k: 0 },
-    { s: 'cap', a: [0.14, 0.42, 0], b: [0.24, 0.36, 0.2], r: 0.04, k: 0.03 },
-    { s: 'box', c: [0.26, 0.37, 0.28], hs: [0.04, 0.05, 0.1], rd: 0.02, col: C('#c8d0e0'), k: 0.01 },
-    { s: 'sph', c: [0.26, 0.38, 0.4], r: 0.035, col: C('#5af0ff'), k: 0 },
-    { s: 'cap', a: [-0.14, 0.42, 0], b: [-0.2, 0.24, 0.04], r: 0.04, k: 0.03 },
-    { s: 'cap', a: [0.07, 0.14, 0], b: [0.08, 0.02, 0.06], r: 0.05, k: 0.03 }, { s: 'cap', a: [-0.07, 0.14, 0], b: [-0.08, 0.02, 0.06], r: 0.05, k: 0.03 },
+}
+
+// ============================================================
+// Chapter 10, the Wild West town: false-front buildings, the town square, ranch props, the town's creatures
+// (bison, mule, horse, rattlesnake, gunslinger) and The Outlaw. Built with prop() like 04a-04c.
+// Buildings are one unit wide with their front at +z: the camera sees +z faces, so every front faces it.
+// Four-legged creatures and the snake get their own bone pivots (rig) and poses (quadRun, snakeRun... below).
+// ============================================================
+Object.assign(THEME_CLIPS, { bison: ['run', 'slam'], mule: ['run', 'slam'], horse: ['run'], snake: ['run', 'throw'], gunslinger: ['run', 'aim'], outlaw: ['run', 'aim', 'throw', 'idle'] });
+Object.assign(THEME_CELLS, { saloon: 0.02, bank: 0.017, sheriff: 0.02, store: 0.02, hotel: 0.02, barn: 0.02, church: 0.018,
+  watertower: 0.02, gazebo: 0.02, well: 0.02, oillamp: 0.016, haybale: 0.025, wagon: 0.02, trough: 0.022, derrick: 0.02, railfence: 0.022, dynamite: 0.012,
+  bison: 0.017, mule: 0.016, horse: 0.016, snake: 0.014, gunslinger: 0.015, outlaw: 0.015 });
+MESH_ORDER.push('saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp',
+  'haybale', 'wagon', 'trough', 'derrick', 'railfence', 'dynamite', 'snake', 'horse', 'gunslinger', 'mule', 'bison', 'outlaw');
+
+// move a prop model's bone pivots (bone index -> [x, y, z]) so its parts can swing like legs
+function rig(m, piv) { for (const b in piv) m.bones[b].p = piv[b]; return m; }
+
+// ---------- poses for the rigged creatures (called from CLIPS in 04-models.js) ----------
+// four legs: 3/4 front left, 5/6 front right, 7/8 back left, 9/10 back right; diagonal pairs swing together
+function quadRun(t, m) {
+  const ph = t * TAU, s = Math.sin(ph), c = Math.cos(ph), A = m.runAmp || 1;
+  return { root: [0, 0.025 * Math.abs(Math.sin(ph)) * A, 0], rot: [
+    [0.04 * Math.sin(2 * ph) * A, 0, 0], [0, 0, 0], [-0.1 * Math.sin(2 * ph + 0.6) * A, 0.05 * s, 0],
+    [0.55 * s * A, 0, 0], [0.8 * Math.max(0, -c) * A, 0, 0], [-0.55 * s * A, 0, 0], [0.8 * Math.max(0, c) * A, 0, 0],
+    [-0.55 * s * A, 0, 0], [0.6 * Math.max(0, c) * A, 0, 0], [0.55 * s * A, 0, 0], [0.6 * Math.max(0, -c) * A, 0, 0],
+  ] };
+}
+// rears up on its back legs, front hooves pawing, then stamps down (the body pivots on its hips)
+function quadBuck(t) {
+  const up = smoothstep(0, 0.55, t), down = smoothstep(0.55, 0.68, t), rec = 1 - smoothstep(0.8, 1, t);
+  const pitch = (-0.55 * up + 0.6 * down) * rec, paw = (1.1 * up - 1.2 * down) * rec, fold = 1.0 * up * (1 - down) * rec;
+  return { root: [0, 0, 0], rot: [[pitch, 0, 0], [0, 0, 0], [-pitch * 0.6, 0, 0],
+    [-paw + Math.sin(t * TAU * 3) * 0.3 * up * (1 - down), 0, 0], [fold, 0, 0], [-paw * 0.85, 0, 0], [fold, 0, 0],
+    [-pitch, 0, 0], [0, 0, 0], [-pitch, 0, 0], [0, 0, 0]] };
+}
+// a snake is a chain: tail tip 8 <- 7 <- 0 (middle) -> 1 (neck) -> 2 (head); each link swings side to side a little later
+function snakeRun(t) {
+  const ph = t * TAU, a0 = 0.22 * Math.sin(ph), a1 = 0.32 * Math.sin(ph + 1.2), a2 = 0.12 * Math.sin(ph + 2.4);
+  const a7 = 0.36 * Math.sin(ph - 1.2), a8 = 0.5 * Math.sin(ph - 2.4);
+  const r = Array.from({ length: NBONES }, () => [0, 0, 0]);
+  r[0] = [0, a0, 0]; r[1] = [0, a1 - a0, 0]; r[2] = [0, a2 - a1, 0]; r[7] = [0, a7 - a0, 0]; r[8] = [0.12 * Math.sin(ph * 6), a8 - a7, 0];
+  return { root: [0, 0, 0], rot: r };
+}
+// coils back with the rattle going, then strikes
+function snakeStrike(t) {
+  const back = smoothstep(0, 0.55, t), fwd = smoothstep(0.55, 0.7, t), k = 1 - smoothstep(0.75, 1, t);
+  const r = Array.from({ length: NBONES }, () => [0, 0, 0]);
+  r[1] = [(-0.55 * back + 0.75 * fwd) * k, 0, 0]; r[2] = [(0.35 * back - 0.45 * fwd) * k, 0, 0];
+  r[7] = [0, 0.35 * Math.sin(t * TAU * 3) * back * k, 0]; r[8] = [0.25 * Math.sin(t * TAU * 12) * k, 0.3 * Math.sin(t * TAU * 6) * k, 0];
+  return { root: [0, 0, (-0.06 * back + 0.12 * fwd) * k], rot: r };
+}
+// gun hands: the right arm comes up level and kicks with the shot (m.gun 2: both arms, a revolver in each)
+function gunAim(t, m) {
+  const up = smoothstep(0, 0.35, t), kick = Math.sin(clamp((t - 0.78) / 0.22, 0, 1) * Math.PI) * 0.35, two = m.gun === 2;
+  return { root: [0, -0.015 * up, 0], rot: [[0, -0.12 * up, 0], [0.05, -0.08 * up, 0], [-0.06, 0.1 * up, 0],
+    two ? [-1.5 * up - kick, 0, 0.16] : [-0.3 * up, 0, 0.2], [two ? -0.06 : -1.0 * up, 0, 0],
+    [-1.52 * up - kick, 0.08, -0.12], [-0.06, 0, 0],
+    [-0.12, 0, 0.06], [0.16, 0, 0], [0.1, 0, -0.06], [0.1, 0, 0]] };
+}
+
+function westModels(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const wood = C('#a8703e'), woodD = C('#6e4626'), woodL = C('#d4a066'), plank = C('#8a6040'), roof = C('#5a3c2c'), trim = C('#f4ead6');
+  const glass = C('#2c3a52'), lit = C('#ffd27a'), dark = C('#1c140e'), gold = C('#ffc93a'), brick = C('#a4523a'), stoneD = C('#b8a888');
+  const green = C('#3f6e4c'), red = C('#b33a2e'), tin = C('#9aa0a8'), white = C('#f6f1e6'), hay = C('#e8c35a'), hayD = C('#b8902e');
+  const canvas = C('#efe4cc'), iron = C('#3a3a42'), cream = C('#fff0cc'), signRed = C('#7a2a20'), water = C('#3a6a8a');
+  const box = (c, hs, col, rd = 0.006, k = 0) => ({ s: 'box', c, hs, rd, col, k });
+  // corrugated tin: light ribs running front to back over a roof plate at height y
+  const tinRoof = (y, z, hd, hw = 0.47, col = C('#b8bcc0')) => Array.from({ length: 9 }, (_, i) => box([-hw + 0.04 + i * (hw * 2 - 0.08) / 8, y + 0.012, z], [0.014, 0.006, hd], col, 0.003));
+  // a framed window (lit: warm light inside); z is the wall face
+  const win = (x, y, z, w, h, o = {}) => {
+    const out = [box([x, y, z], [w + 0.014, h + 0.014, 0.01], o.frame || trim, 0.004), box([x, y, z + 0.008], [w, h, 0.008], o.lit ? lit : glass, 0.003)];
+    if (o.shut) for (const sx of [1, -1]) out.push(box([x + sx * (w + 0.034), y, z + 0.004], [0.02, h + 0.008, 0.008], o.shut, 0.003));
+    return out;
+  };
+  // signboard "lettering": a row of little blocks
+  const letters = (x0, x1, y, z, n, col, hh = 0.02) => Array.from({ length: n }, (_, i) => box([lerp(x0, x1, n > 1 ? i / (n - 1) : 0.5), y, z], [(x1 - x0) / n * 0.32, hh, 0.006], col, 0.003));
+  // boardwalk across the front with posts holding a porch roof or balcony
+  const porch = (z0, z1, top, xs, roofCol) => {
+    const out = [box([0, 0.018, (z0 + z1) / 2], [0.5, 0.018, (z1 - z0) / 2], plank, 0.004)];
+    for (const x of xs) out.push({ s: 'cap', a: [x, 0.03, z1 - 0.018], b: [x, top, z1 - 0.018], r: 0.017, col: woodD, k: 0 });
+    if (roofCol) out.push(box([0, top + 0.01, (z0 + z1) / 2 + 0.01], [0.505, 0.012, (z1 - z0) / 2 + 0.012], roofCol, 0.004));
+    return out;
+  };
+
+  // ---------- the saloon: two floors, a balcony, batwing doors and a big red sign up on the false front ----------
+  P('saloon', [
+    box([0, 0.27, -0.08], [0.48, 0.27, 0.28], null, 0.008, 0.01),
+    box([0, 0.37, 0.215], [0.5, 0.37, 0.016], null, 0.006),
+    box([0, 0.745, 0.215], [0.51, 0.014, 0.03], trim),
+    box([0, 0.79, 0.215], [0.22, 0.04, 0.016], null),
+    { s: 'gable', c: [0, 0.83, 0.215], w: 0.14, h: 0.07, hh: 0.016, ax: 'z', col: trim, k: 0 },
+    box([0, 0.64, 0.232], [0.39, 0.07, 0.006], gold), box([0, 0.64, 0.24], [0.37, 0.055, 0.006], signRed),
+    ...letters(-0.26, 0.26, 0.64, 0.248, 6, cream, 0.028),
+    box([0, 0.56, -0.08], [0.47, 0.012, 0.27], C('#8a8f96')), ...tinRoof(0.56, -0.08, 0.26),
+    box([0.3, 0.62, -0.22], [0.04, 0.06, 0.04], brick), { s: 'cyl', ax: 'y', c: [-0.05, 0.62, -0.28], r: 0.05, hh: 0.05, rd: 0.015, col: wood, k: 0 }, { s: 'cyl', ax: 'y', c: [-0.25, 0.63, -0.25], r: 0.022, hh: 0.07, rd: 0.005, col: iron, k: 0 },
+    // corner boards
+    ...[1, -1].map(sx => box([sx * 0.49, 0.37, 0.215], [0.014, 0.37, 0.02], trim)),
+    // ground floor: batwing doors in a dark doorway, lit windows, lanterns
+    box([0, 0.11, 0.232], [0.085, 0.11, 0.006], dark), ...[1, -1].map(sx => box([sx * 0.043, 0.1, 0.24], [0.038, 0.05, 0.006], woodL)),
+    ...win(0.29, 0.13, 0.232, 0.1, 0.07, { lit: true }), ...win(-0.29, 0.13, 0.232, 0.1, 0.07, { lit: true }),
+    ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.15, 0.2, 0.25], r: 0.02, col: lit, k: 0 })),
+    // upper floor behind the balcony
+    ...[-0.3, 0, 0.3].flatMap(x => win(x, 0.44, 0.232, 0.055, 0.065, { shut: green, lit: x === 0 })),
+    // balcony over the boardwalk
+    ...porch(0.23, 0.36, 0.3, [-0.47, -0.16, 0.16, 0.47]),
+    box([0, 0.31, 0.3], [0.5, 0.013, 0.075], wood), box([0, 0.36, 0.36], [0.5, 0.04, 0.012], woodD, 0.005),
+    box([0, 0.405, 0.36], [0.505, 0.008, 0.016], woodL),
+    // a hitching rail out front
+    { s: 'cap', a: [-0.4, 0.09, 0.42], b: [-0.18, 0.09, 0.42], r: 0.012, col: woodD, k: 0 },
+    ...[-0.4, -0.18].map(x => ({ s: 'cap', a: [x, 0, 0.42], b: [x, 0.1, 0.42], r: 0.014, col: woodD, k: 0 })),
+  ], { ao: 3 });
+
+  // ---------- the bank: a sandstone hall with a white column portico, a clock in the pediment and a gold $ on the roof ----------
+  {
+    const parts = [
+      box([0, 0.3, -0.06], [0.47, 0.3, 0.28], null, 0.01, 0.01),
+      box([0, 0.025, 0.02], [0.49, 0.025, 0.34], stoneD, 0.006),
+      box([0, 0.012, 0.335], [0.22, 0.012, 0.035], stoneD), box([0, 0.036, 0.315], [0.2, 0.012, 0.03], stoneD),
+      // portico: four columns, entablature with gilt lettering, a pediment with a clock
+      ...[-0.27, -0.09, 0.09, 0.27].flatMap(x => [
+        { s: 'cyl', ax: 'y', c: [x, 0.3, 0.29], r: 0.032, hh: 0.25, rd: 0.01, col: white, k: 0 },
+        box([x, 0.555, 0.29], [0.046, 0.014, 0.046], white, 0.004), box([x, 0.062, 0.29], [0.044, 0.012, 0.044], white, 0.004),
+      ]),
+      box([0, 0.59, 0.275], [0.37, 0.026, 0.065], white, 0.006),
+      ...letters(-0.2, 0.2, 0.59, 0.342, 4, gold, 0.013),
+      { s: 'gable', c: [0, 0.615, 0.275], w: 0.39, h: 0.13, hh: 0.06, ax: 'z', col: white, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 0.665, 0.337], r: 0.045, hh: 0.008, rd: 0.004, col: cream, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.665, 0.345], R: 0.046, r: 0.008, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      box([0, 0.678, 0.347], [0.004, 0.022, 0.004], dark, 0.002), box([0.012, 0.665, 0.347], [0.016, 0.004, 0.004], dark, 0.002),
+      // the facade: heavy doors, barred windows, a flat roof with a parapet
+      box([0, 0.17, 0.225], [0.07, 0.12, 0.008], woodD), box([0, 0.3, 0.225], [0.075, 0.012, 0.01], gold),
+      { s: 'sph', c: [0.03, 0.16, 0.236], r: 0.008, col: gold, k: 0 }, { s: 'sph', c: [-0.03, 0.16, 0.236], r: 0.008, col: gold, k: 0 },
+      ...[-0.39, 0.39].flatMap(x => [...win(x, 0.2, 0.222, 0.045, 0.075, { frame: stoneD }), ...win(x, 0.45, 0.222, 0.045, 0.06, { frame: stoneD })]),
+      ...[-0.39, 0.39].flatMap(x => [-0.025, 0, 0.025].map(dx => box([x + dx, 0.2, 0.236], [0.005, 0.075, 0.004], iron, 0.002))),
+      box([0, 0.615, -0.06], [0.48, 0.016, 0.29], C('#8a7a66')), box([-0.2, 0.63, -0.15], [0.1, 0.012, 0.08], C('#9ac8e8'), 0.006), box([-0.2, 0.632, -0.15], [0.105, 0.008, 0.012], iron, 0.002),
+      box([0, 0.64, -0.06], [0.48, 0.02, 0.29], null, 0.004), box([0, 0.66, -0.06], [0.45, 0.02, 0.26], C('#7a6a58'), 0.004),
+      // gas lamps by the steps
+      ...[1, -1].flatMap(sx => [{ s: 'cap', a: [sx * 0.24, 0.04, 0.4], b: [sx * 0.24, 0.26, 0.4], r: 0.01, col: iron, k: 0 }, { s: 'sph', c: [sx * 0.24, 0.28, 0.4], r: 0.022, col: lit, k: 0 }]),
+    ];
+    // the gold $: two arcs of an S and a bar through it, standing on the roof
+    const yc = 0.84, zc = 0.1, R = 0.055, rr = 0.019;
+    parts.push({ s: 'tor', ax: 'z', c: [0, yc + R, zc], R, r: rr, a0: 0.15 * Math.PI, a1: Math.PI, col: gold, k: 0 });
+    parts.push({ s: 'tor', ax: 'z', c: [0, yc + R, zc], R, r: rr, a0: -Math.PI, a1: -0.5 * Math.PI, col: gold, k: 0 });
+    parts.push({ s: 'tor', ax: 'z', c: [0, yc - R, zc], R, r: rr, a0: -0.85 * Math.PI, a1: 0.5 * Math.PI, col: gold, k: 0 });
+    parts.push({ s: 'cap', a: [0, yc - 0.15, zc], b: [0, yc + 0.15, zc], r: 0.014, col: gold, k: 0 });
+    parts.push(box([0, 0.69, zc], [0.03, 0.02, 0.03], iron));
+    P('bank', parts, { ao: 3 });
+  }
+
+  // ---------- the sheriff's office: one floor, a tin porch roof, a barred window and a big gold star ----------
+  {
+    const star = [];
+    for (let i = 0; i < 5; i++) { const a = Math.PI / 2 + i * TAU / 5; star.push({ s: 'cap', a: [0, 0.4, 0.29], b: [Math.cos(a) * 0.085, 0.4 + Math.sin(a) * 0.085, 0.29], r: 0.026, r2: 0.007, col: gold, k: 0.01 }); }
+    P('sheriff', [
+      box([0, 0.23, -0.08], [0.48, 0.23, 0.32], null, 0.008, 0.01),
+      box([0, 0.3, 0.255], [0.5, 0.3, 0.016], null),
+      box([0, 0.62, 0.255], [0.32, 0.03, 0.016], null), box([0, 0.605, 0.255], [0.51, 0.012, 0.028], trim), box([0, 0.655, 0.255], [0.33, 0.01, 0.028], trim),
+      box([0, 0.52, 0.275], [0.38, 0.055, 0.006], woodD), ...letters(-0.27, 0.27, 0.52, 0.283, 7, cream, 0.026),
+      ...star, { s: 'sph', c: [0, 0.4, 0.29], r: 0.036, col: gold, k: 0.01 },
+      box([-0.2, 0.13, 0.272], [0.07, 0.13, 0.006], woodD), { s: 'sph', c: [-0.15, 0.13, 0.282], r: 0.008, col: gold, k: 0 },
+      ...win(0.22, 0.17, 0.272, 0.11, 0.075, { frame: woodD }),
+      ...[-0.06, -0.02, 0.02, 0.06].map(dx => box([0.22 + dx, 0.17, 0.288], [0.006, 0.075, 0.004], iron, 0.002)),
+      box([-0.37, 0.19, 0.274], [0.04, 0.05, 0.004], C('#f0e0b8'), 0.002), box([-0.37, 0.19, 0.279], [0.022, 0.02, 0.003], C('#7a5a3a'), 0.002),
+      ...porch(0.27, 0.42, 0.29, [-0.47, -0.05, 0.47], tin),
+      box([0, 0.47, -0.08], [0.47, 0.012, 0.31], C('#7a7f86')), ...tinRoof(0.47, -0.08, 0.3, 0.47, C('#a8b0b4')),
+      { s: 'cyl', ax: 'y', c: [0.3, 0.53, -0.25], r: 0.022, hh: 0.06, rd: 0.005, col: iron, k: 0 },
+      ...[1, -1].map(sx => box([sx * 0.49, 0.3, 0.255], [0.014, 0.3, 0.02], trim)),
+    ], { ao: 3 });
+  }
+
+  // ---------- the general store: a gable roof behind the false front, a striped awning and goods on the porch ----------
+  {
+    const parts = [
+      box([0, 0.23, -0.08], [0.48, 0.23, 0.3], null, 0.008, 0.01),
+      { s: 'gable', c: [0, 0.46, -0.08], w: 0.5, h: 0.17, hh: 0.31, ax: 'z', col: C('#4f8a6a'), k: 0 },
+      { s: 'cap', a: [0, 0.632, -0.39], b: [0, 0.632, 0.22], r: 0.016, col: C('#d8d8c8'), k: 0 },
+      box([0.22, 0.62, -0.25], [0.035, 0.08, 0.035], brick),
+      box([0, 0.33, 0.235], [0.5, 0.33, 0.016], null),
+      box([0, 0.665, 0.235], [0.51, 0.012, 0.028], trim), ...[1, -1].map(sx => box([sx * 0.49, 0.33, 0.235], [0.014, 0.33, 0.02], trim)),
+      box([0, 0.55, 0.255], [0.41, 0.065, 0.006], cream), box([0, 0.55, 0.25], [0.425, 0.08, 0.006], woodD), ...letters(-0.3, 0.3, 0.55, 0.263, 8, C('#3a2a1e'), 0.03),
+      ...win(0.27, 0.15, 0.252, 0.14, 0.1, { lit: true }), ...win(-0.27, 0.15, 0.252, 0.14, 0.1, { lit: true }),
+      box([0, 0.14, 0.252], [0.06, 0.14, 0.006], woodD), box([0, 0.17, 0.26], [0.04, 0.07, 0.004], glass),
+      ...porch(0.25, 0.4, 0.3, [-0.47, 0.47]),
+    ];
+    // the awning: red and cream stripes with a scalloped edge
+    for (let i = 0; i < 8; i++) {
+      const x = -0.4375 + i * 0.125, col = i % 2 ? cream : red;
+      parts.push(box([x, 0.31, 0.33], [0.0625, 0.012, 0.085], col, 0.003));
+      parts.push({ s: 'ell', c: [x, 0.295, 0.415], rr: [0.06, 0.025, 0.012], col, k: 0 });
+    }
+    // barrels, crates and a sack on the boardwalk
+    parts.push({ s: 'cyl', ax: 'y', c: [-0.42, 0.09, 0.34], r: 0.045, hh: 0.055, rd: 0.012, col: wood, k: 0 }, { s: 'tor', ax: 'y', c: [-0.42, 0.11, 0.34], R: 0.046, r: 0.006, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 });
+    parts.push({ s: 'cyl', ax: 'y', c: [-0.32, 0.09, 0.36], r: 0.042, hh: 0.055, rd: 0.012, col: woodD, k: 0 });
+    parts.push(box([0.38, 0.08, 0.34], [0.045, 0.045, 0.045], woodL, 0.006), box([0.42, 0.16, 0.35], [0.035, 0.035, 0.035], wood, 0.006));
+    parts.push({ s: 'ell', c: [0.28, 0.08, 0.36], rr: [0.05, 0.06, 0.04], col: C('#c8a878'), k: 0.01 });
+    P('store', parts, { ao: 3 });
+  }
+
+  // ---------- the hotel: three floors of shuttered windows, a balcony, a cornice and a tall corner sign ----------
+  {
+    const parts = [
+      box([0, 0.43, -0.08], [0.48, 0.43, 0.29], null, 0.008, 0.01),
+      box([0, 0.87, 0.215], [0.505, 0.022, 0.03], trim, 0.005), box([0, 0.905, 0.2], [0.5, 0.025, 0.014], null),
+      ...[1, -1].map(sx => box([sx * 0.48, 0.875, -0.08], [0.02, 0.02, 0.3], null, 0.004)), box([0, 0.875, -0.37], [0.48, 0.02, 0.02], null, 0.004),
+      box([0, 0.86, -0.08], [0.47, 0.01, 0.28], C('#6a5a4e')),
+      { s: 'cyl', ax: 'y', c: [-0.24, 0.95, -0.18], r: 0.11, hh: 0.08, rd: 0.02, col: wood, k: 0 }, { s: 'tor', ax: 'y', c: [-0.24, 0.95, -0.18], R: 0.112, r: 0.008, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 },
+      ...[-0.31, -0.17].map(x => ({ s: 'cap', a: [x, 0.86, -0.25], b: [x, 0.87, -0.11], r: 0.012, col: woodD, k: 0 })),
+      box([0.25, 0.92, -0.25], [0.04, 0.06, 0.035], brick), box([0.1, 0.92, -0.3], [0.04, 0.06, 0.035], brick),
+      ...[0.3, 0.59].map(y => box([0, y, 0.212], [0.49, 0.008, 0.006], trim, 0.002)),
+      box([0, 0.13, 0.212], [0.07, 0.13, 0.006], dark), box([0, 0.27, 0.215], [0.08, 0.012, 0.008], trim),
+      ...win(0.3, 0.14, 0.212, 0.08, 0.07, { lit: true }), ...win(-0.3, 0.14, 0.212, 0.08, 0.07, { lit: true }),
+      ...porch(0.21, 0.35, 0.29, [-0.47, -0.16, 0.16, 0.47]),
+      box([0, 0.3, 0.285], [0.5, 0.012, 0.07], wood), box([0, 0.35, 0.345], [0.5, 0.04, 0.012], woodD, 0.005), box([0, 0.395, 0.345], [0.505, 0.008, 0.016], woodL),
+      // the corner sign, letters stacked down it
+      box([0.43, 0.62, 0.27], [0.014, 0.2, 0.05], signRed, 0.004), box([0.43, 0.62, 0.27], [0.01, 0.21, 0.056], gold, 0.004),
+      ...[0, 1, 2, 3, 4].map(i => box([0.444, 0.76 - i * 0.07, 0.27], [0.004, 0.022, 0.026], cream, 0.002)),
+      box([0.43, 0.6, 0.2], [0.01, 0.01, 0.04], iron),
+    ];
+    for (const [y, row] of [[0.45, 0], [0.73, 1]]) for (const x of [-0.33, -0.11, 0.11, 0.33]) {
+      if (row === 1 && x > 0.3) continue;
+      parts.push(...win(x, y, 0.212, 0.048, 0.07, { shut: row ? C('#3a5a8a') : green, lit: (x * 7 + row * 3) % 2 > 0.6 }));
+    }
+    P('hotel', parts, { ao: 3 });
+  }
+
+  // ---------- the livery stable: a red barn, white-trimmed X doors, a hayloft with a pulley ----------
+  P('barn', [
+    box([0, 0.21, -0.06], [0.47, 0.21, 0.36], null, 0.008, 0.01),
+    { s: 'gable', c: [0, 0.41, -0.06], w: 0.53, h: 0.33, hh: 0.39, ax: 'z', col: C('#4a3a36'), k: 0 },
+    { s: 'gable', c: [0, 0.42, 0.33], w: 0.46, h: 0.28, hh: 0.012, ax: 'z', col: null, k: 0 },
+    ...[1, -1].map(sx => box([sx * 0.465, 0.21, 0.3], [0.016, 0.21, 0.016], white)),
+    box([0, 0.415, 0.32], [0.47, 0.012, 0.014], white),
+    // the big doors
+    box([0, 0.15, 0.31], [0.19, 0.155, 0.006], white), box([0, 0.145, 0.318], [0.175, 0.14, 0.006], C('#8a2a22')),
+    box([0, 0.145, 0.326], [0.006, 0.14, 0.004], white, 0.002),
+    ...[1, -1].flatMap(sx => [{ s: 'cap', a: [sx * 0.165, 0.015, 0.326], b: [sx * 0.012, 0.275, 0.326], r: 0.011, col: white, k: 0 }, { s: 'cap', a: [sx * 0.012, 0.015, 0.326], b: [sx * 0.165, 0.275, 0.326], r: 0.011, col: white, k: 0 }]),
+    // hayloft door with straw spilling out, a pulley beam and a dangling rope
+    box([0, 0.5, 0.336], [0.085, 0.07, 0.006], white), box([0, 0.5, 0.342], [0.07, 0.058, 0.006], dark),
+    { s: 'ell', c: [0, 0.455, 0.35], rr: [0.065, 0.02, 0.025], col: hay, k: 0.01 }, { s: 'ell', c: [0.03, 0.47, 0.345], rr: [0.03, 0.025, 0.02], col: hayD, k: 0.01 },
+    box([0, 0.66, 0.37], [0.014, 0.014, 0.07], woodD, 0.004), { s: 'cap', a: [0, 0.65, 0.43], b: [0, 0.5, 0.43], r: 0.006, col: C('#c8b088'), k: 0 },
+    // a horseshoe over the door and a weathervane
+    { s: 'tor', ax: 'z', c: [0, 0.34, 0.33], R: 0.025, r: 0.008, a0: -Math.PI, a1: 0, col: iron, k: 0 },
+    // a cupola on the ridge with a little roof and a weathervane
+    box([0, 0.76, -0.06], [0.07, 0.06, 0.07], null, 0.006), box([0, 0.76, -0.06], [0.072, 0.03, 0.072], white, 0.004),
+    { s: 'gable', c: [0, 0.82, -0.06], w: 0.1, h: 0.06, hh: 0.09, ax: 'z', col: C('#4a3a36'), k: 0 },
+    { s: 'cap', a: [0, 0.87, -0.06], b: [0, 0.96, -0.06], r: 0.008, col: iron, k: 0 }, { s: 'ell', c: [0.02, 0.95, -0.06], rr: [0.05, 0.016, 0.008], col: iron, k: 0 },
+  ], { ao: 3 });
+
+  // ---------- the chapel: a white nave, a bell tower over the door with a round window, a spire and a gold cross ----------
+  P('church', [
+    box([0, 0.25, -0.14], [0.4, 0.25, 0.48], null, 0.008, 0.01),
+    { s: 'gable', c: [0, 0.48, -0.14], w: 0.46, h: 0.3, hh: 0.51, ax: 'z', col: C('#4a3a40'), k: 0 },
+    { s: 'gable', c: [0, 0.49, 0.36], w: 0.41, h: 0.26, hh: 0.012, ax: 'z', col: null, k: 0 },
+    ...[1, -1].flatMap(sx => [-0.42, -0.14, 0.14].map(z => box([sx * 0.402, 0.28, z], [0.006, 0.09, 0.038], C('#6a8ad8'), 0.004))),
+    // the tower
+    box([0, 0.5, 0.44], [0.13, 0.5, 0.11], null, 0.006),
+    box([0, 0.99, 0.44], [0.145, 0.1, 0.125], null, 0.008), box([0, 1.09, 0.44], [0.155, 0.012, 0.135], trim),
+    box([0, 0.99, 0.565], [0.07, 0.07, 0.006], dark), box([0, 0.99, 0.315], [0.07, 0.07, 0.006], dark),
+    { s: 'ell', c: [0, 0.97, 0.5], rr: [0.05, 0.055, 0.05], col: C('#d8a040'), k: 0 },
+    { s: 'cap', a: [0, 1.1, 0.44], b: [0, 1.55, 0.44], r: 0.125, r2: 0.006, col: C('#4a3a40'), k: 0 },
+    { s: 'cap', a: [0, 1.54, 0.44], b: [0, 1.7, 0.44], r: 0.016, col: gold, k: 0 }, { s: 'cap', a: [-0.045, 1.645, 0.44], b: [0.045, 1.645, 0.44], r: 0.016, col: gold, k: 0 },
+    { s: 'cyl', ax: 'z', c: [0, 0.58, 0.552], r: 0.055, hh: 0.006, rd: 0.003, col: C('#5a8adf'), k: 0 },
+    { s: 'tor', ax: 'z', c: [0, 0.58, 0.556], R: 0.057, r: 0.01, a0: -Math.PI, a1: Math.PI, col: trim, k: 0 },
+    { s: 'cap', a: [-0.05, 0.58, 0.56], b: [0.05, 0.58, 0.56], r: 0.006, col: gold, k: 0 }, { s: 'cap', a: [0, 0.53, 0.56], b: [0, 0.63, 0.56], r: 0.006, col: gold, k: 0 },
+    // arched door and steps
+    box([0, 0.12, 0.552], [0.065, 0.12, 0.006], woodD), { s: 'cyl', ax: 'z', c: [0, 0.24, 0.552], r: 0.065, hh: 0.006, rd: 0.002, col: woodD, k: 0 },
+    box([0, 0.015, 0.6], [0.11, 0.015, 0.05], stoneD),
+  ], { ao: 3 });
+
+  // ---------- the town square's pieces: water tower, bandstand, well, lamp posts ----------
+  {
+    const parts = [];
+    const legs = [[0.3, 0.3], [-0.3, 0.3], [-0.3, -0.3], [0.3, -0.3]];
+    for (const [x, z] of legs) parts.push({ s: 'cap', a: [x, 0, z], b: [x * 0.8, 1.04, z * 0.8], r: 0.032, col: woodD, k: 0 });
+    for (let i = 0; i < 4; i++) {
+      const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4];
+      parts.push({ s: 'cap', a: [x0 * 0.95, 0.15, z0 * 0.95], b: [x1 * 0.88, 0.6, z1 * 0.88], r: 0.014, col: woodD, k: 0 });
+      parts.push({ s: 'cap', a: [x1 * 0.95, 0.15, z1 * 0.95], b: [x0 * 0.88, 0.6, z0 * 0.88], r: 0.014, col: woodD, k: 0 });
+    }
+    parts.push({ s: 'cyl', ax: 'y', c: [0, 1.06, 0], r: 0.3, hh: 0.02, rd: 0.006, col: woodD, k: 0 });
+    parts.push({ s: 'cyl', ax: 'y', c: [0, 1.36, 0], r: 0.42, hh: 0.3, rd: 0.03, col: C('#9a6a3e'), k: 0 });
+    for (const y of [1.14, 1.36, 1.58]) parts.push({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.425, r: 0.014, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 });
+    parts.push({ s: 'cyl', ax: 'y', c: [0, 1.67, 0], r: 0.46, hh: 0.015, rd: 0.006, col: roof, k: 0 });
+    parts.push({ s: 'cap', a: [0, 1.68, 0], b: [0, 1.95, 0], r: 0.38, r2: 0.02, col: roof, k: 0 });
+    parts.push({ s: 'sph', c: [0, 1.97, 0], r: 0.03, col: iron, k: 0 });
+    parts.push({ s: 'cap', a: [0.1, 1.2, 0.4], b: [0.1, 0.3, 0.27], r: 0.012, col: iron, k: 0 }, { s: 'cap', a: [-0.1, 1.2, 0.4], b: [-0.1, 0.3, 0.27], r: 0.012, col: iron, k: 0 });
+    P('watertower', parts, { ao: 2 });
+  }
+  {
+    const parts = [
+      { s: 'cyl', ax: 'y', c: [0, 0.06, 0], r: 0.5, hh: 0.06, rd: 0.02, col: white, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 0.035, 0], r: 0.52, hh: 0.035, rd: 0.01, col: C('#c8bca8'), k: 0 },
+      box([0, 0.03, 0.53], [0.1, 0.03, 0.05], white),
+      { s: 'ell', c: [0, 0.68, 0], rr: [0.57, 0.2, 0.57], col: C('#c0463a'), k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.64, 0], R: 0.55, r: 0.026, a0: -Math.PI, a1: Math.PI, col: white, k: 0 },
+      { s: 'cap', a: [0, 0.85, 0], b: [0, 0.98, 0], r: 0.02, r2: 0.005, col: gold, k: 0 }, { s: 'sph', c: [0, 0.88, 0], r: 0.035, col: gold, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.27, 0], R: 0.44, r: 0.014, a0: -Math.PI, a1: 0.3 * Math.PI, col: white, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.27, 0], R: 0.44, r: 0.014, a0: 0.7 * Math.PI, a1: Math.PI, col: white, k: 0 },
+    ];
+    for (let i = 0; i < 8; i++) {
+      const a = (i + 0.5) * TAU / 8;
+      parts.push({ s: 'cap', a: [Math.cos(a) * 0.44, 0.12, Math.sin(a) * 0.44], b: [Math.cos(a) * 0.44, 0.62, Math.sin(a) * 0.44], r: 0.022, col: white, k: 0 });
+      // bunting between the posts
+      const b = (i + 1) * TAU / 8;
+      parts.push({ s: 'sph', c: [Math.cos(b) * 0.5, 0.58, Math.sin(b) * 0.5], r: 0.032, col: [red, white, C('#3a5ab8')][i % 3], k: 0 });
+    }
+    // a brass tuba resting on a chair: the band is on break
+    parts.push({ s: 'tor', ax: 'z', c: [0.12, 0.22, -0.1], R: 0.07, r: 0.026, a0: -Math.PI, a1: Math.PI, col: C('#e0b040'), k: 0 });
+    parts.push({ s: 'cap', a: [0.18, 0.24, -0.1], b: [0.24, 0.36, -0.1], r: 0.02, r2: 0.06, col: C('#e0b040'), k: 0 });
+    P('gazebo', parts, { ao: 1.5 });
+  }
+  P('well', [
+    { s: 'cyl', ax: 'y', c: [0, 0.13, 0], r: 0.3, hh: 0.13, rd: 0.03, col: C('#a89a88'), k: 0 },
+    { s: 'cyl', ax: 'y', c: [0, 0.25, 0], r: 0.22, hh: 0.08, rd: 0.01, sub: true, k: 0.01 },
+    { s: 'cyl', ax: 'y', c: [0, 0.17, 0], r: 0.23, hh: 0.01, rd: 0.0, col: water, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.28, 0.2, 0], b: [sx * 0.28, 0.64, 0], r: 0.026, col: wood, k: 0 })),
+    { s: 'gable', c: [0, 0.6, 0], w: 0.22, h: 0.14, hh: 0.36, ax: 'x', col: roof, k: 0 },
+    { s: 'cap', a: [-0.3, 0.48, 0], b: [0.3, 0.48, 0], r: 0.02, col: woodD, k: 0 }, { s: 'cap', a: [0.32, 0.48, 0], b: [0.36, 0.4, 0.04], r: 0.012, col: iron, k: 0 },
+    { s: 'cap', a: [0, 0.47, 0], b: [0, 0.32, 0], r: 0.007, col: C('#c8b088'), k: 0 },
+    { s: 'cyl', ax: 'y', c: [0.2, 0.31, 0.16], r: 0.05, hh: 0.05, rd: 0.01, col: wood, k: 0 },
+  ], { ao: 0.8 });
+  P('oillamp', [
+    { s: 'cyl', ax: 'y', c: [0, 0.04, 0], r: 0.07, hh: 0.04, rd: 0.015, col: iron, k: 0 },
+    { s: 'cap', a: [0, 0.05, 0], b: [0, 1.24, 0], r: 0.03, col: iron, k: 0 },
+    box([0, 1.33, 0], [0.065, 0.085, 0.065], lit, 0.012),
+    ...[[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([x, z]) => ({ s: 'cap', a: [x * 0.068, 1.25, z * 0.068], b: [x * 0.068, 1.41, z * 0.068], r: 0.011, col: iron, k: 0 })),
+    { s: 'cap', a: [0, 1.41, 0], b: [0, 1.52, 0], r: 0.08, r2: 0.012, col: iron, k: 0 },
   ], { ao: 0.5 });
+
+  // ---------- ranch props: hay bales, a covered wagon, a water trough with a pump, an oil derrick, a split-rail fence ----------
+  P('haybale', [
+    box([-0.16, 0.13, 0], [0.15, 0.13, 0.3], hay, 0.035, 0.005), box([0.16, 0.13, 0.03], [0.15, 0.13, 0.3], C('#dcb650'), 0.035, 0.005),
+    box([0.01, 0.39, 0.01], [0.3, 0.13, 0.15], C('#f0cc66'), 0.035, 0.005),
+    ...[-0.16, 0.16].flatMap(x => [-0.12, 0.12].map(z => box([x, 0.13, z + (x > 0 ? 0.03 : 0)], [0.153, 0.133, 0.012], hayD, 0.01))),
+    ...[-0.12, 0.12].map(x => box([x + 0.01, 0.39, 0.01], [0.012, 0.133, 0.153], hayD, 0.01)),
+    { s: 'ell', c: [0.2, 0.52, 0.05], rr: [0.06, 0.02, 0.03], col: hay, k: 0.01 }, { s: 'ell', c: [-0.28, 0.02, 0.3], rr: [0.07, 0.015, 0.05], col: hay, k: 0.01 },
+  ], { ao: 0.6 });
+  {
+    const parts = [
+      box([0, 0.3, 0], [0.24, 0.06, 0.46], wood, 0.01), box([0, 0.36, 0], [0.25, 0.012, 0.47], woodD, 0.004),
+      { s: 'ell', c: [0, 0.4, -0.04], rr: [0.27, 0.3, 0.42], col: canvas, k: 0.01 },
+      ...[-0.36, -0.12, 0.12, 0.36].map(z => ({ s: 'tor', ax: 'z', c: [0, 0.4, z - 0.04], R: 0.272, r: 0.012, a0: 0.05, a1: Math.PI - 0.05, col: C('#cfc2a6'), k: 0 })),
+      { s: 'ell', c: [0, 0.48, 0.38], rr: [0.18, 0.16, 0.03], col: dark, k: 0 },
+      { s: 'cap', a: [0, 0.24, 0.46], b: [0, 0.16, 0.78], r: 0.022, col: woodD, k: 0 }, { s: 'cap', a: [-0.12, 0.16, 0.78], b: [0.12, 0.16, 0.78], r: 0.016, col: woodD, k: 0 },
+      box([0.2, 0.42, -0.3], [0.05, 0.05, 0.05], woodL, 0.01),
+    ];
+    for (const [z, R] of [[0.3, 0.15], [-0.32, 0.19]]) for (const sx of [1, -1]) {
+      parts.push({ s: 'tor', ax: 'x', c: [sx * 0.27, R, z], R, r: 0.022, a0: -Math.PI, a1: Math.PI, col: woodD, k: 0 });
+      parts.push({ s: 'cyl', ax: 'x', c: [sx * 0.27, R, z], r: 0.035, hh: 0.03, rd: 0.01, col: iron, k: 0 });
+      for (let i = 0; i < 4; i++) { const a = i * Math.PI / 4; parts.push({ s: 'cap', a: [sx * 0.27, R + Math.cos(a) * R, z + Math.sin(a) * R], b: [sx * 0.27, R - Math.cos(a) * R, z - Math.sin(a) * R], r: 0.009, col: wood, k: 0 }); }
+    }
+    P('wagon', parts, { ao: 0.8 });
+  }
+  P('trough', [
+    box([0, 0.17, 0], [0.42, 0.09, 0.14], wood, 0.012), box([0, 0.245, 0], [0.38, 0.02, 0.1], water, 0.004),
+    ...[-0.36, 0.36].flatMap(x => [-0.1, 0.1].map(z => ({ s: 'cap', a: [x, 0, z], b: [x, 0.1, z], r: 0.025, col: woodD, k: 0 }))),
+    { s: 'cyl', ax: 'y', c: [0.46, 0.25, 0], r: 0.04, hh: 0.25, rd: 0.01, col: C('#4a6a5a'), k: 0 },
+    { s: 'cap', a: [0.46, 0.44, 0], b: [0.36, 0.4, 0], r: 0.016, r2: 0.01, col: C('#4a6a5a'), k: 0 },
+    { s: 'cap', a: [0.48, 0.5, 0], b: [0.58, 0.62, 0], r: 0.012, col: iron, k: 0 },
+  ], { ao: 0.6 });
+  {
+    const parts = [];
+    const top = 2.05, legs = [[0.32, 0.32], [-0.32, 0.32], [-0.32, -0.32], [0.32, -0.32]];
+    for (const [x, z] of legs) parts.push({ s: 'cap', a: [x, 0, z], b: [x * 0.18, top, z * 0.18], r: 0.026, col: woodD, k: 0 });
+    for (const y of [0.4, 0.85, 1.3, 1.7]) {
+      const w = lerp(1, 0.18, y / top);
+      for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0 * w, y, z0 * w], b: [x1 * w, y, z1 * w], r: 0.014, col: wood, k: 0 }); }
+    }
+    for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0, 0.05, z0], b: [x1 * 0.8, 0.85, z1 * 0.8], r: 0.011, col: wood, k: 0 }); }
+    parts.push(box([0, top + 0.03, 0], [0.09, 0.04, 0.09], iron, 0.01), { s: 'cyl', ax: 'x', c: [0, top + 0.1, 0], r: 0.05, hh: 0.07, rd: 0.01, col: iron, k: 0 });
+    parts.push(box([0, 0.06, 0], [0.12, 0.06, 0.12], iron, 0.02), { s: 'cyl', ax: 'y', c: [0.22, 0.09, 0.3], r: 0.06, hh: 0.09, rd: 0.015, col: C('#2a2a2a'), k: 0 });
+    parts.push({ s: 'cap', a: [0, 0.12, 0], b: [0, 0.9, 0], r: 0.02, col: C('#5a5a62'), k: 0 });
+    P('derrick', parts, { ao: 1 });
+  }
+  P('railfence', [
+    ...[-0.45, 0.45].map(x => ({ s: 'cap', a: [x, -0.02, 0], b: [x + 0.01, 0.72, 0], r: 0.04, r2: 0.034, col: woodD, k: 0 })),
+    ...[[0.2, 0.01], [0.43, -0.012], [0.63, 0.008]].map(([y, dz]) => ({ s: 'cap', a: [-0.52, y, dz], b: [0.52, y + 0.02, -dz], r: 0.026, col: C('#9a7048'), k: 0 })),
+  ], { ao: 0.6 });
+
+  // a bundle of three dynamite sticks with a lit fuse (thrown by The Outlaw)
+  P('dynamite', [
+    ...[[0, 0], [0.11, 0.02], [0.05, -0.09]].map(([x, z]) => ({ s: 'cyl', ax: 'y', c: [x - 0.05, 0.2, z + 0.02], r: 0.06, hh: 0.19, rd: 0.02, col: C('#d8302a'), k: 0 })),
+    { s: 'tor', ax: 'y', c: [0, 0.2, 0], R: 0.13, r: 0.022, a0: -Math.PI, a1: Math.PI, col: C('#e8d8b0'), k: 0 },
+    { s: 'cap', a: [0, 0.38, 0], b: [0.06, 0.5, 0.02], r: 0.014, col: C('#3a2a1e'), k: 0 },
+    { s: 'sph', c: [0.07, 0.52, 0.02], r: 0.035, col: C('#fff2a0'), k: 0 },
+  ], { ao: 0.3 });
+
+  // ---------- creatures. Parts without col take the tint (coat or body) ----------
+  // bison: a huge shaggy front with a hump, curved horns and a beard, a small hind end, a tufted tail
+  {
+    const shag = C('#7a5232'), shagD = C('#4a301e'), hoof = C('#221812'), horn = C('#efe2c4'), eye = C('#120c0a');
+    const m = P('bison', [
+      { s: 'ell', c: [0, 0.44, -0.2], rr: [0.18, 0.18, 0.24], k: 0.06 },
+      { s: 'ell', c: [0, 0.54, 0.12], rr: [0.25, 0.3, 0.28], col: shag, k: 0.08 },
+      { s: 'ell', c: [0, 0.7, 0.04], rr: [0.18, 0.16, 0.2], col: shag, k: 0.06 },
+      { s: 'ell', c: [0, 0.42, 0.44], rr: [0.15, 0.16, 0.13], col: shagD, k: 0.04, bone: 2 },
+      { s: 'ell', c: [0, 0.33, 0.53], rr: [0.11, 0.09, 0.08], col: C('#2e2016'), k: 0.03, bone: 2 },
+      { s: 'sph', c: [0.04, 0.35, 0.6], r: 0.02, col: hoof, k: 0, bone: 2 }, { s: 'sph', c: [-0.04, 0.35, 0.6], r: 0.02, col: hoof, k: 0, bone: 2 },
+      { s: 'ell', c: [0, 0.22, 0.45], rr: [0.08, 0.11, 0.06], col: shagD, k: 0.03, bone: 2 },
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.12, 0.5, 0.45], b: [sx * 0.24, 0.53, 0.46], r: 0.035, r2: 0.025, col: horn, k: 0.01, bone: 2 },
+        { s: 'cap', a: [sx * 0.24, 0.53, 0.46], b: [sx * 0.25, 0.64, 0.5], r: 0.025, r2: 0.006, col: horn, k: 0.01, bone: 2 },
+        { s: 'sph', c: [sx * 0.11, 0.45, 0.53], r: 0.026, col: eye, k: 0, bone: 2 }, { s: 'sph', c: [sx * 0.105, 0.46, 0.555], r: 0.008, col: C('#ffffff'), k: 0, bone: 2 },
+        { s: 'cap', a: [sx * 0.13, 0.44, 0.22], b: [sx * 0.13, 0.22, 0.24], r: 0.075, r2: 0.06, col: shag, k: 0.03, bone: sx > 0 ? 3 : 5 },
+        { s: 'cap', a: [sx * 0.13, 0.22, 0.24], b: [sx * 0.13, 0.05, 0.24], r: 0.05, r2: 0.045, k: 0.02, bone: sx > 0 ? 4 : 6 },
+        { s: 'cyl', ax: 'y', c: [sx * 0.13, 0.03, 0.25], r: 0.05, hh: 0.03, rd: 0.012, col: hoof, k: 0.01, bone: sx > 0 ? 4 : 6 },
+        { s: 'cap', a: [sx * 0.11, 0.42, -0.28], b: [sx * 0.11, 0.22, -0.3], r: 0.065, r2: 0.05, k: 0.03, bone: sx > 0 ? 7 : 9 },
+        { s: 'cap', a: [sx * 0.11, 0.22, -0.3], b: [sx * 0.11, 0.05, -0.28], r: 0.045, r2: 0.04, k: 0.02, bone: sx > 0 ? 8 : 10 },
+        { s: 'cyl', ax: 'y', c: [sx * 0.11, 0.03, -0.27], r: 0.045, hh: 0.03, rd: 0.012, col: hoof, k: 0.01, bone: sx > 0 ? 8 : 10 },
+      ]),
+      { s: 'cap', a: [0, 0.5, -0.42], b: [0, 0.3, -0.46], r: 0.022, k: 0.02 }, { s: 'ell', c: [0, 0.27, -0.46], rr: [0.035, 0.06, 0.035], col: shagD, k: 0.01 },
+    ], { ao: 0.8 });
+    rig(m, { 0: [0, 0.42, -0.28], 1: [0, 0.5, 0.2], 2: [0, 0.5, 0.34], 3: [0.13, 0.44, 0.22], 4: [0.13, 0.22, 0.24], 5: [-0.13, 0.44, 0.22], 6: [-0.13, 0.22, 0.24],
+      7: [0.11, 0.42, -0.28], 8: [0.11, 0.22, -0.3], 9: [-0.11, 0.42, -0.28], 10: [-0.11, 0.22, -0.3] });
+    m.quad = true; m.runAmp = 0.8; m.J.head = [0, 0.42, 0.44];
+  }
+  // mule and horse share a body plan: long legs, long head on a neck; the mule has big ears and a pack, the horse a mane and a saddle
+  const equine = (name, o) => {
+    const pale = C(o.pale), mane = C(o.mane), hoof = C('#2a2018'), eye = C('#120c0a');
+    const L = o.leg, hipY = L + 0.02, kn = L * 0.5;
+    const parts = [
+      { s: 'ell', c: [0, hipY + 0.07, -0.02], rr: [0.15, 0.15, 0.32], k: 0.06 },
+      { s: 'ell', c: [0, hipY + 0.02, 0.0], rr: [0.12, 0.1, 0.25], col: o.belly ? pale : null, k: 0.05 },
+      { s: 'cap', a: [0, hipY + 0.12, 0.22], b: [0, hipY + 0.32, 0.36], r: 0.085, r2: 0.07, k: 0.05, bone: 2 },
+      { s: 'ell', c: [0, hipY + 0.34, 0.48], rr: [0.075, 0.08, 0.15], k: 0.04, bone: 2 },
+      { s: 'ell', c: [0, hipY + 0.3, 0.6], rr: [0.068, 0.065, 0.06], col: pale, k: 0.03, bone: 2 },
+      { s: 'sph', c: [0.03, hipY + 0.31, 0.655], r: 0.014, col: hoof, k: 0, bone: 2 }, { s: 'sph', c: [-0.03, hipY + 0.31, 0.655], r: 0.014, col: hoof, k: 0, bone: 2 },
+      ...[1, -1].flatMap(sx => [
+        { s: 'sph', c: [sx * 0.07, hipY + 0.39, 0.5], r: 0.02, col: eye, k: 0, bone: 2 }, { s: 'sph', c: [sx * 0.072, hipY + 0.4, 0.515], r: 0.007, col: C('#ffffff'), k: 0, bone: 2 },
+        { s: 'ell', c: [sx * 0.05, hipY + 0.42 + o.ear * 0.5, 0.4], rr: [0.025, o.ear * 0.55, 0.035], k: 0.01, bone: 2 },
+        { s: 'ell', c: [sx * 0.05, hipY + 0.42 + o.ear * 0.5, 0.415], rr: [0.014, o.ear * 0.4, 0.015], col: o.earIn ? C(o.earIn) : pale, k: 0, bone: 2 },
+        { s: 'cap', a: [sx * 0.1, hipY, 0.2], b: [sx * 0.1, kn, 0.21], r: 0.05, r2: 0.04, k: 0.03, bone: sx > 0 ? 3 : 5 },
+        { s: 'cap', a: [sx * 0.1, kn, 0.21], b: [sx * 0.1, 0.05, 0.21], r: 0.036, r2: 0.032, col: o.sock ? mane : null, k: 0.02, bone: sx > 0 ? 4 : 6 },
+        { s: 'cyl', ax: 'y', c: [sx * 0.1, 0.03, 0.22], r: 0.04, hh: 0.03, rd: 0.01, col: hoof, k: 0.01, bone: sx > 0 ? 4 : 6 },
+        { s: 'cap', a: [sx * 0.1, hipY + 0.02, -0.24], b: [sx * 0.1, kn, -0.27], r: 0.058, r2: 0.042, k: 0.03, bone: sx > 0 ? 7 : 9 },
+        { s: 'cap', a: [sx * 0.1, kn, -0.27], b: [sx * 0.1, 0.05, -0.25], r: 0.036, r2: 0.032, col: o.sock ? mane : null, k: 0.02, bone: sx > 0 ? 8 : 10 },
+        { s: 'cyl', ax: 'y', c: [sx * 0.1, 0.03, -0.24], r: 0.04, hh: 0.03, rd: 0.01, col: hoof, k: 0.01, bone: sx > 0 ? 8 : 10 },
+      ]),
+      // mane along the neck, and a tail
+      ...[0, 1, 2, 3].map(i => ({ s: 'ell', c: [0, hipY + 0.2 + i * 0.065, 0.2 + i * 0.05], rr: [0.03, 0.05 * o.maneK, 0.05], col: mane, k: 0.02, bone: 2 })),
+      { s: 'cap', a: [0, hipY + 0.1, -0.33], b: [0, hipY - 0.12 * o.tail, -0.42], r: 0.03 * o.tail, r2: 0.045 * o.tail, col: mane, k: 0.02 },
+    ];
+    if (o.blaze) parts.push({ s: 'ell', c: [0, hipY + 0.36, 0.6], rr: [0.022, 0.03, 0.04], col: C('#f8f4ec'), k: 0, bone: 2 }, { s: 'ell', c: [0, hipY + 0.38, 0.54], rr: [0.02, 0.025, 0.05], col: C('#f8f4ec'), k: 0, bone: 2 });
+    parts.push(...o.extra(hipY));
+    const m = P(name, parts, { ao: 0.7 });
+    rig(m, { 0: [0, hipY, -0.24], 1: [0, hipY, 0.2], 2: [0, hipY + 0.14, 0.24], 3: [0.1, hipY, 0.2], 4: [0.1, kn, 0.21], 5: [-0.1, hipY, 0.2], 6: [-0.1, kn, 0.21],
+      7: [0.1, hipY, -0.24], 8: [0.1, kn, -0.27], 9: [-0.1, hipY, -0.24], 10: [-0.1, kn, -0.27] });
+    m.quad = true; m.runAmp = o.amp; m.J.head = [0, hipY + 0.36, 0.46];
+    return m;
+  };
+  // the mule: grey-brown with a pale nose and belly, huge ears, a striped blanket, saddlebags and a bedroll
+  equine('mule', { leg: 0.36, pale: '#e8dcc8', mane: '#3a2a1e', ear: 0.15, earIn: '#d8a8a0', maneK: 0.6, tail: 0.6, belly: true, amp: 0.85, extra: y => [
+    box([0, y + 0.19, -0.04], [0.165, 0.035, 0.13], red, 0.02), box([0, y + 0.2, -0.04], [0.168, 0.012, 0.132], cream, 0.006),
+    ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.17, y + 0.08, -0.04], rr: [0.05, 0.08, 0.09], col: C('#7a4a24'), k: 0.01 })),
+    { s: 'cyl', ax: 'x', c: [0, y + 0.26, -0.14], r: 0.045, hh: 0.13, rd: 0.02, col: C('#d8c8a0'), k: 0 },
+    { s: 'tor', ax: 'x', c: [0.08, y + 0.26, -0.14], R: 0.045, r: 0.008, a0: -Math.PI, a1: Math.PI, col: C('#7a4a24'), k: 0 },
+  ] });
+  // the horse: a bay mustang with black stockings, a flowing mane and a white blaze, under an empty saddle
+  equine('horse', { leg: 0.44, pale: '#5a3a26', mane: '#1e1612', ear: 0.08, maneK: 1.3, tail: 1.2, sock: true, blaze: true, amp: 1.15, extra: y => [
+    { s: 'ell', c: [0, y + 0.17, -0.02], rr: [0.16, 0.05, 0.12], col: C('#6a3a1e'), k: 0.02 },
+    { s: 'cap', a: [0, y + 0.2, 0.08], b: [0, y + 0.27, 0.1], r: 0.02, r2: 0.026, col: C('#6a3a1e'), k: 0.01 },
+    { s: 'ell', c: [0, y + 0.13, -0.02], rr: [0.165, 0.03, 0.1], col: C('#3a6ab8'), k: 0.01 },
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.16, y + 0.12, -0.02], b: [sx * 0.17, y - 0.08, -0.02], r: 0.008, col: C('#2a1a12'), k: 0 })),
+    ...[1, -1].map(sx => ({ s: 'tor', ax: 'x', c: [sx * 0.17, y - 0.1, -0.02], R: 0.02, r: 0.007, a0: -Math.PI, a1: Math.PI, col: C('#c8c8d0'), k: 0 })),
+  ] });
+  // rattlesnake: a sandy chain of segments with dark diamonds on the back, a wide head with yellow eyes, a forked tongue and a rattle
+  {
+    const dia = C('#5a3e24'), belly = C('#f0e0b8'), rattle = C('#e8d4a8'), eyeY = C('#ffd23a'), tongue = C('#e8283c'), pupil = C('#120c0a');
+    const segs = [[8, -0.62, -0.42, 0.04, 0.06, 0.075], [7, -0.42, -0.14, 0.06, 0.075, 0.085], [0, -0.14, 0.1, 0.075, 0.08, 0.09], [1, 0.1, 0.3, 0.08, 0.065, 0.1]];
+    const parts = [];
+    for (const [b, z0, z1, r0, r1, y0] of segs) {
+      const y1 = b === 1 ? 0.24 : y0 + 0.005;
+      parts.push({ s: 'cap', a: [0, y0, z0], b: [0, y1, z1], r: r0, r2: r1, k: 0.03, bone: b });
+      parts.push({ s: 'ell', c: [0, (y0 + y1) / 2 - r0 * 0.45, (z0 + z1) / 2], rr: [r0 * 0.8, r0 * 0.5, (z1 - z0) * 0.5], col: belly, k: 0.01, bone: b });
+      for (let i = 0; i < 2; i++) { const u = (i + 0.5) / 2; parts.push({ s: 'ell', c: [0, lerp(y0, y1, u) + lerp(r0, r1, u) * 0.75, lerp(z0, z1, u)], rr: [lerp(r0, r1, u) * 0.55, 0.022, 0.045], col: dia, k: 0.01, bone: b }); }
+    }
+    for (const z of [-0.66, -0.7, -0.74]) parts.push({ s: 'ell', c: [0, 0.075, z], rr: [0.035, 0.03, 0.026], col: rattle, k: 0.01, bone: 8 });
+    parts.push({ s: 'ell', c: [0, 0.27, 0.4], rr: [0.1, 0.06, 0.11], k: 0.04, bone: 2 });
+    parts.push({ s: 'ell', c: [0, 0.25, 0.44], rr: [0.075, 0.035, 0.08], col: belly, k: 0.02, bone: 2 });
+    for (const sx of [1, -1]) {
+      parts.push({ s: 'sph', c: [sx * 0.062, 0.31, 0.45], r: 0.024, col: eyeY, k: 0, bone: 2 });
+      parts.push({ s: 'ell', c: [sx * 0.07, 0.315, 0.465], rr: [0.005, 0.016, 0.006], col: pupil, k: 0, bone: 2 });
+      parts.push({ s: 'cap', a: [0, 0.25, 0.555], b: [sx * 0.018, 0.25, 0.6], r: 0.006, col: tongue, k: 0, bone: 2 });
+    }
+    parts.push({ s: 'cap', a: [0, 0.25, 0.49], b: [0, 0.25, 0.56], r: 0.008, col: tongue, k: 0, bone: 2 });
+    const m = P('snake', parts, { ao: 0.4 });
+    rig(m, { 0: [0, 0.09, -0.02], 1: [0, 0.1, 0.1], 2: [0, 0.24, 0.3], 7: [0, 0.09, -0.14], 8: [0, 0.08, -0.42] });
+    m.snake = true; m.J.head = [0, 0.27, 0.4];
+  }
+
+  // ---------- people: a revolver-toting gunslinger, and The Outlaw ----------
+  const hatOn = (m, hr, col, band) => {
+    const hd = m.J.head, y = hd[1] + hr * 0.45;
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], y, hd[2]], r: hr * 1.65, hh: hr * 0.1, rd: hr * 0.08, col, bone: 2, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], y + hr * 0.07, hd[2]], R: hr * 1.6, r: hr * 0.12, a0: -Math.PI, a1: Math.PI, col, bone: 2, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], y + hr * 0.55, hd[2] - hr * 0.04], r: hr * 0.85, hh: hr * 0.5, rd: hr * 0.35, col, bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], y + hr * 1.08, hd[2] - hr * 0.04], rr: [hr * 0.18, hr * 0.22, hr * 0.6], sub: true, bone: 2, k: hr * 0.08 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], y + hr * 0.2, hd[2] - hr * 0.04], R: hr * 0.86, r: hr * 0.1, a0: -Math.PI, a1: Math.PI, col: band, bone: 2, k: 0 });
+  };
+  // a revolver in a hand: the barrel runs down the hanging arm, so it points ahead once the arm comes up
+  const revolver = (m, side, s, metal) => {
+    const h = m.J['ha' + side], b = side === 'R' ? 6 : 4, x = h[0];
+    m.parts.push({ s: 'cap', a: [x, h[1] - 0.02 * s, h[2] + 0.005 * s], b: [x, h[1] - 0.2 * s, h[2] + 0.005 * s], r: 0.016 * s, col: metal, bone: b, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [x, h[1] - 0.06 * s, h[2] + 0.005 * s], r: 0.03 * s, hh: 0.028 * s, rd: 0.01 * s, col: metal, bone: b, k: 0 });
+    m.parts.push({ s: 'cap', a: [x, h[1] + 0.01 * s, h[2] - 0.005 * s], b: [x, h[1] + 0.035 * s, h[2] - 0.07 * s], r: 0.02 * s, col: C('#5a3418'), bone: b, k: 0 });
+  };
+  {
+    const m = makeHumanoid(STICK), hd = m.J.head;
+    hatOn(m, 0.155, C('#6a4424'), C('#2a1a12'));
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.shY + 0.03, 0.005], R: 0.07, r: 0.03, a0: -Math.PI, a1: Math.PI, col: red, bone: 1, k: 0 });
+    m.parts.push({ s: 'ell', c: [0, STICK.shY - 0.01, 0.08], rr: [0.055, 0.05, 0.025], col: red, bone: 1, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.hipY + 0.02, 0], R: 0.095, r: 0.022, a0: -Math.PI, a1: Math.PI, col: C('#4a2e1a'), bone: 0, k: 0 });
+    m.parts.push({ s: 'ell', c: [0.11, STICK.hipY - 0.05, 0.0], rr: [0.03, 0.07, 0.045], col: C('#6a4024'), bone: 0, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0] + 0.06, hd[1] + 0.02, hd[2] + 0.13], rr: [0.03, 0.02, 0.02], col: C('#1a1214'), bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0] - 0.06, hd[1] + 0.02, hd[2] + 0.13], rr: [0.03, 0.02, 0.02], col: C('#1a1214'), bone: 2, k: 0 });
+    revolver(m, 'R', 1, C('#9aa0aa'));
+    m.name = 'gunslinger'; m.gun = 1; m.crownLift = 0.2;
+    defs.gunslinger = m;
+  }
+  // The Outlaw: a lanky goo bandit in a wide black hat and a long duster, a polka-dot bandana over his face, a bandolier,
+  // a silver-buckled gun belt, tall boots with spurs, and a silver six-shooter in each hand
+  {
+    const o = { ...STICK, hipY: 0.46, shY: 0.83, headY: 1.06, headR: 0.22, headZ: 0.03, shW: 0.2, hipW: 0.1, elOut: 0.06, upperLen: 0.17, foreLen: 0.16,
+      pelvisR: 0.15, torso: 'ell', torsoRR: [0.2, 0.26, 0.17], neckR: 0.11, armR: 0.075, handR: 0.09, legR: 0.085, k: 0.06 };
+    const m = makeHumanoid(o), J = m.J, hd = J.head, hr = o.headR;
+    const coat = C('#5e3a22'), coatD = C('#3e2616'), hatC = C('#1e1a20'), silver = C('#dcdce6'), brass = C('#e0b040'), boot = C('#2e1e14'), bandana = C('#c8302a');
+    face(m, { eyeCol: COL.eyeY, mouth: 'none', eyeY: 0.3 });
+    hatOn(m, hr * 1.05, hatC, silver);
+    for (let i = 0; i < 6; i++) { const a = -0.5 + i * 0.2; m.parts.push({ s: 'sph', c: [hd[0] + Math.sin(a) * hr * 0.92, hd[1] + hr * 0.7, hd[2] + Math.cos(a) * hr * 0.9], r: 0.022, col: silver, bone: 2, k: 0 }); }
+    // the bandana mask over nose and mouth, with white dots, knotted behind
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - hr * 0.42, hd[2] + hr * 0.38], rr: [hr * 0.92, hr * 0.5, hr * 0.7], col: bandana, bone: 2, k: 0.01 });
+    m.parts.push({ s: 'cap', a: [hd[0], hd[1] - hr * 0.55, hd[2] + hr * 0.9], b: [hd[0], hd[1] - hr * 1.0, hd[2] + hr * 0.75], r: hr * 0.3, r2: 0.01, col: bandana, bone: 2, k: 0.01 });
+    for (const [x, y] of [[-0.45, -0.3], [0.4, -0.35], [0, -0.55], [-0.2, -0.75], [0.25, -0.7], [0.55, -0.55], [-0.6, -0.55]]) m.parts.push({ s: 'sph', c: [hd[0] + x * hr, hd[1] + y * hr, hd[2] + hr * (0.98 - Math.abs(x) * 0.35)], r: 0.016, col: white, bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - hr * 0.2, hd[2] - hr * 0.95], rr: [0.05, 0.04, 0.035], col: bandana, bone: 2, k: 0 });
+    // the duster: over the chest and shoulders, open down the front, its tails flaring off the hips
+    m.parts.push({ s: 'ell', c: [0, 0.66, -0.06], rr: [0.235, 0.27, 0.16], col: coat, bone: 1, k: 0.02 });
+    for (const sx of [1, -1]) {
+      m.parts.push({ s: 'ell', c: [sx * 0.2, 0.8, -0.01], rr: [0.11, 0.07, 0.12], col: coat, bone: 1, k: 0.02 });
+      m.parts.push({ s: 'cap', a: [sx * 0.09, 0.84, 0.12], b: [sx * 0.07, 0.56, 0.15], r: 0.025, col: coatD, bone: 1, k: 0.01 });
+      m.parts.push({ s: 'cap', a: J['sh' + (sx > 0 ? 'L' : 'R')], b: J['el' + (sx > 0 ? 'L' : 'R')], r: o.armR * 1.15, col: coat, bone: sx > 0 ? 3 : 5, k: 0.02 });
+      m.parts.push({ s: 'cap', a: J['el' + (sx > 0 ? 'L' : 'R')], b: [J['ha' + (sx > 0 ? 'L' : 'R')][0], J['ha' + (sx > 0 ? 'L' : 'R')][1] + 0.05, 0.02], r: o.armR * 1.1, r2: o.armR * 1.25, col: coat, bone: sx > 0 ? 4 : 6, k: 0.02 });
+    }
+    m.parts.push({ s: 'ell', c: [0, 0.33, -0.07], rr: [0.245, 0.22, 0.15], col: coat, bone: 0, k: 0.02 });
+    // bandolier, belt and buckle, holsters
+    m.parts.push({ s: 'cap', a: [0.17, 0.84, 0.13], b: [-0.15, 0.5, 0.15], r: 0.03, col: C('#4a2e1a'), bone: 1, k: 0 });
+    for (let i = 0; i < 6; i++) { const u = (i + 0.5) / 6; m.parts.push({ s: 'cap', a: [lerp(0.17, -0.15, u), lerp(0.84, 0.5, u), 0.165], b: [lerp(0.17, -0.15, u), lerp(0.84, 0.5, u) + 0.04, 0.17], r: 0.012, col: brass, bone: 1, k: 0 }); }
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, o.hipY + 0.03, 0], R: 0.155, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#2a1a12'), bone: 0, k: 0 });
+    m.parts.push(box([0, o.hipY + 0.03, 0.18], [0.05, 0.035, 0.012], silver, 0.01));
+    m.parts[m.parts.length - 1].bone = 0;
+    for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [sx * 0.16, o.hipY - 0.06, 0.02], rr: [0.04, 0.09, 0.055], col: C('#6a4024'), bone: 0, k: 0 });
+    // boots with spurs
+    for (const sd of ['L', 'R']) {
+      const an = J['an' + sd], kn = J['kn' + sd], b = sd === 'L' ? 8 : 10;
+      m.parts.push({ s: 'cap', a: [an[0], an[1] + 0.02, an[2]], b: [kn[0], kn[1] - 0.02, kn[2]], r: o.legR * 1.2, r2: o.legR * 1.3, col: boot, bone: b, k: 0.01 });
+      m.parts.push({ s: 'ell', c: [an[0], an[1] - 0.02, an[2] + 0.05], rr: [o.legR * 1.05, o.legR * 0.65, o.legR * 1.7], col: boot, bone: b, k: 0.01 });
+      m.parts.push({ s: 'tor', ax: 'x', c: [an[0], an[1] + 0.01, an[2] - 0.11], R: 0.03, r: 0.009, a0: -Math.PI, a1: Math.PI, col: silver, bone: b, k: 0 });
+    }
+    revolver(m, 'R', 1.5, silver); revolver(m, 'L', 1.5, silver);
+    m.top = hd[1] + hr * 2.0; m.bmin = [-0.6, -0.03, -0.5]; m.bmax = [0.6, m.top + 0.05, 0.55];
+    m.name = 'outlaw'; m.gun = 2; m.runAmp = 0.9; m.lean = 0.1;
+    defs.outlaw = m;
+  }
 }
 </script>
 <script>
@@ -3070,6 +3578,17 @@ function partDist(pt, x, y, z) {
       const qx = Math.abs(x - pt.c[0]) - pt.hs[0] + pt.rd, qy = Math.abs(y - pt.c[1]) - pt.hs[1] + pt.rd, qz = Math.abs(z - pt.c[2]) - pt.hs[2] + pt.rd;
       return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - pt.rd;
     }
+    case 'gable': {
+      // a pitched roof: an isosceles triangle (half base w, height h, base at c.y) run along 'ax' ('z', or 'x') for half length hh
+      let px, pz;
+      if (pt.ax === 'x') { px = Math.abs(z - pt.c[2]); pz = Math.abs(x - pt.c[0]) - pt.hh; } else { px = Math.abs(x - pt.c[0]); pz = Math.abs(z - pt.c[2]) - pt.hh; }
+      const py = pt.c[1] + pt.h - y, qx = pt.w, qy = pt.h;
+      const ta = clamp((px * qx + py * qy) / (qx * qx + qy * qy), 0, 1), ax = px - qx * ta, ay = py - qy * ta;
+      const bx = px - qx * clamp(px / qx, 0, 1), by = py - qy;
+      const dd = Math.min(ax * ax + ay * ay, bx * bx + by * by), sg = Math.min(py * qx - px * qy, qy - py);
+      const d2 = -Math.sqrt(dd) * Math.sign(sg);
+      return Math.min(Math.max(d2, pz), 0) + Math.hypot(Math.max(d2, 0), Math.max(pz, 0));
+    }
     case 'rock': {
       // lumpy sphere: sphere plus low-frequency bumps
       const dx = x - pt.c[0], dy = y - pt.c[1], dz = z - pt.c[2];
@@ -3090,6 +3609,7 @@ function partBounds(pt) {
     case 'tor': return [pt.c, pt.R + pt.r];
     case 'box': return [pt.c, Math.hypot(...pt.hs)];
     case 'rock': return [pt.c, pt.r * (1 + pt.bump * 0.8)];
+    case 'gable': return [[pt.c[0], pt.c[1] + pt.h / 2, pt.c[2]], Math.hypot(pt.w, pt.h / 2, pt.hh)];
   }
   return [[0, 0, 0], 1e9];
 }
@@ -3491,6 +4011,7 @@ function modelDefs() {
   themeModels(defs);
   themeModels2(defs);
   themeModels3(defs);
+  westModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -3522,6 +4043,8 @@ function crownModel(base) {
 // ------------------------------------------------------------
 const CLIPS = {
   run: { frames: 32, fn(t, m) {
+    if (m.quad) return quadRun(t, m);
+    if (m.snake) return snakeRun(t);
     const ph = t * TAU, s = Math.sin(ph), c = Math.cos(ph), A = m.runAmp || 1, lean = m.lean || 0.14;
     const armL = m.shieldArm ? 0.15 : 1;
     return { root: [0, 0.028 * Math.cos(2 * ph) - 0.01, 0], rot: [
@@ -3537,13 +4060,15 @@ const CLIPS = {
     return { root: [0, 0.006 * s, 0], rot: [[0, 0, 0], [0.04 + 0.02 * s, 0, 0], [-0.03, 0.08 * s, 0], [0.05, 0, 0.14 + 0.03 * s], [-0.35, 0, 0],
       [0.05, 0, -0.14 - 0.03 * s], [-0.35, 0, 0], [0, 0, 0.02], [0.05, 0, 0], [0, 0, -0.02], [0.05, 0, 0]] };
   } },
-  aim: { frames: 16, fn(t) {
+  aim: { frames: 16, fn(t, m) {
+    if (m.gun) return gunAim(t, m);
     const draw = smoothstep(0, 0.7, t) * (1 - smoothstep(0.75, 0.85, t));
     return { root: [0, -0.01, 0], rot: [[0, -0.3, 0], [0.06, -0.15, 0], [-0.08, 0.35, 0],
       [-1.4, 0, 0.1], [-0.08, 0, 0], [-1.25, 0, -0.35], [-0.2 - 1.2 * draw, 0.6 * draw, 0],
       [-0.12, 0, 0.05], [0.18, 0, 0], [0.1, 0, -0.05], [0.12, 0, 0]] };
   } },
-  slam: { frames: 24, fn(t) {
+  slam: { frames: 24, fn(t, m) {
+    if (m.quad) return quadBuck(t);
     const up = smoothstep(0, 0.55, t), down = smoothstep(0.55, 0.68, t), rec = smoothstep(0.8, 1, t);
     const arm = lerp(lerp(0, -2.7, up), -0.5, down) * (1 - rec) + rec * 0;
     const lean = lerp(lerp(0, -0.25, up), 0.45, down) * (1 - rec);
@@ -3552,7 +4077,8 @@ const CLIPS = {
       [arm, 0, 0.25], [-0.3 * (1 - down), 0, 0], [arm, 0, -0.25], [-0.3 * (1 - down), 0, 0],
       [-0.3 * down * (1 - rec), 0, 0.08], [0.5 * down * (1 - rec), 0, 0], [-0.3 * down * (1 - rec), 0, -0.08], [0.5 * down * (1 - rec), 0, 0]] };
   } },
-  throw: { frames: 24, fn(t) {
+  throw: { frames: 24, fn(t, m) {
+    if (m.snake) return snakeStrike(t);
     const back = smoothstep(0, 0.55, t), fwd = smoothstep(0.55, 0.7, t), rec = smoothstep(0.75, 1, t);
     const k = 1 - rec;
     const armR = (lerp(0, -2.6, back) + 2.0 * fwd) * k;
@@ -3675,8 +4201,7 @@ const THEME_CELLS = { gooblin: 0.018, lollipop: 0.018, candycane: 0.02, gumdrop:
   pine: 0.025, snowman: 0.02, icecrystal: 0.022, iceblock: 0.035, icicle: 0.018, icespike: 0.02, yeti: 0.015,
   obsidian: 0.022, vent: 0.025, deadtree: 0.016, basalt: 0.035, golem: 0.016,
   jtree: 0.025, mushroom: 0.022, fern: 0.018, bamboo: 0.02, roots: 0.02, hydrabody: 0.02, hydrahead: 0.016, vineseg: 0.03,
-  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02,
-  dish: 0.02, lander: 0.02, habdome: 0.03, moonwall: 0.025, ufo: 0.02, alien: 0.014 };
+  palm: 0.022, barrel: 0.022, crate: 0.03, starfish: 0.02, post: 0.025, wreck: 0.035, crab: 0.016, crabclaw: 0.018, crableg: 0.02 };
 // built after everything chapter 1 needs
 MESH_ORDER.push('gooblin', 'cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhead', 'wormseg',
   'building0', 'building1', 'building2', 'tower', 'car', 'streetlamp', 'hydrant', 'bin', 'barrier', 'tree', 'wreckbot', 'wreckball',
@@ -3685,8 +4210,7 @@ MESH_ORDER.push('gooblin', 'cactus0', 'cactus1', 'skull', 'tumbleweed', 'wormhea
   'pine', 'snowman', 'icecrystal', 'iceblock', 'icicle', 'icespike', 'yeti',
   'obsidian', 'vent', 'deadtree', 'basalt', 'golem',
   'jtree', 'mushroom', 'fern', 'bamboo', 'roots', 'hydrabody', 'hydrahead', 'vineseg',
-  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg',
-  'dish', 'lander', 'habdome', 'moonwall', 'ufo', 'alien');
+  'palm', 'barrel', 'crate', 'starfish', 'post', 'wreck', 'crab', 'crabclaw', 'crableg');
 function themeModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
   // ---------- the Golden Gooblin: a gold blob with a loot sack, grinning; the body takes the tint ----------
@@ -4187,65 +4711,6 @@ function themeModels(defs) {
       { s: 'cap', a: [0, 0.58, 0.35], b: [0, 0.02, 0.62], r: 0.05, r2: 0.02, k: 0.02 },
     ]);
   }
-  // ---------- Moon Base ----------
-  {
-    const metal = C('#d8dce6'), metalD = C('#8a90a0'), dark = C('#2a2e3a'), red = C('#ff4a5a'), glow = C('#7af0ff'), yel = C('#ffcf3a'), glass = C('#3a5a8a');
-    // a radar dish looking up at the sky
-    P('dish', [
-      { s: 'cyl', ax: 'y', c: [0, 0.08, 0], r: 0.3, hh: 0.08, rd: 0.03, col: metalD, k: 0 },
-      { s: 'cap', a: [0, 0.1, 0], b: [0, 0.75, 0], r: 0.06, col: metalD, k: 0.02 },
-      { s: 'ell', c: [0, 0.85, 0], rr: [0.48, 0.1, 0.48], col: metal, k: 0.02 },
-      { s: 'tor', ax: 'y', c: [0, 0.9, 0], R: 0.46, r: 0.03, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
-      { s: 'cap', a: [0, 0.9, 0], b: [0, 1.25, 0], r: 0.025, col: dark, k: 0 },
-      { s: 'sph', c: [0, 1.27, 0], r: 0.05, col: red, k: 0 },
-    ]);
-    // a little moon lander rocket
-    P('lander', [
-      { s: 'cap', a: [0, 0.25, 0], b: [0, 1.2, 0], r: 0.24, r2: 0.2, col: metal, k: 0.02 },
-      { s: 'cap', a: [0, 1.2, 0], b: [0, 1.6, 0], r: 0.2, r2: 0.03, col: red, k: 0.02 },
-      { s: 'sph', c: [0, 1.0, 0.2], r: 0.08, col: glass, k: 0 },
-      { s: 'tor', ax: 'z', c: [0, 1.0, 0.2], R: 0.085, r: 0.02, a0: -Math.PI, a1: Math.PI, col: metalD, k: 0 },
-      ...[0, 2.09, 4.19].map(a => ({ s: 'cap', a: [Math.cos(a) * 0.2, 0.5, Math.sin(a) * 0.2], b: [Math.cos(a) * 0.42, 0.02, Math.sin(a) * 0.42], r: 0.05, r2: 0.03, col: red, k: 0.02 })),
-      { s: 'cyl', ax: 'y', c: [0, 0.2, 0], r: 0.14, hh: 0.06, rd: 0.02, col: dark, k: 0 },
-    ]);
-    // a habitat dome with a ring of windows and a door
-    P('habdome', [
-      { s: 'ell', c: [0, 0.05, 0], rr: [0.6, 0.48, 0.6], col: metal, k: 0.02 },
-      { s: 'cyl', ax: 'y', c: [0, 0.04, 0], r: 0.62, hh: 0.05, rd: 0.02, col: metalD, k: 0.01 },
-      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.5, 0.25, Math.sin(a) * 0.5], r: 0.07, col: glow, k: 0 }; }),
-      { s: 'box', c: [0, 0.15, 0.58], hs: [0.12, 0.15, 0.05], rd: 0.03, col: metalD, k: 0.01 },
-      { s: 'sph', c: [0, 0.5, 0], r: 0.08, col: yel, k: 0 },
-    ]);
-    // the base perimeter: metal panels with a hazard stripe and a light, facing in
-    P('moonwall', [
-      { s: 'box', c: [0, 0.42, 0], hs: [0.5, 0.42, 0.12], rd: 0.04, col: metalD, k: 0 },
-      { s: 'box', c: [0, 0.62, 0.121], hs: [0.46, 0.05, 0.005], rd: 0, col: yel, k: 0 },
-      { s: 'box', c: [0, 0.05, 0], hs: [0.5, 0.05, 0.2], rd: 0.02, col: dark, k: 0.01 },
-      { s: 'sph', c: [0.36, 0.84, 0.05], r: 0.05, col: glow, k: 0 },
-    ], { ao: 0.8 });
-  }
-  // ---------- UFO Overlord (chapter 10 boss): a spinning saucer (takes the tint) and its little green pilot ----------
-  {
-    const metal = C('#e2e6f0'), dark = C('#2a2440'), lightY = C('#ffe060'), lightC = C('#7af0ff'), green = C('#7dff6a'), eye = C('#101018');
-    P('ufo', [
-      { s: 'ell', c: [0, 0.5, 0], rr: [0.92, 0.16, 0.92], k: 0.04 },
-      { s: 'ell', c: [0, 0.4, 0], rr: [0.55, 0.14, 0.55], col: metal, k: 0.04 },
-      { s: 'tor', ax: 'y', c: [0, 0.5, 0], R: 0.86, r: 0.05, a0: -Math.PI, a1: Math.PI, col: metal, k: 0.01 },
-      ...Array.from({ length: 10 }, (_, i) => { const a = (i / 10) * TAU; return { s: 'sph', c: [Math.cos(a) * 0.9, 0.5, Math.sin(a) * 0.9], r: 0.055, col: i % 2 ? lightY : lightC, k: 0 }; }),
-      { s: 'cyl', ax: 'y', c: [0, 0.66, 0], r: 0.36, hh: 0.04, rd: 0.03, col: dark, k: 0.01 },
-      { s: 'tor', ax: 'y', c: [0, 0.69, 0], R: 0.36, r: 0.04, a0: -Math.PI, a1: Math.PI, col: metal, k: 0 },
-      { s: 'sph', c: [0, 0.28, 0], r: 0.2, col: lightC, k: 0.03 },
-    ]);
-    // the pilot: a big green head with huge black eyes and antennae, sitting in the cockpit
-    P('alien', [
-      { s: 'cap', a: [0, 0.0, 0], b: [0, 0.2, 0], r: 0.12, col: green, k: 0.03 },
-      { s: 'ell', c: [0, 0.38, 0.02], rr: [0.26, 0.22, 0.22], col: green, k: 0.05 },
-      { s: 'ell', c: [0, 0.28, 0.12], rr: [0.13, 0.12, 0.12], col: green, k: 0.06 },
-      { s: 'ell', c: [0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 }, { s: 'ell', c: [-0.11, 0.4, 0.18], rr: [0.09, 0.055, 0.04], col: eye, k: 0 },
-      { s: 'cap', a: [0.08, 0.56, 0], b: [0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 }, { s: 'cap', a: [-0.08, 0.56, 0], b: [-0.16, 0.76, -0.04], r: 0.018, col: green, k: 0 },
-      { s: 'sph', c: [0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 }, { s: 'sph', c: [-0.16, 0.78, -0.04], r: 0.04, col: lightY, k: 0 },
-    ]);
-  }
 }
 
 // ---- 04b-theme-models2.js ----
@@ -4649,13 +5114,13 @@ function themeModels2(defs) {
 
 // ---- 04c-theme-models3.js ----
 // ============================================================
-// Chapters 1-10: each map's own enemy, and the Stone Plaza's own obstacles. Built with prop() like
+// Chapters 1-9: each map's own enemy (chapter 10's are in 04d), and the Stone Plaza's own obstacles. Built with prop() like
 // 04a/04b. Model units: 1 is about one hero leg. Parts without col take the instance tint.
 // ============================================================
-Object.assign(THEME_CLIPS, { pigeon: ['run'], scarab: ['run'], rat: ['run'], balloon: ['run'], gummy: ['run'], penguin: ['run'], magmite: ['run'], frog: ['run'], seagull: ['run'], martian: ['run'] });
+Object.assign(THEME_CLIPS, { pigeon: ['run'], scarab: ['run'], rat: ['run'], balloon: ['run'], gummy: ['run'], penguin: ['run'], magmite: ['run'], frog: ['run'], seagull: ['run'] });
 Object.assign(THEME_CELLS, { statue: 0.022, fountain: 0.03, bench: 0.022,
-  pigeon: 0.018, scarab: 0.018, rat: 0.016, balloon: 0.02, gummy: 0.02, penguin: 0.02, magmite: 0.02, frog: 0.018, seagull: 0.018, martian: 0.018 });
-MESH_ORDER.push('statue', 'fountain', 'bench', 'pigeon', 'scarab', 'rat', 'balloon', 'gummy', 'penguin', 'magmite', 'frog', 'seagull', 'martian');
+  pigeon: 0.018, scarab: 0.018, rat: 0.016, balloon: 0.02, gummy: 0.02, penguin: 0.02, magmite: 0.02, frog: 0.018, seagull: 0.018 });
+MESH_ORDER.push('statue', 'fountain', 'bench', 'pigeon', 'scarab', 'rat', 'balloon', 'gummy', 'penguin', 'magmite', 'frog', 'seagull');
 
 function themeModels3(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -4795,19 +5260,571 @@ function themeModels3(defs) {
     { s: 'ell', c: [0, 0.5, -0.36], rr: [0.1, 0.03, 0.12], col: C('#a8b4c4'), k: 0.03 },
     { s: 'cap', a: [0.06, 0.34, 0], b: [0.06, 0.16, 0.02], r: 0.02, col: orange, k: 0.01 }, { s: 'cap', a: [-0.06, 0.34, 0], b: [-0.06, 0.16, 0.02], r: 0.02, col: orange, k: 0.01 },
   ], { ao: 0.4 });
-  // moon martian: a little green alien (the tint) with a big head, black eyes, an antenna and a ray gun
-  P('martian', [
-    { s: 'ell', c: [0, 0.32, 0], rr: [0.16, 0.22, 0.14], k: 0.05 },
-    { s: 'ell', c: [0, 0.72, 0.02], rr: [0.26, 0.22, 0.22], k: 0.06 },
-    { s: 'ell', c: [0.11, 0.72, 0.18], rr: [0.08, 0.05, 0.05], col: dark, k: 0 }, { s: 'ell', c: [-0.11, 0.72, 0.18], rr: [0.08, 0.05, 0.05], col: dark, k: 0 },
-    { s: 'sph', c: [0.13, 0.74, 0.22], r: 0.015, col: white, k: 0 }, { s: 'sph', c: [-0.09, 0.74, 0.22], r: 0.015, col: white, k: 0 },
-    { s: 'cap', a: [0, 0.92, 0], b: [0.06, 1.08, -0.02], r: 0.015, k: 0.01 }, { s: 'sph', c: [0.06, 1.1, -0.02], r: 0.04, col: C('#ff5fb8'), k: 0 },
-    { s: 'cap', a: [0.14, 0.42, 0], b: [0.24, 0.36, 0.2], r: 0.04, k: 0.03 },
-    { s: 'box', c: [0.26, 0.37, 0.28], hs: [0.04, 0.05, 0.1], rd: 0.02, col: C('#c8d0e0'), k: 0.01 },
-    { s: 'sph', c: [0.26, 0.38, 0.4], r: 0.035, col: C('#5af0ff'), k: 0 },
-    { s: 'cap', a: [-0.14, 0.42, 0], b: [-0.2, 0.24, 0.04], r: 0.04, k: 0.03 },
-    { s: 'cap', a: [0.07, 0.14, 0], b: [0.08, 0.02, 0.06], r: 0.05, k: 0.03 }, { s: 'cap', a: [-0.07, 0.14, 0], b: [-0.08, 0.02, 0.06], r: 0.05, k: 0.03 },
+}
+
+// ---- 04d-west-models.js ----
+// ============================================================
+// Chapter 10, the Wild West town: false-front buildings, the town square, ranch props, the town's creatures
+// (bison, mule, horse, rattlesnake, gunslinger) and The Outlaw. Built with prop() like 04a-04c.
+// Buildings are one unit wide with their front at +z: the camera sees +z faces, so every front faces it.
+// Four-legged creatures and the snake get their own bone pivots (rig) and poses (quadRun, snakeRun... below).
+// ============================================================
+Object.assign(THEME_CLIPS, { bison: ['run', 'slam'], mule: ['run', 'slam'], horse: ['run'], snake: ['run', 'throw'], gunslinger: ['run', 'aim'], outlaw: ['run', 'aim', 'throw', 'idle'] });
+Object.assign(THEME_CELLS, { saloon: 0.02, bank: 0.017, sheriff: 0.02, store: 0.02, hotel: 0.02, barn: 0.02, church: 0.018,
+  watertower: 0.02, gazebo: 0.02, well: 0.02, oillamp: 0.016, haybale: 0.025, wagon: 0.02, trough: 0.022, derrick: 0.02, railfence: 0.022, dynamite: 0.012,
+  bison: 0.017, mule: 0.016, horse: 0.016, snake: 0.014, gunslinger: 0.015, outlaw: 0.015 });
+MESH_ORDER.push('saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp',
+  'haybale', 'wagon', 'trough', 'derrick', 'railfence', 'dynamite', 'snake', 'horse', 'gunslinger', 'mule', 'bison', 'outlaw');
+
+// move a prop model's bone pivots (bone index -> [x, y, z]) so its parts can swing like legs
+function rig(m, piv) { for (const b in piv) m.bones[b].p = piv[b]; return m; }
+
+// ---------- poses for the rigged creatures (called from CLIPS in 04-models.js) ----------
+// four legs: 3/4 front left, 5/6 front right, 7/8 back left, 9/10 back right; diagonal pairs swing together
+function quadRun(t, m) {
+  const ph = t * TAU, s = Math.sin(ph), c = Math.cos(ph), A = m.runAmp || 1;
+  return { root: [0, 0.025 * Math.abs(Math.sin(ph)) * A, 0], rot: [
+    [0.04 * Math.sin(2 * ph) * A, 0, 0], [0, 0, 0], [-0.1 * Math.sin(2 * ph + 0.6) * A, 0.05 * s, 0],
+    [0.55 * s * A, 0, 0], [0.8 * Math.max(0, -c) * A, 0, 0], [-0.55 * s * A, 0, 0], [0.8 * Math.max(0, c) * A, 0, 0],
+    [-0.55 * s * A, 0, 0], [0.6 * Math.max(0, c) * A, 0, 0], [0.55 * s * A, 0, 0], [0.6 * Math.max(0, -c) * A, 0, 0],
+  ] };
+}
+// rears up on its back legs, front hooves pawing, then stamps down (the body pivots on its hips)
+function quadBuck(t) {
+  const up = smoothstep(0, 0.55, t), down = smoothstep(0.55, 0.68, t), rec = 1 - smoothstep(0.8, 1, t);
+  const pitch = (-0.55 * up + 0.6 * down) * rec, paw = (1.1 * up - 1.2 * down) * rec, fold = 1.0 * up * (1 - down) * rec;
+  return { root: [0, 0, 0], rot: [[pitch, 0, 0], [0, 0, 0], [-pitch * 0.6, 0, 0],
+    [-paw + Math.sin(t * TAU * 3) * 0.3 * up * (1 - down), 0, 0], [fold, 0, 0], [-paw * 0.85, 0, 0], [fold, 0, 0],
+    [-pitch, 0, 0], [0, 0, 0], [-pitch, 0, 0], [0, 0, 0]] };
+}
+// a snake is a chain: tail tip 8 <- 7 <- 0 (middle) -> 1 (neck) -> 2 (head); each link swings side to side a little later
+function snakeRun(t) {
+  const ph = t * TAU, a0 = 0.22 * Math.sin(ph), a1 = 0.32 * Math.sin(ph + 1.2), a2 = 0.12 * Math.sin(ph + 2.4);
+  const a7 = 0.36 * Math.sin(ph - 1.2), a8 = 0.5 * Math.sin(ph - 2.4);
+  const r = Array.from({ length: NBONES }, () => [0, 0, 0]);
+  r[0] = [0, a0, 0]; r[1] = [0, a1 - a0, 0]; r[2] = [0, a2 - a1, 0]; r[7] = [0, a7 - a0, 0]; r[8] = [0.12 * Math.sin(ph * 6), a8 - a7, 0];
+  return { root: [0, 0, 0], rot: r };
+}
+// coils back with the rattle going, then strikes
+function snakeStrike(t) {
+  const back = smoothstep(0, 0.55, t), fwd = smoothstep(0.55, 0.7, t), k = 1 - smoothstep(0.75, 1, t);
+  const r = Array.from({ length: NBONES }, () => [0, 0, 0]);
+  r[1] = [(-0.55 * back + 0.75 * fwd) * k, 0, 0]; r[2] = [(0.35 * back - 0.45 * fwd) * k, 0, 0];
+  r[7] = [0, 0.35 * Math.sin(t * TAU * 3) * back * k, 0]; r[8] = [0.25 * Math.sin(t * TAU * 12) * k, 0.3 * Math.sin(t * TAU * 6) * k, 0];
+  return { root: [0, 0, (-0.06 * back + 0.12 * fwd) * k], rot: r };
+}
+// gun hands: the right arm comes up level and kicks with the shot (m.gun 2: both arms, a revolver in each)
+function gunAim(t, m) {
+  const up = smoothstep(0, 0.35, t), kick = Math.sin(clamp((t - 0.78) / 0.22, 0, 1) * Math.PI) * 0.35, two = m.gun === 2;
+  return { root: [0, -0.015 * up, 0], rot: [[0, -0.12 * up, 0], [0.05, -0.08 * up, 0], [-0.06, 0.1 * up, 0],
+    two ? [-1.5 * up - kick, 0, 0.16] : [-0.3 * up, 0, 0.2], [two ? -0.06 : -1.0 * up, 0, 0],
+    [-1.52 * up - kick, 0.08, -0.12], [-0.06, 0, 0],
+    [-0.12, 0, 0.06], [0.16, 0, 0], [0.1, 0, -0.06], [0.1, 0, 0]] };
+}
+
+function westModels(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const wood = C('#a8703e'), woodD = C('#6e4626'), woodL = C('#d4a066'), plank = C('#8a6040'), roof = C('#5a3c2c'), trim = C('#f4ead6');
+  const glass = C('#2c3a52'), lit = C('#ffd27a'), dark = C('#1c140e'), gold = C('#ffc93a'), brick = C('#a4523a'), stoneD = C('#b8a888');
+  const green = C('#3f6e4c'), red = C('#b33a2e'), tin = C('#9aa0a8'), white = C('#f6f1e6'), hay = C('#e8c35a'), hayD = C('#b8902e');
+  const canvas = C('#efe4cc'), iron = C('#3a3a42'), cream = C('#fff0cc'), signRed = C('#7a2a20'), water = C('#3a6a8a');
+  const box = (c, hs, col, rd = 0.006, k = 0) => ({ s: 'box', c, hs, rd, col, k });
+  // corrugated tin: light ribs running front to back over a roof plate at height y
+  const tinRoof = (y, z, hd, hw = 0.47, col = C('#b8bcc0')) => Array.from({ length: 9 }, (_, i) => box([-hw + 0.04 + i * (hw * 2 - 0.08) / 8, y + 0.012, z], [0.014, 0.006, hd], col, 0.003));
+  // a framed window (lit: warm light inside); z is the wall face
+  const win = (x, y, z, w, h, o = {}) => {
+    const out = [box([x, y, z], [w + 0.014, h + 0.014, 0.01], o.frame || trim, 0.004), box([x, y, z + 0.008], [w, h, 0.008], o.lit ? lit : glass, 0.003)];
+    if (o.shut) for (const sx of [1, -1]) out.push(box([x + sx * (w + 0.034), y, z + 0.004], [0.02, h + 0.008, 0.008], o.shut, 0.003));
+    return out;
+  };
+  // signboard "lettering": a row of little blocks
+  const letters = (x0, x1, y, z, n, col, hh = 0.02) => Array.from({ length: n }, (_, i) => box([lerp(x0, x1, n > 1 ? i / (n - 1) : 0.5), y, z], [(x1 - x0) / n * 0.32, hh, 0.006], col, 0.003));
+  // boardwalk across the front with posts holding a porch roof or balcony
+  const porch = (z0, z1, top, xs, roofCol) => {
+    const out = [box([0, 0.018, (z0 + z1) / 2], [0.5, 0.018, (z1 - z0) / 2], plank, 0.004)];
+    for (const x of xs) out.push({ s: 'cap', a: [x, 0.03, z1 - 0.018], b: [x, top, z1 - 0.018], r: 0.017, col: woodD, k: 0 });
+    if (roofCol) out.push(box([0, top + 0.01, (z0 + z1) / 2 + 0.01], [0.505, 0.012, (z1 - z0) / 2 + 0.012], roofCol, 0.004));
+    return out;
+  };
+
+  // ---------- the saloon: two floors, a balcony, batwing doors and a big red sign up on the false front ----------
+  P('saloon', [
+    box([0, 0.27, -0.08], [0.48, 0.27, 0.28], null, 0.008, 0.01),
+    box([0, 0.37, 0.215], [0.5, 0.37, 0.016], null, 0.006),
+    box([0, 0.745, 0.215], [0.51, 0.014, 0.03], trim),
+    box([0, 0.79, 0.215], [0.22, 0.04, 0.016], null),
+    { s: 'gable', c: [0, 0.83, 0.215], w: 0.14, h: 0.07, hh: 0.016, ax: 'z', col: trim, k: 0 },
+    box([0, 0.64, 0.232], [0.39, 0.07, 0.006], gold), box([0, 0.64, 0.24], [0.37, 0.055, 0.006], signRed),
+    ...letters(-0.26, 0.26, 0.64, 0.248, 6, cream, 0.028),
+    box([0, 0.56, -0.08], [0.47, 0.012, 0.27], C('#8a8f96')), ...tinRoof(0.56, -0.08, 0.26),
+    box([0.3, 0.62, -0.22], [0.04, 0.06, 0.04], brick), { s: 'cyl', ax: 'y', c: [-0.05, 0.62, -0.28], r: 0.05, hh: 0.05, rd: 0.015, col: wood, k: 0 }, { s: 'cyl', ax: 'y', c: [-0.25, 0.63, -0.25], r: 0.022, hh: 0.07, rd: 0.005, col: iron, k: 0 },
+    // corner boards
+    ...[1, -1].map(sx => box([sx * 0.49, 0.37, 0.215], [0.014, 0.37, 0.02], trim)),
+    // ground floor: batwing doors in a dark doorway, lit windows, lanterns
+    box([0, 0.11, 0.232], [0.085, 0.11, 0.006], dark), ...[1, -1].map(sx => box([sx * 0.043, 0.1, 0.24], [0.038, 0.05, 0.006], woodL)),
+    ...win(0.29, 0.13, 0.232, 0.1, 0.07, { lit: true }), ...win(-0.29, 0.13, 0.232, 0.1, 0.07, { lit: true }),
+    ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.15, 0.2, 0.25], r: 0.02, col: lit, k: 0 })),
+    // upper floor behind the balcony
+    ...[-0.3, 0, 0.3].flatMap(x => win(x, 0.44, 0.232, 0.055, 0.065, { shut: green, lit: x === 0 })),
+    // balcony over the boardwalk
+    ...porch(0.23, 0.36, 0.3, [-0.47, -0.16, 0.16, 0.47]),
+    box([0, 0.31, 0.3], [0.5, 0.013, 0.075], wood), box([0, 0.36, 0.36], [0.5, 0.04, 0.012], woodD, 0.005),
+    box([0, 0.405, 0.36], [0.505, 0.008, 0.016], woodL),
+    // a hitching rail out front
+    { s: 'cap', a: [-0.4, 0.09, 0.42], b: [-0.18, 0.09, 0.42], r: 0.012, col: woodD, k: 0 },
+    ...[-0.4, -0.18].map(x => ({ s: 'cap', a: [x, 0, 0.42], b: [x, 0.1, 0.42], r: 0.014, col: woodD, k: 0 })),
+  ], { ao: 3 });
+
+  // ---------- the bank: a sandstone hall with a white column portico, a clock in the pediment and a gold $ on the roof ----------
+  {
+    const parts = [
+      box([0, 0.3, -0.06], [0.47, 0.3, 0.28], null, 0.01, 0.01),
+      box([0, 0.025, 0.02], [0.49, 0.025, 0.34], stoneD, 0.006),
+      box([0, 0.012, 0.335], [0.22, 0.012, 0.035], stoneD), box([0, 0.036, 0.315], [0.2, 0.012, 0.03], stoneD),
+      // portico: four columns, entablature with gilt lettering, a pediment with a clock
+      ...[-0.27, -0.09, 0.09, 0.27].flatMap(x => [
+        { s: 'cyl', ax: 'y', c: [x, 0.3, 0.29], r: 0.032, hh: 0.25, rd: 0.01, col: white, k: 0 },
+        box([x, 0.555, 0.29], [0.046, 0.014, 0.046], white, 0.004), box([x, 0.062, 0.29], [0.044, 0.012, 0.044], white, 0.004),
+      ]),
+      box([0, 0.59, 0.275], [0.37, 0.026, 0.065], white, 0.006),
+      ...letters(-0.2, 0.2, 0.59, 0.342, 4, gold, 0.013),
+      { s: 'gable', c: [0, 0.615, 0.275], w: 0.39, h: 0.13, hh: 0.06, ax: 'z', col: white, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 0.665, 0.337], r: 0.045, hh: 0.008, rd: 0.004, col: cream, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.665, 0.345], R: 0.046, r: 0.008, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      box([0, 0.678, 0.347], [0.004, 0.022, 0.004], dark, 0.002), box([0.012, 0.665, 0.347], [0.016, 0.004, 0.004], dark, 0.002),
+      // the facade: heavy doors, barred windows, a flat roof with a parapet
+      box([0, 0.17, 0.225], [0.07, 0.12, 0.008], woodD), box([0, 0.3, 0.225], [0.075, 0.012, 0.01], gold),
+      { s: 'sph', c: [0.03, 0.16, 0.236], r: 0.008, col: gold, k: 0 }, { s: 'sph', c: [-0.03, 0.16, 0.236], r: 0.008, col: gold, k: 0 },
+      ...[-0.39, 0.39].flatMap(x => [...win(x, 0.2, 0.222, 0.045, 0.075, { frame: stoneD }), ...win(x, 0.45, 0.222, 0.045, 0.06, { frame: stoneD })]),
+      ...[-0.39, 0.39].flatMap(x => [-0.025, 0, 0.025].map(dx => box([x + dx, 0.2, 0.236], [0.005, 0.075, 0.004], iron, 0.002))),
+      box([0, 0.615, -0.06], [0.48, 0.016, 0.29], C('#8a7a66')), box([-0.2, 0.63, -0.15], [0.1, 0.012, 0.08], C('#9ac8e8'), 0.006), box([-0.2, 0.632, -0.15], [0.105, 0.008, 0.012], iron, 0.002),
+      box([0, 0.64, -0.06], [0.48, 0.02, 0.29], null, 0.004), box([0, 0.66, -0.06], [0.45, 0.02, 0.26], C('#7a6a58'), 0.004),
+      // gas lamps by the steps
+      ...[1, -1].flatMap(sx => [{ s: 'cap', a: [sx * 0.24, 0.04, 0.4], b: [sx * 0.24, 0.26, 0.4], r: 0.01, col: iron, k: 0 }, { s: 'sph', c: [sx * 0.24, 0.28, 0.4], r: 0.022, col: lit, k: 0 }]),
+    ];
+    // the gold $: two arcs of an S and a bar through it, standing on the roof
+    const yc = 0.84, zc = 0.1, R = 0.055, rr = 0.019;
+    parts.push({ s: 'tor', ax: 'z', c: [0, yc + R, zc], R, r: rr, a0: 0.15 * Math.PI, a1: Math.PI, col: gold, k: 0 });
+    parts.push({ s: 'tor', ax: 'z', c: [0, yc + R, zc], R, r: rr, a0: -Math.PI, a1: -0.5 * Math.PI, col: gold, k: 0 });
+    parts.push({ s: 'tor', ax: 'z', c: [0, yc - R, zc], R, r: rr, a0: -0.85 * Math.PI, a1: 0.5 * Math.PI, col: gold, k: 0 });
+    parts.push({ s: 'cap', a: [0, yc - 0.15, zc], b: [0, yc + 0.15, zc], r: 0.014, col: gold, k: 0 });
+    parts.push(box([0, 0.69, zc], [0.03, 0.02, 0.03], iron));
+    P('bank', parts, { ao: 3 });
+  }
+
+  // ---------- the sheriff's office: one floor, a tin porch roof, a barred window and a big gold star ----------
+  {
+    const star = [];
+    for (let i = 0; i < 5; i++) { const a = Math.PI / 2 + i * TAU / 5; star.push({ s: 'cap', a: [0, 0.4, 0.29], b: [Math.cos(a) * 0.085, 0.4 + Math.sin(a) * 0.085, 0.29], r: 0.026, r2: 0.007, col: gold, k: 0.01 }); }
+    P('sheriff', [
+      box([0, 0.23, -0.08], [0.48, 0.23, 0.32], null, 0.008, 0.01),
+      box([0, 0.3, 0.255], [0.5, 0.3, 0.016], null),
+      box([0, 0.62, 0.255], [0.32, 0.03, 0.016], null), box([0, 0.605, 0.255], [0.51, 0.012, 0.028], trim), box([0, 0.655, 0.255], [0.33, 0.01, 0.028], trim),
+      box([0, 0.52, 0.275], [0.38, 0.055, 0.006], woodD), ...letters(-0.27, 0.27, 0.52, 0.283, 7, cream, 0.026),
+      ...star, { s: 'sph', c: [0, 0.4, 0.29], r: 0.036, col: gold, k: 0.01 },
+      box([-0.2, 0.13, 0.272], [0.07, 0.13, 0.006], woodD), { s: 'sph', c: [-0.15, 0.13, 0.282], r: 0.008, col: gold, k: 0 },
+      ...win(0.22, 0.17, 0.272, 0.11, 0.075, { frame: woodD }),
+      ...[-0.06, -0.02, 0.02, 0.06].map(dx => box([0.22 + dx, 0.17, 0.288], [0.006, 0.075, 0.004], iron, 0.002)),
+      box([-0.37, 0.19, 0.274], [0.04, 0.05, 0.004], C('#f0e0b8'), 0.002), box([-0.37, 0.19, 0.279], [0.022, 0.02, 0.003], C('#7a5a3a'), 0.002),
+      ...porch(0.27, 0.42, 0.29, [-0.47, -0.05, 0.47], tin),
+      box([0, 0.47, -0.08], [0.47, 0.012, 0.31], C('#7a7f86')), ...tinRoof(0.47, -0.08, 0.3, 0.47, C('#a8b0b4')),
+      { s: 'cyl', ax: 'y', c: [0.3, 0.53, -0.25], r: 0.022, hh: 0.06, rd: 0.005, col: iron, k: 0 },
+      ...[1, -1].map(sx => box([sx * 0.49, 0.3, 0.255], [0.014, 0.3, 0.02], trim)),
+    ], { ao: 3 });
+  }
+
+  // ---------- the general store: a gable roof behind the false front, a striped awning and goods on the porch ----------
+  {
+    const parts = [
+      box([0, 0.23, -0.08], [0.48, 0.23, 0.3], null, 0.008, 0.01),
+      { s: 'gable', c: [0, 0.46, -0.08], w: 0.5, h: 0.17, hh: 0.31, ax: 'z', col: C('#4f8a6a'), k: 0 },
+      { s: 'cap', a: [0, 0.632, -0.39], b: [0, 0.632, 0.22], r: 0.016, col: C('#d8d8c8'), k: 0 },
+      box([0.22, 0.62, -0.25], [0.035, 0.08, 0.035], brick),
+      box([0, 0.33, 0.235], [0.5, 0.33, 0.016], null),
+      box([0, 0.665, 0.235], [0.51, 0.012, 0.028], trim), ...[1, -1].map(sx => box([sx * 0.49, 0.33, 0.235], [0.014, 0.33, 0.02], trim)),
+      box([0, 0.55, 0.255], [0.41, 0.065, 0.006], cream), box([0, 0.55, 0.25], [0.425, 0.08, 0.006], woodD), ...letters(-0.3, 0.3, 0.55, 0.263, 8, C('#3a2a1e'), 0.03),
+      ...win(0.27, 0.15, 0.252, 0.14, 0.1, { lit: true }), ...win(-0.27, 0.15, 0.252, 0.14, 0.1, { lit: true }),
+      box([0, 0.14, 0.252], [0.06, 0.14, 0.006], woodD), box([0, 0.17, 0.26], [0.04, 0.07, 0.004], glass),
+      ...porch(0.25, 0.4, 0.3, [-0.47, 0.47]),
+    ];
+    // the awning: red and cream stripes with a scalloped edge
+    for (let i = 0; i < 8; i++) {
+      const x = -0.4375 + i * 0.125, col = i % 2 ? cream : red;
+      parts.push(box([x, 0.31, 0.33], [0.0625, 0.012, 0.085], col, 0.003));
+      parts.push({ s: 'ell', c: [x, 0.295, 0.415], rr: [0.06, 0.025, 0.012], col, k: 0 });
+    }
+    // barrels, crates and a sack on the boardwalk
+    parts.push({ s: 'cyl', ax: 'y', c: [-0.42, 0.09, 0.34], r: 0.045, hh: 0.055, rd: 0.012, col: wood, k: 0 }, { s: 'tor', ax: 'y', c: [-0.42, 0.11, 0.34], R: 0.046, r: 0.006, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 });
+    parts.push({ s: 'cyl', ax: 'y', c: [-0.32, 0.09, 0.36], r: 0.042, hh: 0.055, rd: 0.012, col: woodD, k: 0 });
+    parts.push(box([0.38, 0.08, 0.34], [0.045, 0.045, 0.045], woodL, 0.006), box([0.42, 0.16, 0.35], [0.035, 0.035, 0.035], wood, 0.006));
+    parts.push({ s: 'ell', c: [0.28, 0.08, 0.36], rr: [0.05, 0.06, 0.04], col: C('#c8a878'), k: 0.01 });
+    P('store', parts, { ao: 3 });
+  }
+
+  // ---------- the hotel: three floors of shuttered windows, a balcony, a cornice and a tall corner sign ----------
+  {
+    const parts = [
+      box([0, 0.43, -0.08], [0.48, 0.43, 0.29], null, 0.008, 0.01),
+      box([0, 0.87, 0.215], [0.505, 0.022, 0.03], trim, 0.005), box([0, 0.905, 0.2], [0.5, 0.025, 0.014], null),
+      ...[1, -1].map(sx => box([sx * 0.48, 0.875, -0.08], [0.02, 0.02, 0.3], null, 0.004)), box([0, 0.875, -0.37], [0.48, 0.02, 0.02], null, 0.004),
+      box([0, 0.86, -0.08], [0.47, 0.01, 0.28], C('#6a5a4e')),
+      { s: 'cyl', ax: 'y', c: [-0.24, 0.95, -0.18], r: 0.11, hh: 0.08, rd: 0.02, col: wood, k: 0 }, { s: 'tor', ax: 'y', c: [-0.24, 0.95, -0.18], R: 0.112, r: 0.008, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 },
+      ...[-0.31, -0.17].map(x => ({ s: 'cap', a: [x, 0.86, -0.25], b: [x, 0.87, -0.11], r: 0.012, col: woodD, k: 0 })),
+      box([0.25, 0.92, -0.25], [0.04, 0.06, 0.035], brick), box([0.1, 0.92, -0.3], [0.04, 0.06, 0.035], brick),
+      ...[0.3, 0.59].map(y => box([0, y, 0.212], [0.49, 0.008, 0.006], trim, 0.002)),
+      box([0, 0.13, 0.212], [0.07, 0.13, 0.006], dark), box([0, 0.27, 0.215], [0.08, 0.012, 0.008], trim),
+      ...win(0.3, 0.14, 0.212, 0.08, 0.07, { lit: true }), ...win(-0.3, 0.14, 0.212, 0.08, 0.07, { lit: true }),
+      ...porch(0.21, 0.35, 0.29, [-0.47, -0.16, 0.16, 0.47]),
+      box([0, 0.3, 0.285], [0.5, 0.012, 0.07], wood), box([0, 0.35, 0.345], [0.5, 0.04, 0.012], woodD, 0.005), box([0, 0.395, 0.345], [0.505, 0.008, 0.016], woodL),
+      // the corner sign, letters stacked down it
+      box([0.43, 0.62, 0.27], [0.014, 0.2, 0.05], signRed, 0.004), box([0.43, 0.62, 0.27], [0.01, 0.21, 0.056], gold, 0.004),
+      ...[0, 1, 2, 3, 4].map(i => box([0.444, 0.76 - i * 0.07, 0.27], [0.004, 0.022, 0.026], cream, 0.002)),
+      box([0.43, 0.6, 0.2], [0.01, 0.01, 0.04], iron),
+    ];
+    for (const [y, row] of [[0.45, 0], [0.73, 1]]) for (const x of [-0.33, -0.11, 0.11, 0.33]) {
+      if (row === 1 && x > 0.3) continue;
+      parts.push(...win(x, y, 0.212, 0.048, 0.07, { shut: row ? C('#3a5a8a') : green, lit: (x * 7 + row * 3) % 2 > 0.6 }));
+    }
+    P('hotel', parts, { ao: 3 });
+  }
+
+  // ---------- the livery stable: a red barn, white-trimmed X doors, a hayloft with a pulley ----------
+  P('barn', [
+    box([0, 0.21, -0.06], [0.47, 0.21, 0.36], null, 0.008, 0.01),
+    { s: 'gable', c: [0, 0.41, -0.06], w: 0.53, h: 0.33, hh: 0.39, ax: 'z', col: C('#4a3a36'), k: 0 },
+    { s: 'gable', c: [0, 0.42, 0.33], w: 0.46, h: 0.28, hh: 0.012, ax: 'z', col: null, k: 0 },
+    ...[1, -1].map(sx => box([sx * 0.465, 0.21, 0.3], [0.016, 0.21, 0.016], white)),
+    box([0, 0.415, 0.32], [0.47, 0.012, 0.014], white),
+    // the big doors
+    box([0, 0.15, 0.31], [0.19, 0.155, 0.006], white), box([0, 0.145, 0.318], [0.175, 0.14, 0.006], C('#8a2a22')),
+    box([0, 0.145, 0.326], [0.006, 0.14, 0.004], white, 0.002),
+    ...[1, -1].flatMap(sx => [{ s: 'cap', a: [sx * 0.165, 0.015, 0.326], b: [sx * 0.012, 0.275, 0.326], r: 0.011, col: white, k: 0 }, { s: 'cap', a: [sx * 0.012, 0.015, 0.326], b: [sx * 0.165, 0.275, 0.326], r: 0.011, col: white, k: 0 }]),
+    // hayloft door with straw spilling out, a pulley beam and a dangling rope
+    box([0, 0.5, 0.336], [0.085, 0.07, 0.006], white), box([0, 0.5, 0.342], [0.07, 0.058, 0.006], dark),
+    { s: 'ell', c: [0, 0.455, 0.35], rr: [0.065, 0.02, 0.025], col: hay, k: 0.01 }, { s: 'ell', c: [0.03, 0.47, 0.345], rr: [0.03, 0.025, 0.02], col: hayD, k: 0.01 },
+    box([0, 0.66, 0.37], [0.014, 0.014, 0.07], woodD, 0.004), { s: 'cap', a: [0, 0.65, 0.43], b: [0, 0.5, 0.43], r: 0.006, col: C('#c8b088'), k: 0 },
+    // a horseshoe over the door and a weathervane
+    { s: 'tor', ax: 'z', c: [0, 0.34, 0.33], R: 0.025, r: 0.008, a0: -Math.PI, a1: 0, col: iron, k: 0 },
+    // a cupola on the ridge with a little roof and a weathervane
+    box([0, 0.76, -0.06], [0.07, 0.06, 0.07], null, 0.006), box([0, 0.76, -0.06], [0.072, 0.03, 0.072], white, 0.004),
+    { s: 'gable', c: [0, 0.82, -0.06], w: 0.1, h: 0.06, hh: 0.09, ax: 'z', col: C('#4a3a36'), k: 0 },
+    { s: 'cap', a: [0, 0.87, -0.06], b: [0, 0.96, -0.06], r: 0.008, col: iron, k: 0 }, { s: 'ell', c: [0.02, 0.95, -0.06], rr: [0.05, 0.016, 0.008], col: iron, k: 0 },
+  ], { ao: 3 });
+
+  // ---------- the chapel: a white nave, a bell tower over the door with a round window, a spire and a gold cross ----------
+  P('church', [
+    box([0, 0.25, -0.14], [0.4, 0.25, 0.48], null, 0.008, 0.01),
+    { s: 'gable', c: [0, 0.48, -0.14], w: 0.46, h: 0.3, hh: 0.51, ax: 'z', col: C('#4a3a40'), k: 0 },
+    { s: 'gable', c: [0, 0.49, 0.36], w: 0.41, h: 0.26, hh: 0.012, ax: 'z', col: null, k: 0 },
+    ...[1, -1].flatMap(sx => [-0.42, -0.14, 0.14].map(z => box([sx * 0.402, 0.28, z], [0.006, 0.09, 0.038], C('#6a8ad8'), 0.004))),
+    // the tower
+    box([0, 0.5, 0.44], [0.13, 0.5, 0.11], null, 0.006),
+    box([0, 0.99, 0.44], [0.145, 0.1, 0.125], null, 0.008), box([0, 1.09, 0.44], [0.155, 0.012, 0.135], trim),
+    box([0, 0.99, 0.565], [0.07, 0.07, 0.006], dark), box([0, 0.99, 0.315], [0.07, 0.07, 0.006], dark),
+    { s: 'ell', c: [0, 0.97, 0.5], rr: [0.05, 0.055, 0.05], col: C('#d8a040'), k: 0 },
+    { s: 'cap', a: [0, 1.1, 0.44], b: [0, 1.55, 0.44], r: 0.125, r2: 0.006, col: C('#4a3a40'), k: 0 },
+    { s: 'cap', a: [0, 1.54, 0.44], b: [0, 1.7, 0.44], r: 0.016, col: gold, k: 0 }, { s: 'cap', a: [-0.045, 1.645, 0.44], b: [0.045, 1.645, 0.44], r: 0.016, col: gold, k: 0 },
+    { s: 'cyl', ax: 'z', c: [0, 0.58, 0.552], r: 0.055, hh: 0.006, rd: 0.003, col: C('#5a8adf'), k: 0 },
+    { s: 'tor', ax: 'z', c: [0, 0.58, 0.556], R: 0.057, r: 0.01, a0: -Math.PI, a1: Math.PI, col: trim, k: 0 },
+    { s: 'cap', a: [-0.05, 0.58, 0.56], b: [0.05, 0.58, 0.56], r: 0.006, col: gold, k: 0 }, { s: 'cap', a: [0, 0.53, 0.56], b: [0, 0.63, 0.56], r: 0.006, col: gold, k: 0 },
+    // arched door and steps
+    box([0, 0.12, 0.552], [0.065, 0.12, 0.006], woodD), { s: 'cyl', ax: 'z', c: [0, 0.24, 0.552], r: 0.065, hh: 0.006, rd: 0.002, col: woodD, k: 0 },
+    box([0, 0.015, 0.6], [0.11, 0.015, 0.05], stoneD),
+  ], { ao: 3 });
+
+  // ---------- the town square's pieces: water tower, bandstand, well, lamp posts ----------
+  {
+    const parts = [];
+    const legs = [[0.3, 0.3], [-0.3, 0.3], [-0.3, -0.3], [0.3, -0.3]];
+    for (const [x, z] of legs) parts.push({ s: 'cap', a: [x, 0, z], b: [x * 0.8, 1.04, z * 0.8], r: 0.032, col: woodD, k: 0 });
+    for (let i = 0; i < 4; i++) {
+      const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4];
+      parts.push({ s: 'cap', a: [x0 * 0.95, 0.15, z0 * 0.95], b: [x1 * 0.88, 0.6, z1 * 0.88], r: 0.014, col: woodD, k: 0 });
+      parts.push({ s: 'cap', a: [x1 * 0.95, 0.15, z1 * 0.95], b: [x0 * 0.88, 0.6, z0 * 0.88], r: 0.014, col: woodD, k: 0 });
+    }
+    parts.push({ s: 'cyl', ax: 'y', c: [0, 1.06, 0], r: 0.3, hh: 0.02, rd: 0.006, col: woodD, k: 0 });
+    parts.push({ s: 'cyl', ax: 'y', c: [0, 1.36, 0], r: 0.42, hh: 0.3, rd: 0.03, col: C('#9a6a3e'), k: 0 });
+    for (const y of [1.14, 1.36, 1.58]) parts.push({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.425, r: 0.014, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 });
+    parts.push({ s: 'cyl', ax: 'y', c: [0, 1.67, 0], r: 0.46, hh: 0.015, rd: 0.006, col: roof, k: 0 });
+    parts.push({ s: 'cap', a: [0, 1.68, 0], b: [0, 1.95, 0], r: 0.38, r2: 0.02, col: roof, k: 0 });
+    parts.push({ s: 'sph', c: [0, 1.97, 0], r: 0.03, col: iron, k: 0 });
+    parts.push({ s: 'cap', a: [0.1, 1.2, 0.4], b: [0.1, 0.3, 0.27], r: 0.012, col: iron, k: 0 }, { s: 'cap', a: [-0.1, 1.2, 0.4], b: [-0.1, 0.3, 0.27], r: 0.012, col: iron, k: 0 });
+    P('watertower', parts, { ao: 2 });
+  }
+  {
+    const parts = [
+      { s: 'cyl', ax: 'y', c: [0, 0.06, 0], r: 0.5, hh: 0.06, rd: 0.02, col: white, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 0.035, 0], r: 0.52, hh: 0.035, rd: 0.01, col: C('#c8bca8'), k: 0 },
+      box([0, 0.03, 0.53], [0.1, 0.03, 0.05], white),
+      { s: 'ell', c: [0, 0.68, 0], rr: [0.57, 0.2, 0.57], col: C('#c0463a'), k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.64, 0], R: 0.55, r: 0.026, a0: -Math.PI, a1: Math.PI, col: white, k: 0 },
+      { s: 'cap', a: [0, 0.85, 0], b: [0, 0.98, 0], r: 0.02, r2: 0.005, col: gold, k: 0 }, { s: 'sph', c: [0, 0.88, 0], r: 0.035, col: gold, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.27, 0], R: 0.44, r: 0.014, a0: -Math.PI, a1: 0.3 * Math.PI, col: white, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.27, 0], R: 0.44, r: 0.014, a0: 0.7 * Math.PI, a1: Math.PI, col: white, k: 0 },
+    ];
+    for (let i = 0; i < 8; i++) {
+      const a = (i + 0.5) * TAU / 8;
+      parts.push({ s: 'cap', a: [Math.cos(a) * 0.44, 0.12, Math.sin(a) * 0.44], b: [Math.cos(a) * 0.44, 0.62, Math.sin(a) * 0.44], r: 0.022, col: white, k: 0 });
+      // bunting between the posts
+      const b = (i + 1) * TAU / 8;
+      parts.push({ s: 'sph', c: [Math.cos(b) * 0.5, 0.58, Math.sin(b) * 0.5], r: 0.032, col: [red, white, C('#3a5ab8')][i % 3], k: 0 });
+    }
+    // a brass tuba resting on a chair: the band is on break
+    parts.push({ s: 'tor', ax: 'z', c: [0.12, 0.22, -0.1], R: 0.07, r: 0.026, a0: -Math.PI, a1: Math.PI, col: C('#e0b040'), k: 0 });
+    parts.push({ s: 'cap', a: [0.18, 0.24, -0.1], b: [0.24, 0.36, -0.1], r: 0.02, r2: 0.06, col: C('#e0b040'), k: 0 });
+    P('gazebo', parts, { ao: 1.5 });
+  }
+  P('well', [
+    { s: 'cyl', ax: 'y', c: [0, 0.13, 0], r: 0.3, hh: 0.13, rd: 0.03, col: C('#a89a88'), k: 0 },
+    { s: 'cyl', ax: 'y', c: [0, 0.25, 0], r: 0.22, hh: 0.08, rd: 0.01, sub: true, k: 0.01 },
+    { s: 'cyl', ax: 'y', c: [0, 0.17, 0], r: 0.23, hh: 0.01, rd: 0.0, col: water, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.28, 0.2, 0], b: [sx * 0.28, 0.64, 0], r: 0.026, col: wood, k: 0 })),
+    { s: 'gable', c: [0, 0.6, 0], w: 0.22, h: 0.14, hh: 0.36, ax: 'x', col: roof, k: 0 },
+    { s: 'cap', a: [-0.3, 0.48, 0], b: [0.3, 0.48, 0], r: 0.02, col: woodD, k: 0 }, { s: 'cap', a: [0.32, 0.48, 0], b: [0.36, 0.4, 0.04], r: 0.012, col: iron, k: 0 },
+    { s: 'cap', a: [0, 0.47, 0], b: [0, 0.32, 0], r: 0.007, col: C('#c8b088'), k: 0 },
+    { s: 'cyl', ax: 'y', c: [0.2, 0.31, 0.16], r: 0.05, hh: 0.05, rd: 0.01, col: wood, k: 0 },
+  ], { ao: 0.8 });
+  P('oillamp', [
+    { s: 'cyl', ax: 'y', c: [0, 0.04, 0], r: 0.07, hh: 0.04, rd: 0.015, col: iron, k: 0 },
+    { s: 'cap', a: [0, 0.05, 0], b: [0, 1.24, 0], r: 0.03, col: iron, k: 0 },
+    box([0, 1.33, 0], [0.065, 0.085, 0.065], lit, 0.012),
+    ...[[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([x, z]) => ({ s: 'cap', a: [x * 0.068, 1.25, z * 0.068], b: [x * 0.068, 1.41, z * 0.068], r: 0.011, col: iron, k: 0 })),
+    { s: 'cap', a: [0, 1.41, 0], b: [0, 1.52, 0], r: 0.08, r2: 0.012, col: iron, k: 0 },
   ], { ao: 0.5 });
+
+  // ---------- ranch props: hay bales, a covered wagon, a water trough with a pump, an oil derrick, a split-rail fence ----------
+  P('haybale', [
+    box([-0.16, 0.13, 0], [0.15, 0.13, 0.3], hay, 0.035, 0.005), box([0.16, 0.13, 0.03], [0.15, 0.13, 0.3], C('#dcb650'), 0.035, 0.005),
+    box([0.01, 0.39, 0.01], [0.3, 0.13, 0.15], C('#f0cc66'), 0.035, 0.005),
+    ...[-0.16, 0.16].flatMap(x => [-0.12, 0.12].map(z => box([x, 0.13, z + (x > 0 ? 0.03 : 0)], [0.153, 0.133, 0.012], hayD, 0.01))),
+    ...[-0.12, 0.12].map(x => box([x + 0.01, 0.39, 0.01], [0.012, 0.133, 0.153], hayD, 0.01)),
+    { s: 'ell', c: [0.2, 0.52, 0.05], rr: [0.06, 0.02, 0.03], col: hay, k: 0.01 }, { s: 'ell', c: [-0.28, 0.02, 0.3], rr: [0.07, 0.015, 0.05], col: hay, k: 0.01 },
+  ], { ao: 0.6 });
+  {
+    const parts = [
+      box([0, 0.3, 0], [0.24, 0.06, 0.46], wood, 0.01), box([0, 0.36, 0], [0.25, 0.012, 0.47], woodD, 0.004),
+      { s: 'ell', c: [0, 0.4, -0.04], rr: [0.27, 0.3, 0.42], col: canvas, k: 0.01 },
+      ...[-0.36, -0.12, 0.12, 0.36].map(z => ({ s: 'tor', ax: 'z', c: [0, 0.4, z - 0.04], R: 0.272, r: 0.012, a0: 0.05, a1: Math.PI - 0.05, col: C('#cfc2a6'), k: 0 })),
+      { s: 'ell', c: [0, 0.48, 0.38], rr: [0.18, 0.16, 0.03], col: dark, k: 0 },
+      { s: 'cap', a: [0, 0.24, 0.46], b: [0, 0.16, 0.78], r: 0.022, col: woodD, k: 0 }, { s: 'cap', a: [-0.12, 0.16, 0.78], b: [0.12, 0.16, 0.78], r: 0.016, col: woodD, k: 0 },
+      box([0.2, 0.42, -0.3], [0.05, 0.05, 0.05], woodL, 0.01),
+    ];
+    for (const [z, R] of [[0.3, 0.15], [-0.32, 0.19]]) for (const sx of [1, -1]) {
+      parts.push({ s: 'tor', ax: 'x', c: [sx * 0.27, R, z], R, r: 0.022, a0: -Math.PI, a1: Math.PI, col: woodD, k: 0 });
+      parts.push({ s: 'cyl', ax: 'x', c: [sx * 0.27, R, z], r: 0.035, hh: 0.03, rd: 0.01, col: iron, k: 0 });
+      for (let i = 0; i < 4; i++) { const a = i * Math.PI / 4; parts.push({ s: 'cap', a: [sx * 0.27, R + Math.cos(a) * R, z + Math.sin(a) * R], b: [sx * 0.27, R - Math.cos(a) * R, z - Math.sin(a) * R], r: 0.009, col: wood, k: 0 }); }
+    }
+    P('wagon', parts, { ao: 0.8 });
+  }
+  P('trough', [
+    box([0, 0.17, 0], [0.42, 0.09, 0.14], wood, 0.012), box([0, 0.245, 0], [0.38, 0.02, 0.1], water, 0.004),
+    ...[-0.36, 0.36].flatMap(x => [-0.1, 0.1].map(z => ({ s: 'cap', a: [x, 0, z], b: [x, 0.1, z], r: 0.025, col: woodD, k: 0 }))),
+    { s: 'cyl', ax: 'y', c: [0.46, 0.25, 0], r: 0.04, hh: 0.25, rd: 0.01, col: C('#4a6a5a'), k: 0 },
+    { s: 'cap', a: [0.46, 0.44, 0], b: [0.36, 0.4, 0], r: 0.016, r2: 0.01, col: C('#4a6a5a'), k: 0 },
+    { s: 'cap', a: [0.48, 0.5, 0], b: [0.58, 0.62, 0], r: 0.012, col: iron, k: 0 },
+  ], { ao: 0.6 });
+  {
+    const parts = [];
+    const top = 2.05, legs = [[0.32, 0.32], [-0.32, 0.32], [-0.32, -0.32], [0.32, -0.32]];
+    for (const [x, z] of legs) parts.push({ s: 'cap', a: [x, 0, z], b: [x * 0.18, top, z * 0.18], r: 0.026, col: woodD, k: 0 });
+    for (const y of [0.4, 0.85, 1.3, 1.7]) {
+      const w = lerp(1, 0.18, y / top);
+      for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0 * w, y, z0 * w], b: [x1 * w, y, z1 * w], r: 0.014, col: wood, k: 0 }); }
+    }
+    for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0, 0.05, z0], b: [x1 * 0.8, 0.85, z1 * 0.8], r: 0.011, col: wood, k: 0 }); }
+    parts.push(box([0, top + 0.03, 0], [0.09, 0.04, 0.09], iron, 0.01), { s: 'cyl', ax: 'x', c: [0, top + 0.1, 0], r: 0.05, hh: 0.07, rd: 0.01, col: iron, k: 0 });
+    parts.push(box([0, 0.06, 0], [0.12, 0.06, 0.12], iron, 0.02), { s: 'cyl', ax: 'y', c: [0.22, 0.09, 0.3], r: 0.06, hh: 0.09, rd: 0.015, col: C('#2a2a2a'), k: 0 });
+    parts.push({ s: 'cap', a: [0, 0.12, 0], b: [0, 0.9, 0], r: 0.02, col: C('#5a5a62'), k: 0 });
+    P('derrick', parts, { ao: 1 });
+  }
+  P('railfence', [
+    ...[-0.45, 0.45].map(x => ({ s: 'cap', a: [x, -0.02, 0], b: [x + 0.01, 0.72, 0], r: 0.04, r2: 0.034, col: woodD, k: 0 })),
+    ...[[0.2, 0.01], [0.43, -0.012], [0.63, 0.008]].map(([y, dz]) => ({ s: 'cap', a: [-0.52, y, dz], b: [0.52, y + 0.02, -dz], r: 0.026, col: C('#9a7048'), k: 0 })),
+  ], { ao: 0.6 });
+
+  // a bundle of three dynamite sticks with a lit fuse (thrown by The Outlaw)
+  P('dynamite', [
+    ...[[0, 0], [0.11, 0.02], [0.05, -0.09]].map(([x, z]) => ({ s: 'cyl', ax: 'y', c: [x - 0.05, 0.2, z + 0.02], r: 0.06, hh: 0.19, rd: 0.02, col: C('#d8302a'), k: 0 })),
+    { s: 'tor', ax: 'y', c: [0, 0.2, 0], R: 0.13, r: 0.022, a0: -Math.PI, a1: Math.PI, col: C('#e8d8b0'), k: 0 },
+    { s: 'cap', a: [0, 0.38, 0], b: [0.06, 0.5, 0.02], r: 0.014, col: C('#3a2a1e'), k: 0 },
+    { s: 'sph', c: [0.07, 0.52, 0.02], r: 0.035, col: C('#fff2a0'), k: 0 },
+  ], { ao: 0.3 });
+
+  // ---------- creatures. Parts without col take the tint (coat or body) ----------
+  // bison: a huge shaggy front with a hump, curved horns and a beard, a small hind end, a tufted tail
+  {
+    const shag = C('#7a5232'), shagD = C('#4a301e'), hoof = C('#221812'), horn = C('#efe2c4'), eye = C('#120c0a');
+    const m = P('bison', [
+      { s: 'ell', c: [0, 0.44, -0.2], rr: [0.18, 0.18, 0.24], k: 0.06 },
+      { s: 'ell', c: [0, 0.54, 0.12], rr: [0.25, 0.3, 0.28], col: shag, k: 0.08 },
+      { s: 'ell', c: [0, 0.7, 0.04], rr: [0.18, 0.16, 0.2], col: shag, k: 0.06 },
+      { s: 'ell', c: [0, 0.42, 0.44], rr: [0.15, 0.16, 0.13], col: shagD, k: 0.04, bone: 2 },
+      { s: 'ell', c: [0, 0.33, 0.53], rr: [0.11, 0.09, 0.08], col: C('#2e2016'), k: 0.03, bone: 2 },
+      { s: 'sph', c: [0.04, 0.35, 0.6], r: 0.02, col: hoof, k: 0, bone: 2 }, { s: 'sph', c: [-0.04, 0.35, 0.6], r: 0.02, col: hoof, k: 0, bone: 2 },
+      { s: 'ell', c: [0, 0.22, 0.45], rr: [0.08, 0.11, 0.06], col: shagD, k: 0.03, bone: 2 },
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.12, 0.5, 0.45], b: [sx * 0.24, 0.53, 0.46], r: 0.035, r2: 0.025, col: horn, k: 0.01, bone: 2 },
+        { s: 'cap', a: [sx * 0.24, 0.53, 0.46], b: [sx * 0.25, 0.64, 0.5], r: 0.025, r2: 0.006, col: horn, k: 0.01, bone: 2 },
+        { s: 'sph', c: [sx * 0.11, 0.45, 0.53], r: 0.026, col: eye, k: 0, bone: 2 }, { s: 'sph', c: [sx * 0.105, 0.46, 0.555], r: 0.008, col: C('#ffffff'), k: 0, bone: 2 },
+        { s: 'cap', a: [sx * 0.13, 0.44, 0.22], b: [sx * 0.13, 0.22, 0.24], r: 0.075, r2: 0.06, col: shag, k: 0.03, bone: sx > 0 ? 3 : 5 },
+        { s: 'cap', a: [sx * 0.13, 0.22, 0.24], b: [sx * 0.13, 0.05, 0.24], r: 0.05, r2: 0.045, k: 0.02, bone: sx > 0 ? 4 : 6 },
+        { s: 'cyl', ax: 'y', c: [sx * 0.13, 0.03, 0.25], r: 0.05, hh: 0.03, rd: 0.012, col: hoof, k: 0.01, bone: sx > 0 ? 4 : 6 },
+        { s: 'cap', a: [sx * 0.11, 0.42, -0.28], b: [sx * 0.11, 0.22, -0.3], r: 0.065, r2: 0.05, k: 0.03, bone: sx > 0 ? 7 : 9 },
+        { s: 'cap', a: [sx * 0.11, 0.22, -0.3], b: [sx * 0.11, 0.05, -0.28], r: 0.045, r2: 0.04, k: 0.02, bone: sx > 0 ? 8 : 10 },
+        { s: 'cyl', ax: 'y', c: [sx * 0.11, 0.03, -0.27], r: 0.045, hh: 0.03, rd: 0.012, col: hoof, k: 0.01, bone: sx > 0 ? 8 : 10 },
+      ]),
+      { s: 'cap', a: [0, 0.5, -0.42], b: [0, 0.3, -0.46], r: 0.022, k: 0.02 }, { s: 'ell', c: [0, 0.27, -0.46], rr: [0.035, 0.06, 0.035], col: shagD, k: 0.01 },
+    ], { ao: 0.8 });
+    rig(m, { 0: [0, 0.42, -0.28], 1: [0, 0.5, 0.2], 2: [0, 0.5, 0.34], 3: [0.13, 0.44, 0.22], 4: [0.13, 0.22, 0.24], 5: [-0.13, 0.44, 0.22], 6: [-0.13, 0.22, 0.24],
+      7: [0.11, 0.42, -0.28], 8: [0.11, 0.22, -0.3], 9: [-0.11, 0.42, -0.28], 10: [-0.11, 0.22, -0.3] });
+    m.quad = true; m.runAmp = 0.8; m.J.head = [0, 0.42, 0.44];
+  }
+  // mule and horse share a body plan: long legs, long head on a neck; the mule has big ears and a pack, the horse a mane and a saddle
+  const equine = (name, o) => {
+    const pale = C(o.pale), mane = C(o.mane), hoof = C('#2a2018'), eye = C('#120c0a');
+    const L = o.leg, hipY = L + 0.02, kn = L * 0.5;
+    const parts = [
+      { s: 'ell', c: [0, hipY + 0.07, -0.02], rr: [0.15, 0.15, 0.32], k: 0.06 },
+      { s: 'ell', c: [0, hipY + 0.02, 0.0], rr: [0.12, 0.1, 0.25], col: o.belly ? pale : null, k: 0.05 },
+      { s: 'cap', a: [0, hipY + 0.12, 0.22], b: [0, hipY + 0.32, 0.36], r: 0.085, r2: 0.07, k: 0.05, bone: 2 },
+      { s: 'ell', c: [0, hipY + 0.34, 0.48], rr: [0.075, 0.08, 0.15], k: 0.04, bone: 2 },
+      { s: 'ell', c: [0, hipY + 0.3, 0.6], rr: [0.068, 0.065, 0.06], col: pale, k: 0.03, bone: 2 },
+      { s: 'sph', c: [0.03, hipY + 0.31, 0.655], r: 0.014, col: hoof, k: 0, bone: 2 }, { s: 'sph', c: [-0.03, hipY + 0.31, 0.655], r: 0.014, col: hoof, k: 0, bone: 2 },
+      ...[1, -1].flatMap(sx => [
+        { s: 'sph', c: [sx * 0.07, hipY + 0.39, 0.5], r: 0.02, col: eye, k: 0, bone: 2 }, { s: 'sph', c: [sx * 0.072, hipY + 0.4, 0.515], r: 0.007, col: C('#ffffff'), k: 0, bone: 2 },
+        { s: 'ell', c: [sx * 0.05, hipY + 0.42 + o.ear * 0.5, 0.4], rr: [0.025, o.ear * 0.55, 0.035], k: 0.01, bone: 2 },
+        { s: 'ell', c: [sx * 0.05, hipY + 0.42 + o.ear * 0.5, 0.415], rr: [0.014, o.ear * 0.4, 0.015], col: o.earIn ? C(o.earIn) : pale, k: 0, bone: 2 },
+        { s: 'cap', a: [sx * 0.1, hipY, 0.2], b: [sx * 0.1, kn, 0.21], r: 0.05, r2: 0.04, k: 0.03, bone: sx > 0 ? 3 : 5 },
+        { s: 'cap', a: [sx * 0.1, kn, 0.21], b: [sx * 0.1, 0.05, 0.21], r: 0.036, r2: 0.032, col: o.sock ? mane : null, k: 0.02, bone: sx > 0 ? 4 : 6 },
+        { s: 'cyl', ax: 'y', c: [sx * 0.1, 0.03, 0.22], r: 0.04, hh: 0.03, rd: 0.01, col: hoof, k: 0.01, bone: sx > 0 ? 4 : 6 },
+        { s: 'cap', a: [sx * 0.1, hipY + 0.02, -0.24], b: [sx * 0.1, kn, -0.27], r: 0.058, r2: 0.042, k: 0.03, bone: sx > 0 ? 7 : 9 },
+        { s: 'cap', a: [sx * 0.1, kn, -0.27], b: [sx * 0.1, 0.05, -0.25], r: 0.036, r2: 0.032, col: o.sock ? mane : null, k: 0.02, bone: sx > 0 ? 8 : 10 },
+        { s: 'cyl', ax: 'y', c: [sx * 0.1, 0.03, -0.24], r: 0.04, hh: 0.03, rd: 0.01, col: hoof, k: 0.01, bone: sx > 0 ? 8 : 10 },
+      ]),
+      // mane along the neck, and a tail
+      ...[0, 1, 2, 3].map(i => ({ s: 'ell', c: [0, hipY + 0.2 + i * 0.065, 0.2 + i * 0.05], rr: [0.03, 0.05 * o.maneK, 0.05], col: mane, k: 0.02, bone: 2 })),
+      { s: 'cap', a: [0, hipY + 0.1, -0.33], b: [0, hipY - 0.12 * o.tail, -0.42], r: 0.03 * o.tail, r2: 0.045 * o.tail, col: mane, k: 0.02 },
+    ];
+    if (o.blaze) parts.push({ s: 'ell', c: [0, hipY + 0.36, 0.6], rr: [0.022, 0.03, 0.04], col: C('#f8f4ec'), k: 0, bone: 2 }, { s: 'ell', c: [0, hipY + 0.38, 0.54], rr: [0.02, 0.025, 0.05], col: C('#f8f4ec'), k: 0, bone: 2 });
+    parts.push(...o.extra(hipY));
+    const m = P(name, parts, { ao: 0.7 });
+    rig(m, { 0: [0, hipY, -0.24], 1: [0, hipY, 0.2], 2: [0, hipY + 0.14, 0.24], 3: [0.1, hipY, 0.2], 4: [0.1, kn, 0.21], 5: [-0.1, hipY, 0.2], 6: [-0.1, kn, 0.21],
+      7: [0.1, hipY, -0.24], 8: [0.1, kn, -0.27], 9: [-0.1, hipY, -0.24], 10: [-0.1, kn, -0.27] });
+    m.quad = true; m.runAmp = o.amp; m.J.head = [0, hipY + 0.36, 0.46];
+    return m;
+  };
+  // the mule: grey-brown with a pale nose and belly, huge ears, a striped blanket, saddlebags and a bedroll
+  equine('mule', { leg: 0.36, pale: '#e8dcc8', mane: '#3a2a1e', ear: 0.15, earIn: '#d8a8a0', maneK: 0.6, tail: 0.6, belly: true, amp: 0.85, extra: y => [
+    box([0, y + 0.19, -0.04], [0.165, 0.035, 0.13], red, 0.02), box([0, y + 0.2, -0.04], [0.168, 0.012, 0.132], cream, 0.006),
+    ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.17, y + 0.08, -0.04], rr: [0.05, 0.08, 0.09], col: C('#7a4a24'), k: 0.01 })),
+    { s: 'cyl', ax: 'x', c: [0, y + 0.26, -0.14], r: 0.045, hh: 0.13, rd: 0.02, col: C('#d8c8a0'), k: 0 },
+    { s: 'tor', ax: 'x', c: [0.08, y + 0.26, -0.14], R: 0.045, r: 0.008, a0: -Math.PI, a1: Math.PI, col: C('#7a4a24'), k: 0 },
+  ] });
+  // the horse: a bay mustang with black stockings, a flowing mane and a white blaze, under an empty saddle
+  equine('horse', { leg: 0.44, pale: '#5a3a26', mane: '#1e1612', ear: 0.08, maneK: 1.3, tail: 1.2, sock: true, blaze: true, amp: 1.15, extra: y => [
+    { s: 'ell', c: [0, y + 0.17, -0.02], rr: [0.16, 0.05, 0.12], col: C('#6a3a1e'), k: 0.02 },
+    { s: 'cap', a: [0, y + 0.2, 0.08], b: [0, y + 0.27, 0.1], r: 0.02, r2: 0.026, col: C('#6a3a1e'), k: 0.01 },
+    { s: 'ell', c: [0, y + 0.13, -0.02], rr: [0.165, 0.03, 0.1], col: C('#3a6ab8'), k: 0.01 },
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.16, y + 0.12, -0.02], b: [sx * 0.17, y - 0.08, -0.02], r: 0.008, col: C('#2a1a12'), k: 0 })),
+    ...[1, -1].map(sx => ({ s: 'tor', ax: 'x', c: [sx * 0.17, y - 0.1, -0.02], R: 0.02, r: 0.007, a0: -Math.PI, a1: Math.PI, col: C('#c8c8d0'), k: 0 })),
+  ] });
+  // rattlesnake: a sandy chain of segments with dark diamonds on the back, a wide head with yellow eyes, a forked tongue and a rattle
+  {
+    const dia = C('#5a3e24'), belly = C('#f0e0b8'), rattle = C('#e8d4a8'), eyeY = C('#ffd23a'), tongue = C('#e8283c'), pupil = C('#120c0a');
+    const segs = [[8, -0.62, -0.42, 0.04, 0.06, 0.075], [7, -0.42, -0.14, 0.06, 0.075, 0.085], [0, -0.14, 0.1, 0.075, 0.08, 0.09], [1, 0.1, 0.3, 0.08, 0.065, 0.1]];
+    const parts = [];
+    for (const [b, z0, z1, r0, r1, y0] of segs) {
+      const y1 = b === 1 ? 0.24 : y0 + 0.005;
+      parts.push({ s: 'cap', a: [0, y0, z0], b: [0, y1, z1], r: r0, r2: r1, k: 0.03, bone: b });
+      parts.push({ s: 'ell', c: [0, (y0 + y1) / 2 - r0 * 0.45, (z0 + z1) / 2], rr: [r0 * 0.8, r0 * 0.5, (z1 - z0) * 0.5], col: belly, k: 0.01, bone: b });
+      for (let i = 0; i < 2; i++) { const u = (i + 0.5) / 2; parts.push({ s: 'ell', c: [0, lerp(y0, y1, u) + lerp(r0, r1, u) * 0.75, lerp(z0, z1, u)], rr: [lerp(r0, r1, u) * 0.55, 0.022, 0.045], col: dia, k: 0.01, bone: b }); }
+    }
+    for (const z of [-0.66, -0.7, -0.74]) parts.push({ s: 'ell', c: [0, 0.075, z], rr: [0.035, 0.03, 0.026], col: rattle, k: 0.01, bone: 8 });
+    parts.push({ s: 'ell', c: [0, 0.27, 0.4], rr: [0.1, 0.06, 0.11], k: 0.04, bone: 2 });
+    parts.push({ s: 'ell', c: [0, 0.25, 0.44], rr: [0.075, 0.035, 0.08], col: belly, k: 0.02, bone: 2 });
+    for (const sx of [1, -1]) {
+      parts.push({ s: 'sph', c: [sx * 0.062, 0.31, 0.45], r: 0.024, col: eyeY, k: 0, bone: 2 });
+      parts.push({ s: 'ell', c: [sx * 0.07, 0.315, 0.465], rr: [0.005, 0.016, 0.006], col: pupil, k: 0, bone: 2 });
+      parts.push({ s: 'cap', a: [0, 0.25, 0.555], b: [sx * 0.018, 0.25, 0.6], r: 0.006, col: tongue, k: 0, bone: 2 });
+    }
+    parts.push({ s: 'cap', a: [0, 0.25, 0.49], b: [0, 0.25, 0.56], r: 0.008, col: tongue, k: 0, bone: 2 });
+    const m = P('snake', parts, { ao: 0.4 });
+    rig(m, { 0: [0, 0.09, -0.02], 1: [0, 0.1, 0.1], 2: [0, 0.24, 0.3], 7: [0, 0.09, -0.14], 8: [0, 0.08, -0.42] });
+    m.snake = true; m.J.head = [0, 0.27, 0.4];
+  }
+
+  // ---------- people: a revolver-toting gunslinger, and The Outlaw ----------
+  const hatOn = (m, hr, col, band) => {
+    const hd = m.J.head, y = hd[1] + hr * 0.45;
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], y, hd[2]], r: hr * 1.65, hh: hr * 0.1, rd: hr * 0.08, col, bone: 2, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], y + hr * 0.07, hd[2]], R: hr * 1.6, r: hr * 0.12, a0: -Math.PI, a1: Math.PI, col, bone: 2, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], y + hr * 0.55, hd[2] - hr * 0.04], r: hr * 0.85, hh: hr * 0.5, rd: hr * 0.35, col, bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], y + hr * 1.08, hd[2] - hr * 0.04], rr: [hr * 0.18, hr * 0.22, hr * 0.6], sub: true, bone: 2, k: hr * 0.08 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], y + hr * 0.2, hd[2] - hr * 0.04], R: hr * 0.86, r: hr * 0.1, a0: -Math.PI, a1: Math.PI, col: band, bone: 2, k: 0 });
+  };
+  // a revolver in a hand: the barrel runs down the hanging arm, so it points ahead once the arm comes up
+  const revolver = (m, side, s, metal) => {
+    const h = m.J['ha' + side], b = side === 'R' ? 6 : 4, x = h[0];
+    m.parts.push({ s: 'cap', a: [x, h[1] - 0.02 * s, h[2] + 0.005 * s], b: [x, h[1] - 0.2 * s, h[2] + 0.005 * s], r: 0.016 * s, col: metal, bone: b, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [x, h[1] - 0.06 * s, h[2] + 0.005 * s], r: 0.03 * s, hh: 0.028 * s, rd: 0.01 * s, col: metal, bone: b, k: 0 });
+    m.parts.push({ s: 'cap', a: [x, h[1] + 0.01 * s, h[2] - 0.005 * s], b: [x, h[1] + 0.035 * s, h[2] - 0.07 * s], r: 0.02 * s, col: C('#5a3418'), bone: b, k: 0 });
+  };
+  {
+    const m = makeHumanoid(STICK), hd = m.J.head;
+    hatOn(m, 0.155, C('#6a4424'), C('#2a1a12'));
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.shY + 0.03, 0.005], R: 0.07, r: 0.03, a0: -Math.PI, a1: Math.PI, col: red, bone: 1, k: 0 });
+    m.parts.push({ s: 'ell', c: [0, STICK.shY - 0.01, 0.08], rr: [0.055, 0.05, 0.025], col: red, bone: 1, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.hipY + 0.02, 0], R: 0.095, r: 0.022, a0: -Math.PI, a1: Math.PI, col: C('#4a2e1a'), bone: 0, k: 0 });
+    m.parts.push({ s: 'ell', c: [0.11, STICK.hipY - 0.05, 0.0], rr: [0.03, 0.07, 0.045], col: C('#6a4024'), bone: 0, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0] + 0.06, hd[1] + 0.02, hd[2] + 0.13], rr: [0.03, 0.02, 0.02], col: C('#1a1214'), bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0] - 0.06, hd[1] + 0.02, hd[2] + 0.13], rr: [0.03, 0.02, 0.02], col: C('#1a1214'), bone: 2, k: 0 });
+    revolver(m, 'R', 1, C('#9aa0aa'));
+    m.name = 'gunslinger'; m.gun = 1; m.crownLift = 0.2;
+    defs.gunslinger = m;
+  }
+  // The Outlaw: a lanky goo bandit in a wide black hat and a long duster, a polka-dot bandana over his face, a bandolier,
+  // a silver-buckled gun belt, tall boots with spurs, and a silver six-shooter in each hand
+  {
+    const o = { ...STICK, hipY: 0.46, shY: 0.83, headY: 1.06, headR: 0.22, headZ: 0.03, shW: 0.2, hipW: 0.1, elOut: 0.06, upperLen: 0.17, foreLen: 0.16,
+      pelvisR: 0.15, torso: 'ell', torsoRR: [0.2, 0.26, 0.17], neckR: 0.11, armR: 0.075, handR: 0.09, legR: 0.085, k: 0.06 };
+    const m = makeHumanoid(o), J = m.J, hd = J.head, hr = o.headR;
+    const coat = C('#5e3a22'), coatD = C('#3e2616'), hatC = C('#1e1a20'), silver = C('#dcdce6'), brass = C('#e0b040'), boot = C('#2e1e14'), bandana = C('#c8302a');
+    face(m, { eyeCol: COL.eyeY, mouth: 'none', eyeY: 0.3 });
+    hatOn(m, hr * 1.05, hatC, silver);
+    for (let i = 0; i < 6; i++) { const a = -0.5 + i * 0.2; m.parts.push({ s: 'sph', c: [hd[0] + Math.sin(a) * hr * 0.92, hd[1] + hr * 0.7, hd[2] + Math.cos(a) * hr * 0.9], r: 0.022, col: silver, bone: 2, k: 0 }); }
+    // the bandana mask over nose and mouth, with white dots, knotted behind
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - hr * 0.42, hd[2] + hr * 0.38], rr: [hr * 0.92, hr * 0.5, hr * 0.7], col: bandana, bone: 2, k: 0.01 });
+    m.parts.push({ s: 'cap', a: [hd[0], hd[1] - hr * 0.55, hd[2] + hr * 0.9], b: [hd[0], hd[1] - hr * 1.0, hd[2] + hr * 0.75], r: hr * 0.3, r2: 0.01, col: bandana, bone: 2, k: 0.01 });
+    for (const [x, y] of [[-0.45, -0.3], [0.4, -0.35], [0, -0.55], [-0.2, -0.75], [0.25, -0.7], [0.55, -0.55], [-0.6, -0.55]]) m.parts.push({ s: 'sph', c: [hd[0] + x * hr, hd[1] + y * hr, hd[2] + hr * (0.98 - Math.abs(x) * 0.35)], r: 0.016, col: white, bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - hr * 0.2, hd[2] - hr * 0.95], rr: [0.05, 0.04, 0.035], col: bandana, bone: 2, k: 0 });
+    // the duster: over the chest and shoulders, open down the front, its tails flaring off the hips
+    m.parts.push({ s: 'ell', c: [0, 0.66, -0.06], rr: [0.235, 0.27, 0.16], col: coat, bone: 1, k: 0.02 });
+    for (const sx of [1, -1]) {
+      m.parts.push({ s: 'ell', c: [sx * 0.2, 0.8, -0.01], rr: [0.11, 0.07, 0.12], col: coat, bone: 1, k: 0.02 });
+      m.parts.push({ s: 'cap', a: [sx * 0.09, 0.84, 0.12], b: [sx * 0.07, 0.56, 0.15], r: 0.025, col: coatD, bone: 1, k: 0.01 });
+      m.parts.push({ s: 'cap', a: J['sh' + (sx > 0 ? 'L' : 'R')], b: J['el' + (sx > 0 ? 'L' : 'R')], r: o.armR * 1.15, col: coat, bone: sx > 0 ? 3 : 5, k: 0.02 });
+      m.parts.push({ s: 'cap', a: J['el' + (sx > 0 ? 'L' : 'R')], b: [J['ha' + (sx > 0 ? 'L' : 'R')][0], J['ha' + (sx > 0 ? 'L' : 'R')][1] + 0.05, 0.02], r: o.armR * 1.1, r2: o.armR * 1.25, col: coat, bone: sx > 0 ? 4 : 6, k: 0.02 });
+    }
+    m.parts.push({ s: 'ell', c: [0, 0.33, -0.07], rr: [0.245, 0.22, 0.15], col: coat, bone: 0, k: 0.02 });
+    // bandolier, belt and buckle, holsters
+    m.parts.push({ s: 'cap', a: [0.17, 0.84, 0.13], b: [-0.15, 0.5, 0.15], r: 0.03, col: C('#4a2e1a'), bone: 1, k: 0 });
+    for (let i = 0; i < 6; i++) { const u = (i + 0.5) / 6; m.parts.push({ s: 'cap', a: [lerp(0.17, -0.15, u), lerp(0.84, 0.5, u), 0.165], b: [lerp(0.17, -0.15, u), lerp(0.84, 0.5, u) + 0.04, 0.17], r: 0.012, col: brass, bone: 1, k: 0 }); }
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, o.hipY + 0.03, 0], R: 0.155, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#2a1a12'), bone: 0, k: 0 });
+    m.parts.push(box([0, o.hipY + 0.03, 0.18], [0.05, 0.035, 0.012], silver, 0.01));
+    m.parts[m.parts.length - 1].bone = 0;
+    for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [sx * 0.16, o.hipY - 0.06, 0.02], rr: [0.04, 0.09, 0.055], col: C('#6a4024'), bone: 0, k: 0 });
+    // boots with spurs
+    for (const sd of ['L', 'R']) {
+      const an = J['an' + sd], kn = J['kn' + sd], b = sd === 'L' ? 8 : 10;
+      m.parts.push({ s: 'cap', a: [an[0], an[1] + 0.02, an[2]], b: [kn[0], kn[1] - 0.02, kn[2]], r: o.legR * 1.2, r2: o.legR * 1.3, col: boot, bone: b, k: 0.01 });
+      m.parts.push({ s: 'ell', c: [an[0], an[1] - 0.02, an[2] + 0.05], rr: [o.legR * 1.05, o.legR * 0.65, o.legR * 1.7], col: boot, bone: b, k: 0.01 });
+      m.parts.push({ s: 'tor', ax: 'x', c: [an[0], an[1] + 0.01, an[2] - 0.11], R: 0.03, r: 0.009, a0: -Math.PI, a1: Math.PI, col: silver, bone: b, k: 0 });
+    }
+    revolver(m, 'R', 1.5, silver); revolver(m, 'L', 1.5, silver);
+    m.top = hd[1] + hr * 2.0; m.bmin = [-0.6, -0.03, -0.5]; m.bmax = [0.6, m.top + 0.05, 0.55];
+    m.name = 'outlaw'; m.gun = 2; m.runAmp = 0.9; m.lean = 0.1;
+    defs.outlaw = m;
+  }
 }
 
 // ---- 05-glsl.js ----
@@ -5099,18 +6116,35 @@ void main() {
     N = normalize(vec3(cos(p.x * 2.2) * 0.04, 1.0, 0.0));
     gloss = 0.05 + wet * 0.3; sharp = 40.0;
   } else if (style == 9) {
-    // moon: grey regolith pocked with craters
-    vec2 c = floor(p / 7.0), f = fract(p / 7.0) * 7.0 - 3.5;
-    float h = hash12(c), cr = 1.0 + h * 1.4;
-    vec2 off = (vec2(hash12(c + 4.1), hash12(c + 8.3)) - 0.5) * max(7.0 - cr * 2.5, 0.0);
-    vec2 d = f - off;
-    float r = length(d) / cr;
-    float bowl = step(0.4, h) * (1.0 - smoothstep(0.85, 1.0, r));
-    float rim = step(0.4, h) * smoothstep(0.75, 1.0, r) * (1.0 - smoothstep(1.0, 1.25, r));
-    vec2 nd = r > 1e-3 ? d / (r * cr) : vec2(0.0), tilt = nd * (bowl * -0.6 + rim * 0.5);
-    N = normalize(vec3(tilt.x, 1.0, tilt.y));
-    alb = mix(uStoneA, uStoneB, mott) * (0.9 + 0.15 * fine) * (1.0 - 0.25 * bowl) * (1.0 + 0.15 * rim);
-    ao = 1.0 - 0.2 * bowl;
+    // wild west: sun-baked dirt with paler dusty drifts; a pair of soft wagon ruts down Main Street (z ~ 2) and
+    // Church Street (z ~ -13.5), dried-mud cracks out on the open ground, a scatter of pebbles, and the laid stone
+    // ring of the bandstand square at (0, 5)
+    float drift = texture(uNoise, p * 0.022).g;
+    alb = mix(uStoneB, uStoneA, smoothstep(0.25, 0.8, mott * 0.7 + drift * 0.5)) * (0.93 + 0.1 * fine);
+    float wob = (texture(uNoise, vec2(p.x * 0.013, 0.37)).r - 0.5) * 1.4;
+    float sz = abs(p.y - 2.0 - wob), sz2 = abs(p.y + 13.5 - wob * 0.6);
+    float lane = min(abs(sz - 0.9), abs(sz2 - 0.9));
+    float rut = (1.0 - smoothstep(0.05, 0.18, lane)) * smoothstep(5.5, 7.0, length(p - vec2(0.0, 5.0))) * smoothstep(0.2, 0.55, texture(uNoise, p * vec2(0.03, 0.2)).b);
+    float street = 1.0 - smoothstep(3.5, 5.5, min(sz, sz2));
+    alb *= 1.0 - 0.09 * rut;
+    alb = mix(alb, alb * vec3(1.05, 1.03, 0.98), street * 0.5);
+    // dried mud cracks in patches away from the streets
+    vec3 v = voro(p * 0.8);
+    float crack = (1.0 - smoothstep(0.0, 0.05, v.y)) * (1.0 - street) * smoothstep(0.55, 0.72, texture(uNoise, p * 0.03 + 0.31).r);
+    alb *= 1.0 - 0.32 * crack;
+    // small round pebbles
+    vec2 pc = floor(p * 1.5), pf = fract(p * 1.5) - 0.5 - (vec2(hash12(pc + 1.7), hash12(pc + 5.3)) - 0.5) * 0.6;
+    float peb = step(0.95, hash12(pc)) * (1.0 - smoothstep(0.05, 0.085, length(pf)));
+    alb = mix(alb, mix(uGrout * 1.9, uStoneA * 1.12, hash12(pc + 9.1)), peb * 0.75);
+    // the square: smoother pale ground inside a ring of laid stones
+    float sq = length(p - vec2(0.0, 5.0));
+    float ring = 1.0 - smoothstep(0.0, 0.08, abs(sq - 6.4) - 0.45);
+    float joint = 1.0 - smoothstep(0.0, 0.06, min(abs(fract(atan(p.y - 5.0, p.x) * 6.4 / 0.8) - 0.5), abs(fract((sq - 5.95) / 0.9 + 0.5) - 0.5)) - 0.44);
+    alb = mix(alb, mix(uStoneA * 1.08, alb, 0.3), (1.0 - smoothstep(5.8, 6.0, sq)) * 0.5);
+    alb = mix(alb, vec3(0.64, 0.57, 0.5) * (0.85 + 0.25 * fine) * (1.0 - 0.35 * joint), ring);
+    N = normalize(vec3((fine - 0.5) * 0.12 + peb * pf.x * 0.9, 1.0, (mott - 0.5) * 0.12 + peb * pf.y * 0.9));
+    ao = 1.0 - 0.1 * rut - 0.25 * crack - 0.2 * joint * ring;
+    gloss = 0.03;
   } else if (style == 10) {
     // graveyard: dark soil under patchy dead grass, with fallen leaves scattered about
     float grass = smoothstep(0.35, 0.65, texture(uNoise, p * 0.05).g);
@@ -7863,7 +8897,7 @@ const AUDIO = {
   play(name, p = 1) {
     if (!this.enabled || !this.ctx || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
-    const gap = { hit: 0.035, gem: 0.03, pop: 0.05, squish: 0.04, zap: 0.06, punch: 0.06, coin: 0.05, boom: 0.07, mine: 0.08, laser: 0.25, throw: 0.08 }[name] || 0.02;
+    const gap = { hit: 0.035, gem: 0.03, pop: 0.05, squish: 0.04, zap: 0.06, punch: 0.06, coin: 0.05, boom: 0.07, mine: 0.08, laser: 0.25, throw: 0.08, bang: 0.03 }[name] || 0.02;
     if (this.last[name] && now - this.last[name] < gap) return;
     if (this.voices > 28 && !['levelup', 'boss', 'win', 'lose', 'hurt', 'click'].includes(name)) return;
     this.last[name] = now;
@@ -7899,6 +8933,8 @@ const AUDIO = {
       case 'ghost': this._osc('sine', 520, 790, 0.55, 0.08, t, 0.12); this._osc('sine', 527, 770, 0.55, 0.06, t + 0.03, 0.12); break;
       case 'crystal': [1568, 2093, 2637, 3136].forEach((f, i) => this._osc('sine', f * p, f * p, 0.14, 0.06, t + i * 0.035)); break;
       case 'wind': this._noise(0.75, 0.16, t, 'bandpass', 320, 1700, 2, 0.2); break;
+      case 'bang': this._noise(0.05, 0.3, t, 'highpass', 2600, 1200, 1); this._noise(0.22, 0.2, t + 0.01, 'lowpass', 900, 160, 1); this._osc('sine', 150, 55, 0.1, 0.14, t); break;
+      case 'whistle': this._osc('sine', 1200, 2100, 0.28, 0.07, t, 0.03); this._osc('sine', 2100, 1500, 0.32, 0.07, t + 0.32, 0.02); break;
       case 'cackle': [660, 590, 620, 520, 560, 440].forEach((f, i) => this._osc('square', f, f * 0.92, 0.07, 0.045, t + i * 0.08)); break;
     }
   },
@@ -8140,7 +9176,13 @@ const ENEMY_TYPES = {
   magmite: { model: 'magmite', hp: 18, speed: 1.8, dmg: 5, shot: 6, xp: 2, radius: 0.42, scale: 1.35, tint: '#ff5a1f', mass: 1.1, ranged: true, shotKind: 'ember' },
   frog: { model: 'frog', hp: 20, speed: 2.0, dmg: 5, xp: 2, radius: 0.42, scale: 1.35, tint: '#5ad04a', mass: 1.1, ai: 'lunge', hit: 10 },
   seagull: { model: 'seagull', hp: 12, speed: 3.0, dmg: 4, xp: 1, radius: 0.4, scale: 1.3, tint: '#f4f6fa', mass: 0.6, weave: 0.8, float: 0.5 },
-  martian: { model: 'martian', hp: 16, speed: 2.0, dmg: 4, shot: 6, xp: 2, radius: 0.38, scale: 1.25, tint: '#7ef06a', mass: 0.9, ranged: true, shotKind: 'spark' },
+  // chapter 10, the Wild West town: rattlesnakes weave in and strike, wild horses gallop through, gunslingers shoot,
+  // pack mules rear up and stamp, and bison paw the ground and charge in a straight line (ai: 'charge')
+  snake: { model: 'snake', hp: 12, speed: 3.1, dmg: 4, xp: 1, radius: 0.4, scale: 1.3, tint: '#d8b06a', mass: 0.6, weave: 1.1, ai: 'lunge', hit: 9 },
+  horse: { model: 'horse', hp: 22, speed: 3.9, dmg: 5, xp: 2, radius: 0.5, scale: 1.45, tint: '#8a5230', mass: 1.6, weave: 0.45 },
+  gunslinger: { model: 'gunslinger', hp: 16, speed: 2.0, dmg: 4, shot: 6, xp: 2, radius: 0.4, scale: 1.35, tint: '#f2a03a', mass: 1, ranged: true, shotKind: 'bullet', shotSpeed: 13 },
+  mule: { model: 'mule', hp: 30, speed: 2.2, dmg: 6, xp: 3, radius: 0.5, scale: 1.4, tint: '#8c7c6c', mass: 2, ai: 'chop', hit: 13, wind: 0.55 },
+  bison: { model: 'bison', hp: 60, speed: 1.9, dmg: 8, xp: 4, radius: 0.65, scale: 1.7, tint: '#5e3c26', mass: 4, ai: 'charge', hit: 16 },
   // ---------- theme enemies (see THEME_ENEMIES): weave = sways side to side as it comes; float = hovers; ghost = see-through, drifts through scenery ----------
   ghost: { model: 'ghost', hp: 14, speed: 2.45, dmg: 4, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
   zombie: { model: 'stickman', hp: 44, speed: 1.3, dmg: 8, xp: 3, radius: 0.42, scale: 1.45, tint: '#8fd67a', mass: 1.8 },
@@ -8162,7 +9204,7 @@ const THEME_ENEMIES = {
   volcano: { magmite: [30, 0.24] },
   jungle: { frog: [25, 0.3] },
   beach: { seagull: [20, 0.3] },
-  moon: { martian: [25, 0.26] },
+  west: { snake: [15, 0.26], horse: [30, 0.2], gunslinger: [45, 0.22], mule: [70, 0.18], bison: [110, 0.13] },
   graveyard: { ghost: [20, 0.3], zombie: [70, 0.18] },
   caverns: { crystalbug: [45, 0.26] },
   sky: { cloudling: [35, 0.24] },
@@ -8190,7 +9232,7 @@ BOSS_TYPES.geode = { name: 'Geode Titan', model: 'geode', meshes: ['geode', 'ice
 BOSS_TYPES.storm = { name: 'Storm King', model: 'stormcloud', meshes: ['stormcloud'], hp: 4400, speed: 2.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#7c86a0', mass: 60, portraitTop: 1.3 };
 BOSS_TYPES.jack = { name: 'Jack-in-the-Box', model: 'jackbox', meshes: ['jackbox', 'jackhead', 'toyblock'], hp: 4600, speed: 2.2, dmg: 20, scale: 2.3, radius: 1.3, tint: '#e83a4a', mass: 60, portraitTop: 2.0 };
 BOSS_TYPES.kraken = { name: 'Kraken', model: 'kraken', meshes: ['kraken'], hp: 4800, speed: 1.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#8a4ab0', mass: 60, portraitTop: 1.45 };
-BOSS_TYPES.ufo = { name: 'UFO Overlord', model: 'ufo', meshes: ['ufo', 'alien'], hp: 4200, speed: 2.6, dmg: 20, scale: 2.6, radius: 2.0, tint: '#9a6aff', mass: 60, portraitTop: 1.1 };
+BOSS_TYPES.outlaw = { name: 'The Outlaw', model: 'outlaw', meshes: ['outlaw', 'dynamite', 'bison'], hp: 4200, speed: 2.7, dmg: 20, scale: 2.6, radius: 1.0, tint: '#8f5bd8', mass: 60, portraitTop: 1.15 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
 BOSS_TYPES.hydra = { name: 'Vine Hydra', model: 'hydrabody', meshes: ['hydrabody', 'hydrahead', 'vineseg', 'roots'], hp: 4000, speed: 1.0, dmg: 20, scale: 2.6, radius: 1.6, tint: '#4fae4a', mass: 60, portraitTop: 1.0 };
 BOSS_TYPES.magma = { name: 'Magma Golem', model: 'golem', meshes: ['golem'], hp: 3900, speed: 1.7, dmg: 20, scale: 3.0, radius: 1.3, tint: '#7a5a50', mass: 60, portraitTop: 1.05 };
@@ -8207,7 +9249,7 @@ const BOSS_HINTS = {
   wreckbot: 'Wrecking-ball swings, rockets and lane slams.', bigbounce: 'Hops onto marked circles, then rolls like a pinball.',
   jellyqueen: 'Jelly spirals, slime minions and belly flops.', yeti: 'Freezing breath, icicles and a spike ring with gaps.',
   magma: 'Lava fissures and magma lobs. Brittle after it erupts.', hydra: 'Its heads snap along marked lanes.',
-  crab: 'Claw snaps, cannon fire and homing bubbles.', ufo: 'A tractor beam, sweeping lasers and invaders.',
+  crab: 'Claw snaps, cannon fire and homing bubbles.', outlaw: 'Fans the hammer, lobs dynamite and whistles up a stampede.',
   pumpking: 'Pumpkin bombs, ghost rings and pounces from the mist.', geode: 'Crystal shards, spike walls and sweeping lasers.',
   storm: 'Lightning, gusts of wind and twisters.', jack: 'Spring punches, pounces and tumbling toy blocks.',
   kraken: 'Tentacle slams, ink puddles and a whirlpool.',
@@ -8237,8 +9279,9 @@ const ARENAS = [
     props: [['jtree', 6, 0.45, 0.6], ['mushroom', 4, 0.5, 0.75], ['fern', 6, 0.6, 0.9], ['rock', 3, 0.8, 1.2]], zones: [['swamp', 3, 2.8, 4.2]], wall: 'bamboo' },
   { id: 'beach', name: 'Pirate Beach', floor: 8, stoneA: '#f2dcae', stoneB: '#d6b480', grout: '#8a6a44', accent: '#4fd8ff', fog: '#123a4a', sky: '#bfe8ff', ground: '#c8a878', light: '#fff6e4', spotMin: 0.62, shadowTint: '#3a4a6a', rock: '#9a8a7a', pool: '#2fb0d8', poolGlow: 0.1,
     props: [['palm', 6, 0.42, 0.55], ['barrel', 3, 0.3, 0.36], ['crate', 3, 0.34, 0.4], ['rock', 3, 0.8, 1.2], ['starfish', 4, 0.3, 0.4]], zones: [['tidepool', 3, 2.0, 3.0]], wall: 'post' },
-  { id: 'moon', name: 'Moon Base', floor: 9, stoneA: '#b8bcc8', stoneB: '#979dab', grout: '#3a3e4a', accent: '#7af0ff', fog: '#05060f', sky: '#3a4070', ground: '#2a2e40', light: '#eef2ff', spotMin: 0.5, shadowTint: '#0a0c20', rock: '#7c808c', pool: '#3ad8ff', poolGlow: 0.5,
-    props: [['dish', 2.5, 0.55, 0.7], ['lander', 2, 0.42, 0.5], ['habdome', 2, 0.9, 1.2], ['rock', 5, 0.8, 1.3]], zones: [['boost', 2.4, 2.0, 2.8]], wall: 'moonwall' },
+  { id: 'west', name: 'Wild West Town', floor: 9, stoneA: '#d6a86c', stoneB: '#c08d54', grout: '#6e4628', accent: '#ffb347', fog: '#3a1c10', sky: '#ffc488', ground: '#a8743e', light: '#fff0d8', spotMin: 0.62, shadowTint: '#4a2410', rock: '#b08a62', pool: '#1a120c', poolGlow: 0,
+    props: [['haybale', 2.4, 0.7, 0.9], ['wagon', 0.6, 1.3, 1.5], ['trough', 1.4, 0.55, 0.65]], zones: [['oil', 1, 2.0, 2.8]], wall: 'railfence',
+    kinds: ['saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp', 'derrick'] },
   { id: 'graveyard', name: 'Haunted Graveyard', floor: 10, stoneA: '#4a5a3a', stoneB: '#33402c', grout: '#221a14', accent: '#b06aff', fog: '#120c1e', sky: '#6a5a8a', ground: '#1e2420', light: '#e6deff', spotMin: 0.46, shadowTint: '#100a1e', rock: '#6a6a72', pool: '#3a2a5a', poolGlow: 0.1,
     props: [['tombstone', 10, 0.52, 0.64], ['pumpkin', 5, 0.38, 0.48], ['gravetree', 4, 0.42, 0.58], ['rock', 2, 0.8, 1.1]], zones: [['mist', 3, 2.2, 3.4]], wall: 'fence' },
   { id: 'caverns', name: 'Crystal Caverns', floor: 11, stoneA: '#3a3350', stoneB: '#2a2440', grout: '#120e1e', accent: '#5ae8ff', fog: '#0a0716', sky: '#4a3a7a', ground: '#1c1830', light: '#ebe6ff', spotMin: 0.46, shadowTint: '#0c0820', rock: '#5a5470', pool: '#7a5aff', poolGlow: 0.4,
@@ -8294,10 +9337,23 @@ const PROP_KINDS = {
   starfish: { models: ['starfish'], unit: 0.35, block: false, tints: ['#ff7a5a', '#ffb03a', '#c860ff', '#ff5a8a'], shadow: false },
   post: { models: ['post'], unit: 0.4, block: true, shots: true, wallR: [0.9, 1.05] },
   wreck: { models: ['wreck'], unit: 0.5, block: true, shots: true, shadow: false, tall: 3 },
-  dish: { models: ['dish'], unit: 0.4, block: true, shots: true, tall: 2 },
-  lander: { models: ['lander'], unit: 0.3, block: true, shots: true, tall: 3 },
-  habdome: { models: ['habdome'], unit: 0.6, block: true, shots: true },
-  moonwall: { models: ['moonwall'], unit: 0.5, block: true, shots: true, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
+  // Wild West Town: the buildings are placed by its layout as boxes (scale = width, height for the see-through fade)
+  saloon: { models: ['saloon'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  bank: { models: ['bank'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  sheriff: { models: ['sheriff'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  store: { models: ['store'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  hotel: { models: ['hotel'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  barn: { models: ['barn'], unit: 0.5, block: true, shots: true, shadow: false, tall: 14 },
+  church: { models: ['church'], unit: 0.5, block: true, shots: true, shadow: false, tall: 20 },
+  watertower: { models: ['watertower'], unit: 0.5, block: true, shots: true, tall: 4 },
+  gazebo: { models: ['gazebo'], unit: 0.5, block: true, shots: true, tall: 1.9 },
+  well: { models: ['well'], unit: 0.4, block: true, shots: true },
+  oillamp: { models: ['oillamp'], unit: 0.14, block: true, shots: false, shadow: false, tall: 11 },
+  haybale: { models: ['haybale'], unit: 0.45, block: true, shots: true },
+  wagon: { models: ['wagon'], unit: 0.55, block: true, shots: true, tall: 1.5 },
+  trough: { models: ['trough'], unit: 0.4, block: true, shots: true },
+  derrick: { models: ['derrick'], unit: 0.35, block: true, shots: false, tall: 6 },
+  railfence: { models: ['railfence'], unit: 0.5, block: true, shots: true, shadow: false, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
   basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
   tombstone: { models: ['tombstone0', 'tombstone0', 'tombstone1'], unit: 0.4, block: true, shots: true, tints: ['#8a8c96', '#777a84', '#9a98a4'], tall: 1.6 },
   pumpkin: { models: ['pumpkin'], unit: 0.36, block: true, shots: true },
@@ -8333,7 +9389,7 @@ const ZONE_KINDS = {
   lava: { burn: 16, slow: 0.85, col: '#f04a0c', glow: 0.3 },
   swamp: { slow: 0.6, col: '#56702c', glow: 0.03 },
   tidepool: { block: true, col: '#2fb8e0', glow: 0.12 },
-  boost: { slow: 1.35, col: '#3ad8ff', glow: 0.55 },
+  oil: { slide: true, col: '#1a120c', glow: 0 },
   mist: { slow: 0.7, col: '#7a5aa8', glow: 0.14 },
   crystalpool: { block: true, col: '#7a5aff', glow: 0.45 },
   updraft: { slow: 1.3, col: '#8fe4ff', glow: 0.35 },
@@ -8343,7 +9399,7 @@ const ZONE_KINDS = {
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm', 'jack', 'kraken'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 // every chapter is unique: the game ends after the last one (no repeats with stronger stats)
 const CHAPTER_COUNT = ARENAS.length;
@@ -9394,7 +10450,7 @@ function updateEnemyAI(e, dt) {
       if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 3.2; }
     } else {
       e.reload -= dt;
-      if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) { e.aim = 0.001; AUDIO.play('throw'); }
+      if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) { e.aim = 0.001; if (e.def.shotKind !== 'bullet') AUDIO.play('throw'); }
       if (d < 4.5) want = -e.speed * 0.6;
     }
   }
@@ -9419,6 +10475,10 @@ function startEnemyAct(e, d, dx, dz) {
     addTele({ kind: 'circle', x: a.cx, z: a.cz, r: a.r, dur: D.wind || 0.55 });
   } else if (D.ai === 'toss' && d > 3.5 && d < 8.5 && onScreen(e.x, e.z, -0.5)) {
     a = { kind: 'toss', clip: 'throw' };
+  } else if (D.ai === 'charge' && d > 2 && d < 7.5 && onScreen(e.x, e.z, -0.3)) {
+    // paws the ground over a long lane warning, then thunders straight down it
+    a = { kind: 'charge', clip: 'slam', dir: [dx, dz] };
+    addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.6, len: 8.5, rot: Math.atan2(dx, dz), dur: 0.75 });
   } else if (D.ai === 'bomb' && d < 1.6) {
     a = { kind: 'bomb', clip: 'idle' };
     addTele({ kind: 'circle', x: e.x, z: e.z, r: 1.8, dur: 0.75 });
@@ -9461,6 +10521,15 @@ function enemyAct(e, dt, d, dx, dz) {
     else if (!a.done) { a.done = true; a.u = 0.62; throwJavelin(e, D.hit * mul); }
     else if (a.t < 0.85) a.u = 0.62 + (a.t - 0.5) / 0.35 * 0.37;
     else { e.act = null; e.cool = 3.2; }
+  } else if (a.kind === 'charge') {
+    e.yaw = angleLerp(e.yaw, Math.atan2(a.dir[0], a.dir[1]), Math.min(1, dt * 14));
+    if (a.t < 0.75) a.u = a.t / 0.75 * 0.5;
+    else if (a.t < 1.33) {
+      a.clip = 'run'; a.u = (a.t * 3.2) % 1;
+      e.x += a.dir[0] * 14 * dt; e.z += a.dir[1] * 14 * dt;
+      if (!a.hit && Math.hypot(h[0] - e.x, h[2] - e.z) < e.radius + HERO_R + 0.25) { a.hit = true; hurtHero(D.hit * mul, e.x, e.z); run.vel[0] += a.dir[0] * 8; run.vel[2] += a.dir[1] * 8; }
+      if (Math.random() < 0.6) FX.burst(e.x - a.dir[0] * 0.5, 0.15, e.z - a.dir[1] * 0.5, 1, [0.78, 0.62, 0.45], 2, 0.12, 0.45, 2);
+    } else { e.act = null; e.cool = 4.2; }
   } else if (a.kind === 'bomb') {
     e.flash = Math.sin(a.t * 32) > 0 ? 0.05 : 0;
     a.u = (a.t * 2) % 1;
@@ -9489,8 +10558,9 @@ function throwJavelin(e, dmg) {
 }
 
 function fireArrow(e) {
+  if (e.def.shotKind === 'bullet') AUDIO.play('bang');
   const h = G.hero.pos, dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
-  G.run.eShots.push({ kind: e.def.shotKind || 'arrow', ph: rand(0, 10), x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * 10, vy: 0, vz: dz / d * 10, dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
+  G.run.eShots.push({ kind: e.def.shotKind || 'arrow', ph: rand(0, 10), x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * (e.def.shotSpeed || 10), vy: 0, vz: dz / d * (e.def.shotSpeed || 10), dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
 }
 
 function updateEnemyShots(dt) {
@@ -10193,24 +11263,6 @@ ARENA_FEATURES.beach = {
   },
 };
 
-// ---------- Moon Base: blinking beacons on the landers and dishes, and slow-drifting moon dust ----------
-ARENA_FEATURES.moon = {
-  init(st) { st.beacons = ARENA.props.filter(o => o.kind === 'lander' || o.kind === 'dish'); st.acc = 0; },
-  update(st, dt) {
-    const h = G.hero.pos;
-    st.acc += dt * (FX.reduced ? 3 : 8);
-    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.1, 0.6), h[2] + rand(-11, 8), rand(-0.3, 0.3), rand(0.1, 0.35), rand(-0.3, 0.3), rand(0.06, 0.1), 0.12, rand(2, 3.5), [0.85, 0.88, 0.95], 0.5, 2, 0, 0.1);
-  },
-  emit(st) {
-    const t = G.run ? G.run.t : 0;
-    for (const o of st.beacons) {
-      if (!onScreen(o.x, o.z, 3) || ((t * 1.2 + o.ph) % 1.6) > 0.35) continue;
-      const sc = o.r / PROP_KINDS[o.kind].unit, y = (o.kind === 'lander' ? 1.62 : 1.3) * sc;
-      FX.glow(o.x, y, o.z, 0.9, [1, 0.3, 0.35], 0.05, 0.9);
-    }
-  },
-};
-
 // ---- 11c-events.js ----
 // ============================================================
 // Run events beyond the timeline basics: the Golden Gooblin
@@ -10452,6 +11504,79 @@ ARENA_FEATURES.reef = {
     for (const f of st.fish) {
       const x = f.cx + Math.cos(f.a) * f.r, z = f.cz + Math.sin(f.a) * f.r, rot = -(f.a + (f.w > 0 ? Math.PI / 2 : -Math.PI / 2)) + Math.PI / 2;
       pushDecal(x, z, 0.22 * f.s, 0.55 * f.s, rot, 1, 0, 0, 0.02, 0.15, 0.25, 0.2);
+    }
+  },
+};
+
+// ---- 11e-west.js ----
+// ============================================================
+// Chapter 10, the Wild West town. Three rows of false-front buildings, every one facing +z (toward the camera):
+// Church Street runs between the top two rows and Main Street between the lower two. You start in the town
+// square in the middle of Main Street, between the bank's steps and the bandstand. South of town is ranch land: a corral,
+// the water tower and an oil field. Oil lamps glow along the streets at sundown.
+// ============================================================
+// each building model: how far it reaches in z (model units, front at +z), its half width, and its height
+const WEST_FOOT = { saloon: [-0.36, 0.43, 0.5, 0.9], bank: [-0.36, 0.42, 0.5, 1.0], sheriff: [-0.4, 0.43, 0.5, 0.67], store: [-0.39, 0.43, 0.5, 0.68],
+  hotel: [-0.39, 0.36, 0.5, 1.03], barn: [-0.45, 0.44, 0.5, 0.96], church: [-0.65, 0.65, 0.46, 1.72] };
+// [model, x, front edge z, width, wall paint]
+const WEST_TOWN = [
+  // north row, facing Church Street
+  ['barn', -41, -18, 6.5, '#b0402e'], ['store', -29, -18, 5.5, '#c8a878'], ['hotel', -17, -18, 6, '#7a9ab0'], ['church', 0, -18, 5.5, '#f4efe4'],
+  ['saloon', 15, -18, 6, '#c07848'], ['sheriff', 27, -18, 5, '#b8704a'], ['store', 39, -18, 5.5, '#9ab07a'],
+  // Main Street's north side: you start at the steps of the First Gold Bank
+  ['hotel', -40, -3, 6, '#d8b070'], ['store', -29, -3, 5.5, '#8aa070'], ['saloon', -17, -3, 6.5, '#c0603a'], ['bank', 0, -2.5, 7.5, '#e2cfa4'],
+  ['sheriff', 13, -3, 5, '#a8603e'], ['hotel', 24, -3, 6, '#9a7ab0'], ['barn', 36, -3, 6.5, '#a8402e'],
+  // the south row, its fronts toward the ranch land; the gap in the middle opens onto the square
+  ['barn', -37, 12, 6.5, '#9a3a2a'], ['bank', -25, 12, 6.5, '#b45a42'], ['store', -13, 12, 5.5, '#d8b878'], ['saloon', 13, 12, 6, '#6a8ac0'],
+  ['hotel', 24, 12, 6, '#c88a5a'], ['sheriff', 36, 12, 5, '#8a9a6a'],
+];
+ARENA_LAYOUTS.west = (A) => {
+  const rnd = A.rnd, C = hexToRgb;
+  for (const [model, x, front, w, paint] of WEST_TOWN) {
+    const [z0, z1, hx, top] = WEST_FOOT[model], oz = front - z1 * w;
+    A.prop(model, x, oz + (z0 + z1) / 2 * w, 0, { shape: 'box', hw: hx * w, hd: (z1 - z0) / 2 * w, scale: w, yaw: 0, model, tint: C(paint), height: top * w, ox: x, oz });
+  }
+  // the bandstand square, ringed by lamps
+  // the town square opens out of Main Street right where you start, between the bank and the bandstand
+  A.prop('gazebo', 0, 5.6, 2.0, { yaw: 0 });
+  for (const [x, z] of [[6.6, 5.2], [-6.6, 5.2], [4.4, 9.8], [-4.4, 9.8]]) A.prop('oillamp', x, z, 0.25, { scale: 1.8, yaw: 0 });
+  A.prop('well', 16.5, 17.5, 1.0, { yaw: 0.3 });
+  // lamps along Main Street (two flanking the bank's steps) and Church Street
+  for (const [x, z] of [[-4.8, -2.2], [4.8, -2.2], [-23.5, -2.4], [-34.5, -2.4], [18.5, -2.4], [30, -2.4], [-31, 5.6], [30.5, 6.4],
+    [-4, -17], [4, -17], [-23, -17.2], [21, -17.2]]) A.prop('oillamp', x, z, 0.25, { scale: 1.8, yaw: 0 });
+  // wagons parked on Main Street, troughs by the saloons
+  A.prop('wagon', -31, 2, 1.4, { yaw: Math.PI / 2 }); A.prop('wagon', 31, 1.5, 1.4, { yaw: -Math.PI / 2 + 0.2 });
+  A.prop('trough', -17, -1.6, 0.6, { yaw: 0 }); A.prop('trough', 13, 14.3, 0.6, { yaw: Math.PI });
+  // the water tower at the edge of town
+  A.prop('watertower', -42, 26, 2.0, { yaw: 0.4 });
+  // a corral of split rails with an open gate, hay and a trough inside
+  const cx = -24, cz = 34, hw = 6.3, hd = 5.4;
+  for (let x = -hw + 0.9; x <= hw - 0.8; x += 1.8) {
+    if (Math.abs(x) > 1.5) A.prop('railfence', cx + x, cz - hd, 0.9, { yaw: 0 });
+    A.prop('railfence', cx + x, cz + hd, 0.9, { yaw: Math.PI });
+  }
+  for (let z = -hd + 0.9; z <= hd - 0.8; z += 1.8) { A.prop('railfence', cx - hw, cz + z, 0.9, { yaw: Math.PI / 2 }); A.prop('railfence', cx + hw, cz + z, 0.9, { yaw: -Math.PI / 2 }); }
+  A.prop('haybale', cx - 2.5, cz + 1.5, 0.8); A.prop('haybale', cx + 2.8, cz + 2.2, 0.75); A.prop('trough', cx + 1, cz - 2, 0.6, { yaw: 0.1 });
+  // the oil field: derricks over black pools
+  for (const [x, z] of [[30, 30], [42, 37], [27, 44]]) { A.prop('derrick', x, z, 1.1, { yaw: rnd() * TAU }); A.zone('oil', x + 2.6, z + 1.2, 2.2 + rnd() * 0.5); }
+};
+ARENA_FEATURES.west = {
+  init(st) { st.tall = ARENA.props.filter(o => o.height); st.lamps = ARENA.props.filter(o => o.kind === 'oillamp'); st.acc = 0; },
+  update(st, dt) {
+    // buildings between the camera and the hero turn see-through, as in the city
+    ARENA_FEATURES.city.update(st, dt);
+    // warm dust motes drifting on the evening wind
+    const h = G.hero.pos;
+    st.acc += dt * (FX.reduced ? 2 : 6);
+    for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.1, 0.9), h[2] + rand(-11, 8), rand(0.8, 1.6), rand(0.05, 0.25), rand(-0.2, 0.2), rand(0.05, 0.09), 0.1, rand(2, 3.5), [1, 0.82, 0.55], 0.45, 2, 0, 0.1);
+  },
+  emit(st) {
+    const t = G.run ? G.run.t : 0;
+    for (const o of st.lamps) {
+      if (!onScreen(o.x, o.z, 3)) continue;
+      const fl = 0.9 + 0.1 * Math.sin(t * 9 + o.ph * 5);
+      pushDecal(o.x, o.z, 2.4, 2.4, 0, 1, 0, 0, 0.85 * fl, 0.58, 0.28, 0.24, true);
+      FX.glow(o.x, 1.33 * (o.scale || 1.8), o.z, 0.75 * fl, [1, 0.75, 0.4], 0.05, 0.8);
     }
   },
 };
@@ -13323,122 +14448,6 @@ BOSS_DRAW.crab = function (e) {
   if (!e.portrait) pushDecal(e.x - L[0] * 0.4, e.z - L[2] * 0.4, 0.75 * s, 0.6 * s, -e.yaw, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
 };
 
-// ---------- UFO Overlord (chapter 10): a tractor beam that drags you in, sweeping lasers, and beamed-down invaders ----------
-const UFO = { beamR: 2.9, laserLen: 14 };
-function ufoBeams(ai) { const n = ai.beams, out = []; for (let i = 0; i < n; i++) out.push(ai.laserA + i * TAU / n); return out; }
-BOSS_AI.ufo = function (e, dt, d, dx, dz) {
-  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
-  if (ai.state === 'walk' && ai.next === undefined) { ai.next = 0; ai.cd = 1.5; ai.spin = 0; ai.drops = []; }
-  // hovers above the moon dust, its saucer always spinning
-  e.y += (2.4 + Math.sin(run.t * 2) * 0.25 - (e.y || 0)) * Math.min(1, dt * 3);
-  ai.spin += dt * (ai.state === 'lasers' ? 5 : 1.5);
-  switch (ai.state) {
-    case 'walk': {
-      const a = Math.atan2(e.x - h[0], e.z - h[2]) + 0.4;
-      bossWalk(e, dt, h[0] + Math.sin(a) * 5.5, h[2] + Math.cos(a) * 5.5, e.speed * (rage ? 1.3 : 1)); bossFace(e, dt, 4);
-      ai.cd -= dt;
-      if (ai.cd <= 0) {
-        const k = ['beam', 'lasers', 'invade'][ai.next++ % 3];
-        if (k === 'beam') { ai.state = 'beamWind'; ai.t = ai.dur = 0.85; addTele({ kind: 'circle', x: e.x, z: e.z, r: UFO.beamR, dur: ai.dur }); }
-        else if (k === 'lasers') {
-          ai.state = 'laserWind'; ai.t = ai.dur = 0.9; ai.beams = rage ? 4 : 3; ai.laserA = Math.atan2(dx, dz) + Math.PI / ai.beams; ai.laserV = (Math.random() < 0.5 ? 1 : -1) * (rage ? 0.95 : 0.75);
-          for (const rot of ufoBeams(ai)) addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.55, len: UFO.laserLen, rot, dur: ai.dur });
-        } else {
-          ai.state = 'invade'; ai.t = 1.1;
-          const n = rage ? 5 : 3;
-          for (let i = 0; i < n; i++) {
-            const a = rand(0, TAU), r = rand(3.5, 6), o = { x: h[0] + Math.cos(a) * r, z: h[2] + Math.sin(a) * r }; resolveCircle(o, 1);
-            ai.drops.push({ x: o.x, z: o.z, t: 1.1 });
-            addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.1, dur: 1.1 });
-          }
-        }
-      }
-      break;
-    }
-    case 'beamWind':
-      e.vx *= 0.8; e.vz *= 0.8;
-      if (ai.t <= 0) { ai.state = 'beam'; ai.t = rage ? 2.8 : 2.4; ai.tick = 0; AUDIO.play('zap', 0.5); }
-      break;
-    case 'beam': {
-      // the tractor beam drags the hero toward its centre and burns; run outward to break free
-      bossWalk(e, dt, h[0], h[2], 1.1);
-      const ox = e.x - h[0], oz = e.z - h[2], od = Math.hypot(ox, oz);
-      if (od < UFO.beamR + HERO_R * 0.5 && od > 0.05) {
-        const pull = 2.0 * dt;
-        h[0] += ox / od * Math.min(pull, od); h[2] += oz / od * Math.min(pull, od);
-        ai.tick -= dt;
-        if (ai.tick <= 0) { ai.tick = 0.35; hurtHero(7 * run.info.dmgMul, e.x, e.z + 0.01); }
-      }
-      if (Math.random() < 0.7) { const a = rand(0, TAU), r = rand(0, UFO.beamR); FX.part(e.x + Math.cos(a) * r, 0.2, e.z + Math.sin(a) * r, 0, rand(2, 4), 0, 0.1, 0.03, 0.6, [0.5, 1, 0.6], 1, 0); }
-      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2; }
-      break;
-    }
-    case 'laserWind':
-      e.vx *= 0.7; e.vz *= 0.7;
-      if (ai.t <= 0) { ai.state = 'lasers'; ai.t = 3; ai.tick = 0; AUDIO.play('zap', 1.2); }
-      break;
-    case 'lasers': {
-      // the beams sweep round like a lighthouse; keep moving round with them
-      e.vx *= 0.7; e.vz *= 0.7;
-      ai.laserA += ai.laserV * dt;
-      ai.tick -= dt;
-      for (const rot of ufoBeams(ai)) {
-        if (ai.tick <= 0 && laneHit(e.x, e.z, rot, UFO.laserLen, 0.55 + HERO_R * 0.5, h[0], h[2])) { ai.tick = 0.25; hurtHero(11 * run.info.dmgMul, e.x, e.z); }
-        const k = rand(2, UFO.laserLen);
-        if (Math.random() < 0.6) FX.burst(e.x + Math.sin(rot) * k, 0.2, e.z + Math.cos(rot) * k, 1, [1, 0.4, 0.6], 2.5, 0.08, 0.3, 0);
-      }
-      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.2 : 2; }
-      break;
-    }
-    case 'invade':
-      e.vx *= 0.8; e.vz *= 0.8;
-      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
-      break;
-  }
-  // beamed-down invaders land a moment after their columns of light appear
-  for (const p of ai.drops) {
-    p.t -= dt;
-    if (p.t > 0) { if (Math.random() < 0.5) FX.part(p.x + rand(-0.6, 0.6), 0.2, p.z + rand(-0.6, 0.6), 0, rand(3, 6), 0, 0.12, 0.03, 0.5, [0.5, 1, 0.6], 1, 0); continue; }
-    p.done = true;
-    if (Math.hypot(h[0] - p.x, h[2] - p.z) < 1.1 + HERO_R * 0.5) hurtHero(16 * run.info.dmgMul, p.x, p.z);
-    for (let i = 0; i < 2; i++) { const m = spawnEnemy('sprinter', p.x + rand(-0.5, 0.5), p.z + rand(-0.5, 0.5), { tint: '#6aff7a' }); m.spawnT = 0.3; }
-    FX.ring(p.x, p.z, 2.4, [0.5, 1, 0.6], 0.4); FX.burst(p.x, 0.4, p.z, 10, [0.6, 1, 0.7], 4, 0.1, 0.4, 0);
-    AUDIO.play('split', 0.8);
-  }
-  ai.drops = ai.drops.filter(p => !p.done);
-};
-BOSS_DRAW.ufo = function (e) {
-  const D = MODELS.defs;
-  if (!R.enemyDraw.ufo || !R.enemyDraw.alien) return;
-  const dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, s = e.scale, ai = e.ai, L = R.frame.lightDir;
-  const y = e.portrait ? 0.3 * s : (e.y || 0) - 0.5 * s * (1 - dead * 0.5), spin = ai.spin || 0;
-  // the saucer turns see-through while the hero is underneath it (the camera looks north, so "under" reaches a bit behind)
-  const hp = G.hero.pos, under = e.portrait ? 0 : clamp(1.4 - Math.hypot(hp[0] - e.x, (hp[2] - e.z + 1.2) * 0.8) / (1.1 * s), 0, 1) * 0.7;
-  pushEnemy('ufo', false, e.x, y, e.z, spin, D.ufo.clips.still.row, s, e.squash, dead, fl, 0, t[0], t[1], t[2], under);
-  pushEnemy('alien', false, e.x, y + 0.7 * s, e.z, e.yaw, D.alien.clips.still.row, s * 0.75, 1, dead, fl, 0, 1, 1, 1, under);
-  if (e.portrait || dead) return;
-  // its shadow far below, and the rim lights chasing round
-  pushDecal(e.x, e.z, 1.6 * s * 0.5, 1.6 * s * 0.5, 0, 1, 0, 0, 0.01, 0.02, 0.06, 0.45);
-  const yy = y + 0.5 * s;
-  for (let i = 0; i < 10; i += 2) { const a = (i / 10) * TAU - spin; FX.glow(e.x + Math.cos(a) * 0.9 * s, yy, e.z + Math.sin(a) * 0.9 * s, 0.6, (i / 2) % 2 ? [1, 0.85, 0.3] : [0.45, 0.95, 1], 0.05, 0.7); }
-  if (ai.state === 'beam') {
-    // the tractor beam: a pool of green light and streaks rising into the saucer
-    pushDecal(e.x, e.z, UFO.beamR, UFO.beamR, G.run.t, 1, 0, 0, 0.4, 1, 0.5, 0.5, true);
-    for (let k = 0; k < 6; k++) {
-      const a = k / 6 * TAU + G.run.t * 0.8, x0 = e.x + Math.cos(a) * UFO.beamR * 0.9, z0 = e.z + Math.sin(a) * UFO.beamR * 0.9;
-      R.ribStrip([x0, 0.1, z0, e.x + Math.cos(a) * 0.5 * s, yy - 0.3, e.z + Math.sin(a) * 0.5 * s], 2, 0.35, [0.45, 1, 0.55, 0.3], 0);
-    }
-  }
-  if (ai.state === 'lasers') {
-    for (const rot of ufoBeams(ai)) {
-      const ex = e.x + Math.sin(rot) * UFO.laserLen, ez = e.z + Math.cos(rot) * UFO.laserLen, pts = [e.x, yy - 0.4, e.z, e.x + Math.sin(rot) * 2, 0.35, e.z + Math.cos(rot) * 2, ex, 0.3, ez];
-      R.ribStrip(pts, 3, 0.16, [1, 0.6, 0.75, 1], 0);
-      R.ribStrip(pts, 3, 0.55, [1, 0.25, 0.45, 0.4], 0);
-    }
-  }
-  for (const p of ai.drops || []) R.ribStrip([p.x, 0.1, p.z, p.x, 9, p.z], 2, 0.9 * (1 - p.t / 1.1) + 0.2, [0.5, 1, 0.6, 0.35], 0);
-};
-
 // ---- 13b-bosses2.js ----
 // ============================================================
 // Chapter bosses 11-15: behaviour (BOSS_AI) and drawing (BOSS_DRAW), plus their custom shots (SHOT_DRAW).
@@ -14119,7 +15128,7 @@ const MINIBOSSES = {
   7: { name: 'Magma Brute', type: 'magmite', scale: 2.5, hp: 700, attacks: ['rain', 'slam'] },
   8: { name: 'Frog King', type: 'frog', scale: 2.5, hp: 760, tint: '#3fae3a', attacks: ['leap', 'fan'], shot: 'bubble' },
   9: { name: 'Gull Captain', type: 'seagull', scale: 2.4, hp: 800, attacks: ['swoop', 'rain'] },
-  10: { name: 'Martian Commander', type: 'martian', scale: 2.4, hp: 860, tint: '#5ad84a', attacks: ['fan', 'summon'], summon: 'martian', shot: 'spark' },
+  10: { name: 'Thunder Bison', type: 'bison', scale: 2.6, hp: 900, tint: '#4a2e1c', attacks: ['charge', 'slam'] },
   11: { name: 'Zombie Giant', type: 'zombie', scale: 2.2, hp: 950, attacks: ['slam', 'summon'], summon: 'zombie' },
   12: { name: 'Beetle Queen', type: 'crystalbug', scale: 2.3, hp: 1000, attacks: ['charge', 'fan'], shot: 'shard' },
   13: { name: 'Thunderhead', type: 'cloudling', scale: 2.4, hp: 1050, tint: '#c8d0e8', attacks: ['rain', 'summon'], summon: 'cloudling' },
@@ -14283,6 +15292,175 @@ function onMiniKilled(e) {
   if (Math.random() < 0.5 * scrollOdds()) spawnPickup('scroll', e.x + 0.6, e.z);
   FX.ring(e.x, e.z, 5, [1, 0.8, 0.4], 0.6); G.cam.shake = Math.max(G.cam.shake, 0.2);
 }
+
+// ---- 13d-outlaw.js ----
+// ============================================================
+// The Outlaw (chapter 10): a gunfighter who keeps his distance and circles you. He fans the hammer (a cone of
+// bullets sweeping across, two or three volleys), lobs bundles of dynamite at marked spots, and whistles up a
+// bison stampede that thunders across the street along marked lanes. Buildings, hay and wagons stop bullets.
+// Stage 2: a third volley, wider fans, more dynamite, and stampedes from both sides at once.
+// ============================================================
+const OUTLAW = { spread: 0.95, bulletV: 12, laneLen: 34, laneW: 1.15, herdV: 20 };
+// where his guns are (right hand, or left with side = 1), roughly, in world space
+function outlawGun(e, side, out) {
+  const s = e.scale, c = Math.cos(e.yaw), sn = Math.sin(e.yaw), lx = (side ? 0.27 : -0.27) * s, lz = 0.55 * s;
+  out[0] = e.x + c * lx + sn * lz; out[1] = 0.74 * s; out[2] = e.z - sn * lx + c * lz;
+  return out;
+}
+const _gun = [0, 0, 0];
+BOSS_AI.outlaw = function (e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run, rage = isRage(e);
+  if (ai.next === undefined) { ai.next = 0; ai.cd = 1.4; ai.herd = []; ai.strafe = 1; }
+  updateHerd(e, ai, dt);
+  switch (ai.state) {
+    case 'walk': {
+      // keeps a gunfighter's distance, circling round you
+      const a = Math.atan2(e.x - h[0], e.z - h[2]) + ai.strafe * 0.55;
+      bossWalk(e, dt, h[0] + Math.sin(a) * 7, h[2] + Math.cos(a) * 7, e.speed * (rage ? 1.25 : 1)); bossFace(e, dt, 6);
+      ai.cd -= dt;
+      if (ai.cd <= 0) {
+        const k = ['fan', 'dynamite', 'fan', 'stampede'][ai.next++ % 4];
+        if (Math.random() < 0.35) ai.strafe *= -1;
+        if (k === 'fan') { ai.state = 'draw'; ai.t = ai.dur = 0.6; ai.volleys = rage ? 3 : 2; ai.side = 0; }
+        else if (k === 'dynamite') { ai.state = 'toss'; ai.t = 1.0; ai.thrown = 0; ai.tossT = 0.25; }
+        else {
+          // the whistle: marked lanes across the street around you, with gaps to stand in
+          ai.state = 'whistle'; ai.t = 1.45;
+          const n = rage ? 4 : 3, gap = OUTLAW.laneW * 2 + 2.3, base = h[2] + rand(-1.2, 1.2), first = Math.random() < 0.5 ? 1 : -1;
+          ai.lanes = [];
+          for (let i = 0; i < n; i++) {
+            const z = base + (i - (n - 1) / 2) * gap, dir = rage && i % 2 ? -first : first;
+            const x0 = h[0] - dir * OUTLAW.laneLen / 2;
+            ai.lanes.push({ z, dir, x0 });
+            addTele({ kind: 'lane', x: x0, z, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: dir > 0 ? Math.PI / 2 : -Math.PI / 2, dur: 1.45 });
+          }
+          AUDIO.play('whistle');
+        }
+      }
+      break;
+    }
+    case 'draw':
+      // the cone he is about to fill with lead; it follows his aim until the last moment
+      e.clip = 'aim'; e.clipU = (1 - ai.t / ai.dur) * 0.55; e.vx *= 0.8; e.vz *= 0.8;
+      if (ai.t > 0.2) bossFace(e, dt, 9);
+      if (!ai.cone) ai.cone = addTele({ kind: 'cone', x: e.x, z: e.z, r: 10, rot: e.yaw, half: OUTLAW.spread * (rage ? 0.6 : 0.5), dur: ai.dur });
+      ai.cone.x = e.x; ai.cone.z = e.z; ai.cone.rot = e.yaw;
+      if (ai.t <= 0) { ai.cone = null; ai.state = 'fan'; ai.shots = 0; ai.shotT = 0; }
+      break;
+    case 'fan': {
+      // fanning the hammer: a quick sweep of shots across the cone, alternating guns
+      e.clip = 'aim'; e.clipU = 0.8 + 0.19 * ((ai.shots % 2) ? 1 : 0); e.vx *= 0.8; e.vz *= 0.8;
+      const n = rage ? 9 : 7, half = OUTLAW.spread * (rage ? 0.6 : 0.5), sweep = ai.volleys % 2 ? 1 : -1;
+      ai.shotT -= dt;
+      while (ai.shotT <= 0 && ai.shots < n) {
+        ai.shotT += 0.045;
+        const u = ai.shots / (n - 1), rot = e.yaw + (u * 2 - 1) * half * sweep;
+        outlawGun(e, ai.shots % 2, _gun);
+        run.eShots.push({ kind: 'bullet', ph: 0, x: _gun[0], y: 1.5, z: _gun[2], vx: Math.sin(rot) * OUTLAW.bulletV, vy: -0.3, vz: Math.cos(rot) * OUTLAW.bulletV, dmg: 9 * run.info.dmgMul, r: 0.24, life: 1.1 });
+        FX.glow(_gun[0], _gun[1], _gun[2], 0.9, [1, 0.85, 0.45], 0.06, 1); FX.smoke(_gun[0], _gun[1], _gun[2], 0.35, [0.8, 0.78, 0.75], 0.5, 0.4);
+        AUDIO.play('bang');
+        ai.shots++;
+      }
+      if (ai.shots >= n && ai.shotT <= -0.18) {
+        if (--ai.volleys > 0) { ai.state = 'draw'; ai.t = ai.dur = 0.42; }
+        else { ai.state = 'walk'; ai.cd = rage ? 1.3 : 2.0; }
+      }
+      break;
+    }
+    case 'toss': {
+      // dynamite: lit bundles lobbed at you and around you, each over a marked circle
+      e.clip = 'throw'; e.clipU = 0.3 + 0.4 * ((ai.thrown % 2) ? 1 : (ai.tossT / 0.25)); bossFace(e, dt, 8); e.vx *= 0.8; e.vz *= 0.8;
+      const n = rage ? 6 : 4;
+      ai.tossT -= dt;
+      if (ai.thrown < n && ai.tossT <= 0) {
+        ai.tossT = 0.17;
+        let tx = h[0] + run.vel[0] * 0.9, tz = h[2] + run.vel[2] * 0.9;
+        if (ai.thrown) { const a = rand(0, TAU), r = rand(2, 5.5); tx = h[0] + Math.cos(a) * r; tz = h[2] + Math.sin(a) * r; }
+        const o = { x: tx, z: tz }; resolveCircle(o, 0.6);
+        addTele({ kind: 'circle', x: o.x, z: o.z, r: 1.9, dur: 1.15 });
+        outlawGun(e, 0, _gun);
+        run.eShots.push({ kind: 'dynamite', lob: true, sx: _gun[0], sy: _gun[1] + 0.5, sz: _gun[2], tx: o.x, tz: o.z, x: _gun[0], y: _gun[1], z: _gun[2], t: 0, dur: 1.15, radius: 1.9,
+          dmg: 22 * run.info.dmgMul, life: 2, spin: rand(0, TAU), peak: 4.2, onLand: dynamiteBlast });
+        ai.thrown++;
+        AUDIO.play('throw', 0.8);
+      }
+      if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.2 : 1.9; }
+      break;
+    }
+    case 'whistle':
+      // two fingers to his mouth while the ground starts to rumble
+      e.clip = 'throw'; e.clipU = 0.35; e.vx *= 0.8; e.vz *= 0.8; bossFace(e, dt, 4);
+      G.cam.shake = Math.max(G.cam.shake, 0.03 + 0.06 * (1 - ai.t / 1.45));
+      if (ai.t <= 0) {
+        // the herd: three bison per lane, bunched up, running the whole lane
+        for (const L of ai.lanes) {
+          for (let i = 0; i < 3; i++) ai.herd.push({ lane: L, along: -i * 1.7 - rand(0, 0.6), side: (i - 1) * 0.45 + rand(-0.15, 0.15), ph: rand(0, 1), hit: false });
+          addTele({ kind: 'lane', x: L.x0, z: L.z, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: L.dir > 0 ? Math.PI / 2 : -Math.PI / 2, dur: (OUTLAW.laneLen + 4) / OUTLAW.herdV, hold: true });
+        }
+        AUDIO.play('roar', 0.7); AUDIO.play('boom');
+        ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.6;
+      }
+      break;
+  }
+};
+// the stampede runs on its own while he goes back to shooting
+function updateHerd(e, ai, dt) {
+  if (!ai.herd || !ai.herd.length) return;
+  const h = G.hero.pos, run = G.run;
+  for (const b of ai.herd) {
+    const L = b.lane;
+    b.along += OUTLAW.herdV * dt; b.ph += dt * 2.6;
+    b.x = L.x0 + L.dir * b.along; b.z = L.z + b.side;
+    if (b.along < 0 || b.along > OUTLAW.laneLen) continue;
+    if (!L.hit && Math.abs(h[2] - L.z) < OUTLAW.laneW + HERO_R * 0.5 && Math.abs(h[0] - b.x) < 1.3) {
+      L.hit = true; hurtHero(26 * run.info.dmgMul, b.x - L.dir, b.z); run.vel[0] += L.dir * 9; run.vel[2] += Math.sign(h[2] - L.z || 1) * 5;
+    }
+    // anything else in the way gets trampled
+    enemiesInRadius(b.x, b.z, 1.1, o => { if (!o.boss && !o.mini && !o.trampled) { o.trampled = true; hurtEnemy(o, 40, L.dir * 9, (o.z - L.z) * 4, { sound: false }); } });
+    if (Math.random() < 0.5) FX.smoke(b.x - L.dir * 0.8, 0.25, b.z + rand(-0.4, 0.4), 0.7, [0.78, 0.62, 0.45], 0.7, 0.5);
+    if (Math.random() < 0.25) FX.crack(b.x, b.z, 0.5, 0.8);
+  }
+  ai.herd = ai.herd.filter(b => b.along < OUTLAW.laneLen + 4);
+  if (!ai.herd.length) for (const o of run.enemies) o.trampled = false;
+}
+function dynamiteBlast(s) {
+  FX.burst(s.tx, 0.5, s.tz, 22, [1, 0.62, 0.2], 6, 0.14, 0.5, 0); FX.glow(s.tx, 0.7, s.tz, 2.6, [1, 0.6, 0.25], 0.25);
+  FX.scorch(s.tx, s.tz, 1.9);
+  for (let i = 0; i < 3; i++) FX.smoke(s.tx + rand(-0.7, 0.7), 0.5, s.tz + rand(-0.7, 0.7), 1.0, [0.3, 0.27, 0.26], 0.9, 0.9);
+  enemiesInRadius(s.tx, s.tz, 1.9, o => { if (!o.boss) hurtEnemy(o, 30, (o.x - s.tx) * 4, (o.z - s.tz) * 4, { sound: false }); });
+  G.cam.shake = Math.max(G.cam.shake, 0.16);
+}
+BOSS_DRAW.outlaw = function (e) {
+  const D = MODELS.defs, dead = e.dying ? clamp(e.dying, 0, 1) : 0, fl = e.flash > 0 ? 0.55 : 0, t = e.tint, L = R.frame.lightDir;
+  if (R.enemyDraw.outlaw) pushEnemy('outlaw', false, e.x, e.y || 0, e.z, e.yaw, e.portrait ? D.outlaw.clips.idle.row + 3 : enemyRow(e), e.scale, e.squash, dead, fl, 0, t[0], t[1], t[2]);
+  if (e.portrait) return;
+  const ss = e.scale * (1 - dead * 0.5);
+  pushDecal(e.x - L[0] * 0.5 * ss, e.z - L[2] * 0.5 * ss, 0.3 * ss, 0.45 * ss, -Math.atan2(-L[0], -L[2]), 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  // the stampede
+  if (!R.enemyDraw.bison || !e.ai.herd) return;
+  const c = D.bison.clips.run;
+  for (const b of e.ai.herd) {
+    if (b.along < -2 || !onScreen(b.x, b.z, 3)) continue;
+    pushEnemy('bison', false, b.x, 0, b.z, b.lane.dir > 0 ? Math.PI / 2 : -Math.PI / 2, c.row + Math.floor((b.ph % 1) * c.frames), 2.1, 1, 0, 0, 0, 0.37, 0.24, 0.15);
+    pushDecal(b.x - L[0] * 0.8, b.z - L[2] * 0.8, 0.7, 1.1, -Math.PI / 2, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+  }
+};
+// enemy shots: a bright tracer, and a tumbling bundle of dynamite with a spitting fuse
+SHOT_DRAW.bullet = s => {
+  const sp = Math.hypot(s.vx, s.vz) || 1, ux = s.vx / sp, uz = s.vz / sp;
+  R.ribStrip([s.x - ux * 0.9, s.y, s.z - uz * 0.9, s.x, s.y, s.z], 2, 0.09, [1, 0.88, 0.5, 1], 0);
+  FX.glow(s.x, s.y, s.z, 0.32, [1, 0.8, 0.4], 0.05, 0.9);
+  pushDecal(s.x + 0.1, s.z + 0.08, 0.35, 0.12, -Math.atan2(ux, uz), 1, 0, 0, 0.01, 0.02, 0.05, 0.25);
+};
+SHOT_DRAW.dynamite = s => {
+  const sc = 1.6;
+  if (R.enemyDraw.dynamite) pushEnemy('dynamite', false, s.x, s.y - 0.3 * sc, s.z, s.spin * 1.5, MODELS.defs.dynamite.clips.still.row, sc, 1, 0, 0, 0, 1, 1, 1);
+  const fy = s.y + 0.22 * sc, fx = s.x + Math.cos(s.spin * 1.5) * 0.1, fz = s.z - Math.sin(s.spin * 1.5) * 0.1;
+  FX.glow(fx, fy, fz, 0.45 + Math.random() * 0.25, [1, 0.8, 0.35], 0.05, 1);
+  if (Math.random() < 0.7) FX.part(fx, fy, fz, rand(-2, 2), rand(1, 3), rand(-2, 2), 0.05, 0.01, 0.3, [1, 0.85, 0.4], 1, 1, 6);
+  const g = clamp(s.t / s.dur, 0, 1);
+  pushDecal(s.x, s.z, 0.3 + g * 0.4, 0.3 + g * 0.4, 0, 1, 0, 0, 0.02, 0.03, 0.06, 0.25 + g * 0.3);
+};
 
 // ---- 14-ui.js ----
 // ============================================================
@@ -14736,6 +15914,7 @@ const UI = {
     setTimeout(() => this.revealChest(), 2000);
   },
   revealChest() {
+    if (!G.run) return; // the run ended while the chest was spinning
     const res = $('chRes'), rows = [];
     if (this.chestEvo) {
       const id = this.chestEvo, E = EVOLUTIONS[id];

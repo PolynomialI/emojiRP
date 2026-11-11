@@ -14,7 +14,7 @@ const MINIBOSSES = {
   7: { name: 'Magma Brute', type: 'magmite', scale: 2.5, hp: 700, attacks: ['rain', 'slam'] },
   8: { name: 'Frog King', type: 'frog', scale: 2.5, hp: 760, tint: '#3fae3a', attacks: ['leap', 'fan'], shot: 'bubble' },
   9: { name: 'Gull Captain', type: 'seagull', scale: 2.4, hp: 800, attacks: ['swoop', 'rain'] },
-  10: { name: 'Martian Commander', type: 'martian', scale: 2.4, hp: 860, tint: '#5ad84a', attacks: ['fan', 'summon'], summon: 'martian', shot: 'spark' },
+  10: { name: 'Thunder Bison', type: 'bison', scale: 2.6, hp: 900, tint: '#4a2e1c', attacks: ['charge', 'slam'] },
   11: { name: 'Zombie Giant', type: 'zombie', scale: 2.2, hp: 950, attacks: ['slam', 'summon'], summon: 'zombie' },
   12: { name: 'Beetle Queen', type: 'crystalbug', scale: 2.3, hp: 1000, attacks: ['charge', 'fan'], shot: 'shard' },
   13: { name: 'Thunderhead', type: 'cloudling', scale: 2.4, hp: 1050, tint: '#c8d0e8', attacks: ['rain', 'summon'], summon: 'cloudling' },
