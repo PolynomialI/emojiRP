@@ -179,6 +179,28 @@ The build with chapters 11-15 froze the whole of Chrome when opened on Windows. 
 - **Cheaper blob.** The hero's bounding sphere is now centered on its shapes' box rather than the body, and rays also have to pass through that box (`boxLo`/`boxHi`). A hat used to inflate the sphere and double the blob's GPU cost. The ground darkening uses `aoY`, so it does not move with the bounds. Test-browser frame times, before → after: home 1034 → 875 ms, Blobs 934 → 605 ms, a crowded run 1787 → 1357 ms; the home blob with a hat and gear 1537 → 801 ms.
 - **Boot guard.** `projectGel.booting` in localStorage marks a start that has not yet drawn 3 s of the home screen. If the browser freezes or is killed during a start, the next start switches Graphics to Ultra low and says so. Closing the tab clears the mark. The test harness turns it off (`__noBootGuard`).
 
+## Goals, Boss Rush, hats, gear on the blob, boss intros
+
+**Goals** (`src/14c-goals.js`; the Goals button on the home menu):
+- 35 goals across fighting, chapters, modes, collecting and gear. Each reads one number through `GOAL_VALUE` and has a target `n`.
+- Reaching a goal shows a toast once (`sv.goals.seen`), on the home screen or the results.
+- Claiming pays coins and scrolls (`sv.goals.claimed`). A red dot on the button means something can be claimed.
+- Three goals give colors that cannot be bought: Champion (clear 15 chapters), Cosmic (20 minutes in Endless) and Inferno (every boss in one Boss Rush). These are the `SKINS` entries with a `goal` field, listed last on the Blobs screen as "Goal".
+- Runs add bosses, elites, Gooblins, evolutions, best level and coins earned to `sv.stats` (`goalsAddRun` in `finishRun`); fusing counts as it happens. Old saves get one boss per cleared chapter.
+
+**Boss Rush** (`RUSH` and helpers in `src/11c-events.js`; unlocked by clearing chapter 15):
+- All 15 chapter bosses in order, on the selected chapter's map, each a little tougher.
+- It starts with 8 free picks. Each boss down gives 3 more picks, 35% health back, a chest and a 5 s breather; every third boss carries a scroll.
+- The best is the most bosses beaten; a full clear also keeps its fastest time.
+
+**Hats** (`HAT_IDS`, `costumesOf(slot)` in `src/10-data.js`): a hood costume and a hat can be worn together (the Blobs screen has Colors, Costumes and Hats tabs). Over a bulky hood, such as the astronaut helmet, the shark or the lion's mane, a hat sits higher (`hatLift` in `setCostume`). Old saves wearing a hat as their costume move it to the hat slot.
+
+**Gear on the blob** (`setGear`, `GEAR_LOOK`): the weapon in the first hand (sword, wand, bow), armor on the chest (plate or vest; the cloak is a cape with a collar), a ring gem on the other fist and a pendant. Gear is drawn last, within `HERO_MAXP` 48 shapes.
+
+**Boss intros and sounds:** a card (portrait, "WARNING", name, one line about its attacks from `BOSS_HINTS`) slides in when a boss arrives. New boss sounds: thunder, boing, roar, splash, ghost, crystal, wind, cackle.
+
+**Home menu:** six buttons (Goals added). On phones they are 3 to a row. In short wide windows (a phone on its side) they are 2 to a row with a smaller chapter picker, so PLAY stays on screen.
+
 ## Home screen, balance pass, cosmetics
 
 **Home screen** (markup and CSS in `src/index.html`; scene code `updateHome`, `homeFoes`, `emitHomeFoes`, `homeCamera` in `src/17-main.js`):
@@ -243,14 +265,25 @@ The JS heap stays around 35 MB.
 
 Boss fight length is the main thing to tune after real play: lower `hp` in `BOSS_TYPES` to shorten a fight.
 
+Chapters 11-15 after the theme-enemy and boss tuning (no dash; bot at upgrade level 10):
+
+| Chapter | Bot wins | Notes |
+|---|---|---|
+| 11 | 2/4 | losses before the boss, among ghosts and zombies |
+| 12 | 3/6 | crystal bugs were the main early threat: now 28 health, from 45 s |
+| 13 | 2/2 | |
+| 14 | 4/4 | |
+| 15 | 3/4 | |
+
+The dodge audit (`test/check-dodge.mjs`) now shows the Kraken's rage at 12 damage per 30 s (234 before: its whirlpool core is marked the whole time) and the Geode Titan at 53/71 (calm/rage), next to the UFO (74/41) and the Crab (56/14).
+
 Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/10-data.js`, and the spawn curve in `RATE_KEYS` in `src/11-game.js`.
 
 ## Next steps (optional)
-1. Balance chapter 10 and later.
+1. Confirm on a Windows PC and a Chromebook that the startup freeze is gone; the test browser cannot reproduce it.
 2. Measure performance on a real phone, which can't be done here.
 3. A lower-detail stickman mesh if big crowds struggle on phones.
-4. Show equipped artifacts on the 3D hero. Today they only change stats.
-5. Tune the scroll drop rate after real play (now elites and bosses always, tougher enemies 2%).
+4. Tune the scroll drop rate and goal rewards after real play.
 
 ## Build and test
 - **Build:**
@@ -271,6 +304,8 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `check-gooblin.mjs`: appears, flees, edge arrow, loot when caught, escape.
   - `check-endless.mjs`: the unlock, tiers, a boss that doesn't end the run, results and best time.
   - `check-home.mjs [wide|phone|chromebook]`: drag-to-spin, the blob shooting the background foes, the chapter arrows, and a screenshot.
+  - `check-goals.mjs [wide|phone]`: run counters, the toast and menu dot, claiming once, the goal colors not for sale, screenshots.
+  - `check-rush.mjs`: Boss Rush from the unlock through all 15 bosses (cards, picks, healing) to CHAMPION, then a lost rush.
   - `check-parallel.mjs`: fakes `KHR_parallel_shader_compile`, then checks that every shader finishes in the background and that nothing queries one early.
 - **Scratch scripts** (git-ignored `test/_*.mjs`, recreate as needed): `_boss.mjs` (`CH=13 STEPS=60,75,90`) forces each attack of a chapter's boss and photographs it; `_cos.mjs` renders costume or color sheets; `_icon.mjs` (`IDS=gale,yoyo`) shows skill icons; `_chap.mjs` (`CH=13`) photographs the Chapters screen.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
