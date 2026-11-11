@@ -97,15 +97,17 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 #skins, #gear { display: flex; flex-direction: column; }
 #home { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   grid-template-areas: "top" "title" "stage" "pick" "menu"; row-gap: 8px; }
-.home-top { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.home-top { grid-area: top; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.gearbtn { width: 46px; height: 46px; }
+.gearbtn svg { width: 64%; height: 64%; }
 .home-top .pill { font-size: 19px; padding-right: 18px; }
 .home-top .coin { width: 30px; height: 30px; }
 .home-title { grid-area: title; text-align: center; font-size: clamp(36px, 9vw, 58px); line-height: 0.95; color: var(--sky); -webkit-text-stroke: 8px #fff; }
 .home-stage { grid-area: stage; position: relative; min-height: 120px; cursor: grab; touch-action: none; }
 .home-stage:active { cursor: grabbing; }
-.spin-hint { position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; font-size: 13px; letter-spacing: .06em;
-  color: #fff; background: rgba(11, 79, 168, .28); white-space: nowrap; pointer-events: none; animation: hintfade 6s ease 2s forwards; }
-@keyframes hintfade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+#skins { cursor: grab; touch-action: none; pointer-events: auto; }
+#skins:active { cursor: grabbing; }
+#skins .col { cursor: auto; }
 .chapter-pick { grid-area: pick; display: grid; grid-template-columns: 58px minmax(0, 1fr) 58px; align-items: center; gap: 10px; width: min(100%, 560px); justify-self: center; }
 .ch-mid { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 14px; min-height: 84px; min-width: 0; }
 .ch-mid img { width: 64px; height: 64px; flex: none; border-radius: 16px; background: var(--card-2); }
@@ -157,7 +159,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 /* wide: stage on the left, big buttons stacked on the right */
 @media (min-aspect-ratio: 11/10) {
   #home { grid-template-columns: minmax(0, 1fr) clamp(270px, 29vw, 390px); grid-template-rows: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "top menu" "title menu" "stage menu" "pick menu"; column-gap: clamp(16px, 3vw, 44px); row-gap: 6px; padding-inline: max(2.5vw, 16px); }
+    grid-template-areas: "top top" "title menu" "stage menu" "pick menu"; column-gap: clamp(16px, 3vw, 44px); row-gap: 6px; padding-inline: max(2.5vw, 16px); }
   .home-title { font-size: clamp(40px, 7.4vh, 64px); }
   .chapter-pick { grid-template-columns: 64px minmax(0, 1fr) 64px; width: min(100%, 600px); }
   .chapter-pick .arrow { width: 64px; height: 64px; }
@@ -396,8 +398,10 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .card:hover, .card:focus-visible { box-shadow: inset 0 0 0 3px var(--sky), 0 5px 0 var(--sky-deep), 0 12px 24px rgba(0,30,90,.3); outline: none; }
 .card:active { transform: scale(1.03, 0.95); }
 .card .tile { width: 72px; height: 72px; border-radius: 18px; }
-.card small { display: block; font-size: 12px; letter-spacing: 0.12em; color: #14b37a; }
-.card small.up { color: var(--sky-deep); }
+.card .pips { display: flex; gap: 3px; margin-top: 4px; }
+.card .pips i { width: 9px; height: 9px; border-radius: 50%; background: #d6e3f5; }
+.card .pips i.on { background: var(--sky); }
+#levelup .card .pips { justify-content: center; }
 .card .nm { display: block; font-size: 20px; line-height: 1.15; }
 .card .ds { display: block; font-size: 14px; font-weight: 500; color: var(--ink-dim); margin-top: 3px; }
 .card .ds em { font-style: normal; color: var(--ink); font-weight: 700; }
@@ -475,9 +479,10 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   <section id="home" class="screen" hidden>
     <div class="home-top">
       <div class="pill"><i class="coin"></i><span id="homeCoins">0</span></div>
+      <button class="icon-btn gearbtn" id="btnSettings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></button>
     </div>
     <div class="home-title">PROJECT GEL</div>
-    <div class="home-stage" id="heroTap" aria-label="Your blob. Drag to spin it, tap to poke it."><span class="spin-hint" aria-hidden="true">drag to spin</span></div>
+    <div class="home-stage" id="heroTap" aria-label="Your blob. Drag to spin it, tap to poke it."></div>
     <div class="chapter-pick">
       <button class="arrow" id="chPrev" aria-label="Previous chapter"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="panel ch-mid">
@@ -494,8 +499,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
         <button class="tab mbtn" data-tab="gear"><span class="ic gr"><i class="dot" hidden></i><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
         <button class="tab mbtn" data-tab="skins"><span class="ic bl"><i class="dot" hidden></i><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
         <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><i class="dot" hidden></i><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
-        <button class="tab mbtn" data-tab="goals"><span class="ic gl"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="#fff"><path d="M7 3h10v2h3.2a.8.8 0 0 1 .8.8c0 3-1.8 5.2-4.6 5.6A5.9 5.9 0 0 1 13 14.6V17h3v3H8v-3h3v-2.4a5.9 5.9 0 0 1-3.4-3.2C4.8 11 3 8.8 3 5.8a.8.8 0 0 1 .8-.8H7zm-2.3 3.6c.2 1.6 1.1 2.7 2.5 3.1A13 13 0 0 1 7 6.6zm14.6 0h-2.3c0 1-.1 2.1-.3 3.1 1.4-.4 2.4-1.5 2.6-3.1z"/></svg></span><span class="lb">Goals</span></button>
-        <button class="mbtn" id="btnSettings"><span class="ic st"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></span><span class="lb">Settings</span></button>
+        <button class="tab mbtn" data-tab="goals"><span class="ic gl"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="#fff"><path d="M7 3h10v2h3.2a.8.8 0 0 1 .8.8c0 3-1.8 5.2-4.6 5.6A5.9 5.9 0 0 1 13 14.6V17h3v3H8v-3h3v-2.4a5.9 5.9 0 0 1-3.4-3.2C4.8 11 3 8.8 3 5.8a.8.8 0 0 1 .8-.8H7zm-2.3 3.6c.2 1.6 1.1 2.7 2.5 3.1A13 13 0 0 1 7 6.6zm14.6 0h-2.3c0 1-.1 2.1-.3 3.1 1.4-.4 2.4-1.5 2.6-3.1z"/></svg></span><span class="lb">Achievements</span></button>
       </nav>
     </div>
   </section>
@@ -572,7 +576,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
   <section id="goals" class="screen modal menu" hidden style="place-items:start center">
     <div class="col" style="height:100%">
-      <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Goals</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
+      <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Achievements</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
       <div class="goalsum dim" id="goalSum"></div>
       <div class="list" id="goalList"></div>
     </div>
@@ -595,7 +599,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   <section id="levelup" class="screen modal" hidden>
     <div class="modal-body">
       <h1 class="title">LEVEL UP!</h1>
-      <p class="dim" style="text-align:center;margin:-6px 0 0" id="luSub">Level 2 · pick one</p>
+      <p class="dim" style="text-align:center;margin:-6px 0 0" id="luSub">Level 2</p>
       <div class="cards" id="luCards"></div>
       <div class="row-actions"><button class="jelly violet" id="btnReroll">Reroll</button></div>
     </div>

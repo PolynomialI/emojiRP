@@ -20,7 +20,13 @@ const DEV = {
       this.buf = (this.buf + e.key.toLowerCase()).slice(-8);
       if (this.buf === 'specimen') {
         this.buf = '';
-        if (!G.save.devUnlocked) { G.save.devUnlocked = true; saveGame(); this.log('Dev console unlocked. Press ` (backtick) to open or close it. Type help for commands.', 'ok'); }
+        // also opens every chapter and every color, costume and hat
+        const sv = G.save;
+        sv.chapter = CHAPTER_COUNT;
+        sv.skins = SKINS.map(s => s.id); sv.costumes = COSTUMES.map(c => c.id);
+        if (!sv.devUnlocked) { sv.devUnlocked = true; this.log('Dev console unlocked. Press ` (backtick) to open or close it. Type help for commands.', 'ok'); }
+        this.log('Every chapter and cosmetic unlocked.', 'ok');
+        devRefresh();
         e.preventDefault();
         this.toggle(true);
         return true;
@@ -104,7 +110,7 @@ const DEV_CMDS = {
       return `Added ${got.length}: ${[...new Set(got)].map(k => RARITIES[artParse(k).r].name + ' ' + artParse(k).def.name).join(', ')}`;
     },
   },
-  chapter: { args: '<n>', desc: 'unlock chapters up to n and select it', run: a => { const n = clamp(Math.round(devNum(a[0], G.save.chapter + 1)), 1, 300); G.save.chapter = Math.max(G.save.chapter, n); for (let i = 1; i < n; i++) G.save.cleared[i] = true; G.save.selected = n; devRefresh(); return `Chapter ${n} selected`; } },
+  chapter: { args: '<n>', desc: 'unlock chapters up to n and select it', run: a => { const n = clamp(Math.round(devNum(a[0], G.save.chapter + 1)), 1, CHAPTER_COUNT); G.save.chapter = Math.max(G.save.chapter, n); for (let i = 1; i < n; i++) G.save.cleared[i] = true; G.save.selected = n; devRefresh(); return `Chapter ${n} selected`; } },
   unlock: { args: '', desc: 'own every body color and costume', run: () => { G.save.skins = SKINS.map(s => s.id); G.save.costumes = COSTUMES.map(c => c.id); devRefresh(); return 'All colors and costumes unlocked'; } },
   god: { args: '', desc: 'toggle invulnerability', run: () => { DEV.god = !DEV.god; return `God mode ${DEV.god ? 'on' : 'off'}`; } },
   heal: { args: '', desc: 'refill health', run: () => { const r = devRun(); r.hp = r.maxHp; return 'Healed'; } },

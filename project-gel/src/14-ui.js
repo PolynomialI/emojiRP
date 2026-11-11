@@ -37,27 +37,31 @@ const UI = {
       const k = sw.dataset.set; G.save.settings[k] = !G.save.settings[k]; this.syncSettings(); applySettings(); saveGame(); AUDIO.play('click');
     }));
     document.querySelectorAll('#qualitySeg button').forEach(b => b.addEventListener('click', () => { G.save.settings.quality = b.dataset.q; this.syncSettings(); applySettings(); saveGame(); AUDIO.play('click'); }));
-    // the home blob: drag sideways to spin it all the way round (it keeps a little spin when let go); a tap pokes it
-    const tap = $('heroTap');
-    tap.addEventListener('pointerdown', e => {
-      AUDIO.unlock(); tap.setPointerCapture(e.pointerId);
-      HOME.drag = { x: e.clientX, t: performance.now(), moved: 0 }; HOME.yaw = G.hero.yaw; HOME.spinV = 0; HOME.aim = null;
-    });
-    tap.addEventListener('pointermove', e => {
-      const d = HOME.drag;
-      if (!d) return;
-      const dx = e.clientX - d.x, now = performance.now(), dts = Math.max(0.008, (now - d.t) / 1000);
-      d.x = e.clientX; d.t = now; d.moved += Math.abs(dx);
-      HOME.yaw += dx * 0.012; HOME.spinV = clamp(lerp(HOME.spinV, dx * 0.012 / dts, 0.5), -12, 12);
-    });
-    const release = () => {
-      const d = HOME.drag;
-      if (!d) return;
-      HOME.drag = null; HOME.idle = 0;
-      if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
-      else if (performance.now() - d.t > 90) HOME.spinV = 0;
+    // the blob on home and on the Blobs screen: drag sideways to spin it all the way round (it keeps a little
+    // spin when let go); a tap pokes it. On the Blobs screen only the open space around the blob counts.
+    const spinOn = (el, openOnly) => {
+      el.addEventListener('pointerdown', e => {
+        if (openOnly && e.target !== el) return;
+        AUDIO.unlock(); el.setPointerCapture(e.pointerId);
+        HOME.drag = { x: e.clientX, t: performance.now(), moved: 0 }; HOME.yaw = G.hero.yaw; HOME.spinV = 0; HOME.aim = null;
+      });
+      el.addEventListener('pointermove', e => {
+        const d = HOME.drag;
+        if (!d) return;
+        const dx = e.clientX - d.x, now = performance.now(), dts = Math.max(0.008, (now - d.t) / 1000);
+        d.x = e.clientX; d.t = now; d.moved += Math.abs(dx);
+        HOME.yaw += dx * 0.012; HOME.spinV = clamp(lerp(HOME.spinV, dx * 0.012 / dts, 0.5), -12, 12);
+      });
+      const release = () => {
+        const d = HOME.drag;
+        if (!d) return;
+        HOME.drag = null; HOME.idle = 0;
+        if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
+        else if (performance.now() - d.t > 90) HOME.spinV = 0;
+      };
+      el.addEventListener('pointerup', release); el.addEventListener('pointercancel', release);
     };
-    tap.addEventListener('pointerup', release); tap.addEventListener('pointercancel', release);
+    spinOn($('heroTap'), false); spinOn($('skins'), true);
     $('skinAction').addEventListener('click', () => this.skinAction());
     document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
     this.initGear();
@@ -214,7 +218,7 @@ const UI = {
       const sm = b.querySelector('small');
       if (worn === s.id) sm.textContent = 'Equipped';
       else if (owned.includes(s.id)) sm.textContent = 'Owned';
-      else if (s.goal) sm.textContent = '🏆 Goal';
+      else if (s.goal) sm.textContent = '🏆';
       else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); sm.classList.toggle('poor', sv.coins < s.cost); }
       b.addEventListener('click', () => {
         if (tab === 'colors') this.skinPreview = s.id; else if (tab === 'costumes') this.costumePreview = s.id; else this.hatPreview = s.id;
@@ -225,7 +229,7 @@ const UI = {
     const s = list.find(k => k.id === sel) || list[0], act = $('skinAction');
     if (worn === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
     else if (owned.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
-    else if (s.goal) { act.textContent = `Goal: ${GOALS.find(g => g.id === s.goal).name}`; act.disabled = true; act.className = 'jelly'; }
+    else if (s.goal) { act.textContent = `🏆 ${GOALS.find(g => g.id === s.goal).name}`; act.disabled = true; act.className = 'jelly'; }
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   skinAction() {
@@ -246,9 +250,9 @@ const UI = {
     const sv = G.save, map = $('chMap');
     // boss portraits need a GPU readback, so they are drawn here, only when the map is opened
     for (const id in BOSS_TYPES) if (!ICONS.map['boss-' + id] && bossMeshes(id).every(m => R.enemyDraw[m])) renderBossPortraitOf(id);
-    const top = Math.min(sv.chapter + 4, 300);
+    // every chapter at once, locked ones too
     const nodes = [];
-    for (let n = top; n >= 1; n--) {
+    for (let n = CHAPTER_COUNT; n >= 1; n--) {
       const info = chapterInfo(n), b = document.createElement('button');
       const locked = n > sv.chapter, cleared = !!sv.cleared[n];
       b.className = 'node' + (locked ? ' locked' : '') + (cleared ? ' cleared' : '') + (n === sv.selected ? ' current' : '') + (n % 5 === 0 ? ' big' : '');
@@ -257,9 +261,9 @@ const UI = {
       if (icon && !locked) { const im = document.createElement('img'); im.alt = ''; im.src = icon; b.querySelector('.num').append(im); }
       else if (locked) b.querySelector('.num').innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><rect x="4.5" y="10" width="15" height="11" rx="3" fill="currentColor"/></svg>';
       else b.querySelector('.num').textContent = n;
-      b.querySelector('.nm').textContent = `Chapter ${n}${n % 5 === 0 ? ' · double boss' : ''}`;
+      b.querySelector('.nm').textContent = `Chapter ${n}`;
       const names = [...new Set(info.bosses)].map(x => BOSS_TYPES[x].name).join(' + ');
-      b.querySelector('.ds').textContent = locked ? `Clear chapter ${n - 1} to unlock` : `${info.arenaName} · ${names}${sv.best[n] ? ' · best ' + fmtTime(sv.best[n]) : ''}`;
+      b.querySelector('.ds').textContent = locked ? info.arenaName : `${info.arenaName} · ${names}${sv.best[n] ? ' · ' + fmtTime(sv.best[n]) : ''}`;
       b.disabled = locked;
       b.addEventListener('click', () => { sv.selected = n; saveGame(); AUDIO.play('click'); this.openTab('home'); });
       nodes.push(b);
@@ -362,7 +366,7 @@ const UI = {
     const run = G.run;
     run.choices = rollChoices();
     this.renderChoices();
-    $('luSub').textContent = `Level ${run.level - run.pending + 1} · pick one`;
+    $('luSub').textContent = `Level ${run.level - run.pending + 1}`;
     this.choiceLock = performance.now() + 350;
     AUDIO.play('levelup');
     setState('levelup');
@@ -372,10 +376,11 @@ const UI = {
     $('luCards').replaceChildren(...run.choices.map((c, i) => {
       const d = describeChoice(c), b = document.createElement('button');
       b.className = 'card';
-      b.innerHTML = `<span class="tile ${d.kind}"><img alt=""></span><span><small class="${d.isNew ? '' : 'up'}"></small><span class="nm"></span><span class="ds"></span></span>`;
+      b.innerHTML = `<span class="tile ${d.kind}"><img alt=""></span><span><span class="nm"></span><span class="pips"></span><span class="ds"></span></span>`;
       b.querySelector('img').src = ICONS.get(d.icon);
-      b.querySelector('small').textContent = d.tag;
-      b.querySelector('.nm').textContent = d.name;
+      b.querySelector('.nm').textContent = d.name + (d.evo ? ' ★' : '');
+      // level dots: filled up to the level this pick reaches
+      if (d.max > 1) b.querySelector('.pips').innerHTML = Array.from({ length: d.max }, (_, k) => `<i class="${k < d.lvl ? 'on' : ''}"></i>`).join('');
       b.querySelector('.ds').innerHTML = d.desc;
       b.addEventListener('click', () => this.pick(i));
       return b;
@@ -662,35 +667,23 @@ function fmtStat(v, unit) {
   return String(v);
 }
 // a line under a card naming the evolution this skill or ability is part of
-function evoHint(id) {
-  if (EVOLUTIONS[id]) { const E = EVOLUTIONS[id]; return `<br><span class="evohint">★ Max level + ${PASSIVES[E.with].name} → ${E.name}</span>`; }
-  // an ability can be the partner of several skills: name the ones in this run first, and at most two
-  const mine = Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].with === id && !(G.run && slotOf(k) && slotOf(k).evo));
-  if (!mine.length) return '';
-  mine.sort((a, b) => (G.run && slotOf(b) ? 1 : 0) - (G.run && slotOf(a) ? 1 : 0));
-  return `<br><span class="evohint">★ Evolves a maxed ${mine.slice(0, 2).map(k => `${SKILLS[k].name} into ${EVOLUTIONS[k].name}`).join(', or ')}</span>`;
-}
+// a level-up card: name, level dots and one short number line (no sentences); ★ marks a skill that can
+// evolve, or an ability that would evolve a skill you hold
 function describeChoice(c) {
-  const d = describeChoiceBase(c);
-  if (c.id !== 'snack') d.desc += evoHint(c.id);
-  return d;
-}
-function describeChoiceBase(c) {
-  if (c.id === 'snack') return { tag: 'HEAL', name: 'Goo Snack', desc: 'Recover 30% of your health.', icon: 'passive-regen', kind: 'passive', isNew: true };
-  const sk = SKILLS[c.id], ps = PASSIVES[c.id], lvl = lvlOf(c.id);
+  if (c.id === 'snack') return { name: 'Goo Snack', desc: '+30% health', icon: 'passive-regen', kind: 'passive', lvl: 1, max: 1 };
+  const sk = SKILLS[c.id], ps = PASSIVES[c.id], lvl = lvlOf(c.id), max = maxLevel(c.id);
   if (sk) {
-    if (!lvl) {
-      const f = sk.fields.slice(0, 2).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`).join(' · ');
-      return { tag: sk.from === G.run.chapter && !G.run.endless && !G.run.rush ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
+    const fields = sk.fields;
+    let line;
+    if (!lvl) { const [k, label, unit] = fields[0]; line = `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`; }
+    else {
+      const f = fields.find(([k]) => sk.levels[lvl - 1][k] !== sk.levels[lvl][k]) || fields[0], [k, label, unit] = f;
+      line = `${label} <em>${fmtStat(sk.levels[lvl - 1][k], unit)} → ${fmtStat(sk.levels[lvl][k], unit)}</em>`;
     }
-    const parts = [];
-    for (const [k, label, unit] of sk.fields) {
-      const a = sk.levels[lvl - 1][k], b = sk.levels[lvl][k];
-      if (a !== b) parts.push(`${label} <em>${fmtStat(a, unit)} → ${fmtStat(b, unit)}</em>`);
-    }
-    return { tag: `LV ${lvl} → ${lvl + 1}`, name: sk.name, desc: parts.join(' · '), icon: 'skill-' + c.id, kind: 'skill', isNew: false };
+    return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id] };
   }
-  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter && !G.run.endless && !G.run.rush ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
+  const partner = Object.keys(EVOLUTIONS).some(k => EVOLUTIONS[k].with === c.id && G.run && slotOf(k) && !slotOf(k).evo);
+  return { name: ps.name, desc: `<em>${ps.short}</em>`, icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner };
 }
 function applyChoice(c) {
   const run = G.run;

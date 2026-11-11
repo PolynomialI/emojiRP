@@ -61,15 +61,15 @@ function gooblinLoot(e) {
   G.run.gooblins++;
   for (let i = 0; i < 16; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), randInt(2, 4));
   spawnPickup('chest', e.x, e.z);
-  spawnPickup('scroll', e.x + 0.6, e.z);
+  if (Math.random() < scrollOdds()) spawnPickup('scroll', e.x + 0.6, e.z);
   FX.ring(e.x, e.z, 4, [1, 0.85, 0.3], 0.6, 1); FX.burst(e.x, 0.8, e.z, 30, [1, 0.85, 0.3], 7, 0.14, 0.7, 3);
   UI.toast('Gooblin caught! Grab the loot!', 2);
   AUDIO.play('levelup', 1.2);
 }
 
 // ---------- Endless: survive as long as you can on a random map; it keeps getting harder ----------
-const ENDLESS = { unlockAfter: 3, tierEvery: 50, bossEvery: 120 };
-function endlessUnlocked() { return !!G.save.cleared[ENDLESS.unlockAfter] || G.save.chapter > ENDLESS.unlockAfter; }
+const ENDLESS = { tierEvery: 50, bossEvery: 120 };
+function endlessUnlocked() { return true; }
 // the map comes from a chapter already reached; power-ups from every chapter reached are on offer
 function beginEndless() {
   if (!endlessUnlocked()) return;
@@ -109,10 +109,10 @@ function endlessBossDown(run) {
 // ============================================================
 // Boss Rush: every chapter boss, one after another, on the selected chapter's map.
 // You start with a handful of free upgrades and earn more after each boss; a light trickle of
-// regular enemies keeps the skills fed. Unlocked by clearing the last chapter of the cycle.
+// regular enemies keeps the skills fed. Open to everyone from the start.
 // ============================================================
 const RUSH = { startPicks: 8, picksPerBoss: 3, breather: 5, heal: 0.35 };
-function rushUnlocked() { return !!G.save.cleared[CHAPTER_BOSSES.length]; }
+function rushUnlocked() { return true; }
 function beginBossRush() {
   if (!rushUnlocked()) return;
   beginChapter(G.save.selected, { rush: true, powerCap: Math.max(G.save.chapter, CHAPTER_BOSSES.length) });

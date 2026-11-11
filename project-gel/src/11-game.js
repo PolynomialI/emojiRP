@@ -292,14 +292,14 @@ function killEnemy(e) {
   const tough = e.elite || e.def.xp >= 2;
   if (e.elite || (tough && Math.random() < EMERALD_CHANCE)) dropGem(e.x, e.z, e.elite ? e.xp : e.xp * 3 + 2, 1);
   else dropGem(e.x, e.z, e.xp, 0);
-  if (e.elite || (tough && Math.random() < SCROLL_CHANCE)) spawnPickup('scroll', e.x + 0.5, e.z);
+  if ((e.elite || (tough && Math.random() < SCROLL_CHANCE)) && Math.random() < scrollOdds()) spawnPickup('scroll', e.x + 0.5, e.z);
   if (e.elite) {
     spawnPickup('chest', e.x, e.z);
     for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), 2);
   } else {
     const r = Math.random();
     if (r < 0.02) spawnPickup('coin', e.x, e.z, randInt(1, 3));
-    else if (r < 0.04) spawnPickup('heart', e.x, e.z);
+    else if (r < 0.03) spawnPickup('heart', e.x, e.z);
     else if (r < 0.045) spawnPickup('magnet', e.x, e.z);
   }
   if (e.def.splits) {
@@ -352,6 +352,8 @@ function reviveHero() {
 // ---------- gems and pickups ----------
 // tier 0 is the small blue crystal, tier 1 the big green emerald
 const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.028;
+// every random scroll drop passes this: 3 in 4 (scrolls are 25% rarer), and half of that again in Endless
+const scrollOdds = () => 0.75 * (G.run && G.run.endless ? 0.5 : 1);
 function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {
@@ -869,8 +871,10 @@ function finishRun(won) {
   run.over = true;
   run.won = won;
   const sv = G.save;
-  const reward = run.rush ? Math.round(run.rushK * 70 * (1 + run.rushK * 0.1)) : won ? run.info.reward : run.endless ? Math.round(run.t / 3) : 0;
-  run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100));
+  // Endless and Boss Rush pay half
+  const modeMul = run.endless || run.rush ? 0.5 : 1;
+  const reward = Math.round((run.rush ? run.rushK * 70 * (1 + run.rushK * 0.1) : won ? run.info.reward : run.endless ? run.t / 3 : 0) * modeMul);
+  run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100) * modeMul);
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
@@ -881,10 +885,10 @@ function finishRun(won) {
     sv.rushBest = Math.max(sv.rushBest || 0, run.rushK);
     if (won && (!sv.rushTime || run.t < sv.rushTime)) sv.rushTime = Math.round(run.t);
   } else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
-  if (won && !run.rush) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
+  if (won && !run.rush && !run.endless) { sv.cleared[run.chapter] = true; sv.chapter = Math.min(CHAPTER_COUNT, Math.max(sv.chapter, run.chapter + 1)); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
-  sv.stats.runs++; sv.stats.kills += run.kills;
-  goalsAddRun(run);
+  // achievements count chapter runs only
+  if (!run.endless && !run.rush) { sv.stats.runs++; sv.stats.kills += run.kills; goalsAddRun(run); }
   saveGame();
   AUDIO.play(won ? 'win' : 'lose');
   setState('results');

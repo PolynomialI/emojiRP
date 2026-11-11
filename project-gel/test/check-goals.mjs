@@ -39,7 +39,7 @@ check(s.st.elites === 1 && s.st.gooblins === 1 && s.st.bosses === 1 && s.st.evos
   'run counters reach the save: ' + JSON.stringify(s.st));
 await page.waitForTimeout(400);
 const toast = await page.evaluate(() => document.querySelector('#toast')?.textContent || [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '));
-check(/goal/i.test(toast), 'results toast mentions the goals reached: ' + toast);
+check(/🏆/.test(toast), 'results toast announces the achievements reached: ' + toast);
 await page.click('#btnContinue');
 await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
 s = await page.evaluate(() => ({ claim: goalsToClaim(), dot: !document.querySelector('.mbtn[data-tab="goals"] .dot').hidden }));
@@ -72,7 +72,7 @@ s = await page.evaluate(() => {
   UI.claimGoal(GOALS.find(x => x.id === 'ch15'));
   return { before, bought, owned: sv.skins.includes('champion'), scrolls: sv.scrolls };
 });
-check(s.before.disabled && /Goal/.test(s.before.text) && !s.bought, 'a goal color cannot be bought: ' + s.before.text);
+check(s.before.disabled && /🏆/.test(s.before.text) && !s.bought, 'a goal color cannot be bought: ' + s.before.text);
 check(s.owned, 'claiming Hero of Gel gives the Champion color');
 
 // screenshots of the Goals screen and of the home menu with its six buttons

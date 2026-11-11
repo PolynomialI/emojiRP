@@ -1,5 +1,6 @@
 // ============================================================
-// Goals: long-term targets, each with a reward to claim on the Goals screen.
+// Achievements ("goals" in the code): long-term targets, each with a reward to claim on the Achievements screen.
+// Chapter runs only: Endless and Boss Rush runs add nothing to these stats.
 // A goal reads one number from the save (a stat counted at the end of each run, or something the
 // save already says) and has a target. Reaching it shows a toast once (sv.goals.seen); claiming
 // pays out (sv.goals.claimed). Three goals give colors that cannot be bought (SKINS with `goal`).
@@ -12,8 +13,6 @@ const GOAL_VALUE = {
   evos: sv => sv.stats.evos || 0,
   cleared: sv => Object.keys(sv.cleared).length,
   gooblins: sv => sv.stats.gooblins || 0,
-  endless: sv => Math.floor((sv.endlessBest || 0) / 60),
-  rush: sv => sv.rushBest || 0,
   colors: sv => sv.skins.length,
   costumes: sv => sv.costumes.filter(id => id !== 'none').length,
   upgrades: sv => Object.values(sv.upgrades).reduce((a, b) => a + b, 0),
@@ -28,10 +27,10 @@ const GOALS = [
   { id: 'kills1', group: 'fight', name: 'Goo Getter', desc: 'Defeat {n} foes', stat: 'kills', n: 500, coins: 150 },
   { id: 'kills2', group: 'fight', name: 'Goo Getter II', desc: 'Defeat {n} foes', stat: 'kills', n: 5000, coins: 500 },
   { id: 'kills3', group: 'fight', name: 'Goo Getter III', desc: 'Defeat {n} foes', stat: 'kills', n: 25000, coins: 1500, scrolls: 1 },
-  { id: 'kills4', group: 'fight', name: 'Goo Legend', desc: 'Defeat {n} foes', stat: 'kills', n: 100000, coins: 4000, scrolls: 3 },
+  { id: 'kills4', group: 'fight', name: 'Goo Legend', desc: 'Defeat {n} foes', stat: 'kills', n: 100000, coins: 4000, scrolls: 3, skin: 'inferno' },
   { id: 'bosses1', group: 'fight', name: 'Boss Popper', desc: 'Defeat {n} bosses', stat: 'bosses', n: 5, coins: 300 },
   { id: 'bosses2', group: 'fight', name: 'Boss Popper II', desc: 'Defeat {n} bosses', stat: 'bosses', n: 25, coins: 1000, scrolls: 1 },
-  { id: 'bosses3', group: 'fight', name: 'Boss Breaker', desc: 'Defeat {n} bosses', stat: 'bosses', n: 75, coins: 3000, scrolls: 2 },
+  { id: 'bosses3', group: 'fight', name: 'Boss Breaker', desc: 'Defeat {n} bosses', stat: 'bosses', n: 75, coins: 3000, scrolls: 2, skin: 'cosmic' },
   { id: 'elites', group: 'fight', name: 'Elite Hunter', desc: 'Defeat {n} elite foes', stat: 'elites', n: 50, coins: 800, scrolls: 1 },
   { id: 'level1', group: 'fight', name: 'Power Surge', desc: 'Reach level {n} in a run', stat: 'level', n: 25, coins: 400 },
   { id: 'level2', group: 'fight', name: 'Overcharged', desc: 'Reach level {n} in a run', stat: 'level', n: 50, coins: 1500, scrolls: 1 },
@@ -43,10 +42,6 @@ const GOALS = [
   { id: 'ch15', group: 'chapter', name: 'Hero of Gel', desc: 'Clear {n} chapters', stat: 'cleared', n: 15, coins: 5000, scrolls: 3, skin: 'champion' },
   { id: 'gooblin1', group: 'mode', name: 'Lucky Catch', desc: 'Catch a Golden Gooblin', stat: 'gooblins', n: 1, coins: 300 },
   { id: 'gooblin2', group: 'mode', name: 'Treasure Hunter', desc: 'Catch {n} Golden Gooblins', stat: 'gooblins', n: 10, coins: 1500, scrolls: 2 },
-  { id: 'endless10', group: 'mode', name: 'Endurance', desc: 'Survive {n} minutes in Endless', stat: 'endless', n: 10, coins: 800 },
-  { id: 'endless20', group: 'mode', name: 'Unstoppable', desc: 'Survive {n} minutes in Endless', stat: 'endless', n: 20, coins: 2500, scrolls: 2, skin: 'cosmic' },
-  { id: 'rush5', group: 'mode', name: 'Boss Rusher', desc: 'Beat {n} bosses in one Boss Rush', stat: 'rush', n: 5, coins: 1000 },
-  { id: 'rushall', group: 'mode', name: 'Rush Champion', desc: 'Beat every boss in one Boss Rush', stat: 'rush', n: CHAPTER_BOSSES.length, coins: 4000, scrolls: 3, skin: 'inferno' },
   { id: 'colors', group: 'collect', name: 'Fashionista', desc: 'Own {n} colors', stat: 'colors', n: 10, coins: 500 },
   { id: 'costumes1', group: 'collect', name: 'Wardrobe', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 15, coins: 1000 },
   { id: 'costumes2', group: 'collect', name: 'Collector', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 40, coins: 3000, scrolls: 2 },
@@ -75,7 +70,7 @@ function goalsCheck() {
   if (!fresh.length) return;
   for (const g of fresh) sv.goals.seen[g.id] = true;
   saveGame();
-  UI.toast(fresh.length === 1 ? `🏆 Goal reached: ${fresh[0].name}! Claim it in Goals` : `🏆 ${fresh.length} goals reached! Claim them in Goals`, 3);
+  UI.toast(fresh.length === 1 ? `🏆 ${fresh[0].name}` : `🏆 ${fresh.length} achievements`, 3);
 }
 // end-of-run counters (finishRun); fuses count as they happen
 function goalsAddRun(run) {

@@ -97,15 +97,17 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 #skins, #gear { display: flex; flex-direction: column; }
 #home { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   grid-template-areas: "top" "title" "stage" "pick" "menu"; row-gap: 8px; }
-.home-top { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.home-top { grid-area: top; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.gearbtn { width: 46px; height: 46px; }
+.gearbtn svg { width: 64%; height: 64%; }
 .home-top .pill { font-size: 19px; padding-right: 18px; }
 .home-top .coin { width: 30px; height: 30px; }
 .home-title { grid-area: title; text-align: center; font-size: clamp(36px, 9vw, 58px); line-height: 0.95; color: var(--sky); -webkit-text-stroke: 8px #fff; }
 .home-stage { grid-area: stage; position: relative; min-height: 120px; cursor: grab; touch-action: none; }
 .home-stage:active { cursor: grabbing; }
-.spin-hint { position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; font-size: 13px; letter-spacing: .06em;
-  color: #fff; background: rgba(11, 79, 168, .28); white-space: nowrap; pointer-events: none; animation: hintfade 6s ease 2s forwards; }
-@keyframes hintfade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+#skins { cursor: grab; touch-action: none; pointer-events: auto; }
+#skins:active { cursor: grabbing; }
+#skins .col { cursor: auto; }
 .chapter-pick { grid-area: pick; display: grid; grid-template-columns: 58px minmax(0, 1fr) 58px; align-items: center; gap: 10px; width: min(100%, 560px); justify-self: center; }
 .ch-mid { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 14px; min-height: 84px; min-width: 0; }
 .ch-mid img { width: 64px; height: 64px; flex: none; border-radius: 16px; background: var(--card-2); }
@@ -157,7 +159,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 /* wide: stage on the left, big buttons stacked on the right */
 @media (min-aspect-ratio: 11/10) {
   #home { grid-template-columns: minmax(0, 1fr) clamp(270px, 29vw, 390px); grid-template-rows: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "top menu" "title menu" "stage menu" "pick menu"; column-gap: clamp(16px, 3vw, 44px); row-gap: 6px; padding-inline: max(2.5vw, 16px); }
+    grid-template-areas: "top top" "title menu" "stage menu" "pick menu"; column-gap: clamp(16px, 3vw, 44px); row-gap: 6px; padding-inline: max(2.5vw, 16px); }
   .home-title { font-size: clamp(40px, 7.4vh, 64px); }
   .chapter-pick { grid-template-columns: 64px minmax(0, 1fr) 64px; width: min(100%, 600px); }
   .chapter-pick .arrow { width: 64px; height: 64px; }
@@ -396,8 +398,10 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .card:hover, .card:focus-visible { box-shadow: inset 0 0 0 3px var(--sky), 0 5px 0 var(--sky-deep), 0 12px 24px rgba(0,30,90,.3); outline: none; }
 .card:active { transform: scale(1.03, 0.95); }
 .card .tile { width: 72px; height: 72px; border-radius: 18px; }
-.card small { display: block; font-size: 12px; letter-spacing: 0.12em; color: #14b37a; }
-.card small.up { color: var(--sky-deep); }
+.card .pips { display: flex; gap: 3px; margin-top: 4px; }
+.card .pips i { width: 9px; height: 9px; border-radius: 50%; background: #d6e3f5; }
+.card .pips i.on { background: var(--sky); }
+#levelup .card .pips { justify-content: center; }
 .card .nm { display: block; font-size: 20px; line-height: 1.15; }
 .card .ds { display: block; font-size: 14px; font-weight: 500; color: var(--ink-dim); margin-top: 3px; }
 .card .ds em { font-style: normal; color: var(--ink); font-weight: 700; }
@@ -475,9 +479,10 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   <section id="home" class="screen" hidden>
     <div class="home-top">
       <div class="pill"><i class="coin"></i><span id="homeCoins">0</span></div>
+      <button class="icon-btn gearbtn" id="btnSettings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></button>
     </div>
     <div class="home-title">PROJECT GEL</div>
-    <div class="home-stage" id="heroTap" aria-label="Your blob. Drag to spin it, tap to poke it."><span class="spin-hint" aria-hidden="true">drag to spin</span></div>
+    <div class="home-stage" id="heroTap" aria-label="Your blob. Drag to spin it, tap to poke it."></div>
     <div class="chapter-pick">
       <button class="arrow" id="chPrev" aria-label="Previous chapter"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="panel ch-mid">
@@ -494,8 +499,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
         <button class="tab mbtn" data-tab="gear"><span class="ic gr"><i class="dot" hidden></i><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
         <button class="tab mbtn" data-tab="skins"><span class="ic bl"><i class="dot" hidden></i><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
         <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><i class="dot" hidden></i><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
-        <button class="tab mbtn" data-tab="goals"><span class="ic gl"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="#fff"><path d="M7 3h10v2h3.2a.8.8 0 0 1 .8.8c0 3-1.8 5.2-4.6 5.6A5.9 5.9 0 0 1 13 14.6V17h3v3H8v-3h3v-2.4a5.9 5.9 0 0 1-3.4-3.2C4.8 11 3 8.8 3 5.8a.8.8 0 0 1 .8-.8H7zm-2.3 3.6c.2 1.6 1.1 2.7 2.5 3.1A13 13 0 0 1 7 6.6zm14.6 0h-2.3c0 1-.1 2.1-.3 3.1 1.4-.4 2.4-1.5 2.6-3.1z"/></svg></span><span class="lb">Goals</span></button>
-        <button class="mbtn" id="btnSettings"><span class="ic st"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></span><span class="lb">Settings</span></button>
+        <button class="tab mbtn" data-tab="goals"><span class="ic gl"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="#fff"><path d="M7 3h10v2h3.2a.8.8 0 0 1 .8.8c0 3-1.8 5.2-4.6 5.6A5.9 5.9 0 0 1 13 14.6V17h3v3H8v-3h3v-2.4a5.9 5.9 0 0 1-3.4-3.2C4.8 11 3 8.8 3 5.8a.8.8 0 0 1 .8-.8H7zm-2.3 3.6c.2 1.6 1.1 2.7 2.5 3.1A13 13 0 0 1 7 6.6zm14.6 0h-2.3c0 1-.1 2.1-.3 3.1 1.4-.4 2.4-1.5 2.6-3.1z"/></svg></span><span class="lb">Achievements</span></button>
       </nav>
     </div>
   </section>
@@ -572,7 +576,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
   <section id="goals" class="screen modal menu" hidden style="place-items:start center">
     <div class="col" style="height:100%">
-      <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Goals</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
+      <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Achievements</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
       <div class="goalsum dim" id="goalSum"></div>
       <div class="list" id="goalList"></div>
     </div>
@@ -595,7 +599,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   <section id="levelup" class="screen modal" hidden>
     <div class="modal-body">
       <h1 class="title">LEVEL UP!</h1>
-      <p class="dim" style="text-align:center;margin:-6px 0 0" id="luSub">Level 2 · pick one</p>
+      <p class="dim" style="text-align:center;margin:-6px 0 0" id="luSub">Level 2</p>
       <div class="cards" id="luCards"></div>
       <div class="row-actions"><button class="jelly violet" id="btnReroll">Reroll</button></div>
     </div>
@@ -7649,18 +7653,18 @@ const SKILLS = {
 
 // Passives ("blob abilities"): 10 levels each (Projectile Count adds a whole projectile per level, so it stays at 2)
 const PASSIVES = {
-  thick: { name: 'Thick Goo', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
-  regen: { name: 'Regen', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
-  speed: { name: 'Speed', desc: '+4% move speed.', max: 10, icon: { type: 1, colw: 0 } },
-  magnet: { name: 'Magnet', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
-  power: { name: 'Power', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
-  armor: { name: 'Armor', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
-  haste: { name: 'Haste', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
-  reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
-  multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
-  sugar: { name: 'Sugar Rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
-  thorns: { name: 'Thorns', from: 8, desc: 'Enemies that touch you take 10 damage and get shoved away, +5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
-  growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
+  thick: { name: 'Thick Goo', short: '+10% health', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
+  regen: { name: 'Regen', short: '+0.2% health/s', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
+  speed: { name: 'Speed', short: '+4% speed', desc: '+4% move speed.', max: 10, icon: { type: 1, colw: 0 } },
+  magnet: { name: 'Magnet', short: '+15% pickup range', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
+  power: { name: 'Power', short: '+5% damage', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
+  armor: { name: 'Armor', short: '-3% damage taken', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
+  haste: { name: 'Haste', short: '+4% cooldown speed', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
+  reach: { name: 'Reach', short: '+5% area', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
+  multishot: { name: 'Projectile Count', short: '+1 projectile', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
+  sugar: { name: 'Sugar Rush', short: '+3% rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
+  thorns: { name: 'Thorns', short: '+5 thorn damage', from: 8, desc: 'Enemies that touch you take 10 damage and get shoved away, +5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
+  growth: { name: 'Growth', short: '+4% XP', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 // the power-up a chapter's theme introduces (from: the first chapter it appears in)
@@ -7914,6 +7918,8 @@ const ZONE_KINDS = {
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
 const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm', 'jack', 'kraken'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
+// every chapter is unique: the game ends after the last one (no repeats with stronger stats)
+const CHAPTER_COUNT = ARENAS.length;
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
   const k = n - 1, kk = k <= 9 ? k : 9 + (k - 9) * 0.6;
@@ -7980,8 +7986,8 @@ const SKINS = [
   { id: 'prism', name: 'Prism', cost: 3000, base: '#ff5fb8', top: '#4ad8ff', accent: '#ffd23a', rim: '#ffffff', boost: { xp: 8 } },
   // goal rewards: cannot be bought (see GOALS in src/14c-goals.js)
   { id: 'champion', name: 'Champion', cost: 0, goal: 'ch15', base: '#ffc21a', top: '#fff3b0', accent: '#ff7a1a', rim: '#ffffff', boost: { gold: 12 } },
-  { id: 'cosmic', name: 'Cosmic', cost: 0, goal: 'endless20', base: '#24206e', top: '#ff5fb8', accent: '#4ad8ff', rim: '#e0ccff', boost: { cd: 6 } },
-  { id: 'inferno', name: 'Inferno', cost: 0, goal: 'rushall', base: '#3a0d14', top: '#ff3b1f', accent: '#ffd23a', rim: '#ff9a6a', boost: { dmg: 7 } },
+  { id: 'cosmic', name: 'Cosmic', cost: 0, goal: 'bosses3', base: '#24206e', top: '#ff5fb8', accent: '#4ad8ff', rim: '#e0ccff', boost: { cd: 6 } },
+  { id: 'inferno', name: 'Inferno', cost: 0, goal: 'kills4', base: '#3a0d14', top: '#ff3b1f', accent: '#ffd23a', rim: '#ff9a6a', boost: { dmg: 7 } },
 ];
 // by price, with the goal rewards last
 SKINS.sort((a, b) => (a.goal ? 1e9 : a.cost) - (b.goal ? 1e9 : b.cost));
@@ -8612,14 +8618,14 @@ function killEnemy(e) {
   const tough = e.elite || e.def.xp >= 2;
   if (e.elite || (tough && Math.random() < EMERALD_CHANCE)) dropGem(e.x, e.z, e.elite ? e.xp : e.xp * 3 + 2, 1);
   else dropGem(e.x, e.z, e.xp, 0);
-  if (e.elite || (tough && Math.random() < SCROLL_CHANCE)) spawnPickup('scroll', e.x + 0.5, e.z);
+  if ((e.elite || (tough && Math.random() < SCROLL_CHANCE)) && Math.random() < scrollOdds()) spawnPickup('scroll', e.x + 0.5, e.z);
   if (e.elite) {
     spawnPickup('chest', e.x, e.z);
     for (let i = 0; i < 6; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), 2);
   } else {
     const r = Math.random();
     if (r < 0.02) spawnPickup('coin', e.x, e.z, randInt(1, 3));
-    else if (r < 0.04) spawnPickup('heart', e.x, e.z);
+    else if (r < 0.03) spawnPickup('heart', e.x, e.z);
     else if (r < 0.045) spawnPickup('magnet', e.x, e.z);
   }
   if (e.def.splits) {
@@ -8672,6 +8678,8 @@ function reviveHero() {
 // ---------- gems and pickups ----------
 // tier 0 is the small blue crystal, tier 1 the big green emerald
 const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.028;
+// every random scroll drop passes this: 3 in 4 (scrolls are 25% rarer), and half of that again in Endless
+const scrollOdds = () => 0.75 * (G.run && G.run.endless ? 0.5 : 1);
 function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {
@@ -9189,8 +9197,10 @@ function finishRun(won) {
   run.over = true;
   run.won = won;
   const sv = G.save;
-  const reward = run.rush ? Math.round(run.rushK * 70 * (1 + run.rushK * 0.1)) : won ? run.info.reward : run.endless ? Math.round(run.t / 3) : 0;
-  run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100));
+  // Endless and Boss Rush pay half
+  const modeMul = run.endless || run.rush ? 0.5 : 1;
+  const reward = Math.round((run.rush ? run.rushK * 70 * (1 + run.rushK * 0.1) : won ? run.info.reward : run.endless ? run.t / 3 : 0) * modeMul);
+  run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100) * modeMul);
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
@@ -9201,10 +9211,10 @@ function finishRun(won) {
     sv.rushBest = Math.max(sv.rushBest || 0, run.rushK);
     if (won && (!sv.rushTime || run.t < sv.rushTime)) sv.rushTime = Math.round(run.t);
   } else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
-  if (won && !run.rush) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
+  if (won && !run.rush && !run.endless) { sv.cleared[run.chapter] = true; sv.chapter = Math.min(CHAPTER_COUNT, Math.max(sv.chapter, run.chapter + 1)); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
-  sv.stats.runs++; sv.stats.kills += run.kills;
-  goalsAddRun(run);
+  // achievements count chapter runs only
+  if (!run.endless && !run.rush) { sv.stats.runs++; sv.stats.kills += run.kills; goalsAddRun(run); }
   saveGame();
   AUDIO.play(won ? 'win' : 'lose');
   setState('results');
@@ -9798,15 +9808,15 @@ function gooblinLoot(e) {
   G.run.gooblins++;
   for (let i = 0; i < 16; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), randInt(2, 4));
   spawnPickup('chest', e.x, e.z);
-  spawnPickup('scroll', e.x + 0.6, e.z);
+  if (Math.random() < scrollOdds()) spawnPickup('scroll', e.x + 0.6, e.z);
   FX.ring(e.x, e.z, 4, [1, 0.85, 0.3], 0.6, 1); FX.burst(e.x, 0.8, e.z, 30, [1, 0.85, 0.3], 7, 0.14, 0.7, 3);
   UI.toast('Gooblin caught! Grab the loot!', 2);
   AUDIO.play('levelup', 1.2);
 }
 
 // ---------- Endless: survive as long as you can on a random map; it keeps getting harder ----------
-const ENDLESS = { unlockAfter: 3, tierEvery: 50, bossEvery: 120 };
-function endlessUnlocked() { return !!G.save.cleared[ENDLESS.unlockAfter] || G.save.chapter > ENDLESS.unlockAfter; }
+const ENDLESS = { tierEvery: 50, bossEvery: 120 };
+function endlessUnlocked() { return true; }
 // the map comes from a chapter already reached; power-ups from every chapter reached are on offer
 function beginEndless() {
   if (!endlessUnlocked()) return;
@@ -9846,10 +9856,10 @@ function endlessBossDown(run) {
 // ============================================================
 // Boss Rush: every chapter boss, one after another, on the selected chapter's map.
 // You start with a handful of free upgrades and earn more after each boss; a light trickle of
-// regular enemies keeps the skills fed. Unlocked by clearing the last chapter of the cycle.
+// regular enemies keeps the skills fed. Open to everyone from the start.
 // ============================================================
 const RUSH = { startPicks: 8, picksPerBoss: 3, breather: 5, heal: 0.35 };
-function rushUnlocked() { return !!G.save.cleared[CHAPTER_BOSSES.length]; }
+function rushUnlocked() { return true; }
 function beginBossRush() {
   if (!rushUnlocked()) return;
   beginChapter(G.save.selected, { rush: true, powerCap: Math.max(G.save.chapter, CHAPTER_BOSSES.length) });
@@ -11601,7 +11611,7 @@ function onBossKilled(e) {
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
   for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
   // (in Boss Rush only every third boss carries a scroll)
-  if (!run.rush || run.rushK % 3 === 2) spawnPickup('scroll', e.x, e.z);
+  if ((!run.rush || run.rushK % 3 === 2) && (!run.endless || Math.random() < 0.5)) spawnPickup('scroll', e.x, e.z);
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);
@@ -13621,27 +13631,31 @@ const UI = {
       const k = sw.dataset.set; G.save.settings[k] = !G.save.settings[k]; this.syncSettings(); applySettings(); saveGame(); AUDIO.play('click');
     }));
     document.querySelectorAll('#qualitySeg button').forEach(b => b.addEventListener('click', () => { G.save.settings.quality = b.dataset.q; this.syncSettings(); applySettings(); saveGame(); AUDIO.play('click'); }));
-    // the home blob: drag sideways to spin it all the way round (it keeps a little spin when let go); a tap pokes it
-    const tap = $('heroTap');
-    tap.addEventListener('pointerdown', e => {
-      AUDIO.unlock(); tap.setPointerCapture(e.pointerId);
-      HOME.drag = { x: e.clientX, t: performance.now(), moved: 0 }; HOME.yaw = G.hero.yaw; HOME.spinV = 0; HOME.aim = null;
-    });
-    tap.addEventListener('pointermove', e => {
-      const d = HOME.drag;
-      if (!d) return;
-      const dx = e.clientX - d.x, now = performance.now(), dts = Math.max(0.008, (now - d.t) / 1000);
-      d.x = e.clientX; d.t = now; d.moved += Math.abs(dx);
-      HOME.yaw += dx * 0.012; HOME.spinV = clamp(lerp(HOME.spinV, dx * 0.012 / dts, 0.5), -12, 12);
-    });
-    const release = () => {
-      const d = HOME.drag;
-      if (!d) return;
-      HOME.drag = null; HOME.idle = 0;
-      if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
-      else if (performance.now() - d.t > 90) HOME.spinV = 0;
+    // the blob on home and on the Blobs screen: drag sideways to spin it all the way round (it keeps a little
+    // spin when let go); a tap pokes it. On the Blobs screen only the open space around the blob counts.
+    const spinOn = (el, openOnly) => {
+      el.addEventListener('pointerdown', e => {
+        if (openOnly && e.target !== el) return;
+        AUDIO.unlock(); el.setPointerCapture(e.pointerId);
+        HOME.drag = { x: e.clientX, t: performance.now(), moved: 0 }; HOME.yaw = G.hero.yaw; HOME.spinV = 0; HOME.aim = null;
+      });
+      el.addEventListener('pointermove', e => {
+        const d = HOME.drag;
+        if (!d) return;
+        const dx = e.clientX - d.x, now = performance.now(), dts = Math.max(0.008, (now - d.t) / 1000);
+        d.x = e.clientX; d.t = now; d.moved += Math.abs(dx);
+        HOME.yaw += dx * 0.012; HOME.spinV = clamp(lerp(HOME.spinV, dx * 0.012 / dts, 0.5), -12, 12);
+      });
+      const release = () => {
+        const d = HOME.drag;
+        if (!d) return;
+        HOME.drag = null; HOME.idle = 0;
+        if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
+        else if (performance.now() - d.t > 90) HOME.spinV = 0;
+      };
+      el.addEventListener('pointerup', release); el.addEventListener('pointercancel', release);
     };
-    tap.addEventListener('pointerup', release); tap.addEventListener('pointercancel', release);
+    spinOn($('heroTap'), false); spinOn($('skins'), true);
     $('skinAction').addEventListener('click', () => this.skinAction());
     document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
     this.initGear();
@@ -13798,7 +13812,7 @@ const UI = {
       const sm = b.querySelector('small');
       if (worn === s.id) sm.textContent = 'Equipped';
       else if (owned.includes(s.id)) sm.textContent = 'Owned';
-      else if (s.goal) sm.textContent = '🏆 Goal';
+      else if (s.goal) sm.textContent = '🏆';
       else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); sm.classList.toggle('poor', sv.coins < s.cost); }
       b.addEventListener('click', () => {
         if (tab === 'colors') this.skinPreview = s.id; else if (tab === 'costumes') this.costumePreview = s.id; else this.hatPreview = s.id;
@@ -13809,7 +13823,7 @@ const UI = {
     const s = list.find(k => k.id === sel) || list[0], act = $('skinAction');
     if (worn === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
     else if (owned.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
-    else if (s.goal) { act.textContent = `Goal: ${GOALS.find(g => g.id === s.goal).name}`; act.disabled = true; act.className = 'jelly'; }
+    else if (s.goal) { act.textContent = `🏆 ${GOALS.find(g => g.id === s.goal).name}`; act.disabled = true; act.className = 'jelly'; }
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   skinAction() {
@@ -13830,9 +13844,9 @@ const UI = {
     const sv = G.save, map = $('chMap');
     // boss portraits need a GPU readback, so they are drawn here, only when the map is opened
     for (const id in BOSS_TYPES) if (!ICONS.map['boss-' + id] && bossMeshes(id).every(m => R.enemyDraw[m])) renderBossPortraitOf(id);
-    const top = Math.min(sv.chapter + 4, 300);
+    // every chapter at once, locked ones too
     const nodes = [];
-    for (let n = top; n >= 1; n--) {
+    for (let n = CHAPTER_COUNT; n >= 1; n--) {
       const info = chapterInfo(n), b = document.createElement('button');
       const locked = n > sv.chapter, cleared = !!sv.cleared[n];
       b.className = 'node' + (locked ? ' locked' : '') + (cleared ? ' cleared' : '') + (n === sv.selected ? ' current' : '') + (n % 5 === 0 ? ' big' : '');
@@ -13841,9 +13855,9 @@ const UI = {
       if (icon && !locked) { const im = document.createElement('img'); im.alt = ''; im.src = icon; b.querySelector('.num').append(im); }
       else if (locked) b.querySelector('.num').innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><rect x="4.5" y="10" width="15" height="11" rx="3" fill="currentColor"/></svg>';
       else b.querySelector('.num').textContent = n;
-      b.querySelector('.nm').textContent = `Chapter ${n}${n % 5 === 0 ? ' · double boss' : ''}`;
+      b.querySelector('.nm').textContent = `Chapter ${n}`;
       const names = [...new Set(info.bosses)].map(x => BOSS_TYPES[x].name).join(' + ');
-      b.querySelector('.ds').textContent = locked ? `Clear chapter ${n - 1} to unlock` : `${info.arenaName} · ${names}${sv.best[n] ? ' · best ' + fmtTime(sv.best[n]) : ''}`;
+      b.querySelector('.ds').textContent = locked ? info.arenaName : `${info.arenaName} · ${names}${sv.best[n] ? ' · ' + fmtTime(sv.best[n]) : ''}`;
       b.disabled = locked;
       b.addEventListener('click', () => { sv.selected = n; saveGame(); AUDIO.play('click'); this.openTab('home'); });
       nodes.push(b);
@@ -13946,7 +13960,7 @@ const UI = {
     const run = G.run;
     run.choices = rollChoices();
     this.renderChoices();
-    $('luSub').textContent = `Level ${run.level - run.pending + 1} · pick one`;
+    $('luSub').textContent = `Level ${run.level - run.pending + 1}`;
     this.choiceLock = performance.now() + 350;
     AUDIO.play('levelup');
     setState('levelup');
@@ -13956,10 +13970,11 @@ const UI = {
     $('luCards').replaceChildren(...run.choices.map((c, i) => {
       const d = describeChoice(c), b = document.createElement('button');
       b.className = 'card';
-      b.innerHTML = `<span class="tile ${d.kind}"><img alt=""></span><span><small class="${d.isNew ? '' : 'up'}"></small><span class="nm"></span><span class="ds"></span></span>`;
+      b.innerHTML = `<span class="tile ${d.kind}"><img alt=""></span><span><span class="nm"></span><span class="pips"></span><span class="ds"></span></span>`;
       b.querySelector('img').src = ICONS.get(d.icon);
-      b.querySelector('small').textContent = d.tag;
-      b.querySelector('.nm').textContent = d.name;
+      b.querySelector('.nm').textContent = d.name + (d.evo ? ' ★' : '');
+      // level dots: filled up to the level this pick reaches
+      if (d.max > 1) b.querySelector('.pips').innerHTML = Array.from({ length: d.max }, (_, k) => `<i class="${k < d.lvl ? 'on' : ''}"></i>`).join('');
       b.querySelector('.ds').innerHTML = d.desc;
       b.addEventListener('click', () => this.pick(i));
       return b;
@@ -14246,35 +14261,23 @@ function fmtStat(v, unit) {
   return String(v);
 }
 // a line under a card naming the evolution this skill or ability is part of
-function evoHint(id) {
-  if (EVOLUTIONS[id]) { const E = EVOLUTIONS[id]; return `<br><span class="evohint">★ Max level + ${PASSIVES[E.with].name} → ${E.name}</span>`; }
-  // an ability can be the partner of several skills: name the ones in this run first, and at most two
-  const mine = Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].with === id && !(G.run && slotOf(k) && slotOf(k).evo));
-  if (!mine.length) return '';
-  mine.sort((a, b) => (G.run && slotOf(b) ? 1 : 0) - (G.run && slotOf(a) ? 1 : 0));
-  return `<br><span class="evohint">★ Evolves a maxed ${mine.slice(0, 2).map(k => `${SKILLS[k].name} into ${EVOLUTIONS[k].name}`).join(', or ')}</span>`;
-}
+// a level-up card: name, level dots and one short number line (no sentences); ★ marks a skill that can
+// evolve, or an ability that would evolve a skill you hold
 function describeChoice(c) {
-  const d = describeChoiceBase(c);
-  if (c.id !== 'snack') d.desc += evoHint(c.id);
-  return d;
-}
-function describeChoiceBase(c) {
-  if (c.id === 'snack') return { tag: 'HEAL', name: 'Goo Snack', desc: 'Recover 30% of your health.', icon: 'passive-regen', kind: 'passive', isNew: true };
-  const sk = SKILLS[c.id], ps = PASSIVES[c.id], lvl = lvlOf(c.id);
+  if (c.id === 'snack') return { name: 'Goo Snack', desc: '+30% health', icon: 'passive-regen', kind: 'passive', lvl: 1, max: 1 };
+  const sk = SKILLS[c.id], ps = PASSIVES[c.id], lvl = lvlOf(c.id), max = maxLevel(c.id);
   if (sk) {
-    if (!lvl) {
-      const f = sk.fields.slice(0, 2).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`).join(' · ');
-      return { tag: sk.from === G.run.chapter && !G.run.endless && !G.run.rush ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
+    const fields = sk.fields;
+    let line;
+    if (!lvl) { const [k, label, unit] = fields[0]; line = `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`; }
+    else {
+      const f = fields.find(([k]) => sk.levels[lvl - 1][k] !== sk.levels[lvl][k]) || fields[0], [k, label, unit] = f;
+      line = `${label} <em>${fmtStat(sk.levels[lvl - 1][k], unit)} → ${fmtStat(sk.levels[lvl][k], unit)}</em>`;
     }
-    const parts = [];
-    for (const [k, label, unit] of sk.fields) {
-      const a = sk.levels[lvl - 1][k], b = sk.levels[lvl][k];
-      if (a !== b) parts.push(`${label} <em>${fmtStat(a, unit)} → ${fmtStat(b, unit)}</em>`);
-    }
-    return { tag: `LV ${lvl} → ${lvl + 1}`, name: sk.name, desc: parts.join(' · '), icon: 'skill-' + c.id, kind: 'skill', isNew: false };
+    return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id] };
   }
-  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter && !G.run.endless && !G.run.rush ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
+  const partner = Object.keys(EVOLUTIONS).some(k => EVOLUTIONS[k].with === c.id && G.run && slotOf(k) && !slotOf(k).evo);
+  return { name: ps.name, desc: `<em>${ps.short}</em>`, icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner };
 }
 function applyChoice(c) {
   const run = G.run;
@@ -14618,7 +14621,13 @@ const DEV = {
       this.buf = (this.buf + e.key.toLowerCase()).slice(-8);
       if (this.buf === 'specimen') {
         this.buf = '';
-        if (!G.save.devUnlocked) { G.save.devUnlocked = true; saveGame(); this.log('Dev console unlocked. Press ` (backtick) to open or close it. Type help for commands.', 'ok'); }
+        // also opens every chapter and every color, costume and hat
+        const sv = G.save;
+        sv.chapter = CHAPTER_COUNT;
+        sv.skins = SKINS.map(s => s.id); sv.costumes = COSTUMES.map(c => c.id);
+        if (!sv.devUnlocked) { sv.devUnlocked = true; this.log('Dev console unlocked. Press ` (backtick) to open or close it. Type help for commands.', 'ok'); }
+        this.log('Every chapter and cosmetic unlocked.', 'ok');
+        devRefresh();
         e.preventDefault();
         this.toggle(true);
         return true;
@@ -14702,7 +14711,7 @@ const DEV_CMDS = {
       return `Added ${got.length}: ${[...new Set(got)].map(k => RARITIES[artParse(k).r].name + ' ' + artParse(k).def.name).join(', ')}`;
     },
   },
-  chapter: { args: '<n>', desc: 'unlock chapters up to n and select it', run: a => { const n = clamp(Math.round(devNum(a[0], G.save.chapter + 1)), 1, 300); G.save.chapter = Math.max(G.save.chapter, n); for (let i = 1; i < n; i++) G.save.cleared[i] = true; G.save.selected = n; devRefresh(); return `Chapter ${n} selected`; } },
+  chapter: { args: '<n>', desc: 'unlock chapters up to n and select it', run: a => { const n = clamp(Math.round(devNum(a[0], G.save.chapter + 1)), 1, CHAPTER_COUNT); G.save.chapter = Math.max(G.save.chapter, n); for (let i = 1; i < n; i++) G.save.cleared[i] = true; G.save.selected = n; devRefresh(); return `Chapter ${n} selected`; } },
   unlock: { args: '', desc: 'own every body color and costume', run: () => { G.save.skins = SKINS.map(s => s.id); G.save.costumes = COSTUMES.map(c => c.id); devRefresh(); return 'All colors and costumes unlocked'; } },
   god: { args: '', desc: 'toggle invulnerability', run: () => { DEV.god = !DEV.god; return `God mode ${DEV.god ? 'on' : 'off'}`; } },
   heal: { args: '', desc: 'refill health', run: () => { const r = devRun(); r.hp = r.maxHp; return 'Healed'; } },
@@ -14780,7 +14789,8 @@ const DEV_CMDS = {
 
 // ---- 14c-goals.js ----
 // ============================================================
-// Goals: long-term targets, each with a reward to claim on the Goals screen.
+// Achievements ("goals" in the code): long-term targets, each with a reward to claim on the Achievements screen.
+// Chapter runs only: Endless and Boss Rush runs add nothing to these stats.
 // A goal reads one number from the save (a stat counted at the end of each run, or something the
 // save already says) and has a target. Reaching it shows a toast once (sv.goals.seen); claiming
 // pays out (sv.goals.claimed). Three goals give colors that cannot be bought (SKINS with `goal`).
@@ -14793,8 +14803,6 @@ const GOAL_VALUE = {
   evos: sv => sv.stats.evos || 0,
   cleared: sv => Object.keys(sv.cleared).length,
   gooblins: sv => sv.stats.gooblins || 0,
-  endless: sv => Math.floor((sv.endlessBest || 0) / 60),
-  rush: sv => sv.rushBest || 0,
   colors: sv => sv.skins.length,
   costumes: sv => sv.costumes.filter(id => id !== 'none').length,
   upgrades: sv => Object.values(sv.upgrades).reduce((a, b) => a + b, 0),
@@ -14809,10 +14817,10 @@ const GOALS = [
   { id: 'kills1', group: 'fight', name: 'Goo Getter', desc: 'Defeat {n} foes', stat: 'kills', n: 500, coins: 150 },
   { id: 'kills2', group: 'fight', name: 'Goo Getter II', desc: 'Defeat {n} foes', stat: 'kills', n: 5000, coins: 500 },
   { id: 'kills3', group: 'fight', name: 'Goo Getter III', desc: 'Defeat {n} foes', stat: 'kills', n: 25000, coins: 1500, scrolls: 1 },
-  { id: 'kills4', group: 'fight', name: 'Goo Legend', desc: 'Defeat {n} foes', stat: 'kills', n: 100000, coins: 4000, scrolls: 3 },
+  { id: 'kills4', group: 'fight', name: 'Goo Legend', desc: 'Defeat {n} foes', stat: 'kills', n: 100000, coins: 4000, scrolls: 3, skin: 'inferno' },
   { id: 'bosses1', group: 'fight', name: 'Boss Popper', desc: 'Defeat {n} bosses', stat: 'bosses', n: 5, coins: 300 },
   { id: 'bosses2', group: 'fight', name: 'Boss Popper II', desc: 'Defeat {n} bosses', stat: 'bosses', n: 25, coins: 1000, scrolls: 1 },
-  { id: 'bosses3', group: 'fight', name: 'Boss Breaker', desc: 'Defeat {n} bosses', stat: 'bosses', n: 75, coins: 3000, scrolls: 2 },
+  { id: 'bosses3', group: 'fight', name: 'Boss Breaker', desc: 'Defeat {n} bosses', stat: 'bosses', n: 75, coins: 3000, scrolls: 2, skin: 'cosmic' },
   { id: 'elites', group: 'fight', name: 'Elite Hunter', desc: 'Defeat {n} elite foes', stat: 'elites', n: 50, coins: 800, scrolls: 1 },
   { id: 'level1', group: 'fight', name: 'Power Surge', desc: 'Reach level {n} in a run', stat: 'level', n: 25, coins: 400 },
   { id: 'level2', group: 'fight', name: 'Overcharged', desc: 'Reach level {n} in a run', stat: 'level', n: 50, coins: 1500, scrolls: 1 },
@@ -14824,10 +14832,6 @@ const GOALS = [
   { id: 'ch15', group: 'chapter', name: 'Hero of Gel', desc: 'Clear {n} chapters', stat: 'cleared', n: 15, coins: 5000, scrolls: 3, skin: 'champion' },
   { id: 'gooblin1', group: 'mode', name: 'Lucky Catch', desc: 'Catch a Golden Gooblin', stat: 'gooblins', n: 1, coins: 300 },
   { id: 'gooblin2', group: 'mode', name: 'Treasure Hunter', desc: 'Catch {n} Golden Gooblins', stat: 'gooblins', n: 10, coins: 1500, scrolls: 2 },
-  { id: 'endless10', group: 'mode', name: 'Endurance', desc: 'Survive {n} minutes in Endless', stat: 'endless', n: 10, coins: 800 },
-  { id: 'endless20', group: 'mode', name: 'Unstoppable', desc: 'Survive {n} minutes in Endless', stat: 'endless', n: 20, coins: 2500, scrolls: 2, skin: 'cosmic' },
-  { id: 'rush5', group: 'mode', name: 'Boss Rusher', desc: 'Beat {n} bosses in one Boss Rush', stat: 'rush', n: 5, coins: 1000 },
-  { id: 'rushall', group: 'mode', name: 'Rush Champion', desc: 'Beat every boss in one Boss Rush', stat: 'rush', n: CHAPTER_BOSSES.length, coins: 4000, scrolls: 3, skin: 'inferno' },
   { id: 'colors', group: 'collect', name: 'Fashionista', desc: 'Own {n} colors', stat: 'colors', n: 10, coins: 500 },
   { id: 'costumes1', group: 'collect', name: 'Wardrobe', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 15, coins: 1000 },
   { id: 'costumes2', group: 'collect', name: 'Collector', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 40, coins: 3000, scrolls: 2 },
@@ -14856,7 +14860,7 @@ function goalsCheck() {
   if (!fresh.length) return;
   for (const g of fresh) sv.goals.seen[g.id] = true;
   saveGame();
-  UI.toast(fresh.length === 1 ? `🏆 Goal reached: ${fresh[0].name}! Claim it in Goals` : `🏆 ${fresh.length} goals reached! Claim them in Goals`, 3);
+  UI.toast(fresh.length === 1 ? `🏆 ${fresh[0].name}` : `🏆 ${fresh.length} achievements`, 3);
 }
 // end-of-run counters (finishRun); fuses count as they happen
 function goalsAddRun(run) {

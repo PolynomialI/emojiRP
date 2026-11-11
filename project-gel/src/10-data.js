@@ -142,18 +142,18 @@ const SKILLS = {
 
 // Passives ("blob abilities"): 10 levels each (Projectile Count adds a whole projectile per level, so it stays at 2)
 const PASSIVES = {
-  thick: { name: 'Thick Goo', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
-  regen: { name: 'Regen', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
-  speed: { name: 'Speed', desc: '+4% move speed.', max: 10, icon: { type: 1, colw: 0 } },
-  magnet: { name: 'Magnet', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
-  power: { name: 'Power', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
-  armor: { name: 'Armor', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
-  haste: { name: 'Haste', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
-  reach: { name: 'Reach', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
-  multishot: { name: 'Projectile Count', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
-  sugar: { name: 'Sugar Rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
-  thorns: { name: 'Thorns', from: 8, desc: 'Enemies that touch you take 10 damage and get shoved away, +5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
-  growth: { name: 'Growth', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
+  thick: { name: 'Thick Goo', short: '+10% health', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
+  regen: { name: 'Regen', short: '+0.2% health/s', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
+  speed: { name: 'Speed', short: '+4% speed', desc: '+4% move speed.', max: 10, icon: { type: 1, colw: 0 } },
+  magnet: { name: 'Magnet', short: '+15% pickup range', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
+  power: { name: 'Power', short: '+5% damage', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
+  armor: { name: 'Armor', short: '-3% damage taken', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
+  haste: { name: 'Haste', short: '+4% cooldown speed', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
+  reach: { name: 'Reach', short: '+5% area', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
+  multishot: { name: 'Projectile Count', short: '+1 projectile', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
+  sugar: { name: 'Sugar Rush', short: '+3% rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
+  thorns: { name: 'Thorns', short: '+5 thorn damage', from: 8, desc: 'Enemies that touch you take 10 damage and get shoved away, +5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
+  growth: { name: 'Growth', short: '+4% XP', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 // the power-up a chapter's theme introduces (from: the first chapter it appears in)
@@ -407,6 +407,8 @@ const ZONE_KINDS = {
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
 const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'ufo', 'pumpking', 'geode', 'storm', 'jack', 'kraken'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
+// every chapter is unique: the game ends after the last one (no repeats with stronger stats)
+const CHAPTER_COUNT = ARENAS.length;
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
   const k = n - 1, kk = k <= 9 ? k : 9 + (k - 9) * 0.6;
@@ -473,8 +475,8 @@ const SKINS = [
   { id: 'prism', name: 'Prism', cost: 3000, base: '#ff5fb8', top: '#4ad8ff', accent: '#ffd23a', rim: '#ffffff', boost: { xp: 8 } },
   // goal rewards: cannot be bought (see GOALS in src/14c-goals.js)
   { id: 'champion', name: 'Champion', cost: 0, goal: 'ch15', base: '#ffc21a', top: '#fff3b0', accent: '#ff7a1a', rim: '#ffffff', boost: { gold: 12 } },
-  { id: 'cosmic', name: 'Cosmic', cost: 0, goal: 'endless20', base: '#24206e', top: '#ff5fb8', accent: '#4ad8ff', rim: '#e0ccff', boost: { cd: 6 } },
-  { id: 'inferno', name: 'Inferno', cost: 0, goal: 'rushall', base: '#3a0d14', top: '#ff3b1f', accent: '#ffd23a', rim: '#ff9a6a', boost: { dmg: 7 } },
+  { id: 'cosmic', name: 'Cosmic', cost: 0, goal: 'bosses3', base: '#24206e', top: '#ff5fb8', accent: '#4ad8ff', rim: '#e0ccff', boost: { cd: 6 } },
+  { id: 'inferno', name: 'Inferno', cost: 0, goal: 'kills4', base: '#3a0d14', top: '#ff3b1f', accent: '#ffd23a', rim: '#ff9a6a', boost: { dmg: 7 } },
 ];
 // by price, with the goal rewards last
 SKINS.sort((a, b) => (a.goal ? 1e9 : a.cost) - (b.goal ? 1e9 : b.cost));
