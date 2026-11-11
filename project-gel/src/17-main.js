@@ -358,7 +358,7 @@ function renderFrame() {
   const f = R.frame, hero = G.hero, h = hero.pos;
   R.resetStreams();
   SCENE.floor = true; SCENE.backdrop = null; SCENE.aura = null; SCENE.bubble = null; SCENE.pools = [];
-  SCENE.arenaBox = G.run && G.state !== 'home' ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
+  SCENE.arenaBox = G.run && G.state !== 'home' && !ARENA.boxes ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
   SCENE.hero = hero.out; SCENE.heroShadow = hero.shadow;
   if (G.run && G.state !== 'home') {
     f.spot = [h[0], 0, h[2], 13]; f.fogRange = [10, 26];

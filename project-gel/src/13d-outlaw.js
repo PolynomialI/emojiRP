@@ -1,7 +1,7 @@
 // ============================================================
 // The Outlaw (chapter 10): a gunfighter who keeps his distance and circles you. He fans the hammer (a cone of
 // bullets sweeping across, two or three volleys), lobs bundles of dynamite at marked spots, and whistles up a
-// bison stampede that thunders across the street along marked lanes. Buildings, hay and wagons stop bullets.
+// bison stampede that thunders north or south along marked lanes (down Main Street in his town). Hay and wagons stop bullets.
 // Stage 2: a third volley, wider fans, more dynamite, and stampedes from both sides at once.
 // ============================================================
 const OUTLAW = { spread: 0.95, bulletV: 12, laneLen: 34, laneW: 1.15, herdV: 20 };
@@ -28,15 +28,18 @@ BOSS_AI.outlaw = function (e, dt, d, dx, dz) {
         if (k === 'fan') { ai.state = 'draw'; ai.t = ai.dur = 0.6; ai.volleys = rage ? 3 : 2; ai.side = 0; }
         else if (k === 'dynamite') { ai.state = 'toss'; ai.t = 1.0; ai.thrown = 0; ai.tossT = 0.25; }
         else {
-          // the whistle: marked lanes across the street around you, with gaps to stand in
+          // the whistle: marked lanes running north-south around you, with gaps to stand in
           ai.state = 'whistle'; ai.t = 1.45;
-          const n = rage ? 4 : 3, gap = OUTLAW.laneW * 2 + 2.3, base = h[2] + rand(-1.2, 1.2), first = Math.random() < 0.5 ? 1 : -1;
+          const n = rage ? 4 : 3, gap = OUTLAW.laneW * 2 + 2.3, first = Math.random() < 0.5 ? 1 : -1, span = (n - 1) / 2 * gap + OUTLAW.laneW;
+          // keep every lane inside the map: slide the herd toward the middle until the outer lanes fit
+          let base = h[0] + rand(-1.2, 1.2);
+          for (let k = 0; k < 40 && (arenaSd(base - span, h[2]) > 0 || arenaSd(base + span, h[2]) > 0) && Math.abs(base) > 0.4; k++) base -= Math.sign(base) * 0.5;
           ai.lanes = [];
           for (let i = 0; i < n; i++) {
-            const z = base + (i - (n - 1) / 2) * gap, dir = rage && i % 2 ? -first : first;
-            const x0 = h[0] - dir * OUTLAW.laneLen / 2;
-            ai.lanes.push({ z, dir, x0 });
-            addTele({ kind: 'lane', x: x0, z, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: dir > 0 ? Math.PI / 2 : -Math.PI / 2, dur: 1.45 });
+            const x = base + (i - (n - 1) / 2) * gap, dir = rage && i % 2 ? -first : first;
+            const z0 = h[2] - dir * OUTLAW.laneLen / 2;
+            ai.lanes.push({ x, dir, z0 });
+            addTele({ kind: 'lane', x, z: z0, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: dir > 0 ? 0 : Math.PI, dur: 1.45 });
           }
           AUDIO.play('whistle');
         }
@@ -99,7 +102,7 @@ BOSS_AI.outlaw = function (e, dt, d, dx, dz) {
         // the herd: three bison per lane, bunched up, running the whole lane
         for (const L of ai.lanes) {
           for (let i = 0; i < 3; i++) ai.herd.push({ lane: L, along: -i * 1.7 - rand(0, 0.6), side: (i - 1) * 0.45 + rand(-0.15, 0.15), ph: rand(0, 1), hit: false });
-          addTele({ kind: 'lane', x: L.x0, z: L.z, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: L.dir > 0 ? Math.PI / 2 : -Math.PI / 2, dur: (OUTLAW.laneLen + 4) / OUTLAW.herdV, hold: true });
+          addTele({ kind: 'lane', x: L.x, z: L.z0, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: L.dir > 0 ? 0 : Math.PI, dur: (OUTLAW.laneLen + 4) / OUTLAW.herdV, hold: true });
         }
         AUDIO.play('roar', 0.7); AUDIO.play('boom');
         ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.6;
@@ -114,14 +117,14 @@ function updateHerd(e, ai, dt) {
   for (const b of ai.herd) {
     const L = b.lane;
     b.along += OUTLAW.herdV * dt; b.ph += dt * 2.6;
-    b.x = L.x0 + L.dir * b.along; b.z = L.z + b.side;
+    b.x = L.x + b.side; b.z = L.z0 + L.dir * b.along;
     if (b.along < 0 || b.along > OUTLAW.laneLen) continue;
-    if (!L.hit && Math.abs(h[2] - L.z) < OUTLAW.laneW + HERO_R * 0.5 && Math.abs(h[0] - b.x) < 1.3) {
-      L.hit = true; hurtHero(26 * run.info.dmgMul, b.x - L.dir, b.z); run.vel[0] += L.dir * 9; run.vel[2] += Math.sign(h[2] - L.z || 1) * 5;
+    if (!L.hit && Math.abs(h[0] - L.x) < OUTLAW.laneW + HERO_R * 0.5 && Math.abs(h[2] - b.z) < 1.3) {
+      L.hit = true; hurtHero(26 * run.info.dmgMul, b.x, b.z - L.dir); run.vel[2] += L.dir * 9; run.vel[0] += Math.sign(h[0] - L.x || 1) * 5;
     }
     // anything else in the way gets trampled
-    enemiesInRadius(b.x, b.z, 1.1, o => { if (!o.boss && !o.mini && !o.trampled) { o.trampled = true; hurtEnemy(o, 40, L.dir * 9, (o.z - L.z) * 4, { sound: false }); } });
-    if (Math.random() < 0.5) FX.smoke(b.x - L.dir * 0.8, 0.25, b.z + rand(-0.4, 0.4), 0.7, [0.78, 0.62, 0.45], 0.7, 0.5);
+    enemiesInRadius(b.x, b.z, 1.1, o => { if (!o.boss && !o.mini && !o.trampled) { o.trampled = true; hurtEnemy(o, 40, (o.x - L.x) * 4, L.dir * 9, { sound: false }); } });
+    if (Math.random() < 0.5) FX.smoke(b.x + rand(-0.4, 0.4), 0.25, b.z - L.dir * 0.8, 0.7, [0.78, 0.62, 0.45], 0.7, 0.5);
     if (Math.random() < 0.25) FX.crack(b.x, b.z, 0.5, 0.8);
   }
   ai.herd = ai.herd.filter(b => b.along < OUTLAW.laneLen + 4);
@@ -145,8 +148,8 @@ BOSS_DRAW.outlaw = function (e) {
   const c = D.bison.clips.run;
   for (const b of e.ai.herd) {
     if (b.along < -2 || !onScreen(b.x, b.z, 3)) continue;
-    pushEnemy('bison', false, b.x, 0, b.z, b.lane.dir > 0 ? Math.PI / 2 : -Math.PI / 2, c.row + Math.floor((b.ph % 1) * c.frames), 2.1, 1, 0, 0, 0, 0.37, 0.24, 0.15);
-    pushDecal(b.x - L[0] * 0.8, b.z - L[2] * 0.8, 0.7, 1.1, -Math.PI / 2, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+    pushEnemy('bison', false, b.x, 0, b.z, b.lane.dir > 0 ? 0 : Math.PI, c.row + Math.floor((b.ph % 1) * c.frames), 2.1, 1, 0, 0, 0, 0.37, 0.24, 0.15);
+    pushDecal(b.x - L[0] * 0.8, b.z - L[2] * 0.8, 0.7, 1.1, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   }
 };
 // enemy shots: a bright tracer, and a tumbling bundle of dynamite with a spitting fuse

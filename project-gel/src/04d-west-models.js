@@ -6,10 +6,10 @@
 // ============================================================
 Object.assign(THEME_CLIPS, { bison: ['run', 'slam'], mule: ['run', 'slam'], horse: ['run'], snake: ['run', 'throw'], gunslinger: ['run', 'aim'], outlaw: ['run', 'aim', 'throw', 'idle'] });
 Object.assign(THEME_CELLS, { saloon: 0.02, bank: 0.017, sheriff: 0.02, store: 0.02, hotel: 0.02, barn: 0.02, church: 0.018,
-  watertower: 0.02, gazebo: 0.02, well: 0.02, oillamp: 0.016, haybale: 0.025, wagon: 0.02, trough: 0.022, derrick: 0.02, railfence: 0.022, dynamite: 0.012,
+  watertower: 0.02, gazebo: 0.02, well: 0.02, oillamp: 0.016, haybale: 0.025, wagon: 0.02, trough: 0.022, railfence: 0.022, dynamite: 0.012,
   bison: 0.017, mule: 0.016, horse: 0.016, snake: 0.014, gunslinger: 0.015, outlaw: 0.015 });
 MESH_ORDER.push('saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp',
-  'haybale', 'wagon', 'trough', 'derrick', 'railfence', 'dynamite', 'snake', 'horse', 'gunslinger', 'mule', 'bison', 'outlaw');
+  'haybale', 'wagon', 'trough', 'railfence', 'dynamite', 'snake', 'horse', 'gunslinger', 'mule', 'bison', 'outlaw');
 
 // move a prop model's bone pivots (bone index -> [x, y, z]) so its parts can swing like legs
 function rig(m, piv) { for (const b in piv) m.bones[b].p = piv[b]; return m; }
@@ -327,7 +327,7 @@ function westModels(defs) {
     { s: 'cap', a: [0, 1.41, 0], b: [0, 1.52, 0], r: 0.08, r2: 0.012, col: iron, k: 0 },
   ], { ao: 0.5 });
 
-  // ---------- ranch props: hay bales, a covered wagon, a water trough with a pump, an oil derrick, a split-rail fence ----------
+  // ---------- ranch props: hay bales, a covered wagon, a water trough with a pump and a split-rail fence ----------
   P('haybale', [
     box([-0.16, 0.13, 0], [0.15, 0.13, 0.3], hay, 0.035, 0.005), box([0.16, 0.13, 0.03], [0.15, 0.13, 0.3], C('#dcb650'), 0.035, 0.005),
     box([0.01, 0.39, 0.01], [0.3, 0.13, 0.15], C('#f0cc66'), 0.035, 0.005),
@@ -358,20 +358,6 @@ function westModels(defs) {
     { s: 'cap', a: [0.46, 0.44, 0], b: [0.36, 0.4, 0], r: 0.016, r2: 0.01, col: C('#4a6a5a'), k: 0 },
     { s: 'cap', a: [0.48, 0.5, 0], b: [0.58, 0.62, 0], r: 0.012, col: iron, k: 0 },
   ], { ao: 0.6 });
-  {
-    const parts = [];
-    const top = 2.05, legs = [[0.32, 0.32], [-0.32, 0.32], [-0.32, -0.32], [0.32, -0.32]];
-    for (const [x, z] of legs) parts.push({ s: 'cap', a: [x, 0, z], b: [x * 0.18, top, z * 0.18], r: 0.026, col: woodD, k: 0 });
-    for (const y of [0.4, 0.85, 1.3, 1.7]) {
-      const w = lerp(1, 0.18, y / top);
-      for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0 * w, y, z0 * w], b: [x1 * w, y, z1 * w], r: 0.014, col: wood, k: 0 }); }
-    }
-    for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0, 0.05, z0], b: [x1 * 0.8, 0.85, z1 * 0.8], r: 0.011, col: wood, k: 0 }); }
-    parts.push(box([0, top + 0.03, 0], [0.09, 0.04, 0.09], iron, 0.01), { s: 'cyl', ax: 'x', c: [0, top + 0.1, 0], r: 0.05, hh: 0.07, rd: 0.01, col: iron, k: 0 });
-    parts.push(box([0, 0.06, 0], [0.12, 0.06, 0.12], iron, 0.02), { s: 'cyl', ax: 'y', c: [0.22, 0.09, 0.3], r: 0.06, hh: 0.09, rd: 0.015, col: C('#2a2a2a'), k: 0 });
-    parts.push({ s: 'cap', a: [0, 0.12, 0], b: [0, 0.9, 0], r: 0.02, col: C('#5a5a62'), k: 0 });
-    P('derrick', parts, { ao: 1 });
-  }
   P('railfence', [
     ...[-0.45, 0.45].map(x => ({ s: 'cap', a: [x, -0.02, 0], b: [x + 0.01, 0.72, 0], r: 0.04, r2: 0.034, col: woodD, k: 0 })),
     ...[[0.2, 0.01], [0.43, -0.012], [0.63, 0.008]].map(([y, dz]) => ({ s: 'cap', a: [-0.52, y, dz], b: [0.52, y + 0.02, -dz], r: 0.026, col: C('#9a7048'), k: 0 })),

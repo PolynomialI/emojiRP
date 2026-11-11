@@ -2583,10 +2583,10 @@ function themeModels3(defs) {
 // ============================================================
 Object.assign(THEME_CLIPS, { bison: ['run', 'slam'], mule: ['run', 'slam'], horse: ['run'], snake: ['run', 'throw'], gunslinger: ['run', 'aim'], outlaw: ['run', 'aim', 'throw', 'idle'] });
 Object.assign(THEME_CELLS, { saloon: 0.02, bank: 0.017, sheriff: 0.02, store: 0.02, hotel: 0.02, barn: 0.02, church: 0.018,
-  watertower: 0.02, gazebo: 0.02, well: 0.02, oillamp: 0.016, haybale: 0.025, wagon: 0.02, trough: 0.022, derrick: 0.02, railfence: 0.022, dynamite: 0.012,
+  watertower: 0.02, gazebo: 0.02, well: 0.02, oillamp: 0.016, haybale: 0.025, wagon: 0.02, trough: 0.022, railfence: 0.022, dynamite: 0.012,
   bison: 0.017, mule: 0.016, horse: 0.016, snake: 0.014, gunslinger: 0.015, outlaw: 0.015 });
 MESH_ORDER.push('saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp',
-  'haybale', 'wagon', 'trough', 'derrick', 'railfence', 'dynamite', 'snake', 'horse', 'gunslinger', 'mule', 'bison', 'outlaw');
+  'haybale', 'wagon', 'trough', 'railfence', 'dynamite', 'snake', 'horse', 'gunslinger', 'mule', 'bison', 'outlaw');
 
 // move a prop model's bone pivots (bone index -> [x, y, z]) so its parts can swing like legs
 function rig(m, piv) { for (const b in piv) m.bones[b].p = piv[b]; return m; }
@@ -2904,7 +2904,7 @@ function westModels(defs) {
     { s: 'cap', a: [0, 1.41, 0], b: [0, 1.52, 0], r: 0.08, r2: 0.012, col: iron, k: 0 },
   ], { ao: 0.5 });
 
-  // ---------- ranch props: hay bales, a covered wagon, a water trough with a pump, an oil derrick, a split-rail fence ----------
+  // ---------- ranch props: hay bales, a covered wagon, a water trough with a pump and a split-rail fence ----------
   P('haybale', [
     box([-0.16, 0.13, 0], [0.15, 0.13, 0.3], hay, 0.035, 0.005), box([0.16, 0.13, 0.03], [0.15, 0.13, 0.3], C('#dcb650'), 0.035, 0.005),
     box([0.01, 0.39, 0.01], [0.3, 0.13, 0.15], C('#f0cc66'), 0.035, 0.005),
@@ -2935,20 +2935,6 @@ function westModels(defs) {
     { s: 'cap', a: [0.46, 0.44, 0], b: [0.36, 0.4, 0], r: 0.016, r2: 0.01, col: C('#4a6a5a'), k: 0 },
     { s: 'cap', a: [0.48, 0.5, 0], b: [0.58, 0.62, 0], r: 0.012, col: iron, k: 0 },
   ], { ao: 0.6 });
-  {
-    const parts = [];
-    const top = 2.05, legs = [[0.32, 0.32], [-0.32, 0.32], [-0.32, -0.32], [0.32, -0.32]];
-    for (const [x, z] of legs) parts.push({ s: 'cap', a: [x, 0, z], b: [x * 0.18, top, z * 0.18], r: 0.026, col: woodD, k: 0 });
-    for (const y of [0.4, 0.85, 1.3, 1.7]) {
-      const w = lerp(1, 0.18, y / top);
-      for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0 * w, y, z0 * w], b: [x1 * w, y, z1 * w], r: 0.014, col: wood, k: 0 }); }
-    }
-    for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0, 0.05, z0], b: [x1 * 0.8, 0.85, z1 * 0.8], r: 0.011, col: wood, k: 0 }); }
-    parts.push(box([0, top + 0.03, 0], [0.09, 0.04, 0.09], iron, 0.01), { s: 'cyl', ax: 'x', c: [0, top + 0.1, 0], r: 0.05, hh: 0.07, rd: 0.01, col: iron, k: 0 });
-    parts.push(box([0, 0.06, 0], [0.12, 0.06, 0.12], iron, 0.02), { s: 'cyl', ax: 'y', c: [0.22, 0.09, 0.3], r: 0.06, hh: 0.09, rd: 0.015, col: C('#2a2a2a'), k: 0 });
-    parts.push({ s: 'cap', a: [0, 0.12, 0], b: [0, 0.9, 0], r: 0.02, col: C('#5a5a62'), k: 0 });
-    P('derrick', parts, { ao: 1 });
-  }
   P('railfence', [
     ...[-0.45, 0.45].map(x => ({ s: 'cap', a: [x, -0.02, 0], b: [x + 0.01, 0.72, 0], r: 0.04, r2: 0.034, col: woodD, k: 0 })),
     ...[[0.2, 0.01], [0.43, -0.012], [0.63, 0.008]].map(([y, dz]) => ({ s: 'cap', a: [-0.52, y, dz], b: [0.52, y + 0.02, -dz], r: 0.026, col: C('#9a7048'), k: 0 })),
@@ -5271,10 +5257,10 @@ function themeModels3(defs) {
 // ============================================================
 Object.assign(THEME_CLIPS, { bison: ['run', 'slam'], mule: ['run', 'slam'], horse: ['run'], snake: ['run', 'throw'], gunslinger: ['run', 'aim'], outlaw: ['run', 'aim', 'throw', 'idle'] });
 Object.assign(THEME_CELLS, { saloon: 0.02, bank: 0.017, sheriff: 0.02, store: 0.02, hotel: 0.02, barn: 0.02, church: 0.018,
-  watertower: 0.02, gazebo: 0.02, well: 0.02, oillamp: 0.016, haybale: 0.025, wagon: 0.02, trough: 0.022, derrick: 0.02, railfence: 0.022, dynamite: 0.012,
+  watertower: 0.02, gazebo: 0.02, well: 0.02, oillamp: 0.016, haybale: 0.025, wagon: 0.02, trough: 0.022, railfence: 0.022, dynamite: 0.012,
   bison: 0.017, mule: 0.016, horse: 0.016, snake: 0.014, gunslinger: 0.015, outlaw: 0.015 });
 MESH_ORDER.push('saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp',
-  'haybale', 'wagon', 'trough', 'derrick', 'railfence', 'dynamite', 'snake', 'horse', 'gunslinger', 'mule', 'bison', 'outlaw');
+  'haybale', 'wagon', 'trough', 'railfence', 'dynamite', 'snake', 'horse', 'gunslinger', 'mule', 'bison', 'outlaw');
 
 // move a prop model's bone pivots (bone index -> [x, y, z]) so its parts can swing like legs
 function rig(m, piv) { for (const b in piv) m.bones[b].p = piv[b]; return m; }
@@ -5592,7 +5578,7 @@ function westModels(defs) {
     { s: 'cap', a: [0, 1.41, 0], b: [0, 1.52, 0], r: 0.08, r2: 0.012, col: iron, k: 0 },
   ], { ao: 0.5 });
 
-  // ---------- ranch props: hay bales, a covered wagon, a water trough with a pump, an oil derrick, a split-rail fence ----------
+  // ---------- ranch props: hay bales, a covered wagon, a water trough with a pump and a split-rail fence ----------
   P('haybale', [
     box([-0.16, 0.13, 0], [0.15, 0.13, 0.3], hay, 0.035, 0.005), box([0.16, 0.13, 0.03], [0.15, 0.13, 0.3], C('#dcb650'), 0.035, 0.005),
     box([0.01, 0.39, 0.01], [0.3, 0.13, 0.15], C('#f0cc66'), 0.035, 0.005),
@@ -5623,20 +5609,6 @@ function westModels(defs) {
     { s: 'cap', a: [0.46, 0.44, 0], b: [0.36, 0.4, 0], r: 0.016, r2: 0.01, col: C('#4a6a5a'), k: 0 },
     { s: 'cap', a: [0.48, 0.5, 0], b: [0.58, 0.62, 0], r: 0.012, col: iron, k: 0 },
   ], { ao: 0.6 });
-  {
-    const parts = [];
-    const top = 2.05, legs = [[0.32, 0.32], [-0.32, 0.32], [-0.32, -0.32], [0.32, -0.32]];
-    for (const [x, z] of legs) parts.push({ s: 'cap', a: [x, 0, z], b: [x * 0.18, top, z * 0.18], r: 0.026, col: woodD, k: 0 });
-    for (const y of [0.4, 0.85, 1.3, 1.7]) {
-      const w = lerp(1, 0.18, y / top);
-      for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0 * w, y, z0 * w], b: [x1 * w, y, z1 * w], r: 0.014, col: wood, k: 0 }); }
-    }
-    for (let i = 0; i < 4; i++) { const [x0, z0] = legs[i], [x1, z1] = legs[(i + 1) % 4]; parts.push({ s: 'cap', a: [x0, 0.05, z0], b: [x1 * 0.8, 0.85, z1 * 0.8], r: 0.011, col: wood, k: 0 }); }
-    parts.push(box([0, top + 0.03, 0], [0.09, 0.04, 0.09], iron, 0.01), { s: 'cyl', ax: 'x', c: [0, top + 0.1, 0], r: 0.05, hh: 0.07, rd: 0.01, col: iron, k: 0 });
-    parts.push(box([0, 0.06, 0], [0.12, 0.06, 0.12], iron, 0.02), { s: 'cyl', ax: 'y', c: [0.22, 0.09, 0.3], r: 0.06, hh: 0.09, rd: 0.015, col: C('#2a2a2a'), k: 0 });
-    parts.push({ s: 'cap', a: [0, 0.12, 0], b: [0, 0.9, 0], r: 0.02, col: C('#5a5a62'), k: 0 });
-    P('derrick', parts, { ao: 1 });
-  }
   P('railfence', [
     ...[-0.45, 0.45].map(x => ({ s: 'cap', a: [x, -0.02, 0], b: [x + 0.01, 0.72, 0], r: 0.04, r2: 0.034, col: woodD, k: 0 })),
     ...[[0.2, 0.01], [0.43, -0.012], [0.63, 0.008]].map(([y, dz]) => ({ s: 'cap', a: [-0.52, y, dz], b: [0.52, y + 0.02, -dz], r: 0.026, col: C('#9a7048'), k: 0 })),
@@ -6116,34 +6088,30 @@ void main() {
     N = normalize(vec3(cos(p.x * 2.2) * 0.04, 1.0, 0.0));
     gloss = 0.05 + wet * 0.3; sharp = 40.0;
   } else if (style == 9) {
-    // wild west: sun-baked dirt with paler dusty drifts; a pair of soft wagon ruts down Main Street (z ~ 2) and
-    // Church Street (z ~ -13.5), dried-mud cracks out on the open ground, a scatter of pebbles, and the laid stone
-    // ring of the bandstand square at (0, 5)
+    // wild west: sun-baked dirt. Main Street runs north-south (|x| < 7, z > -16) with two pairs of soft wagon
+    // ruts; the town square (|x| < 22, z < -16) has a ring of laid stones round the bandstand at (0, -33); shade
+    // under the porches along every wall; dried-mud cracks in patches, and pebbles. (Matches ARENAS west.boxes.)
     float drift = texture(uNoise, p * 0.022).g;
     alb = mix(uStoneB, uStoneA, smoothstep(0.25, 0.8, mott * 0.7 + drift * 0.5)) * (0.93 + 0.1 * fine);
-    float wob = (texture(uNoise, vec2(p.x * 0.013, 0.37)).r - 0.5) * 1.4;
-    float sz = abs(p.y - 2.0 - wob), sz2 = abs(p.y + 13.5 - wob * 0.6);
-    float lane = min(abs(sz - 0.9), abs(sz2 - 0.9));
-    float rut = (1.0 - smoothstep(0.05, 0.18, lane)) * smoothstep(5.5, 7.0, length(p - vec2(0.0, 5.0))) * smoothstep(0.2, 0.55, texture(uNoise, p * vec2(0.03, 0.2)).b);
-    float street = 1.0 - smoothstep(3.5, 5.5, min(sz, sz2));
+    float wob = (texture(uNoise, vec2(0.37, p.y * 0.013)).r - 0.5) * 1.4;
+    float sx = abs(p.x - wob);
+    float lane = min(abs(sx - 0.9), abs(sx - 3.1));
+    float rut = step(-14.0, p.y) * (1.0 - smoothstep(0.05, 0.18, lane)) * smoothstep(0.2, 0.55, texture(uNoise, p * vec2(0.2, 0.03)).b);
     alb *= 1.0 - 0.09 * rut;
-    alb = mix(alb, alb * vec3(1.05, 1.03, 0.98), street * 0.5);
-    // dried mud cracks in patches away from the streets
     vec3 v = voro(p * 0.8);
-    float crack = (1.0 - smoothstep(0.0, 0.05, v.y)) * (1.0 - street) * smoothstep(0.55, 0.72, texture(uNoise, p * 0.03 + 0.31).r);
-    alb *= 1.0 - 0.32 * crack;
-    // small round pebbles
+    float crack = (1.0 - smoothstep(0.0, 0.05, v.y)) * (1.0 - rut) * smoothstep(0.55, 0.72, texture(uNoise, p * 0.03 + 0.31).r);
+    alb *= 1.0 - 0.3 * crack;
     vec2 pc = floor(p * 1.5), pf = fract(p * 1.5) - 0.5 - (vec2(hash12(pc + 1.7), hash12(pc + 5.3)) - 0.5) * 0.6;
     float peb = step(0.95, hash12(pc)) * (1.0 - smoothstep(0.05, 0.085, length(pf)));
     alb = mix(alb, mix(uGrout * 1.9, uStoneA * 1.12, hash12(pc + 9.1)), peb * 0.75);
-    // the square: smoother pale ground inside a ring of laid stones
-    float sq = length(p - vec2(0.0, 5.0));
-    float ring = 1.0 - smoothstep(0.0, 0.08, abs(sq - 6.4) - 0.45);
-    float joint = 1.0 - smoothstep(0.0, 0.06, min(abs(fract(atan(p.y - 5.0, p.x) * 6.4 / 0.8) - 0.5), abs(fract((sq - 5.95) / 0.9 + 0.5) - 0.5)) - 0.44);
-    alb = mix(alb, mix(uStoneA * 1.08, alb, 0.3), (1.0 - smoothstep(5.8, 6.0, sq)) * 0.5);
+    float sq = length(p - vec2(0.0, -33.0));
+    float ring = 1.0 - smoothstep(0.0, 0.08, abs(sq - 8.6) - 0.5);
+    float joint = 1.0 - smoothstep(0.0, 0.06, min(abs(fract(atan(p.y + 33.0, p.x) * 8.6 / 0.85) - 0.5), abs(fract((sq - 8.15) / 0.9 + 0.5) - 0.5)) - 0.44);
+    alb = mix(alb, mix(uStoneA * 1.08, alb, 0.3), (1.0 - smoothstep(7.9, 8.2, sq)) * 0.5);
     alb = mix(alb, vec3(0.64, 0.57, 0.5) * (0.85 + 0.25 * fine) * (1.0 - 0.35 * joint), ring);
+    float wall = min(sdRoundRect(p - vec2(0.0, 15.0), vec2(7.0, 35.0), 0.5), sdRoundRect(p - vec2(0.0, -33.0), vec2(22.0, 17.0), 2.0));
     N = normalize(vec3((fine - 0.5) * 0.12 + peb * pf.x * 0.9, 1.0, (mott - 0.5) * 0.12 + peb * pf.y * 0.9));
-    ao = 1.0 - 0.1 * rut - 0.25 * crack - 0.2 * joint * ring;
+    ao = (1.0 - 0.1 * rut - 0.25 * crack - 0.2 * joint * ring) * mix(1.0, 0.6, smoothstep(-2.0, 0.0, wall));
     gloss = 0.03;
   } else if (style == 10) {
     // graveyard: dark soil under patchy dead grass, with fallen leaves scattered about
@@ -9280,8 +9248,10 @@ const ARENAS = [
   { id: 'beach', name: 'Pirate Beach', floor: 8, stoneA: '#f2dcae', stoneB: '#d6b480', grout: '#8a6a44', accent: '#4fd8ff', fog: '#123a4a', sky: '#bfe8ff', ground: '#c8a878', light: '#fff6e4', spotMin: 0.62, shadowTint: '#3a4a6a', rock: '#9a8a7a', pool: '#2fb0d8', poolGlow: 0.1,
     props: [['palm', 6, 0.42, 0.55], ['barrel', 3, 0.3, 0.36], ['crate', 3, 0.34, 0.4], ['rock', 3, 0.8, 1.2], ['starfish', 4, 0.3, 0.4]], zones: [['tidepool', 3, 2.0, 3.0]], wall: 'post' },
   { id: 'west', name: 'Wild West Town', floor: 9, stoneA: '#d6a86c', stoneB: '#c08d54', grout: '#6e4628', accent: '#ffb347', fog: '#3a1c10', sky: '#ffc488', ground: '#a8743e', light: '#fff0d8', spotMin: 0.62, shadowTint: '#4a2410', rock: '#b08a62', pool: '#1a120c', poolGlow: 0,
-    props: [['haybale', 2.4, 0.7, 0.9], ['wagon', 0.6, 1.3, 1.5], ['trough', 1.4, 0.55, 0.65]], zones: [['oil', 1, 2.0, 2.8]], wall: 'railfence',
-    kinds: ['saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp', 'derrick'] },
+    props: [['haybale', 2.4, 0.7, 0.9], ['wagon', 0.6, 1.3, 1.5], ['trough', 1.4, 0.55, 0.65]], zones: [['oil', 1, 2.0, 2.8]], wall: 'railfence', noWall: true,
+    // the map is Main Street (14 wide, running south from the square) and the town square at its north end
+    boxes: [{ x: 0, z: 15, hw: 7, hd: 35, cr: 0.5 }, { x: 0, z: -33, hw: 22, hd: 17, cr: 2 }],
+    kinds: ['saloon', 'bank', 'sheriff', 'store', 'hotel', 'barn', 'church', 'watertower', 'gazebo', 'well', 'oillamp'] },
   { id: 'graveyard', name: 'Haunted Graveyard', floor: 10, stoneA: '#4a5a3a', stoneB: '#33402c', grout: '#221a14', accent: '#b06aff', fog: '#120c1e', sky: '#6a5a8a', ground: '#1e2420', light: '#e6deff', spotMin: 0.46, shadowTint: '#100a1e', rock: '#6a6a72', pool: '#3a2a5a', poolGlow: 0.1,
     props: [['tombstone', 10, 0.52, 0.64], ['pumpkin', 5, 0.38, 0.48], ['gravetree', 4, 0.42, 0.58], ['rock', 2, 0.8, 1.1]], zones: [['mist', 3, 2.2, 3.4]], wall: 'fence' },
   { id: 'caverns', name: 'Crystal Caverns', floor: 11, stoneA: '#3a3350', stoneB: '#2a2440', grout: '#120e1e', accent: '#5ae8ff', fog: '#0a0716', sky: '#4a3a7a', ground: '#1c1830', light: '#ebe6ff', spotMin: 0.46, shadowTint: '#0c0820', rock: '#5a5470', pool: '#7a5aff', poolGlow: 0.4,
@@ -9352,7 +9322,6 @@ const PROP_KINDS = {
   haybale: { models: ['haybale'], unit: 0.45, block: true, shots: true },
   wagon: { models: ['wagon'], unit: 0.55, block: true, shots: true, tall: 1.5 },
   trough: { models: ['trough'], unit: 0.4, block: true, shots: true },
-  derrick: { models: ['derrick'], unit: 0.35, block: true, shots: false, tall: 6 },
   railfence: { models: ['railfence'], unit: 0.5, block: true, shots: true, shadow: false, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
   basalt: { models: ['basalt'], unit: 0.45, block: true, shots: true, tints: ['#3a302e', '#2e2624', '#463a36'], wallR: [1.0, 1.2] },
   tombstone: { models: ['tombstone0', 'tombstone0', 'tombstone1'], unit: 0.4, block: true, shots: true, tints: ['#8a8c96', '#777a84', '#9a98a4'], tall: 1.6 },
@@ -10763,17 +10732,28 @@ function finishRun(won) {
 // Props are static meshes (round or box footprints); blocking ones stop movement, some also stop shots.
 // Zones are ground patches: pools block, others slow, burn or make you slide.
 // ============================================================
-const ARENA = { hw: 50, hd: 50, cr: 8, theme: null, props: [], zones: [], wall: [], obstacles: [], grid: null, cols: 0, rows: 0, fx: null };
+const ARENA = { hw: 50, hd: 50, cr: 8, boxes: null, theme: null, props: [], zones: [], wall: [], obstacles: [], grid: null, cols: 0, rows: 0, fx: null };
 // obstacles are bucketed into a coarse grid; each bucket also holds obstacles within OB_PAD of it
 const OB_CELL = 4, OB_PAD = 4, NO_OBS = [];
 
+// A map can instead be a union of rounded boxes (theme.boxes: { x, z, hw, hd, cr }), like the Wild West town's
+// street and square; hw/hd then bound them all
+function boxSd(x, z, B) {
+  const qx = Math.abs(x - B.x) - (B.hw - B.cr), qz = Math.abs(z - B.z) - (B.hd - B.cr);
+  return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - B.cr;
+}
 // Signed distance to the arena edge (negative inside)
 function arenaSd(x, z) {
+  if (ARENA.boxes) { let d = 1e9; for (const B of ARENA.boxes) d = Math.min(d, boxSd(x, z, B)); return d; }
   const qx = Math.abs(x) - (ARENA.hw - ARENA.cr), qz = Math.abs(z) - (ARENA.hd - ARENA.cr);
   return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - ARENA.cr;
 }
 // Outward normal of the arena edge nearest to (x, z)
 function arenaNormal(x, z, out) {
+  if (ARENA.boxes) {
+    const e = 0.05, gx = arenaSd(x + e, z) - arenaSd(x - e, z), gz = arenaSd(x, z + e) - arenaSd(x, z - e), l = Math.hypot(gx, gz) || 1;
+    out[0] = gx / l; out[1] = gz / l; return out;
+  }
   const qx = Math.abs(x) - (ARENA.hw - ARENA.cr), qz = Math.abs(z) - (ARENA.hd - ARENA.cr);
   if (qx > 0 && qz > 0) { const l = Math.hypot(qx, qz); out[0] = Math.sign(x) * qx / l; out[1] = Math.sign(z) * qz / l; }
   else if (qx > qz) { out[0] = Math.sign(x) || 1; out[1] = 0; }
@@ -10785,6 +10765,11 @@ function buildArena(chapter) {
   const info = chapterInfo(chapter), T = ARENAS[info.arena];
   const rnd = mulberry32(chapter * 7919 + 17);
   ARENA.theme = T;
+  // the map's shape: the usual walled square, or the theme's own union of boxes
+  if (T.boxes) {
+    ARENA.boxes = T.boxes; ARENA.cr = 1;
+    ARENA.hw = Math.max(...T.boxes.map(B => Math.abs(B.x) + B.hw)); ARENA.hd = Math.max(...T.boxes.map(B => Math.abs(B.z) + B.hd));
+  } else if (ARENA.boxes) { ARENA.boxes = null; ARENA.hw = ARENA.hd = 50; ARENA.cr = 8; }
   ARENA.props = []; ARENA.zones = []; ARENA.wall = []; ARENA.fx = null;
   const placed = [];
   const fits = (x, z, r, spawnClear = 7) => Math.hypot(x, z) > spawnClear + r && arenaSd(x, z) < -(r + 2.5)
@@ -10823,7 +10808,7 @@ function buildArena(chapter) {
   for (const [kind, n, rmin, rmax] of T.props || []) api.scatter('prop', kind, Math.round(n * area), rmin, rmax);
   ARENA.obstacles = placed.filter(o => o.block);
   gridObstacles();
-  // a ring of props just outside the edge (movement is held in by the edge itself)
+  // a ring of props just outside the edge (movement is held in by the edge itself); a theme with noWall builds its own
   const W = PROP_KINDS[T.wall || 'rock'], { hw, hd, cr } = ARENA, out = 0.9, pts = [];
   const sx = hw - cr, sz = hd - cr, step = W.wallStep || 1.7;
   for (let x = -sx; x <= sx; x += step) { pts.push([x, -hd - out]); pts.push([x, hd + out]); }
@@ -10832,7 +10817,7 @@ function buildArena(chapter) {
     const n = Math.ceil((cr + out) * Math.PI / 2 / step);
     for (let i = 1; i < n; i++) { const a = a0 + (i / n) * Math.PI / 2; pts.push([cx + Math.cos(a) * (cr + out), cz + Math.sin(a) * (cr + out)]); }
   }
-  for (const [x, z] of pts) {
+  if (!T.noWall) for (const [x, z] of pts) {
     const r = (W.wallR || [1.0, 1.45]);
     ARENA.wall.push({ kind: T.wall || 'rock', x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: r[0] + rnd() * (r[1] - r[0]), yaw: W.faceIn ? Math.atan2(-x, -z) : rnd() * TAU, model: W.models[Math.floor(rnd() * W.models.length)], ph: rnd() * 10, tint: W.tints ? hexToRgb(W.tints[Math.floor(rnd() * W.tints.length)]) : undefined });
   }
@@ -11510,63 +11495,66 @@ ARENA_FEATURES.reef = {
 
 // ---- 11e-west.js ----
 // ============================================================
-// Chapter 10, the Wild West town. Three rows of false-front buildings, every one facing +z (toward the camera):
-// Church Street runs between the top two rows and Main Street between the lower two. You start in the town
-// square in the middle of Main Street, between the bank's steps and the bandstand. South of town is ranch land: a corral,
-// the water tower and an oil field. Oil lamps glow along the streets at sundown.
+// Chapter 10, the Wild West town. The map is the town itself: Main Street (14 wide) runs north-south between two unbroken
+// rows of false-front buildings joined wall to wall, and at its north end it opens onto the town square, ringed by
+// more buildings (the chapel and the First Gold Bank face you across it) with the bandstand in the middle.
+// The rows stand just outside the map's edge (ARENAS west.boxes: the street and the square), so they are its walls.
+// A rail fence closes the south end of the street. Oil lamps glow along the boardwalks at sundown.
 // ============================================================
 // each building model: how far it reaches in z (model units, front at +z), its half width, and its height
 const WEST_FOOT = { saloon: [-0.36, 0.43, 0.5, 0.9], bank: [-0.36, 0.42, 0.5, 1.0], sheriff: [-0.4, 0.43, 0.5, 0.67], store: [-0.39, 0.43, 0.5, 0.68],
   hotel: [-0.39, 0.36, 0.5, 1.03], barn: [-0.45, 0.44, 0.5, 0.96], church: [-0.65, 0.65, 0.46, 1.72] };
-// [model, x, front edge z, width, wall paint]
-const WEST_TOWN = [
-  // north row, facing Church Street
-  ['barn', -41, -18, 6.5, '#b0402e'], ['store', -29, -18, 5.5, '#c8a878'], ['hotel', -17, -18, 6, '#7a9ab0'], ['church', 0, -18, 5.5, '#f4efe4'],
-  ['saloon', 15, -18, 6, '#c07848'], ['sheriff', 27, -18, 5, '#b8704a'], ['store', 39, -18, 5.5, '#9ab07a'],
-  // Main Street's north side: you start at the steps of the First Gold Bank
-  ['hotel', -40, -3, 6, '#d8b070'], ['store', -29, -3, 5.5, '#8aa070'], ['saloon', -17, -3, 6.5, '#c0603a'], ['bank', 0, -2.5, 7.5, '#e2cfa4'],
-  ['sheriff', 13, -3, 5, '#a8603e'], ['hotel', 24, -3, 6, '#9a7ab0'], ['barn', 36, -3, 6.5, '#a8402e'],
-  // the south row, its fronts toward the ranch land; the gap in the middle opens onto the square
-  ['barn', -37, 12, 6.5, '#9a3a2a'], ['bank', -25, 12, 6.5, '#b45a42'], ['store', -13, 12, 5.5, '#d8b878'], ['saloon', 13, 12, 6, '#6a8ac0'],
-  ['hotel', 24, 12, 6, '#c88a5a'], ['sheriff', 36, 12, 5, '#8a9a6a'],
-];
+// one building with its front on a line, facing n ('+x', '-x', '+z' or '-z'), centred at 'along' on that line
+function westBuilding(A, model, along, front, w, paint, n) {
+  const [z0, z1, hx, top] = WEST_FOOT[model];
+  const yaw = { '+z': 0, '-z': Math.PI, '+x': Math.PI / 2, '-x': -Math.PI / 2 }[n];
+  const sgn = n[0] === '+' ? 1 : -1, deep = Math.max(-z0, z1) * w, origin = front - sgn * z1 * w, alongX = n[1] === 'z';
+  A.prop(model, alongX ? along : origin, alongX ? origin : along, 0, { shape: 'box', hw: alongX ? hx * w : deep, hd: alongX ? deep : hx * w,
+    scale: w, yaw, tint: hexToRgb(paint), height: top * w, block: false, shots: false });
+}
+// a row of buildings joined wall to wall: [model, width, paint] from 'start' along the line
+function westRow(A, list, start, front, n) {
+  let u = start;
+  for (const [model, w, paint] of list) { westBuilding(A, model, u + w / 2, front, w, paint, n); u += w; }
+}
 ARENA_LAYOUTS.west = (A) => {
-  const rnd = A.rnd, C = hexToRgb;
-  for (const [model, x, front, w, paint] of WEST_TOWN) {
-    const [z0, z1, hx, top] = WEST_FOOT[model], oz = front - z1 * w;
-    A.prop(model, x, oz + (z0 + z1) / 2 * w, 0, { shape: 'box', hw: hx * w, hd: (z1 - z0) / 2 * w, scale: w, yaw: 0, model, tint: C(paint), height: top * w, ox: x, oz });
-  }
-  // the bandstand square, ringed by lamps
-  // the town square opens out of Main Street right where you start, between the bank and the bandstand
-  A.prop('gazebo', 0, 5.6, 2.0, { yaw: 0 });
-  for (const [x, z] of [[6.6, 5.2], [-6.6, 5.2], [4.4, 9.8], [-4.4, 9.8]]) A.prop('oillamp', x, z, 0.25, { scale: 1.8, yaw: 0 });
-  A.prop('well', 16.5, 17.5, 1.0, { yaw: 0.3 });
-  // lamps along Main Street (two flanking the bank's steps) and Church Street
-  for (const [x, z] of [[-4.8, -2.2], [4.8, -2.2], [-23.5, -2.4], [-34.5, -2.4], [18.5, -2.4], [30, -2.4], [-31, 5.6], [30.5, 6.4],
-    [-4, -17], [4, -17], [-23, -17.2], [21, -17.2]]) A.prop('oillamp', x, z, 0.25, { scale: 1.8, yaw: 0 });
-  // wagons parked on Main Street, troughs by the saloons
-  A.prop('wagon', -31, 2, 1.4, { yaw: Math.PI / 2 }); A.prop('wagon', 31, 1.5, 1.4, { yaw: -Math.PI / 2 + 0.2 });
-  A.prop('trough', -17, -1.6, 0.6, { yaw: 0 }); A.prop('trough', 13, 14.3, 0.6, { yaw: Math.PI });
-  // the water tower at the edge of town
-  A.prop('watertower', -42, 26, 2.0, { yaw: 0.4 });
-  // a corral of split rails with an open gate, hay and a trough inside
-  const cx = -24, cz = 34, hw = 6.3, hd = 5.4;
-  for (let x = -hw + 0.9; x <= hw - 0.8; x += 1.8) {
-    if (Math.abs(x) > 1.5) A.prop('railfence', cx + x, cz - hd, 0.9, { yaw: 0 });
-    A.prop('railfence', cx + x, cz + hd, 0.9, { yaw: Math.PI });
-  }
-  for (let z = -hd + 0.9; z <= hd - 0.8; z += 1.8) { A.prop('railfence', cx - hw, cz + z, 0.9, { yaw: Math.PI / 2 }); A.prop('railfence', cx + hw, cz + z, 0.9, { yaw: -Math.PI / 2 }); }
-  A.prop('haybale', cx - 2.5, cz + 1.5, 0.8); A.prop('haybale', cx + 2.8, cz + 2.2, 0.75); A.prop('trough', cx + 1, cz - 2, 0.6, { yaw: 0.1 });
-  // the oil field: derricks over black pools
-  for (const [x, z] of [[30, 30], [42, 37], [27, 44]]) { A.prop('derrick', x, z, 1.1, { yaw: rnd() * TAU }); A.zone('oil', x + 2.6, z + 1.2, 2.2 + rnd() * 0.5); }
+  // Main Street: the west row faces east, the east row faces west, from the square's corner buildings to past the fence
+  westRow(A, [['hotel', 7, '#d8b070'], ['store', 5.5, '#8aa070'], ['saloon', 7, '#c0603a'], ['sheriff', 5, '#a8603e'], ['bank', 7.5, '#e2cfa4'],
+    ['store', 5.5, '#c8a878'], ['barn', 7, '#b0402e'], ['hotel', 6.5, '#7a9ab0'], ['saloon', 6.5, '#c07848'], ['store', 5.5, '#9ab07a']], -11.5, -7, '+x');
+  westRow(A, [['saloon', 7.5, '#6a8ac0'], ['hotel', 6.5, '#c88a5a'], ['sheriff', 5, '#8a9a6a'], ['store', 6, '#d8b878'], ['saloon', 6.5, '#b85a3a'],
+    ['bank', 7, '#b45a42'], ['store', 5.5, '#8a9ab8'], ['hotel', 6.5, '#9a7ab0'], ['barn', 7, '#9a3a2a'], ['sheriff', 5, '#b8704a']], -11.5, 7, '-x');
+  // the square: the chapel at the head, the bank beside it, all of them facing in
+  westRow(A, [['barn', 6, '#a8402e'], ['sheriff', 5, '#b8704a'], ['store', 5.5, '#c8a878'], ['bank', 9, '#e2cfa4'], ['church', 7, '#f4efe4'],
+    ['saloon', 8, '#c0603a'], ['hotel', 6.5, '#d8b070'], ['store', 5, '#9ab07a'], ['barn', 6, '#9a3a2a']], -29, -50, '+z');
+  westRow(A, [['saloon', 7, '#b85a3a'], ['store', 6, '#d8b878'], ['hotel', 7.5, '#7a9ab0'], ['sheriff', 6, '#8a9a6a'], ['store', 7.5, '#8aa070']], -50, -22, '+x');
+  westRow(A, [['hotel', 7, '#c88a5a'], ['sheriff', 5.5, '#a8603e'], ['saloon', 8, '#6a8ac0'], ['store', 6, '#c8a878'], ['bank', 7.5, '#b45a42']], -50, 22, '-x');
+  westRow(A, [['hotel', 8, '#9a7ab0'], ['store', 7, '#9ab07a']], -22, -16, '-z');
+  westRow(A, [['store', 7, '#d8b878'], ['saloon', 8, '#c07848']], 7, -16, '-z');
+  // the square's furniture: the bandstand ringed by lamps, the well, troughs, a parked wagon and hay
+  A.prop('gazebo', 0, -33, 2.4, { yaw: 0 });
+  for (const [x, z] of [[6.5, -28], [-6.5, -28], [6.5, -38.5], [-6.5, -38.5]]) A.prop('oillamp', x, z, 0.25, { scale: 1.8, yaw: 0 });
+  A.prop('well', -15, -42, 1.0, { yaw: 0.3 });
+  A.prop('trough', 16, -44, 0.6, { yaw: Math.PI / 2 }); A.prop('trough', -18.5, -22, 0.6, { yaw: Math.PI / 2 });
+  A.prop('wagon', 15, -22.5, 1.4, { yaw: 0.35 }); A.prop('haybale', -17, -47, 0.8); A.prop('haybale', 18.5, -47.5, 0.75);
+  // Main Street: lamps along both boardwalks, troughs and wagons pulled up at the edges
+  for (const [x, z] of [[-6.3, -6], [6.3, 2], [-6.3, 10], [6.3, 18], [-6.3, 26], [6.3, 34], [-6.3, 42], [6.3, 48]]) A.prop('oillamp', x, z, 0.25, { scale: 1.8, yaw: 0 });
+  A.prop('trough', -5.8, 18, 0.6, { yaw: Math.PI / 2 }); A.prop('trough', 5.8, 27, 0.6, { yaw: Math.PI / 2 });
+  A.prop('wagon', -5.2, 36, 1.4, { yaw: Math.PI - 0.06 });
+  // the south end: a split-rail fence across the street, and the water tower and hay beyond it
+  for (let x = -6.3; x <= 6.4; x += 1.8) A.prop('railfence', x, 50.5, 0.9, { yaw: Math.PI + (A.rnd() - 0.5) * 0.06, block: false });
+  A.prop('watertower', 5, 56, 2.0, { yaw: 0.4, block: false }); A.prop('haybale', -5, 53.5, 0.8, { block: false });
 };
 ARENA_FEATURES.west = {
   init(st) { st.tall = ARENA.props.filter(o => o.height); st.lamps = ARENA.props.filter(o => o.kind === 'oillamp'); st.acc = 0; },
   update(st, dt) {
-    // buildings between the camera and the hero turn see-through, as in the city
-    ARENA_FEATURES.city.update(st, dt);
-    // warm dust motes drifting on the evening wind
+    // a building between the camera and the hero turns see-through (the camera looks north from straight behind
+    // the hero, so only a building across the hero's own x can hide it; the rows beside the street never do)
     const h = G.hero.pos;
+    for (const o of st.tall) {
+      const behind = Math.abs(h[0] - o.x) < o.hw + 0.2 && h[2] < o.z + o.hd + 0.5 && h[2] > o.z - o.hd - o.height * 0.85;
+      o.fade = clamp((o.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.72);
+    }
+    // warm dust motes drifting on the evening wind
     st.acc += dt * (FX.reduced ? 2 : 6);
     for (; st.acc >= 1; st.acc--) FX.part(h[0] + rand(-14, 14), rand(0.1, 0.9), h[2] + rand(-11, 8), rand(0.8, 1.6), rand(0.05, 0.25), rand(-0.2, 0.2), rand(0.05, 0.09), 0.1, rand(2, 3.5), [1, 0.82, 0.55], 0.45, 2, 0, 0.1);
   },
@@ -12958,7 +12946,7 @@ function spawnBoss(id, x, z, opts) {
   const gm = run.rush ? 1 + 0.025 * run.rushK : info.grand || 1;
   const e = {
     id: run.nextId++, type: id, def: B, model: B.model, boss: true, elite: false,
-    x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: 0, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * info.dmgMul,
+    x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: 0, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * info.dmgMul * BOSS_DMG,
     radius: B.radius * gm, scale: B.scale * gm, grand: gm, mass: B.mass, xp: 0, phase: 0, flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
     slowT: 0, slowMul: 1, auraTint: 0, bladeT: 0, tint: hexToRgb(opts.tint || B.tint), spawnT: 1.2,
     clip: 'run', clipU: 0, dizzy: 0, contactDmg: 0,
@@ -12990,6 +12978,8 @@ function bossWalk(e, dt, tx, tz, speed) {
 // New bosses register their behaviour here: BOSS_AI[id](e, dt, distToHero, dx, dz) after the drop-in,
 // and BOSS_DRAW[id](e) when they are not a single animated mesh
 const BOSS_AI = {}, BOSS_DRAW = {};
+// chapter bosses deal this many times the chapter's damage (contact, attacks, shots); minibosses don't
+const BOSS_DMG = 2.5;
 // drawing for enemy shot kinds added by later chapters: SHOT_DRAW[kind](shot)
 const SHOT_DRAW = {};
 // Stage 2: at half health every boss (and miniboss) stops to roar, a red shockwave shoves you back, and from
@@ -13038,6 +13028,13 @@ function updateBoss(e, dt) {
     }
     return;
   }
+  // a chapter boss hits BOSS_DMG times as hard as the rest of its chapter: every hit, shot and lob it makes in bossThink
+  const dm = run.info.dmgMul;
+  if (!e.mini) run.info.dmgMul = dm * BOSS_DMG;
+  try { bossThink(e, dt, d, dx, dz); } finally { run.info.dmgMul = dm; }
+}
+function bossThink(e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run;
   switch (e.type) {
     case 'stomper': {
       ai.summonT -= dt;
@@ -15297,7 +15294,7 @@ function onMiniKilled(e) {
 // ============================================================
 // The Outlaw (chapter 10): a gunfighter who keeps his distance and circles you. He fans the hammer (a cone of
 // bullets sweeping across, two or three volleys), lobs bundles of dynamite at marked spots, and whistles up a
-// bison stampede that thunders across the street along marked lanes. Buildings, hay and wagons stop bullets.
+// bison stampede that thunders north or south along marked lanes (down Main Street in his town). Hay and wagons stop bullets.
 // Stage 2: a third volley, wider fans, more dynamite, and stampedes from both sides at once.
 // ============================================================
 const OUTLAW = { spread: 0.95, bulletV: 12, laneLen: 34, laneW: 1.15, herdV: 20 };
@@ -15324,15 +15321,18 @@ BOSS_AI.outlaw = function (e, dt, d, dx, dz) {
         if (k === 'fan') { ai.state = 'draw'; ai.t = ai.dur = 0.6; ai.volleys = rage ? 3 : 2; ai.side = 0; }
         else if (k === 'dynamite') { ai.state = 'toss'; ai.t = 1.0; ai.thrown = 0; ai.tossT = 0.25; }
         else {
-          // the whistle: marked lanes across the street around you, with gaps to stand in
+          // the whistle: marked lanes running north-south around you, with gaps to stand in
           ai.state = 'whistle'; ai.t = 1.45;
-          const n = rage ? 4 : 3, gap = OUTLAW.laneW * 2 + 2.3, base = h[2] + rand(-1.2, 1.2), first = Math.random() < 0.5 ? 1 : -1;
+          const n = rage ? 4 : 3, gap = OUTLAW.laneW * 2 + 2.3, first = Math.random() < 0.5 ? 1 : -1, span = (n - 1) / 2 * gap + OUTLAW.laneW;
+          // keep every lane inside the map: slide the herd toward the middle until the outer lanes fit
+          let base = h[0] + rand(-1.2, 1.2);
+          for (let k = 0; k < 40 && (arenaSd(base - span, h[2]) > 0 || arenaSd(base + span, h[2]) > 0) && Math.abs(base) > 0.4; k++) base -= Math.sign(base) * 0.5;
           ai.lanes = [];
           for (let i = 0; i < n; i++) {
-            const z = base + (i - (n - 1) / 2) * gap, dir = rage && i % 2 ? -first : first;
-            const x0 = h[0] - dir * OUTLAW.laneLen / 2;
-            ai.lanes.push({ z, dir, x0 });
-            addTele({ kind: 'lane', x: x0, z, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: dir > 0 ? Math.PI / 2 : -Math.PI / 2, dur: 1.45 });
+            const x = base + (i - (n - 1) / 2) * gap, dir = rage && i % 2 ? -first : first;
+            const z0 = h[2] - dir * OUTLAW.laneLen / 2;
+            ai.lanes.push({ x, dir, z0 });
+            addTele({ kind: 'lane', x, z: z0, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: dir > 0 ? 0 : Math.PI, dur: 1.45 });
           }
           AUDIO.play('whistle');
         }
@@ -15395,7 +15395,7 @@ BOSS_AI.outlaw = function (e, dt, d, dx, dz) {
         // the herd: three bison per lane, bunched up, running the whole lane
         for (const L of ai.lanes) {
           for (let i = 0; i < 3; i++) ai.herd.push({ lane: L, along: -i * 1.7 - rand(0, 0.6), side: (i - 1) * 0.45 + rand(-0.15, 0.15), ph: rand(0, 1), hit: false });
-          addTele({ kind: 'lane', x: L.x0, z: L.z, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: L.dir > 0 ? Math.PI / 2 : -Math.PI / 2, dur: (OUTLAW.laneLen + 4) / OUTLAW.herdV, hold: true });
+          addTele({ kind: 'lane', x: L.x, z: L.z0, r: OUTLAW.laneW, len: OUTLAW.laneLen, rot: L.dir > 0 ? 0 : Math.PI, dur: (OUTLAW.laneLen + 4) / OUTLAW.herdV, hold: true });
         }
         AUDIO.play('roar', 0.7); AUDIO.play('boom');
         ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.6;
@@ -15410,14 +15410,14 @@ function updateHerd(e, ai, dt) {
   for (const b of ai.herd) {
     const L = b.lane;
     b.along += OUTLAW.herdV * dt; b.ph += dt * 2.6;
-    b.x = L.x0 + L.dir * b.along; b.z = L.z + b.side;
+    b.x = L.x + b.side; b.z = L.z0 + L.dir * b.along;
     if (b.along < 0 || b.along > OUTLAW.laneLen) continue;
-    if (!L.hit && Math.abs(h[2] - L.z) < OUTLAW.laneW + HERO_R * 0.5 && Math.abs(h[0] - b.x) < 1.3) {
-      L.hit = true; hurtHero(26 * run.info.dmgMul, b.x - L.dir, b.z); run.vel[0] += L.dir * 9; run.vel[2] += Math.sign(h[2] - L.z || 1) * 5;
+    if (!L.hit && Math.abs(h[0] - L.x) < OUTLAW.laneW + HERO_R * 0.5 && Math.abs(h[2] - b.z) < 1.3) {
+      L.hit = true; hurtHero(26 * run.info.dmgMul, b.x, b.z - L.dir); run.vel[2] += L.dir * 9; run.vel[0] += Math.sign(h[0] - L.x || 1) * 5;
     }
     // anything else in the way gets trampled
-    enemiesInRadius(b.x, b.z, 1.1, o => { if (!o.boss && !o.mini && !o.trampled) { o.trampled = true; hurtEnemy(o, 40, L.dir * 9, (o.z - L.z) * 4, { sound: false }); } });
-    if (Math.random() < 0.5) FX.smoke(b.x - L.dir * 0.8, 0.25, b.z + rand(-0.4, 0.4), 0.7, [0.78, 0.62, 0.45], 0.7, 0.5);
+    enemiesInRadius(b.x, b.z, 1.1, o => { if (!o.boss && !o.mini && !o.trampled) { o.trampled = true; hurtEnemy(o, 40, (o.x - L.x) * 4, L.dir * 9, { sound: false }); } });
+    if (Math.random() < 0.5) FX.smoke(b.x + rand(-0.4, 0.4), 0.25, b.z - L.dir * 0.8, 0.7, [0.78, 0.62, 0.45], 0.7, 0.5);
     if (Math.random() < 0.25) FX.crack(b.x, b.z, 0.5, 0.8);
   }
   ai.herd = ai.herd.filter(b => b.along < OUTLAW.laneLen + 4);
@@ -15441,8 +15441,8 @@ BOSS_DRAW.outlaw = function (e) {
   const c = D.bison.clips.run;
   for (const b of e.ai.herd) {
     if (b.along < -2 || !onScreen(b.x, b.z, 3)) continue;
-    pushEnemy('bison', false, b.x, 0, b.z, b.lane.dir > 0 ? Math.PI / 2 : -Math.PI / 2, c.row + Math.floor((b.ph % 1) * c.frames), 2.1, 1, 0, 0, 0, 0.37, 0.24, 0.15);
-    pushDecal(b.x - L[0] * 0.8, b.z - L[2] * 0.8, 0.7, 1.1, -Math.PI / 2, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
+    pushEnemy('bison', false, b.x, 0, b.z, b.lane.dir > 0 ? 0 : Math.PI, c.row + Math.floor((b.ph % 1) * c.frames), 2.1, 1, 0, 0, 0, 0.37, 0.24, 0.15);
+    pushDecal(b.x - L[0] * 0.8, b.z - L[2] * 0.8, 0.7, 1.1, 0, 1, 0, 0, 0.01, 0.03, 0.07, 0.5);
   }
 };
 // enemy shots: a bright tracer, and a tumbling bundle of dynamite with a spitting fuse
@@ -17504,7 +17504,7 @@ function renderFrame() {
   const f = R.frame, hero = G.hero, h = hero.pos;
   R.resetStreams();
   SCENE.floor = true; SCENE.backdrop = null; SCENE.aura = null; SCENE.bubble = null; SCENE.pools = [];
-  SCENE.arenaBox = G.run && G.state !== 'home' ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
+  SCENE.arenaBox = G.run && G.state !== 'home' && !ARENA.boxes ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
   SCENE.hero = hero.out; SCENE.heroShadow = hero.shadow;
   if (G.run && G.state !== 'home') {
     f.spot = [h[0], 0, h[2], 13]; f.fogRange = [10, 26];

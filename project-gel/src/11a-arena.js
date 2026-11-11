@@ -3,17 +3,28 @@
 // Props are static meshes (round or box footprints); blocking ones stop movement, some also stop shots.
 // Zones are ground patches: pools block, others slow, burn or make you slide.
 // ============================================================
-const ARENA = { hw: 50, hd: 50, cr: 8, theme: null, props: [], zones: [], wall: [], obstacles: [], grid: null, cols: 0, rows: 0, fx: null };
+const ARENA = { hw: 50, hd: 50, cr: 8, boxes: null, theme: null, props: [], zones: [], wall: [], obstacles: [], grid: null, cols: 0, rows: 0, fx: null };
 // obstacles are bucketed into a coarse grid; each bucket also holds obstacles within OB_PAD of it
 const OB_CELL = 4, OB_PAD = 4, NO_OBS = [];
 
+// A map can instead be a union of rounded boxes (theme.boxes: { x, z, hw, hd, cr }), like the Wild West town's
+// street and square; hw/hd then bound them all
+function boxSd(x, z, B) {
+  const qx = Math.abs(x - B.x) - (B.hw - B.cr), qz = Math.abs(z - B.z) - (B.hd - B.cr);
+  return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - B.cr;
+}
 // Signed distance to the arena edge (negative inside)
 function arenaSd(x, z) {
+  if (ARENA.boxes) { let d = 1e9; for (const B of ARENA.boxes) d = Math.min(d, boxSd(x, z, B)); return d; }
   const qx = Math.abs(x) - (ARENA.hw - ARENA.cr), qz = Math.abs(z) - (ARENA.hd - ARENA.cr);
   return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - ARENA.cr;
 }
 // Outward normal of the arena edge nearest to (x, z)
 function arenaNormal(x, z, out) {
+  if (ARENA.boxes) {
+    const e = 0.05, gx = arenaSd(x + e, z) - arenaSd(x - e, z), gz = arenaSd(x, z + e) - arenaSd(x, z - e), l = Math.hypot(gx, gz) || 1;
+    out[0] = gx / l; out[1] = gz / l; return out;
+  }
   const qx = Math.abs(x) - (ARENA.hw - ARENA.cr), qz = Math.abs(z) - (ARENA.hd - ARENA.cr);
   if (qx > 0 && qz > 0) { const l = Math.hypot(qx, qz); out[0] = Math.sign(x) * qx / l; out[1] = Math.sign(z) * qz / l; }
   else if (qx > qz) { out[0] = Math.sign(x) || 1; out[1] = 0; }
@@ -25,6 +36,11 @@ function buildArena(chapter) {
   const info = chapterInfo(chapter), T = ARENAS[info.arena];
   const rnd = mulberry32(chapter * 7919 + 17);
   ARENA.theme = T;
+  // the map's shape: the usual walled square, or the theme's own union of boxes
+  if (T.boxes) {
+    ARENA.boxes = T.boxes; ARENA.cr = 1;
+    ARENA.hw = Math.max(...T.boxes.map(B => Math.abs(B.x) + B.hw)); ARENA.hd = Math.max(...T.boxes.map(B => Math.abs(B.z) + B.hd));
+  } else if (ARENA.boxes) { ARENA.boxes = null; ARENA.hw = ARENA.hd = 50; ARENA.cr = 8; }
   ARENA.props = []; ARENA.zones = []; ARENA.wall = []; ARENA.fx = null;
   const placed = [];
   const fits = (x, z, r, spawnClear = 7) => Math.hypot(x, z) > spawnClear + r && arenaSd(x, z) < -(r + 2.5)
@@ -63,7 +79,7 @@ function buildArena(chapter) {
   for (const [kind, n, rmin, rmax] of T.props || []) api.scatter('prop', kind, Math.round(n * area), rmin, rmax);
   ARENA.obstacles = placed.filter(o => o.block);
   gridObstacles();
-  // a ring of props just outside the edge (movement is held in by the edge itself)
+  // a ring of props just outside the edge (movement is held in by the edge itself); a theme with noWall builds its own
   const W = PROP_KINDS[T.wall || 'rock'], { hw, hd, cr } = ARENA, out = 0.9, pts = [];
   const sx = hw - cr, sz = hd - cr, step = W.wallStep || 1.7;
   for (let x = -sx; x <= sx; x += step) { pts.push([x, -hd - out]); pts.push([x, hd + out]); }
@@ -72,7 +88,7 @@ function buildArena(chapter) {
     const n = Math.ceil((cr + out) * Math.PI / 2 / step);
     for (let i = 1; i < n; i++) { const a = a0 + (i / n) * Math.PI / 2; pts.push([cx + Math.cos(a) * (cr + out), cz + Math.sin(a) * (cr + out)]); }
   }
-  for (const [x, z] of pts) {
+  if (!T.noWall) for (const [x, z] of pts) {
     const r = (W.wallR || [1.0, 1.45]);
     ARENA.wall.push({ kind: T.wall || 'rock', x: x + (rnd() - 0.5) * 0.4, z: z + (rnd() - 0.5) * 0.4, r: r[0] + rnd() * (r[1] - r[0]), yaw: W.faceIn ? Math.atan2(-x, -z) : rnd() * TAU, model: W.models[Math.floor(rnd() * W.models.length)], ph: rnd() * 10, tint: W.tints ? hexToRgb(W.tints[Math.floor(rnd() * W.tints.length)]) : undefined });
   }

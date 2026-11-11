@@ -87,7 +87,7 @@ Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Condu
 | 7 | Volcano (lava burns, erupting vents) | Magma Golem | Meteor (skill) | done |
 | 8 | Jungle Swamp (swamp slows, fireflies) | Vine Hydra | Thorns (ability) | done |
 | 9 | Pirate Beach (tide pools, shipwreck) | Captain Crab | Tidal Wave (skill) | done |
-| 10 | Wild West Town (saloons, banks, a bandstand square, a corral, oil slicks you slide on; rattlesnakes, wild horses, gunslingers, pack mules, charging bison; Thunder Bison miniboss) | The Outlaw | Black Hole (skill) | done |
+| 10 | Wild West Town: the map is the town, a 14-wide Main Street walled by two unbroken rows of joined false-front buildings, opening at its north end onto a town square (chapel, bank, bandstand, well) and closed by a rail fence at the south end; oil slicks you slide on; rattlesnakes, wild horses, gunslingers, pack mules, charging bison; Thunder Bison miniboss | The Outlaw | Black Hole (skill) | done |
 | 11 | Haunted Graveyard (mist slows, jack-o'-lanterns, will-o'-wisps) | Pumpkin King | Spirit Wisps (skill) | done |
 | 12 | Crystal Caverns (glowing crystal veins, crystal pools) | Geode Titan | Prism Beam (skill) | done |
 | 13 | Sky Islands (cloud floor, rainbows, updrafts speed you up) | Storm King | Gale Crescents (skill) | done |
@@ -227,6 +227,7 @@ The build with chapters 11-15 froze the whole of Chrome when opened on Windows. 
 **High quality:** caps resolution at 1.5x, keeps MSAA and bloom, and lowers resolution toward 1x if frames run slow. It used to render at full device resolution without adapting, which made the screen stutter.
 
 ## Balance (bot results; the bot is a mediocre player who dodges poorly)
+- Chapter bosses hit `BOSS_DMG` (2.5) times as hard as the rest of their chapter: contact, every attack, shot and lob (applied in `updateBoss` around `bossThink`). Minibosses are unchanged. The bot results below were measured before this.
 
 Measured after the 100x100 arena, emeralds and long legs:
 
@@ -305,7 +306,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `check-endless.mjs`: the unlock, tiers, a boss that doesn't end the run, results and best time.
   - `check-home.mjs [wide|phone|chromebook]`: drag-to-spin, the blob shooting the background foes, the chapter arrows, and a screenshot.
   - `check-goals.mjs [wide|phone]`: run counters, the toast and menu dot, claiming once, the goal colors not for sale, screenshots.
-  - `check-rush.mjs`: Boss Rush from the unlock through all 15 bosses (cards, picks, healing) to CHAMPION, then a lost rush.
+  - `check-rush.mjs`: Boss Rush (open from a fresh save) through all 15 bosses (cards, picks, healing) to CHAMPION, then a lost rush.
   - `check-parallel.mjs`: fakes `KHR_parallel_shader_compile`, then checks that every shader finishes in the background and that nothing queries one early.
 - **Scratch scripts** (git-ignored `test/_*.mjs`, recreate as needed): `_west.mjs` photographs the Wild West town from several spots, its creatures attacking and each of The Outlaw's attacks; `_boss.mjs` (`CH=13 STEPS=60,75,90`) forces each attack of a chapter's boss and photographs it; `_cos.mjs` renders costume or color sheets; `_icon.mjs` (`IDS=gale,yoyo`) shows skill icons; `_chap.mjs` (`CH=13`) photographs the Chapters screen.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.

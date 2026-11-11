@@ -39,7 +39,7 @@ function spawnBoss(id, x, z, opts) {
   const gm = run.rush ? 1 + 0.025 * run.rushK : info.grand || 1;
   const e = {
     id: run.nextId++, type: id, def: B, model: B.model, boss: true, elite: false,
-    x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: 0, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * info.dmgMul,
+    x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: 0, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * info.dmgMul * BOSS_DMG,
     radius: B.radius * gm, scale: B.scale * gm, grand: gm, mass: B.mass, xp: 0, phase: 0, flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
     slowT: 0, slowMul: 1, auraTint: 0, bladeT: 0, tint: hexToRgb(opts.tint || B.tint), spawnT: 1.2,
     clip: 'run', clipU: 0, dizzy: 0, contactDmg: 0,
@@ -71,6 +71,8 @@ function bossWalk(e, dt, tx, tz, speed) {
 // New bosses register their behaviour here: BOSS_AI[id](e, dt, distToHero, dx, dz) after the drop-in,
 // and BOSS_DRAW[id](e) when they are not a single animated mesh
 const BOSS_AI = {}, BOSS_DRAW = {};
+// chapter bosses deal this many times the chapter's damage (contact, attacks, shots); minibosses don't
+const BOSS_DMG = 2.5;
 // drawing for enemy shot kinds added by later chapters: SHOT_DRAW[kind](shot)
 const SHOT_DRAW = {};
 // Stage 2: at half health every boss (and miniboss) stops to roar, a red shockwave shoves you back, and from
@@ -119,6 +121,13 @@ function updateBoss(e, dt) {
     }
     return;
   }
+  // a chapter boss hits BOSS_DMG times as hard as the rest of its chapter: every hit, shot and lob it makes in bossThink
+  const dm = run.info.dmgMul;
+  if (!e.mini) run.info.dmgMul = dm * BOSS_DMG;
+  try { bossThink(e, dt, d, dx, dz); } finally { run.info.dmgMul = dm; }
+}
+function bossThink(e, dt, d, dx, dz) {
+  const ai = e.ai, h = G.hero.pos, run = G.run;
   switch (e.type) {
     case 'stomper': {
       ai.summonT -= dt;

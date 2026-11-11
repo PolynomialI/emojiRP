@@ -1,5 +1,5 @@
 // run: node test/check-rush.mjs
-// Boss Rush: locked until the last chapter is cleared; starts with free picks; every chapter boss comes
+// Boss Rush: open to everyone from a fresh save; starts with free picks; every chapter boss comes
 // in turn (each fights for a few seconds against the walking bot, then is popped), with an intro card,
 // healing and picks in between; the full clear ends in CHAMPION with a best and a time; a loss keeps
 // the best count.
@@ -18,9 +18,7 @@ const fails = [];
 const check = (ok, what) => { console.log((ok ? 'ok   ' : 'FAIL ') + what); if (!ok) fails.push(what); };
 
 let s = await page.evaluate(() => ({ unlocked: rushUnlocked(), hidden: document.getElementById('btnRush').hidden }));
-check(!s.unlocked && s.hidden, 'locked and hidden on a fresh save');
-s = await page.evaluate(() => { const sv = G.save; for (let i = 1; i <= CHAPTER_BOSSES.length; i++) sv.cleared[i] = true; sv.chapter = CHAPTER_BOSSES.length + 1; UI.refreshHome(); return { unlocked: rushUnlocked(), hidden: document.getElementById('btnRush').hidden }; });
-check(s.unlocked && !s.hidden, 'unlocked once the last chapter is cleared');
+check(s.unlocked && !s.hidden, 'open and shown on a fresh save');
 
 await page.click('#btnRush');
 await page.waitForFunction(() => G.state === 'run' || G.state === 'levelup', null, { timeout: 60000, polling: 100 });
@@ -35,11 +33,12 @@ const res = await page.evaluate(() => {
   const run = G.run, log = [];
   const step = n => { for (let i = 0; i < n; i++) { if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); run.invuln = 1; __frames(1); } };
   for (let k = 0; k < CHAPTER_BOSSES.length; k++) {
-    let f = 0;
-    while (!(run.bosses.length && run.bosses.every(b => b.ai.state !== 'enter' && b.ai.state !== 'intro')) && f++ < 1500) step(1);
+    // the card is shown on a real-time timer, so note it whenever it is up while the boss arrives and fights
+    let f = 0, card = '';
     const cards = document.getElementById('bossCards');
-    const card = cards.classList.contains('show') ? cards.textContent.replace(/\s+/g, ' ').trim().slice(0, 40) : '';
-    step(180);
+    const look = () => { if (!card && cards.classList.contains('show')) card = cards.textContent.replace(/\s+/g, ' ').trim().slice(0, 40); };
+    while (!(run.bosses.length && run.bosses.every(b => b.ai.state !== 'enter' && b.ai.state !== 'intro')) && f++ < 1500) { step(1); look(); }
+    for (let i = 0; i < 180; i++) { step(1); look(); }
     const levelBefore = run.level;
     run.hp = run.maxHp * 0.3;
     const types = run.bosses.map(b => b.type);
