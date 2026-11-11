@@ -27,8 +27,7 @@ function startBoss(list) {
     } else spawnBoss(b, x, z, {});
   });
   run.bossTotalHp = run.bosses.reduce((s, b) => s + b.maxHp, 0);
-  const names = [...new Set(ids)].map(id => BOSS_TYPES[id].name);
-  UI.bossIntro(names.join(' + '));
+  UI.bossIntro([...new Set(ids)]);
   AUDIO.play('boss');
   G.cam.shake = 0.15;
 }
@@ -272,7 +271,8 @@ function onBossKilled(e) {
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
   for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
-  spawnPickup('scroll', e.x, e.z);
+  // (in Boss Rush only every third boss carries a scroll)
+  if (!run.rush || run.rushK % 3 === 2) spawnPickup('scroll', e.x, e.z);
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);

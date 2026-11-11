@@ -11,6 +11,7 @@ const UI = {
     this.octx = this.overlay.getContext('2d');
     $('btnPlay').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginChapter(G.save.selected); });
     $('btnEndless').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginEndless(); });
+    $('btnRush').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginBossRush(); });
     $('chPrev').addEventListener('click', () => { G.save.selected = Math.max(1, G.save.selected - 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
     $('chNext').addEventListener('click', () => { G.save.selected = Math.min(G.save.chapter, G.save.selected + 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
     document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openTab(b.dataset.tab); }));
@@ -83,14 +84,14 @@ const UI = {
     this.show('results', s === 'results');
     if (s === 'home') this.refreshHome();
     // a banner that is still animating would sit on top of a modal's title
-    if (['levelup', 'chest', 'pause', 'revive', 'results'].includes(s)) $('banner').classList.remove('show');
+    if (['levelup', 'chest', 'pause', 'revive', 'results'].includes(s)) { $('banner').classList.remove('show'); $('bossCards').classList.remove('show'); }
     if (s === 'revive') this.reviveT = 5;
     if (s === 'results') this.fillResults();
     if (s === 'run') { this.slotSig = ''; }
   },
 
   openTab(tab) {
-    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; }
+    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     if (tab === 'upgrades') this.renderUpgrades();
@@ -112,11 +113,29 @@ const UI = {
     $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${bossNames}`;
     const eb = $('btnEndless');
     eb.hidden = !endlessUnlocked();
-    eb.textContent = sv.endlessBest ? `ENDLESS · best ${fmtTime(sv.endlessBest)}` : 'ENDLESS';
+    eb.innerHTML = sv.endlessBest ? `ENDLESS<small>best ${fmtTime(sv.endlessBest)}</small>` : 'ENDLESS';
+    const rb = $('btnRush'), nb = CHAPTER_BOSSES.length;
+    rb.hidden = !rushUnlocked();
+    rb.innerHTML = sv.rushTime ? `BOSS RUSH<small>best ${fmtTime(sv.rushTime)}</small>` : sv.rushBest ? `BOSS RUSH<small>best ${sv.rushBest}/${nb}</small>` : 'BOSS RUSH';
     $('chPrev').disabled = sv.selected <= 1;
     $('chNext').disabled = sv.selected >= sv.chapter;
     this.homePortrait();
+    this.refreshBadges();
     applyArena(info.arena);
+  },
+  // red dots on the home menu: an upgrade is affordable, a scroll or fuse is waiting, a new look is in reach
+  menuAlerts() {
+    const sv = G.save;
+    const canBuy = list => list.some(s => s.cost > 0 && sv.coins >= s.cost);
+    return {
+      upgrades: Object.keys(META_UPGRADES).some(id => (sv.upgrades[id] || 0) < META_UPGRADES[id].max && sv.coins >= upgradeCost(id, sv.upgrades[id] || 0)),
+      gear: sv.scrolls > 0 || canFuse(),
+      skins: canBuy(SKINS.filter(s => !sv.skins.includes(s.id))) || canBuy(COSTUMES.filter(c => !sv.costumes.includes(c.id))),
+    };
+  },
+  refreshBadges() {
+    const al = this.menuAlerts();
+    document.querySelectorAll('.mbtn[data-tab]').forEach(b => { const d = b.querySelector('.dot'); if (d) d.hidden = !al[b.dataset.tab]; });
   },
   // the selected chapter's boss portrait in the picker, once its meshes have loaded
   homePortrait() {
@@ -162,31 +181,38 @@ const UI = {
       if (keys.includes(img.dataset.heroIcon)) { img.src = ICONS.map[img.dataset.heroIcon]; img.classList.remove('pending'); }
     });
   },
+  // Three tabs: body colors, costumes and hats. Tapping a card previews it on the blob; the button buys or equips it.
+  blobLists() {
+    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' ? this.blobTab : 'colors';
+    if (tab === 'colors') return { tab, list: SKINS, owned: sv.skins, worn: sv.skin, sel: this.skinPreview, key: 'skin-' };
+    if (tab === 'costumes') return { tab, list: costumesOf('hood'), owned: sv.costumes, worn: sv.costume, sel: this.costumePreview, key: 'costume-' };
+    return { tab, list: costumesOf('hat'), owned: sv.costumes, worn: sv.hat, sel: this.hatPreview, key: 'costume-' };
+  },
   renderSkins() {
-    const sv = G.save, grid = $('skinGrid'), colors = this.blobTab !== 'costumes';
+    const sv = G.save, grid = $('skinGrid');
     if (!this.skinPreview) this.skinPreview = sv.skin;
     if (!this.costumePreview) this.costumePreview = sv.costume;
+    if (!this.hatPreview) this.hatPreview = sv.hat;
+    const { tab, list, owned, worn, sel, key } = this.blobLists();
     document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
-    document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.bt === 'colors') === colors)));
-    const list = colors ? SKINS : COSTUMES, owned = colors ? sv.skins : sv.costumes, worn = colors ? sv.skin : sv.costume;
-    const sel = colors ? this.skinPreview : this.costumePreview;
-    queueHeroIcons(list.map(s => (colors ? 'skin-' : 'costume-') + s.id), true);
+    document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bt === tab)));
+    queueHeroIcons(list.map(s => key + s.id), true);
     grid.replaceChildren(...list.map(s => {
       const b = document.createElement('button');
-      b.className = 'skin' + (s.id === sel ? ' sel' : '');
+      b.className = 'skin' + (s.id === sel ? ' sel' : '') + (worn === s.id ? ' worn' : '');
       b.innerHTML = `<img alt=""><span></span><em class="boost"></em><small></small>`;
       // icons not drawn yet fill in as pumpHeroIcons makes them
-      const key = (colors ? 'skin-' : 'costume-') + s.id, img = b.querySelector('img');
-      img.dataset.heroIcon = key; if (ICONS.map[key]) img.src = ICONS.map[key]; else img.classList.add('pending');
-      b.querySelector('span').textContent = s.name;
+      const k = key + s.id, img = b.querySelector('img');
+      img.dataset.heroIcon = k; if (ICONS.map[k]) img.src = ICONS.map[k]; else img.classList.add('pending');
+      b.querySelector('span').textContent = s.id === 'none' ? (tab === 'hats' ? 'No hat' : 'No costume') : s.name;
       b.querySelector('.boost').textContent = s.boost ? fmtBoost(s.boost) : 'No bonus';
       const sm = b.querySelector('small');
       if (worn === s.id) sm.textContent = 'Equipped';
       else if (owned.includes(s.id)) sm.textContent = 'Owned';
-      else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); }
+      else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); sm.classList.toggle('poor', sv.coins < s.cost); }
       b.addEventListener('click', () => {
-        if (colors) this.skinPreview = s.id; else this.costumePreview = s.id;
-        applySkin(this.skinPreview, this.costumePreview); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins();
+        if (tab === 'colors') this.skinPreview = s.id; else if (tab === 'costumes') this.costumePreview = s.id; else this.hatPreview = s.id;
+        applySkin(this.skinPreview, this.costumePreview, this.hatPreview); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins();
       });
       return b;
     }));
@@ -196,15 +222,14 @@ const UI = {
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   skinAction() {
-    const sv = G.save, colors = this.blobTab !== 'costumes';
-    const s = colors ? SKINS.find(k => k.id === this.skinPreview) : COSTUMES.find(k => k.id === this.costumePreview);
+    const sv = G.save, { tab, list, owned, sel } = this.blobLists();
+    const s = list.find(k => k.id === sel);
     if (!s) return;
-    const owned = colors ? sv.skins : sv.costumes;
     if (!owned.includes(s.id)) {
       if (sv.coins < s.cost) return;
       sv.coins -= s.cost; owned.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
     }
-    if (colors) sv.skin = s.id; else sv.costume = s.id;
+    if (tab === 'colors') sv.skin = s.id; else if (tab === 'costumes') sv.costume = s.id; else sv.hat = s.id;
     saveGame(); AUDIO.play('levelup'); G.hero.impulse(2);
     this.renderSkins(); this.refreshHome();
   },
@@ -293,8 +318,8 @@ const UI = {
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.endless ? (run.t % ENDLESS.bossEvery) / ENDLESS.bossEvery : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
-      label = run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
+      pct = run.rush ? run.rushK / CHAPTER_BOSSES.length : run.endless ? (run.t % ENDLESS.bossEvery) / ENDLESS.bossEvery : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      label = run.rush ? `BOSS RUSH · ${run.rushK}/${CHAPTER_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
     }
     const pctS = (pct * 100).toFixed(1) + '%';
     if (L.chap !== pctS) { L.chap = pctS; $('chapFill').style.width = pctS; }
@@ -308,7 +333,21 @@ const UI = {
     void b.offsetWidth;
     b.classList.add('show');
   },
-  bossIntro(name) { this.banner(name, true); },
+  // a card for each boss dropping in: portrait, name and what to watch for
+  bossIntro(ids) {
+    const wrap = $('bossCards');
+    wrap.replaceChildren(...ids.map(id => {
+      const c = document.createElement('div');
+      c.className = 'bosscard';
+      c.innerHTML = '<img alt=""><div><small>WARNING</small><b></b><span></span></div>';
+      const icon = ICONS.map['boss-' + id], img = c.querySelector('img');
+      if (icon) img.src = icon; else img.hidden = true;
+      c.querySelector('b').textContent = BOSS_TYPES[id].name;
+      c.querySelector('span').textContent = BOSS_HINTS[id] || '';
+      return c;
+    }));
+    wrap.classList.remove('show'); void wrap.offsetWidth; wrap.classList.add('show');
+  },
   toast(msg, secs = 1.6) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); this.toastT = secs; },
 
   // ---------- level up ----------
@@ -442,7 +481,7 @@ const UI = {
   // ---------- pause / revive / results ----------
   openPause() {
     const run = G.run;
-    $('pauseSub').textContent = `${run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
+    $('pauseSub').textContent = `${run.rush ? `Boss Rush ${run.rushK}/${CHAPTER_BOSSES.length}` : run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
     $('pauseList').replaceChildren(...run.slots.map(s => {
       const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
@@ -457,15 +496,17 @@ const UI = {
   fillResults() {
     const run = G.run;
     if (!run) return;
-    $('resEyebrow').textContent = run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
+    $('resEyebrow').textContent = run.rush ? `Boss Rush · ${run.info.arenaName}` : run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
     const t = $('resTitle');
-    t.textContent = run.won ? 'CLEARED!' : run.endless && run.newBest ? 'NEW BEST!' : 'YOU MELTED';
-    t.style.color = run.won || (run.endless && run.newBest) ? 'var(--mint)' : 'var(--pink)';
+    const special = run.endless || run.rush;
+    t.textContent = run.won ? (run.rush ? 'CHAMPION!' : 'CLEARED!') : special && run.newBest ? 'NEW BEST!' : 'YOU MELTED';
+    t.style.color = run.won || (special && run.newBest) ? 'var(--mint)' : 'var(--pink)';
     $('resTime').textContent = fmtTime(run.t);
     $('resKills').textContent = fmtNum(run.kills);
     $('resLevel').textContent = run.level;
     $('resCoins').textContent = '+' + fmtNum(run.earned || 0);
-    $('resBreak').textContent = run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
+    $('resBreak').textContent = run.rush ? `${run.rushK} of ${CHAPTER_BOSSES.length} bosses beaten · ${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for the bosses`
+      : run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
       : run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
   },
 
@@ -592,7 +633,7 @@ function rollChoices() {
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
-  const open = def => (def.from || 1) <= run.powerCap, feat = run.endless ? null : featuredPowerup(run.chapter);
+  const open = def => (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
   if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
   if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
@@ -633,7 +674,7 @@ function describeChoiceBase(c) {
   if (sk) {
     if (!lvl) {
       const f = sk.fields.slice(0, 2).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`).join(' · ');
-      return { tag: sk.from === G.run.chapter && !G.run.endless ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
+      return { tag: sk.from === G.run.chapter && !G.run.endless && !G.run.rush ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
     }
     const parts = [];
     for (const [k, label, unit] of sk.fields) {
@@ -642,7 +683,7 @@ function describeChoiceBase(c) {
     }
     return { tag: `LV ${lvl} → ${lvl + 1}`, name: sk.name, desc: parts.join(' · '), icon: 'skill-' + c.id, kind: 'skill', isNew: false };
   }
-  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter && !G.run.endless ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
+  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter && !G.run.endless && !G.run.rush ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
 }
 function applyChoice(c) {
   const run = G.run;

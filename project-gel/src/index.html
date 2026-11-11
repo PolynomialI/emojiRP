@@ -130,13 +130,22 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   background-size: 260px 28px; }
 .home-menu > * { width: min(100%, 560px); justify-self: center; }
 #btnPlay { width: 100%; }
-#btnEndless { min-height: 56px; font-size: 21px; }
+/* the extra modes sit side by side under Play; the row disappears until one is unlocked */
+.modes { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.modes:not(:has(button:not([hidden]))) { display: none; }
+.modes .jelly { min-height: 56px; font-size: 19px; padding-inline: 8px; flex-direction: column; gap: 0; line-height: 1.05; }
+.modes .jelly small { display: block; font-size: 12px; letter-spacing: 0.04em; opacity: 0.92; }
 .mgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .mbtn { display: grid; justify-items: center; align-content: center; gap: 4px; min-width: 0; padding: 8px 2px 10px; border-radius: 18px; font-size: 14px; color: var(--ink);
   background: var(--card-2); box-shadow: inset 0 -5px 0 var(--card-edge), 0 3px 0 #b9d6f6; transition: transform .2s cubic-bezier(.3,1.8,.5,1); }
 .mbtn:active { transform: scale(1.04, 0.92) translateY(2px); transition-duration: .06s; }
 .mbtn .ic { width: 50px; height: 50px; border-radius: 15px; display: grid; place-items: center; box-shadow: inset 0 -4px 0 rgba(0,0,0,.14), inset 0 2px 0 rgba(255,255,255,.45); }
 .mbtn .ic img { width: 84%; height: 84%; object-fit: contain; }
+/* a red dot on a menu button: something there is ready (an upgrade you can afford, a scroll to open...) */
+.mbtn .ic { position: relative; }
+.mbtn .dot { position: absolute; right: -6px; top: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px #fff, 0 2px 4px rgba(120, 0, 30, .4); animation: dotpulse 1.4s ease-in-out infinite; }
+.mbtn .dot::after { content: '!'; position: absolute; inset: 0; display: grid; place-items: center; font: 800 12px/1 var(--font); color: #fff; }
+@keyframes dotpulse { 50% { transform: scale(1.18); } }
 .mbtn .ic svg { width: 58%; height: 58%; }
 .mbtn .lb { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ic.up { background: linear-gradient(180deg, #ffb3d9, #ff5fae); }
@@ -155,7 +164,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   .home-menu::before { content: none; }
   .home-menu > * { width: 100%; }
   #btnPlay { min-height: clamp(70px, 13vh, 104px); font-size: clamp(34px, 6.4vh, 48px); border-radius: 26px; }
-  #btnEndless { min-height: clamp(50px, 8vh, 64px); font-size: clamp(19px, 3.2vh, 24px); }
+  .modes .jelly { min-height: clamp(50px, 8vh, 64px); font-size: clamp(16px, 2.7vh, 21px); }
   .mgrid { grid-template-columns: 1fr; gap: clamp(7px, 1.4vh, 12px); }
   .mbtn { display: flex; align-items: center; justify-content: flex-start; gap: 14px; min-height: clamp(52px, 8.8vh, 72px); padding: 6px 18px 10px 8px; border-radius: 20px;
     font-size: clamp(19px, 3.1vh, 25px); background: #fff; box-shadow: inset 0 -5px 0 #d6e8fd, 0 4px 0 #8fbcef, 0 8px 18px rgba(0,40,110,.22); }
@@ -187,6 +196,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .skin.sel { box-shadow: inset 0 0 0 3px var(--sky), 0 4px 0 var(--sky-deep); }
 .skin small { font-size: 12px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; }
 .skin small .coin { width: 14px; height: 14px; }
+.skin small.poor { color: #c2586a; }
+.skin.worn { background: linear-gradient(180deg, #f2fbff, #dff1ff); }
+.skin.worn small { color: #14a070; font-weight: 700; }
 .blob-pick > .jelly { width: 100%; }
 /* wide screens: the hero stands on the left, the picker is a panel on the right */
 @media (min-aspect-ratio: 11/10) {
@@ -320,6 +332,15 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .xpbar em { position: absolute; right: 6px; top: 9px; padding: 2px 8px; border-radius: 7px; font-style: normal; font-size: 11px; letter-spacing: 0.06em; color: #fff; background: #1b3a66; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
 #banner { position: absolute; left: 0; right: 0; top: 24%; text-align: center; font-size: clamp(20px, 5.5vw, 30px); padding-inline: 16px; opacity: 0; color: #fff; -webkit-text-stroke: 5px var(--sky-deep); paint-order: stroke fill; pointer-events: none; }
 #banner.show { animation: banner 2.6s ease forwards; }
+/* boss intro cards: portrait, name and a one-line hint, in the upper middle while the boss drops in */
+#bossCards { position: absolute; left: 0; right: 0; top: 21%; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding-inline: 14px; opacity: 0; pointer-events: none; }
+#bossCards.show { animation: bosscards 4.2s ease forwards; }
+@keyframes bosscards { 0% { opacity: 0; transform: scale(0.75); } 7% { opacity: 1; transform: scale(1.05); } 11% { transform: scale(1); } 86% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+.bosscard { display: flex; align-items: center; gap: 12px; max-width: min(100%, 400px); padding: 9px 16px 11px 9px; border-radius: 22px; color: var(--ink); background: #fff; box-shadow: inset 0 0 0 3px var(--red), 0 5px 0 #a8202c, 0 12px 26px rgba(60, 0, 20, 0.35); }
+.bosscard img { width: 68px; height: 68px; flex: none; border-radius: 16px; background: linear-gradient(180deg, #ffe1e4, #ffc2c8); }
+.bosscard small { display: block; font-size: 11px; letter-spacing: 0.28em; color: var(--red); }
+.bosscard b { display: block; font-size: clamp(21px, 5.2vw, 27px); line-height: 1.05; color: #c2202e; }
+.bosscard span { display: block; margin-top: 2px; font-size: 13.5px; font-weight: 500; line-height: 1.25; color: var(--ink-dim); }
 #banner.boss { color: var(--red); -webkit-text-stroke: 8px #fff; text-shadow: 0 5px 0 rgba(120,0,30,.35); font-size: clamp(34px, 10vw, 58px); }
 #banner .warn { display: block; font-size: 0.42em; letter-spacing: 0.3em; color: #fff; -webkit-text-stroke: 5px var(--red); }
 @keyframes banner { 0% { opacity: 0; transform: scale(0.7); } 12% { opacity: 1; transform: scale(1.06); } 20% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -430,13 +451,13 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
     <div class="home-menu">
       <button class="jelly gold big" id="btnPlay">PLAY</button>
-      <button class="jelly violet" id="btnEndless" hidden>ENDLESS</button>
+      <div class="modes"><button class="jelly violet" id="btnEndless" hidden>ENDLESS</button><button class="jelly danger" id="btnRush" hidden>BOSS RUSH</button></div>
       <nav class="mgrid" aria-label="Menu">
-        <button class="tab mbtn" data-tab="upgrades"><span class="ic up"><img alt="" data-icon="meta-damage"></span><span class="lb">Upgrades</span></button>
-        <button class="tab mbtn" data-tab="gear"><span class="ic gr"><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
-        <button class="tab mbtn" data-tab="skins"><span class="ic bl"><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
-        <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
-        <button class="mbtn" id="btnSettings"><span class="ic st"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></span><span class="lb">Settings</span></button>
+        <button class="tab mbtn" data-tab="upgrades"><span class="ic up"><i class="dot" hidden></i><img alt="" data-icon="meta-damage"></span><span class="lb">Upgrades</span></button>
+        <button class="tab mbtn" data-tab="gear"><span class="ic gr"><i class="dot" hidden></i><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
+        <button class="tab mbtn" data-tab="skins"><span class="ic bl"><i class="dot" hidden></i><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
+        <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><i class="dot" hidden></i><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
+        <button class="mbtn" id="btnSettings"><span class="ic st"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></span><span class="lb">Settings</span></button>
       </nav>
     </div>
   </section>
@@ -451,7 +472,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   <section id="skins" class="screen" hidden>
     <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Choose your blob</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
     <div class="col blob-pick">
-      <div class="seg blob-tabs" id="blobTabs"><button data-bt="colors" aria-pressed="true">Colors</button><button data-bt="costumes" aria-pressed="false">Costumes</button></div>
+      <div class="seg blob-tabs" id="blobTabs"><button data-bt="colors" aria-pressed="true">Colors</button><button data-bt="costumes" aria-pressed="false">Costumes</button><button data-bt="hats" aria-pressed="false">Hats</button></div>
       <div class="skins-grid" id="skinGrid"></div>
       <button class="jelly" id="skinAction">Equipped</button>
     </div>
@@ -522,6 +543,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <div class="xpbar"><i id="xpFill"></i><em id="xpText">LEVEL 1</em></div>
     </div>
     <div id="banner"></div>
+    <div id="bossCards" aria-live="polite"></div>
   </section>
 
   <section id="levelup" class="screen modal" hidden>

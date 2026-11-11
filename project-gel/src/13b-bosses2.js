@@ -62,7 +62,7 @@ BOSS_AI.pumpking = function (e, dt, d, dx, dz) {
           run.eShots.push({ kind: 'ghost', x: e.x + Math.sin(a) * 1.2, y: 1.0, z: e.z + Math.cos(a) * 1.2, vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 12 * run.info.dmgMul, r: 0.52, life: 4, ph: rand(0, 10) });
         }
         ai.spin += TAU / n / 2;
-        AUDIO.play('zap', 0.5);
+        AUDIO.play('ghost');
         if (--ai.rings > 0) ai.t = 0.7;
         else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.2; }
       }
@@ -77,7 +77,7 @@ BOSS_AI.pumpking = function (e, dt, d, dx, dz) {
         const o = { x: h[0] + run.vel[0] * 0.5, z: h[2] + run.vel[2] * 0.5 }; resolveCircle(o, e.radius);
         ai.tx = o.x; ai.tz = o.z;
         addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 2.6, dur: ai.t });
-        FX.smoke(e.x, 1, e.z, 2, [0.5, 0.4, 0.7], 0.8, 1.2);
+        FX.smoke(e.x, 1, e.z, 2, [0.5, 0.4, 0.7], 0.8, 1.2); AUDIO.play('cackle');
       }
       break;
     case 'stalk':
@@ -165,7 +165,7 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
           const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 7.5;
           run.eShots.push({ kind: 'shard', x: from[0], y: 0.9, z: from[2], vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 13 * run.info.dmgMul, r: 0.36, life: 2.6, ph: rand(0, 10) });
         }
-        AUDIO.play('throw', 0.6);
+        AUDIO.play('crystal');
         if (--ai.volleys > 0) ai.t = ai.dur = 0.6;
         else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.2; }
       }
@@ -190,7 +190,7 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
           }
         }
         FX.ring(e.x, e.z, 4, [0.8, 0.6, 1], 0.5); FX.crack(e.x, e.z, 3, 1.6);
-        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom');
+        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom'); AUDIO.play('crystal', 0.6);
       }
       break;
     case 'slam':
@@ -200,7 +200,7 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
     case 'laserWind':
       e.clip = 'idle'; e.phase += dt; e.vx *= 0.7; e.vz *= 0.7;
       e.yaw = angleLerp(e.yaw, ai.laserA, Math.min(1, dt * 8));
-      if (ai.t <= 0) { ai.state = 'laser'; ai.t = rage ? 3.4 : 2.8; ai.tick = 0; AUDIO.play('zap'); }
+      if (ai.t <= 0) { ai.state = 'laser'; ai.t = rage ? 3.4 : 2.8; ai.tick = 0; AUDIO.play('laser'); }
       break;
     case 'laser': {
       // the heart-stone fires beams that sweep slowly around it
@@ -312,7 +312,7 @@ BOSS_AI.storm = function (e, dt, d, dx, dz) {
           enemiesInRadius(s.x, s.z, 1.3, o => { if (!o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
           FX.glow(s.x, 0.5, s.z, 2.6, [1, 0.95, 0.6], 0.2); FX.burst(s.x, 0.3, s.z, 10, [1, 0.95, 0.6], 5, 0.08, 0.35, 1);
           FX.crack(s.x, s.z, 1.2);
-          G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play('hit', 0.6);
+          G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play(ai.strikes.filter(o => o.done).length === 1 ? 'thunder' : 'zap', 0.7);
         }
       }
       if (ai.strikes.every(s => s.done)) {
@@ -333,7 +333,7 @@ BOSS_AI.storm = function (e, dt, d, dx, dz) {
           const along = rand(1, STORM.gustLen), side = rand(-STORM.gustW, STORM.gustW);
           FX.part(e.x + fx * along + fz * side, rand(0.3, 1.6), e.z + fz * along - fx * side, fx * 16, 0, fz * 16, 0.12, 0.02, 0.4, [0.92, 0.96, 1], 0.9, 1, 0, 0);
         }
-        AUDIO.play('throw', 0.8);
+        AUDIO.play('wind');
       }
       break;
     case 'gust':
@@ -350,7 +350,7 @@ BOSS_AI.storm = function (e, dt, d, dx, dz) {
           const a = Math.atan2(dx, dz) + (i - (n - 1) / 2) * 0.9;
           ai.twisters.push({ x: e.x + Math.sin(a) * 2, z: e.z + Math.cos(a) * 2, vx: Math.sin(a) * 3, vz: Math.cos(a) * 3, t: 0, life: rage ? 5.5 : 5, tick: 0, ph: rand(0, 10) });
         }
-        AUDIO.play('throw', 0.6);
+        AUDIO.play('wind');
         ai.state = 'walk'; ai.cd = rage ? 1.8 : 2.6;
       }
       break;
@@ -408,7 +408,7 @@ BOSS_AI.jack = function (e, dt, d, dx, dz) {
       e.vx *= 0.7; e.vz *= 0.7; e.y = 0;
       if (ai.t > 0.6) { ai.rot = turnToward(ai.rot, Math.atan2(dx, dz), dt * 1.6); ai.tele.rot = ai.rot; ai.tele.x = e.x; ai.tele.z = e.z; }
       e.yaw = angleLerp(e.yaw, ai.rot, k); ai.ext = lerp(ai.ext, 0.15, k);
-      if (ai.t <= 0) { ai.state = 'punch'; ai.t = ai.dur = 0.55; ai.hit = false; ai.hits = new Set(); AUDIO.play('throw'); }
+      if (ai.t <= 0) { ai.state = 'punch'; ai.t = ai.dur = 0.55; ai.hit = false; ai.hits = new Set(); AUDIO.play('boing'); }
       break;
     case 'punch': {
       // BOING: out fast along the lane, back slowly
@@ -435,7 +435,7 @@ BOSS_AI.jack = function (e, dt, d, dx, dz) {
         const o = { x: h[0] + run.vel[0] * 0.35, z: h[2] + run.vel[2] * 0.35 }; resolveCircle(o, e.radius);
         ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z;
         addTele({ kind: 'circle', x: o.x, z: o.z, r: 2.2, dur: 0.95 });
-        ai.state = 'leap'; ai.t = ai.dur = 0.95; e.hidden = true; e.squash = 1.15; AUDIO.play('throw', 0.8);
+        ai.state = 'leap'; ai.t = ai.dur = 0.95; e.hidden = true; e.squash = 1.15; AUDIO.play('boing', 0.8);
       }
       break;
     case 'leap': {
@@ -558,7 +558,7 @@ BOSS_AI.kraken = function (e, dt, d, dx, dz) {
         if (!ai.slamHit && laneHit(e.x, e.z, s.rot, KRAKEN.slamLen, 0.9 + HERO_R * 0.5, h[0], h[2])) { ai.slamHit = true; hurtHero(26 * run.info.dmgMul, e.x, e.z); }
         enemiesInRadius(e.x + Math.sin(s.rot) * 5.5, e.z + Math.cos(s.rot) * 5.5, 6.5, o => { if (!o.boss && laneHit(e.x, e.z, s.rot, KRAKEN.slamLen, 1, o.x, o.z)) hurtEnemy(o, 20, 0, 0, { sound: false }); });
         for (let k = 2; k < KRAKEN.slamLen; k += 1.8) FX.burst(e.x + Math.sin(s.rot) * k, 0.3, e.z + Math.cos(s.rot) * k, 4, [0.7, 0.9, 1], 4, 0.09, 0.45, 1);
-        G.cam.shake = Math.max(G.cam.shake, 0.15); AUDIO.play('boom', 0.7);
+        G.cam.shake = Math.max(G.cam.shake, 0.15); AUDIO.play('splash');
       }
       if (ai.slams.every(s => s.hit)) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
       break;
@@ -582,7 +582,7 @@ BOSS_AI.kraken = function (e, dt, d, dx, dz) {
       break;
     case 'whirlWind':
       e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 2;
-      if (ai.t <= 0) { ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('zap', 0.6); }
+      if (ai.t <= 0) { ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('roar'); AUDIO.play('wind'); }
       break;
     case 'whirl': {
       // spins in place: the water swirls round and in, dragging you toward its whirling core

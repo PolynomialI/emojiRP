@@ -75,6 +75,7 @@ function gearStats(sv = G.save) {
   const add = st => { if (st) for (const k in st) out[k] = (out[k] || 0) + st[k]; };
   add((SKINS.find(s => s.id === sv.skin) || {}).boost);
   add((COSTUMES.find(c => c.id === sv.costume) || {}).boost);
+  add((COSTUMES.find(c => c.id === sv.hat) || {}).boost);
   const g = sv.gear;
   if (g) for (const sl in g.eq) { const k = g.eq[sl]; if (k && g.items[k] > 0 && ARTIFACTS[artParse(k).id]) add(artStats(k)); }
   return out;
@@ -136,6 +137,7 @@ Object.assign(UI, {
 
   renderGear() {
     const sv = G.save, g = sv.gear;
+    G.hero.setGear(g);
     const tot = gearTotals();
     $('gAtk').textContent = fmtNum(tot.atk); $('gHp').textContent = fmtNum(tot.hp);
     $('gScrolls').textContent = fmtNum(sv.scrolls || 0);

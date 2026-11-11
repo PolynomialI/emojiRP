@@ -159,7 +159,7 @@ function renderHeroIcons(keys) {
   for (const key of keys) {
     const skin = key.startsWith('skin-'), id = key.slice(skin ? 5 : 8);
     if (skin) { paint(SKINS.find(s => s.id === id) || SKINS[0]); h.setCostume('none'); }
-    else { paint(SKINS[0]); h.setCostume(id); }
+    else { paint(SKINS[0]); h.setCostume(id); } // (a hat id lands in the hat slot)
     shot(key);
   }
   R.goo.base = keep.base; R.goo.accent = keep.accent; R.goo.rim = keep.rim;

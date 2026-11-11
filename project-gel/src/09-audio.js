@@ -76,6 +76,15 @@ const AUDIO = {
       case 'chest': [392, 523, 659, 784, 1047].forEach((f, i) => this._osc('sine', f, f, 0.2, 0.1, t + i * 0.05)); break;
       case 'split': this._osc('sine', 300, 600, 0.15, 0.12, t); break;
       case 'drip': this._osc('sine', 900, 500, 0.06, 0.06, t); break;
+      // ---------- boss attack sounds (chapters 11-15) ----------
+      case 'thunder': this._noise(0.07, 0.28, t, 'highpass', 2200, 700); this._noise(0.9, 0.24, t + 0.03, 'lowpass', 520, 70, 1); this._osc('sine', 75, 32, 0.8, 0.2, t + 0.02); break;
+      case 'boing': this._osc('sine', 190 * p, 560 * p, 0.16, 0.2, t); this._osc('sine', 560 * p, 280 * p, 0.2, 0.13, t + 0.13); this._osc('sine', 300 * p, 420 * p, 0.14, 0.07, t + 0.3); break;
+      case 'roar': this._osc('sawtooth', 135, 52, 0.7, 0.13, t, 0.05); this._osc('sawtooth', 92, 40, 0.7, 0.09, t, 0.05); this._noise(0.6, 0.12, t, 'bandpass', 420, 170, 2, 0.05); break;
+      case 'splash': this._noise(0.5, 0.2, t, 'bandpass', 1500, 320, 1); this._noise(0.25, 0.1, t + 0.05, 'highpass', 2500, 4000); this._osc('sine', 290, 85, 0.3, 0.13, t); break;
+      case 'ghost': this._osc('sine', 520, 790, 0.55, 0.08, t, 0.12); this._osc('sine', 527, 770, 0.55, 0.06, t + 0.03, 0.12); break;
+      case 'crystal': [1568, 2093, 2637, 3136].forEach((f, i) => this._osc('sine', f * p, f * p, 0.14, 0.06, t + i * 0.035)); break;
+      case 'wind': this._noise(0.75, 0.16, t, 'bandpass', 320, 1700, 2, 0.2); break;
+      case 'cackle': [660, 590, 620, 520, 560, 440].forEach((f, i) => this._osc('square', f, f * 0.92, 0.07, 0.045, t + i * 0.08)); break;
     }
   },
 };

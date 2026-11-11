@@ -68,9 +68,9 @@ class Hero {
     this.out = {
       pa: new Float32Array(HERO_MAXP * 4), pb: new Float32Array(HERO_MAXP * 4), pc: new Float32Array(HERO_MAXP * 4), count: 0,
       rotInv: new Float32Array(9), boundC: [0, 0, 0], boundR: 1, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
-      chest: new Float32Array(4), pal: new Float32Array(12), grad: new Float32Array(4), groundY: 0,
+      chest: new Float32Array(4), pal: new Float32Array(42), grad: new Float32Array(4), groundY: 0,
     };
-    this.costume = null;
+    this.costume = null; this.hat = null; this.gear = null;
     this.shadow = { data: new Float32Array(14 * 4), count: 0, pos: [0, 0, 0] };
     this._w = [0, 0, 0];
   }
@@ -384,11 +384,13 @@ class Hero {
     sph(J.pelvis.p, 0.27, 0, 0, 0);
     ell(J.chest.p, 0.33, 0.29 * br, 0.26, 0.18, 0, 0);
     sph(J.head.p, 0.225, 0.17, 0, 0);
-    if (this.costume) {
-      const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0];
+    // the costume, then the hat on top of it; the hat's colors are palette entries 4-7
+    for (const wear of [this.costume, this.hat]) {
+      if (!wear) continue;
+      const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0], palOff = wear === this.hat ? 4 : 0;
       const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1]; out[2] = a[2] + off[2]; return out; };
-      for (const P of this.costume.parts) {
-        const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + col;
+      for (const P of wear.parts) {
+        const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + palOff + col;
         if (P[0] === 'sph') {
           at(P[1], P[2], cp);
           if (P[6]) { cp[0] += Math.sin(t * 2.4) * P[6] - hv[0] * 0.02; cp[2] -= hv[2] * 0.02; }
@@ -425,6 +427,31 @@ class Hero {
     const tmp = [0, 0, 0];
     for (const b of this.buds) { if (b.cur > 0.005) sph(this.budAnchor(b, tmp), b.cur, 0.09, b.colw, b.glow || 0); }
     for (const gh of this.ghosts) { const r = gh.r * (1 - gh.t / 0.09); if (r > 0.005) sph(gh.lp, r, 0.06, gh.colw, 0.1); }
+    // equipped gear, drawn last so it is the first thing dropped if the shape budget ever runs out:
+    // a weapon in the first hand, armor on the chest, a ring gem on the other fist and a pendant
+    const gear = this.gear;
+    if (gear) {
+      const ch = J.chest.p, gp = [0, 0, 0], gq = [0, 0, 0];
+      const off = (p, x, y, z, out) => { out[0] = p[0] + x; out[1] = p[1] + y; out[2] = p[2] + z; return out; };
+      if (gear.armor === 'cloak') ell(off(ch, 0, -0.16, -0.24, gp), 0.3, 0.42, 0.06, 0.03, 20, 0);
+      else if (gear.armor) ell(off(ch, 0, -0.01, 0.02, gp), 0.35, gear.armor === 'plate' ? 0.26 : 0.3, 0.285, 0.015, 20, 0);
+      if (gear.necklace) sph(off(ch, 0, 0.19, 0.27, gp), 0.062, 0.01, 22, gear.glow.necklace);
+      const wa = this.arms[0], ra = this.arms[1];
+      if (gear.weapon && wa.grow > 0.5) {
+        const f = wa.fi.p;
+        if (gear.weapon === 'bow') {
+          cap(off(f, 0, 0.44, -0.1, gp), off(f, 0, 0, 0.1, gq), 0.02, 0.036, 0.02, 18, 0);
+          cap(off(f, 0, 0, 0.1, gp), off(f, 0, -0.44, -0.1, gq), 0.036, 0.02, 0.02, 18, 0);
+        } else if (gear.weapon === 'sword') {
+          cap(off(f, 0, 0.1, 0.07, gp), off(f, 0, 0.7, 0.3, gq), 0.05, 0.012, 0.01, 18, gear.glow.weapon * 0.5);
+          cap(off(f, -0.12, 0.17, 0.1, gp), off(f, 0.12, 0.17, 0.1, gq), 0.032, 0.032, 0.01, 19, 0);
+        } else {
+          cap(off(f, 0, 0.08, 0.06, gp), off(f, 0, 0.56, 0.24, gq), 0.026, 0.022, 0.01, 18, 0);
+          sph(off(f, 0, 0.62, 0.27, gp), 0.085, 0.01, 19, 0.35 + gear.glow.weapon);
+        }
+      }
+      if (gear.ring && ra.grow > 0.5) sph(off(ra.fi.p, 0, 0.07, 0.15, gp), 0.058, 0.01, 21, 0.2 + gear.glow.ring);
+    }
     o.count = n;
 
     // rotation for ellipsoids: world -> local (rotate by -yaw)
@@ -465,10 +492,29 @@ class Hero {
     V3.copy(this.shadow.pos, this.pos);
   }
 
-  setCostume(id) {
-    const c = COSTUMES.find(k => k.id === id);
+  // a costume and a hat can be worn together; either id may be 'none'. A hat id passed as the costume lands in the hat slot.
+  setCostume(id, hatId = 'none') {
+    let c = COSTUMES.find(k => k.id === id), hat = COSTUMES.find(k => k.id === hatId);
+    if (c && c.slot === 'hat') { hat = c; c = null; }
     this.costume = c && c.parts.length ? c : null;
-    if (c) c.pal.forEach((hex, i) => { const v = hexToRgb(hex); this.out.pal.set(v, i * 3); });
+    this.hat = hat && hat.slot === 'hat' ? hat : null;
+    if (this.costume) this.costume.pal.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), i * 3); });
+    if (this.hat) this.hat.pal.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), (4 + i) * 3); });
+  }
+
+  // show the equipped artifacts (the save's gear: { items, eq }); better rarities glow a little
+  setGear(g) {
+    const eq = (g && g.eq) || {}, slots = { weapon: 8, armor: 10, ring: 11, necklace: 12 }, out = { glow: {} };
+    let any = false;
+    for (const slot in slots) {
+      const key = eq[slot];
+      if (!key || !(g.items[key] > 0)) continue;
+      const { id, r } = artParse(key), look = GEAR_LOOK[id];
+      if (!look) continue;
+      out[slot] = id; out.glow[slot] = r * 0.1; any = true;
+      look.forEach((hex, i) => this.out.pal.set(hexToRgb(hex), (slots[slot] + i) * 3));
+    }
+    this.gear = any ? out : null;
   }
 
   // world position of a joint or an arm's fist

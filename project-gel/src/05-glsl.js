@@ -470,7 +470,7 @@ void main() {
 // ------------------------------------------------------------
 // Hero: raymarched blended shapes inside a camera-facing quad
 // ------------------------------------------------------------
-const HERO_MAXP = 40;
+const HERO_MAXP = 48;
 const VS_HERO = GLSL_HEAD + GLSL_FRAME + `
 in vec2 aCorner;
 uniform vec3 uBoundC;
@@ -507,7 +507,7 @@ uniform float uBubbles;
 uniform float uSpark;
 uniform float uGloss;
 uniform vec4 uChest;
-uniform vec3 uPal[4];   // costume colors, used by color weights 10..13
+uniform vec3 uPal[14];  // costume colors (0-3), hat colors (4-7) and gear colors (8-13), used by color weights 10..23
 uniform vec4 uGrad;     // body gradient: top color, amount
 uniform float uGroundY;
 
@@ -534,7 +534,7 @@ float mapH(vec3 p) {
 }
 // color of one shape: goo colors, costume palette, or the body (with its optional gradient)
 vec3 primCol(float w, vec3 p) {
-  if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 3.0))];
+  if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 13.0))];
   vec3 c = gooColor(w);
   if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.5, 1.75, p.y - uGroundY));
   return c;

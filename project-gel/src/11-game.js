@@ -106,13 +106,14 @@ function applyArena(i) {
   f.spotMin = a.spotMin; f.shadowTint = hexToRgb(a.shadowTint);
   f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow; f.floorStyle = a.floor || 0;
 }
-function applySkin(id, costume) {
+function applySkin(id, costume, hat) {
   const s = SKINS.find(k => k.id === id) || SKINS[0];
   R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
   if (G.hero) {
     const g = G.hero.out.grad;
     if (s.top) { g.set(hexToRgb(s.top)); g[3] = 1; } else g[3] = 0;
-    G.hero.setCostume(costume ?? (G.save ? G.save.costume : 'none'));
+    G.hero.setCostume(costume ?? (G.save ? G.save.costume : 'none'), hat ?? (G.save ? G.save.hat : 'none'));
+    G.hero.setGear(G.save && G.save.gear);
   }
 }
 
@@ -139,8 +140,8 @@ function startRun(chapter, opts = {}) {
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
-    nextId: 1, spawnAcc: 0, events: opts.endless ? endlessEvents() : makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
-    endless: !!opts.endless, powerCap: opts.powerCap || chapter, tier: 0,
+    nextId: 1, spawnAcc: 0, events: opts.endless ? endlessEvents() : opts.rush ? [] : makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
+    endless: !!opts.endless, rush: !!opts.rush, rushK: 0, powerCap: opts.powerCap || chapter, tier: 0,
     vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
   };
   run.gear = gearStats();
@@ -153,6 +154,7 @@ function startRun(chapter, opts = {}) {
   recomputeStats();
   run.hp = run.maxHp;
   G.cam.x = 0; G.cam.z = 0; G.cam.vx = 0; G.cam.vz = 0;
+  if (run.rush) rushStart(run);
   G.timeScale = 1;
   setState('run');
 }
@@ -403,7 +405,7 @@ function updateRun(dt) {
     // continuous spawning
     const alive = run.enemies.length;
     if (run.endless) endlessTick(run);
-    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1))) * (run.endless ? 1 + Math.max(0, run.t - 150) / 360 : 1);
+    const rate = run.rush ? 0.8 : (run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1))) * (run.endless ? 1 + Math.max(0, run.t - 150) / 360 : 1);
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) {
       run.spawnAcc -= 1;
@@ -446,8 +448,10 @@ function updateRun(dt) {
   R.frame.lowHp = run.hp / run.maxHp < 0.25 ? 0.35 : 0;
 
   // victory check: the remaining enemies melt and every gem and coin flies to the hero
-  if (live && run.endless && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) endlessBossDown(run);
-  else if (live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) {
+  const bossesDown = live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying);
+  if (bossesDown && run.endless) endlessBossDown(run);
+  else if (bossesDown && run.rush && !rushBossDown(run)) { /* Boss Rush goes on to the next boss */ }
+  else if (bossesDown) {
     run.won = true; run.endT = 0;
     for (const e of run.enemies) if (!e.dying && !e.boss) e.dying = 0.0001;
     for (const g of run.gems) g.pull = true;
@@ -863,14 +867,19 @@ function finishRun(won) {
   run.over = true;
   run.won = won;
   const sv = G.save;
-  const reward = won ? run.info.reward : run.endless ? Math.round(run.t / 3) : 0;
+  const reward = run.rush ? Math.round(run.rushK * 70 * (1 + run.rushK * 0.1)) : won ? run.info.reward : run.endless ? Math.round(run.t / 3) : 0;
   run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100));
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
   if (run.endless) { run.newBest = run.t > (sv.endlessBest || 0); if (run.newBest) sv.endlessBest = Math.round(run.t); }
-  else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
-  if (won) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
+  else if (run.rush) {
+    // best = most bosses beaten; a full clear also keeps its fastest time
+    run.newBest = run.rushK > (sv.rushBest || 0) || (won && (!sv.rushTime || run.t < sv.rushTime));
+    sv.rushBest = Math.max(sv.rushBest || 0, run.rushK);
+    if (won && (!sv.rushTime || run.t < sv.rushTime)) sv.rushTime = Math.round(run.t);
+  } else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
+  if (won && !run.rush) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   sv.stats.runs++; sv.stats.kills += run.kills;
   saveGame();

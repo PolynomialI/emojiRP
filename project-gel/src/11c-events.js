@@ -104,3 +104,36 @@ function endlessBossDown(run) {
   run.bosses = []; run.bossStarted = false; run.bossTotalHp = 0;
   UI.toast('Boss down! Keep going!', 2);
 }
+
+// ============================================================
+// Boss Rush: every chapter boss, one after another, on the selected chapter's map.
+// You start with a handful of free upgrades and earn more after each boss; a light trickle of
+// regular enemies keeps the skills fed. Unlocked by clearing the last chapter of the cycle.
+// ============================================================
+const RUSH = { startPicks: 8, picksPerBoss: 3, breather: 5, heal: 0.35 };
+function rushUnlocked() { return !!G.save.cleared[CHAPTER_BOSSES.length]; }
+function beginBossRush() {
+  if (!rushUnlocked()) return;
+  beginChapter(G.save.selected, { rush: true, powerCap: Math.max(G.save.chapter, CHAPTER_BOSSES.length) });
+}
+// free level-ups: they count as levels, so the level shown always matches the number of upgrades picked
+function rushPicks(run, n) { run.level += n; run.xpNext = xpFor(run.level); run.pending += n; }
+// line up the next boss; each one is a little tougher than the last
+function rushNext(run) {
+  const k = run.rushK;
+  Object.assign(run.info, { bossHpMul: 0.5 + 0.13 * k, dmgMul: 1 + 0.05 * k, hpMul: 1 + 0.12 * k, rateMul: 1 });
+  run.events.push({ t: run.t + (k ? RUSH.breather : 3), kind: 'eboss', ids: [CHAPTER_BOSSES[k]] });
+}
+function rushStart(run) { run.rushK = 0; rushPicks(run, RUSH.startPicks); rushNext(run); }
+// a boss is down: loot, a breather, some health back and free upgrades. Returns true once the last one falls.
+function rushBossDown(run) {
+  for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
+  run.bosses = []; run.bossStarted = false; run.bossTotalHp = 0;
+  run.rushK++;
+  if (run.rushK >= CHAPTER_BOSSES.length) return true;
+  run.hp = Math.min(run.maxHp, run.hp + run.maxHp * RUSH.heal);
+  rushPicks(run, RUSH.picksPerBoss);
+  UI.toast(`Boss ${run.rushK} of ${CHAPTER_BOSSES.length} down!`, 2.2);
+  rushNext(run);
+  return false;
+}

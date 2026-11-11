@@ -130,13 +130,22 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   background-size: 260px 28px; }
 .home-menu > * { width: min(100%, 560px); justify-self: center; }
 #btnPlay { width: 100%; }
-#btnEndless { min-height: 56px; font-size: 21px; }
+/* the extra modes sit side by side under Play; the row disappears until one is unlocked */
+.modes { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.modes:not(:has(button:not([hidden]))) { display: none; }
+.modes .jelly { min-height: 56px; font-size: 19px; padding-inline: 8px; flex-direction: column; gap: 0; line-height: 1.05; }
+.modes .jelly small { display: block; font-size: 12px; letter-spacing: 0.04em; opacity: 0.92; }
 .mgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .mbtn { display: grid; justify-items: center; align-content: center; gap: 4px; min-width: 0; padding: 8px 2px 10px; border-radius: 18px; font-size: 14px; color: var(--ink);
   background: var(--card-2); box-shadow: inset 0 -5px 0 var(--card-edge), 0 3px 0 #b9d6f6; transition: transform .2s cubic-bezier(.3,1.8,.5,1); }
 .mbtn:active { transform: scale(1.04, 0.92) translateY(2px); transition-duration: .06s; }
 .mbtn .ic { width: 50px; height: 50px; border-radius: 15px; display: grid; place-items: center; box-shadow: inset 0 -4px 0 rgba(0,0,0,.14), inset 0 2px 0 rgba(255,255,255,.45); }
 .mbtn .ic img { width: 84%; height: 84%; object-fit: contain; }
+/* a red dot on a menu button: something there is ready (an upgrade you can afford, a scroll to open...) */
+.mbtn .ic { position: relative; }
+.mbtn .dot { position: absolute; right: -6px; top: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px #fff, 0 2px 4px rgba(120, 0, 30, .4); animation: dotpulse 1.4s ease-in-out infinite; }
+.mbtn .dot::after { content: '!'; position: absolute; inset: 0; display: grid; place-items: center; font: 800 12px/1 var(--font); color: #fff; }
+@keyframes dotpulse { 50% { transform: scale(1.18); } }
 .mbtn .ic svg { width: 58%; height: 58%; }
 .mbtn .lb { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ic.up { background: linear-gradient(180deg, #ffb3d9, #ff5fae); }
@@ -155,7 +164,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   .home-menu::before { content: none; }
   .home-menu > * { width: 100%; }
   #btnPlay { min-height: clamp(70px, 13vh, 104px); font-size: clamp(34px, 6.4vh, 48px); border-radius: 26px; }
-  #btnEndless { min-height: clamp(50px, 8vh, 64px); font-size: clamp(19px, 3.2vh, 24px); }
+  .modes .jelly { min-height: clamp(50px, 8vh, 64px); font-size: clamp(16px, 2.7vh, 21px); }
   .mgrid { grid-template-columns: 1fr; gap: clamp(7px, 1.4vh, 12px); }
   .mbtn { display: flex; align-items: center; justify-content: flex-start; gap: 14px; min-height: clamp(52px, 8.8vh, 72px); padding: 6px 18px 10px 8px; border-radius: 20px;
     font-size: clamp(19px, 3.1vh, 25px); background: #fff; box-shadow: inset 0 -5px 0 #d6e8fd, 0 4px 0 #8fbcef, 0 8px 18px rgba(0,40,110,.22); }
@@ -187,6 +196,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .skin.sel { box-shadow: inset 0 0 0 3px var(--sky), 0 4px 0 var(--sky-deep); }
 .skin small { font-size: 12px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; }
 .skin small .coin { width: 14px; height: 14px; }
+.skin small.poor { color: #c2586a; }
+.skin.worn { background: linear-gradient(180deg, #f2fbff, #dff1ff); }
+.skin.worn small { color: #14a070; font-weight: 700; }
 .blob-pick > .jelly { width: 100%; }
 /* wide screens: the hero stands on the left, the picker is a panel on the right */
 @media (min-aspect-ratio: 11/10) {
@@ -320,6 +332,15 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .xpbar em { position: absolute; right: 6px; top: 9px; padding: 2px 8px; border-radius: 7px; font-style: normal; font-size: 11px; letter-spacing: 0.06em; color: #fff; background: #1b3a66; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
 #banner { position: absolute; left: 0; right: 0; top: 24%; text-align: center; font-size: clamp(20px, 5.5vw, 30px); padding-inline: 16px; opacity: 0; color: #fff; -webkit-text-stroke: 5px var(--sky-deep); paint-order: stroke fill; pointer-events: none; }
 #banner.show { animation: banner 2.6s ease forwards; }
+/* boss intro cards: portrait, name and a one-line hint, in the upper middle while the boss drops in */
+#bossCards { position: absolute; left: 0; right: 0; top: 21%; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding-inline: 14px; opacity: 0; pointer-events: none; }
+#bossCards.show { animation: bosscards 4.2s ease forwards; }
+@keyframes bosscards { 0% { opacity: 0; transform: scale(0.75); } 7% { opacity: 1; transform: scale(1.05); } 11% { transform: scale(1); } 86% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+.bosscard { display: flex; align-items: center; gap: 12px; max-width: min(100%, 400px); padding: 9px 16px 11px 9px; border-radius: 22px; color: var(--ink); background: #fff; box-shadow: inset 0 0 0 3px var(--red), 0 5px 0 #a8202c, 0 12px 26px rgba(60, 0, 20, 0.35); }
+.bosscard img { width: 68px; height: 68px; flex: none; border-radius: 16px; background: linear-gradient(180deg, #ffe1e4, #ffc2c8); }
+.bosscard small { display: block; font-size: 11px; letter-spacing: 0.28em; color: var(--red); }
+.bosscard b { display: block; font-size: clamp(21px, 5.2vw, 27px); line-height: 1.05; color: #c2202e; }
+.bosscard span { display: block; margin-top: 2px; font-size: 13.5px; font-weight: 500; line-height: 1.25; color: var(--ink-dim); }
 #banner.boss { color: var(--red); -webkit-text-stroke: 8px #fff; text-shadow: 0 5px 0 rgba(120,0,30,.35); font-size: clamp(34px, 10vw, 58px); }
 #banner .warn { display: block; font-size: 0.42em; letter-spacing: 0.3em; color: #fff; -webkit-text-stroke: 5px var(--red); }
 @keyframes banner { 0% { opacity: 0; transform: scale(0.7); } 12% { opacity: 1; transform: scale(1.06); } 20% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -430,13 +451,13 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
     <div class="home-menu">
       <button class="jelly gold big" id="btnPlay">PLAY</button>
-      <button class="jelly violet" id="btnEndless" hidden>ENDLESS</button>
+      <div class="modes"><button class="jelly violet" id="btnEndless" hidden>ENDLESS</button><button class="jelly danger" id="btnRush" hidden>BOSS RUSH</button></div>
       <nav class="mgrid" aria-label="Menu">
-        <button class="tab mbtn" data-tab="upgrades"><span class="ic up"><img alt="" data-icon="meta-damage"></span><span class="lb">Upgrades</span></button>
-        <button class="tab mbtn" data-tab="gear"><span class="ic gr"><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
-        <button class="tab mbtn" data-tab="skins"><span class="ic bl"><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
-        <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
-        <button class="mbtn" id="btnSettings"><span class="ic st"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></span><span class="lb">Settings</span></button>
+        <button class="tab mbtn" data-tab="upgrades"><span class="ic up"><i class="dot" hidden></i><img alt="" data-icon="meta-damage"></span><span class="lb">Upgrades</span></button>
+        <button class="tab mbtn" data-tab="gear"><span class="ic gr"><i class="dot" hidden></i><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
+        <button class="tab mbtn" data-tab="skins"><span class="ic bl"><i class="dot" hidden></i><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
+        <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><i class="dot" hidden></i><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
+        <button class="mbtn" id="btnSettings"><span class="ic st"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></span><span class="lb">Settings</span></button>
       </nav>
     </div>
   </section>
@@ -451,7 +472,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   <section id="skins" class="screen" hidden>
     <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Choose your blob</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
     <div class="col blob-pick">
-      <div class="seg blob-tabs" id="blobTabs"><button data-bt="colors" aria-pressed="true">Colors</button><button data-bt="costumes" aria-pressed="false">Costumes</button></div>
+      <div class="seg blob-tabs" id="blobTabs"><button data-bt="colors" aria-pressed="true">Colors</button><button data-bt="costumes" aria-pressed="false">Costumes</button><button data-bt="hats" aria-pressed="false">Hats</button></div>
       <div class="skins-grid" id="skinGrid"></div>
       <button class="jelly" id="skinAction">Equipped</button>
     </div>
@@ -522,6 +543,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <div class="xpbar"><i id="xpFill"></i><em id="xpText">LEVEL 1</em></div>
     </div>
     <div id="banner"></div>
+    <div id="bossCards" aria-live="polite"></div>
   </section>
 
   <section id="levelup" class="screen modal" hidden>
@@ -4830,7 +4852,7 @@ void main() {
 // ------------------------------------------------------------
 // Hero: raymarched blended shapes inside a camera-facing quad
 // ------------------------------------------------------------
-const HERO_MAXP = 40;
+const HERO_MAXP = 48;
 const VS_HERO = GLSL_HEAD + GLSL_FRAME + `
 in vec2 aCorner;
 uniform vec3 uBoundC;
@@ -4867,7 +4889,7 @@ uniform float uBubbles;
 uniform float uSpark;
 uniform float uGloss;
 uniform vec4 uChest;
-uniform vec3 uPal[4];   // costume colors, used by color weights 10..13
+uniform vec3 uPal[14];  // costume colors (0-3), hat colors (4-7) and gear colors (8-13), used by color weights 10..23
 uniform vec4 uGrad;     // body gradient: top color, amount
 uniform float uGroundY;
 
@@ -4894,7 +4916,7 @@ float mapH(vec3 p) {
 }
 // color of one shape: goo colors, costume palette, or the body (with its optional gradient)
 vec3 primCol(float w, vec3 p) {
-  if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 3.0))];
+  if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 13.0))];
   vec3 c = gooColor(w);
   if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.5, 1.75, p.y - uGroundY));
   return c;
@@ -6709,9 +6731,9 @@ class Hero {
     this.out = {
       pa: new Float32Array(HERO_MAXP * 4), pb: new Float32Array(HERO_MAXP * 4), pc: new Float32Array(HERO_MAXP * 4), count: 0,
       rotInv: new Float32Array(9), boundC: [0, 0, 0], boundR: 1, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
-      chest: new Float32Array(4), pal: new Float32Array(12), grad: new Float32Array(4), groundY: 0,
+      chest: new Float32Array(4), pal: new Float32Array(42), grad: new Float32Array(4), groundY: 0,
     };
-    this.costume = null;
+    this.costume = null; this.hat = null; this.gear = null;
     this.shadow = { data: new Float32Array(14 * 4), count: 0, pos: [0, 0, 0] };
     this._w = [0, 0, 0];
   }
@@ -7025,11 +7047,13 @@ class Hero {
     sph(J.pelvis.p, 0.27, 0, 0, 0);
     ell(J.chest.p, 0.33, 0.29 * br, 0.26, 0.18, 0, 0);
     sph(J.head.p, 0.225, 0.17, 0, 0);
-    if (this.costume) {
-      const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0];
+    // the costume, then the hat on top of it; the hat's colors are palette entries 4-7
+    for (const wear of [this.costume, this.hat]) {
+      if (!wear) continue;
+      const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0], palOff = wear === this.hat ? 4 : 0;
       const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1]; out[2] = a[2] + off[2]; return out; };
-      for (const P of this.costume.parts) {
-        const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + col;
+      for (const P of wear.parts) {
+        const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + palOff + col;
         if (P[0] === 'sph') {
           at(P[1], P[2], cp);
           if (P[6]) { cp[0] += Math.sin(t * 2.4) * P[6] - hv[0] * 0.02; cp[2] -= hv[2] * 0.02; }
@@ -7066,6 +7090,31 @@ class Hero {
     const tmp = [0, 0, 0];
     for (const b of this.buds) { if (b.cur > 0.005) sph(this.budAnchor(b, tmp), b.cur, 0.09, b.colw, b.glow || 0); }
     for (const gh of this.ghosts) { const r = gh.r * (1 - gh.t / 0.09); if (r > 0.005) sph(gh.lp, r, 0.06, gh.colw, 0.1); }
+    // equipped gear, drawn last so it is the first thing dropped if the shape budget ever runs out:
+    // a weapon in the first hand, armor on the chest, a ring gem on the other fist and a pendant
+    const gear = this.gear;
+    if (gear) {
+      const ch = J.chest.p, gp = [0, 0, 0], gq = [0, 0, 0];
+      const off = (p, x, y, z, out) => { out[0] = p[0] + x; out[1] = p[1] + y; out[2] = p[2] + z; return out; };
+      if (gear.armor === 'cloak') ell(off(ch, 0, -0.16, -0.24, gp), 0.3, 0.42, 0.06, 0.03, 20, 0);
+      else if (gear.armor) ell(off(ch, 0, -0.01, 0.02, gp), 0.35, gear.armor === 'plate' ? 0.26 : 0.3, 0.285, 0.015, 20, 0);
+      if (gear.necklace) sph(off(ch, 0, 0.19, 0.27, gp), 0.062, 0.01, 22, gear.glow.necklace);
+      const wa = this.arms[0], ra = this.arms[1];
+      if (gear.weapon && wa.grow > 0.5) {
+        const f = wa.fi.p;
+        if (gear.weapon === 'bow') {
+          cap(off(f, 0, 0.44, -0.1, gp), off(f, 0, 0, 0.1, gq), 0.02, 0.036, 0.02, 18, 0);
+          cap(off(f, 0, 0, 0.1, gp), off(f, 0, -0.44, -0.1, gq), 0.036, 0.02, 0.02, 18, 0);
+        } else if (gear.weapon === 'sword') {
+          cap(off(f, 0, 0.1, 0.07, gp), off(f, 0, 0.7, 0.3, gq), 0.05, 0.012, 0.01, 18, gear.glow.weapon * 0.5);
+          cap(off(f, -0.12, 0.17, 0.1, gp), off(f, 0.12, 0.17, 0.1, gq), 0.032, 0.032, 0.01, 19, 0);
+        } else {
+          cap(off(f, 0, 0.08, 0.06, gp), off(f, 0, 0.56, 0.24, gq), 0.026, 0.022, 0.01, 18, 0);
+          sph(off(f, 0, 0.62, 0.27, gp), 0.085, 0.01, 19, 0.35 + gear.glow.weapon);
+        }
+      }
+      if (gear.ring && ra.grow > 0.5) sph(off(ra.fi.p, 0, 0.07, 0.15, gp), 0.058, 0.01, 21, 0.2 + gear.glow.ring);
+    }
     o.count = n;
 
     // rotation for ellipsoids: world -> local (rotate by -yaw)
@@ -7106,10 +7155,29 @@ class Hero {
     V3.copy(this.shadow.pos, this.pos);
   }
 
-  setCostume(id) {
-    const c = COSTUMES.find(k => k.id === id);
+  // a costume and a hat can be worn together; either id may be 'none'. A hat id passed as the costume lands in the hat slot.
+  setCostume(id, hatId = 'none') {
+    let c = COSTUMES.find(k => k.id === id), hat = COSTUMES.find(k => k.id === hatId);
+    if (c && c.slot === 'hat') { hat = c; c = null; }
     this.costume = c && c.parts.length ? c : null;
-    if (c) c.pal.forEach((hex, i) => { const v = hexToRgb(hex); this.out.pal.set(v, i * 3); });
+    this.hat = hat && hat.slot === 'hat' ? hat : null;
+    if (this.costume) this.costume.pal.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), i * 3); });
+    if (this.hat) this.hat.pal.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), (4 + i) * 3); });
+  }
+
+  // show the equipped artifacts (the save's gear: { items, eq }); better rarities glow a little
+  setGear(g) {
+    const eq = (g && g.eq) || {}, slots = { weapon: 8, armor: 10, ring: 11, necklace: 12 }, out = { glow: {} };
+    let any = false;
+    for (const slot in slots) {
+      const key = eq[slot];
+      if (!key || !(g.items[key] > 0)) continue;
+      const { id, r } = artParse(key), look = GEAR_LOOK[id];
+      if (!look) continue;
+      out[slot] = id; out.glow[slot] = r * 0.1; any = true;
+      look.forEach((hex, i) => this.out.pal.set(hexToRgb(hex), (slots[slot] + i) * 3));
+    }
+    this.gear = any ? out : null;
   }
 
   // world position of a joint or an arm's fist
@@ -7300,6 +7368,15 @@ const AUDIO = {
       case 'chest': [392, 523, 659, 784, 1047].forEach((f, i) => this._osc('sine', f, f, 0.2, 0.1, t + i * 0.05)); break;
       case 'split': this._osc('sine', 300, 600, 0.15, 0.12, t); break;
       case 'drip': this._osc('sine', 900, 500, 0.06, 0.06, t); break;
+      // ---------- boss attack sounds (chapters 11-15) ----------
+      case 'thunder': this._noise(0.07, 0.28, t, 'highpass', 2200, 700); this._noise(0.9, 0.24, t + 0.03, 'lowpass', 520, 70, 1); this._osc('sine', 75, 32, 0.8, 0.2, t + 0.02); break;
+      case 'boing': this._osc('sine', 190 * p, 560 * p, 0.16, 0.2, t); this._osc('sine', 560 * p, 280 * p, 0.2, 0.13, t + 0.13); this._osc('sine', 300 * p, 420 * p, 0.14, 0.07, t + 0.3); break;
+      case 'roar': this._osc('sawtooth', 135, 52, 0.7, 0.13, t, 0.05); this._osc('sawtooth', 92, 40, 0.7, 0.09, t, 0.05); this._noise(0.6, 0.12, t, 'bandpass', 420, 170, 2, 0.05); break;
+      case 'splash': this._noise(0.5, 0.2, t, 'bandpass', 1500, 320, 1); this._noise(0.25, 0.1, t + 0.05, 'highpass', 2500, 4000); this._osc('sine', 290, 85, 0.3, 0.13, t); break;
+      case 'ghost': this._osc('sine', 520, 790, 0.55, 0.08, t, 0.12); this._osc('sine', 527, 770, 0.55, 0.06, t + 0.03, 0.12); break;
+      case 'crystal': [1568, 2093, 2637, 3136].forEach((f, i) => this._osc('sine', f * p, f * p, 0.14, 0.06, t + i * 0.035)); break;
+      case 'wind': this._noise(0.75, 0.16, t, 'bandpass', 320, 1700, 2, 0.2); break;
+      case 'cackle': [660, 590, 620, 520, 560, 440].forEach((f, i) => this._osc('square', f, f * 0.92, 0.07, 0.045, t + i * 0.08)); break;
     }
   },
 };
@@ -7527,10 +7604,10 @@ const ENEMY_TYPES = {
   ghost: { model: 'ghost', hp: 14, speed: 2.6, dmg: 5, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
   zombie: { model: 'stickman', hp: 44, speed: 1.3, dmg: 8, xp: 3, radius: 0.42, scale: 1.45, tint: '#8fd67a', mass: 1.8 },
   crystalbug: { model: 'crystalbug', hp: 34, speed: 2.1, dmg: 6, xp: 3, radius: 0.5, scale: 1.4, tint: '#8af0ff', mass: 1.8, ai: 'lunge', hit: 11 },
-  cloudling: { model: 'cloudling', hp: 16, speed: 2.0, dmg: 4, shot: 7, xp: 2, radius: 0.42, scale: 1.25, tint: '#ffffff', mass: 0.8, ranged: true, shotKind: 'spark', float: 0.45 },
+  cloudling: { model: 'cloudling', hp: 16, speed: 2.0, dmg: 4, shot: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#ffffff', mass: 0.8, ranged: true, shotKind: 'spark', float: 0.45 },
   toysoldier: { model: 'spear', hp: 20, speed: 2.2, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#e8444e', mass: 1.1, ai: 'lunge', hit: 10 },
   teddy: { model: 'teddy', hp: 62, speed: 1.7, dmg: 9, xp: 4, radius: 0.6, scale: 1.6, tint: '#b9834f', mass: 3, ai: 'chop', hit: 14, wind: 0.8, reach: 1.3 },
-  crabling: { model: 'crabling', hp: 20, speed: 3.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
+  crabling: { model: 'crabling', hp: 20, speed: 2.8, dmg: 4, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
   puffer: { model: 'puffer', hp: 14, speed: 2.6, dmg: 4, xp: 2, radius: 0.42, scale: 1.3, tint: '#ffb84a', mass: 0.9, ai: 'bomb', hit: 18, float: 0.3 },
 };
 // Extra enemy types that only show up on one map: [seconds into the run, spawn weight]
@@ -7571,6 +7648,19 @@ BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 3700, spee
 BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 3600, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 2.1 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 3500, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3400, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 1.25 };
+// one line on what to watch for, shown on the boss's intro card
+const BOSS_HINTS = {
+  stomper: 'Stomps the ground and calls in stickmen.', hurler: 'Hurls boulders at marked spots.',
+  charger: 'Charges down its lane. Sidestep it into a wall.', twins: 'Never cross the rope between them.',
+  conductor: 'Conducts waves of fiery orbs.', sandworm: 'Burrows and bursts up under you.',
+  wreckbot: 'Wrecking-ball swings, rockets and lane slams.', bigbounce: 'Hops onto marked circles, then rolls like a pinball.',
+  jellyqueen: 'Jelly spirals, slime minions and belly flops.', yeti: 'Freezing breath, icicles and a spike ring with gaps.',
+  magma: 'Lava fissures and magma lobs. Brittle after it erupts.', hydra: 'Its heads snap along marked lanes.',
+  crab: 'Claw snaps, cannon fire and homing bubbles.', ufo: 'A tractor beam, sweeping lasers and invaders.',
+  pumpking: 'Pumpkin bombs, ghost rings and pounces from the mist.', geode: 'Crystal shards, spike walls and sweeping lasers.',
+  storm: 'Lightning, gusts of wind and twisters.', jack: 'Spring punches, pounces and tumbling toy blocks.',
+  kraken: 'Tentacle slams, ink puddles and a whirlpool.',
+};
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
 const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
@@ -7703,16 +7793,19 @@ const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqu
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
-  const k = n - 1;
+  const k = n - 1, kk = k <= 9 ? k : 9 + (k - 9) * 0.6;
   // bosses still being built fall back to the original roster
   const main = BOSS_TYPES[CHAPTER_BOSSES[i]] ? CHAPTER_BOSSES[i] : BOSS_ORDER[i % BOSS_ORDER.length];
   const bosses = n % 5 === 0 ? [main, GUEST_BOSSES[(n / 5 - 1) % GUEST_BOSSES.length]] : [main];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
-    hpMul: 1 + 0.09 * k + 0.004 * k * k,
-    dmgMul: 1 + 0.06 * k,
-    rateMul: Math.min(1.8, 0.85 + 0.05 * k),
-    bossHpMul: Math.pow(1.17, k) * (bosses.length > 1 ? 0.75 : 1),
+    // enemies toughen steadily through chapter 10, then more gently (kk counts later chapters as 0.6 each)
+    hpMul: 1 + 0.09 * kk + 0.004 * kk * kk,
+    dmgMul: 1 + 0.06 * kk,
+    rateMul: Math.min(1.8, 0.85 + 0.05 * kk),
+    // boss health climbs fast for six chapters, then slowly, so late fights stay around a minute and a half;
+    // two bosses at once each bring less
+    bossHpMul: Math.pow(1.17, Math.min(k, 5)) * Math.pow(1.045, Math.max(0, k - 5)) * (bosses.length > 1 ? 0.6 : 1),
     reward: Math.round(150 * Math.pow(1.08, k)),
     has: { ...Object.fromEntries(Object.entries(ENEMY_MIX).map(([k, v]) => [k, n >= v[0]])), ...Object.fromEntries(Object.keys(THEME_ENEMIES[ARENAS[arena].id] || {}).map(k => [k, true])) },
   };
@@ -8032,6 +8125,11 @@ const COSTUMES = [
   ] },
 ];
 COSTUMES.sort((a, b) => a.cost - b.cost);
+// Two wearable slots: a hat sits on top of the head, everything else (hoods, faces, tails, wings) is the costume.
+// One of each can be worn together; "none" empties a slot.
+const HAT_IDS = ['party', 'sprout', 'flowers', 'mushroom', 'chef', 'headphones', 'cowboy', 'tophat', 'reindeer', 'witch', 'viking', 'wizard', 'crown', 'angel'];
+for (const c of COSTUMES) c.slot = c.id === 'none' ? 'any' : HAT_IDS.includes(c.id) ? 'hat' : 'hood';
+const costumesOf = slot => COSTUMES.filter(c => c.slot === slot || c.slot === 'any');
 
 // ---------- stat bonuses: skins, costumes and artifacts ----------
 // Percent bonuses, except regen (percent of max health per second)
@@ -8075,6 +8173,13 @@ const ARTIFACTS = {
   skull: { name: 'Skull Necklace', slot: 'necklace', stats: { dmg: 5 } },
   moon: { name: 'Moon Pendant', slot: 'necklace', stats: { cd: 4 } },
   clover: { name: 'Clover Charm', slot: 'necklace', stats: { gold: 8, magnet: 10 } },
+};
+// How an equipped artifact looks on the blob: its colors (the hero's palette entries 8-12; see Hero.setGear)
+const GEAR_LOOK = {
+  sword: ['#e4ecf4', '#ffc93a'], wand: ['#8a63ff', '#ffe14a'], bow: ['#9a6a3a'],
+  cloak: ['#e8283c'], plate: ['#c2ccd9'], vest: ['#9a6a3a'],
+  goldRing: ['#ffc21f'], silverRing: ['#e8eef6'], rubyRing: ['#ff3b6b'],
+  skull: ['#f4ecd8'], moon: ['#ffe9a0'], clover: ['#4cd964'],
 };
 const artKey = (id, r) => id + ':' + r;
 const artParse = key => { const [id, r] = key.split(':'); return { id, r: Number(r), def: ARTIFACTS[id] }; };
@@ -8193,13 +8298,14 @@ function applyArena(i) {
   f.spotMin = a.spotMin; f.shadowTint = hexToRgb(a.shadowTint);
   f.rockCol = hexToRgb(a.rock); f.poolCol = hexToRgb(a.pool); f.poolGlow = a.poolGlow; f.floorStyle = a.floor || 0;
 }
-function applySkin(id, costume) {
+function applySkin(id, costume, hat) {
   const s = SKINS.find(k => k.id === id) || SKINS[0];
   R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);
   if (G.hero) {
     const g = G.hero.out.grad;
     if (s.top) { g.set(hexToRgb(s.top)); g[3] = 1; } else g[3] = 0;
-    G.hero.setCostume(costume ?? (G.save ? G.save.costume : 'none'));
+    G.hero.setCostume(costume ?? (G.save ? G.save.costume : 'none'), hat ?? (G.save ? G.save.hat : 'none'));
+    G.hero.setGear(G.save && G.save.gear);
   }
 }
 
@@ -8226,8 +8332,8 @@ function startRun(chapter, opts = {}) {
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
-    nextId: 1, spawnAcc: 0, events: opts.endless ? endlessEvents() : makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
-    endless: !!opts.endless, powerCap: opts.powerCap || chapter, tier: 0,
+    nextId: 1, spawnAcc: 0, events: opts.endless ? endlessEvents() : opts.rush ? [] : makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
+    endless: !!opts.endless, rush: !!opts.rush, rushK: 0, powerCap: opts.powerCap || chapter, tier: 0,
     vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
   };
   run.gear = gearStats();
@@ -8240,6 +8346,7 @@ function startRun(chapter, opts = {}) {
   recomputeStats();
   run.hp = run.maxHp;
   G.cam.x = 0; G.cam.z = 0; G.cam.vx = 0; G.cam.vz = 0;
+  if (run.rush) rushStart(run);
   G.timeScale = 1;
   setState('run');
 }
@@ -8490,7 +8597,7 @@ function updateRun(dt) {
     // continuous spawning
     const alive = run.enemies.length;
     if (run.endless) endlessTick(run);
-    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1))) * (run.endless ? 1 + Math.max(0, run.t - 150) / 360 : 1);
+    const rate = run.rush ? 0.8 : (run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1))) * (run.endless ? 1 + Math.max(0, run.t - 150) / 360 : 1);
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) {
       run.spawnAcc -= 1;
@@ -8533,8 +8640,10 @@ function updateRun(dt) {
   R.frame.lowHp = run.hp / run.maxHp < 0.25 ? 0.35 : 0;
 
   // victory check: the remaining enemies melt and every gem and coin flies to the hero
-  if (live && run.endless && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) endlessBossDown(run);
-  else if (live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying)) {
+  const bossesDown = live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying);
+  if (bossesDown && run.endless) endlessBossDown(run);
+  else if (bossesDown && run.rush && !rushBossDown(run)) { /* Boss Rush goes on to the next boss */ }
+  else if (bossesDown) {
     run.won = true; run.endT = 0;
     for (const e of run.enemies) if (!e.dying && !e.boss) e.dying = 0.0001;
     for (const g of run.gems) g.pull = true;
@@ -8950,14 +9059,19 @@ function finishRun(won) {
   run.over = true;
   run.won = won;
   const sv = G.save;
-  const reward = won ? run.info.reward : run.endless ? Math.round(run.t / 3) : 0;
+  const reward = run.rush ? Math.round(run.rushK * 70 * (1 + run.rushK * 0.1)) : won ? run.info.reward : run.endless ? Math.round(run.t / 3) : 0;
   run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100));
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
   if (run.endless) { run.newBest = run.t > (sv.endlessBest || 0); if (run.newBest) sv.endlessBest = Math.round(run.t); }
-  else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
-  if (won) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
+  else if (run.rush) {
+    // best = most bosses beaten; a full clear also keeps its fastest time
+    run.newBest = run.rushK > (sv.rushBest || 0) || (won && (!sv.rushTime || run.t < sv.rushTime));
+    sv.rushBest = Math.max(sv.rushBest || 0, run.rushK);
+    if (won && (!sv.rushTime || run.t < sv.rushTime)) sv.rushTime = Math.round(run.t);
+  } else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
+  if (won && !run.rush) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   sv.stats.runs++; sv.stats.kills += run.kills;
   saveGame();
@@ -9595,6 +9709,39 @@ function endlessBossDown(run) {
   for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
   run.bosses = []; run.bossStarted = false; run.bossTotalHp = 0;
   UI.toast('Boss down! Keep going!', 2);
+}
+
+// ============================================================
+// Boss Rush: every chapter boss, one after another, on the selected chapter's map.
+// You start with a handful of free upgrades and earn more after each boss; a light trickle of
+// regular enemies keeps the skills fed. Unlocked by clearing the last chapter of the cycle.
+// ============================================================
+const RUSH = { startPicks: 8, picksPerBoss: 3, breather: 5, heal: 0.35 };
+function rushUnlocked() { return !!G.save.cleared[CHAPTER_BOSSES.length]; }
+function beginBossRush() {
+  if (!rushUnlocked()) return;
+  beginChapter(G.save.selected, { rush: true, powerCap: Math.max(G.save.chapter, CHAPTER_BOSSES.length) });
+}
+// free level-ups: they count as levels, so the level shown always matches the number of upgrades picked
+function rushPicks(run, n) { run.level += n; run.xpNext = xpFor(run.level); run.pending += n; }
+// line up the next boss; each one is a little tougher than the last
+function rushNext(run) {
+  const k = run.rushK;
+  Object.assign(run.info, { bossHpMul: 0.5 + 0.13 * k, dmgMul: 1 + 0.05 * k, hpMul: 1 + 0.12 * k, rateMul: 1 });
+  run.events.push({ t: run.t + (k ? RUSH.breather : 3), kind: 'eboss', ids: [CHAPTER_BOSSES[k]] });
+}
+function rushStart(run) { run.rushK = 0; rushPicks(run, RUSH.startPicks); rushNext(run); }
+// a boss is down: loot, a breather, some health back and free upgrades. Returns true once the last one falls.
+function rushBossDown(run) {
+  for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
+  run.bosses = []; run.bossStarted = false; run.bossTotalHp = 0;
+  run.rushK++;
+  if (run.rushK >= CHAPTER_BOSSES.length) return true;
+  run.hp = Math.min(run.maxHp, run.hp + run.maxHp * RUSH.heal);
+  rushPicks(run, RUSH.picksPerBoss);
+  UI.toast(`Boss ${run.rushK} of ${CHAPTER_BOSSES.length} down!`, 2.2);
+  rushNext(run);
+  return false;
 }
 
 // ---- 11d-themes2.js ----
@@ -11076,8 +11223,7 @@ function startBoss(list) {
     } else spawnBoss(b, x, z, {});
   });
   run.bossTotalHp = run.bosses.reduce((s, b) => s + b.maxHp, 0);
-  const names = [...new Set(ids)].map(id => BOSS_TYPES[id].name);
-  UI.bossIntro(names.join(' + '));
+  UI.bossIntro([...new Set(ids)]);
   AUDIO.play('boss');
   G.cam.shake = 0.15;
 }
@@ -11321,7 +11467,8 @@ function onBossKilled(e) {
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
   for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
-  spawnPickup('scroll', e.x, e.z);
+  // (in Boss Rush only every third boss carries a scroll)
+  if (!run.rush || run.rushK % 3 === 2) spawnPickup('scroll', e.x, e.z);
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);
@@ -12710,7 +12857,7 @@ BOSS_AI.pumpking = function (e, dt, d, dx, dz) {
           run.eShots.push({ kind: 'ghost', x: e.x + Math.sin(a) * 1.2, y: 1.0, z: e.z + Math.cos(a) * 1.2, vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 12 * run.info.dmgMul, r: 0.52, life: 4, ph: rand(0, 10) });
         }
         ai.spin += TAU / n / 2;
-        AUDIO.play('zap', 0.5);
+        AUDIO.play('ghost');
         if (--ai.rings > 0) ai.t = 0.7;
         else { ai.state = 'walk'; ai.cd = rage ? 1.6 : 2.2; }
       }
@@ -12725,7 +12872,7 @@ BOSS_AI.pumpking = function (e, dt, d, dx, dz) {
         const o = { x: h[0] + run.vel[0] * 0.5, z: h[2] + run.vel[2] * 0.5 }; resolveCircle(o, e.radius);
         ai.tx = o.x; ai.tz = o.z;
         addTele({ kind: 'circle', x: ai.tx, z: ai.tz, r: 2.6, dur: ai.t });
-        FX.smoke(e.x, 1, e.z, 2, [0.5, 0.4, 0.7], 0.8, 1.2);
+        FX.smoke(e.x, 1, e.z, 2, [0.5, 0.4, 0.7], 0.8, 1.2); AUDIO.play('cackle');
       }
       break;
     case 'stalk':
@@ -12813,7 +12960,7 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
           const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 7.5;
           run.eShots.push({ kind: 'shard', x: from[0], y: 0.9, z: from[2], vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 13 * run.info.dmgMul, r: 0.36, life: 2.6, ph: rand(0, 10) });
         }
-        AUDIO.play('throw', 0.6);
+        AUDIO.play('crystal');
         if (--ai.volleys > 0) ai.t = ai.dur = 0.6;
         else { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.2; }
       }
@@ -12838,7 +12985,7 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
           }
         }
         FX.ring(e.x, e.z, 4, [0.8, 0.6, 1], 0.5); FX.crack(e.x, e.z, 3, 1.6);
-        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom');
+        G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom'); AUDIO.play('crystal', 0.6);
       }
       break;
     case 'slam':
@@ -12848,7 +12995,7 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
     case 'laserWind':
       e.clip = 'idle'; e.phase += dt; e.vx *= 0.7; e.vz *= 0.7;
       e.yaw = angleLerp(e.yaw, ai.laserA, Math.min(1, dt * 8));
-      if (ai.t <= 0) { ai.state = 'laser'; ai.t = rage ? 3.4 : 2.8; ai.tick = 0; AUDIO.play('zap'); }
+      if (ai.t <= 0) { ai.state = 'laser'; ai.t = rage ? 3.4 : 2.8; ai.tick = 0; AUDIO.play('laser'); }
       break;
     case 'laser': {
       // the heart-stone fires beams that sweep slowly around it
@@ -12960,7 +13107,7 @@ BOSS_AI.storm = function (e, dt, d, dx, dz) {
           enemiesInRadius(s.x, s.z, 1.3, o => { if (!o.boss) hurtEnemy(o, 20, 0, 0, { sound: false }); });
           FX.glow(s.x, 0.5, s.z, 2.6, [1, 0.95, 0.6], 0.2); FX.burst(s.x, 0.3, s.z, 10, [1, 0.95, 0.6], 5, 0.08, 0.35, 1);
           FX.crack(s.x, s.z, 1.2);
-          G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play('hit', 0.6);
+          G.cam.shake = Math.max(G.cam.shake, 0.08); AUDIO.play(ai.strikes.filter(o => o.done).length === 1 ? 'thunder' : 'zap', 0.7);
         }
       }
       if (ai.strikes.every(s => s.done)) {
@@ -12981,7 +13128,7 @@ BOSS_AI.storm = function (e, dt, d, dx, dz) {
           const along = rand(1, STORM.gustLen), side = rand(-STORM.gustW, STORM.gustW);
           FX.part(e.x + fx * along + fz * side, rand(0.3, 1.6), e.z + fz * along - fx * side, fx * 16, 0, fz * 16, 0.12, 0.02, 0.4, [0.92, 0.96, 1], 0.9, 1, 0, 0);
         }
-        AUDIO.play('throw', 0.8);
+        AUDIO.play('wind');
       }
       break;
     case 'gust':
@@ -12998,7 +13145,7 @@ BOSS_AI.storm = function (e, dt, d, dx, dz) {
           const a = Math.atan2(dx, dz) + (i - (n - 1) / 2) * 0.9;
           ai.twisters.push({ x: e.x + Math.sin(a) * 2, z: e.z + Math.cos(a) * 2, vx: Math.sin(a) * 3, vz: Math.cos(a) * 3, t: 0, life: rage ? 5.5 : 5, tick: 0, ph: rand(0, 10) });
         }
-        AUDIO.play('throw', 0.6);
+        AUDIO.play('wind');
         ai.state = 'walk'; ai.cd = rage ? 1.8 : 2.6;
       }
       break;
@@ -13056,7 +13203,7 @@ BOSS_AI.jack = function (e, dt, d, dx, dz) {
       e.vx *= 0.7; e.vz *= 0.7; e.y = 0;
       if (ai.t > 0.6) { ai.rot = turnToward(ai.rot, Math.atan2(dx, dz), dt * 1.6); ai.tele.rot = ai.rot; ai.tele.x = e.x; ai.tele.z = e.z; }
       e.yaw = angleLerp(e.yaw, ai.rot, k); ai.ext = lerp(ai.ext, 0.15, k);
-      if (ai.t <= 0) { ai.state = 'punch'; ai.t = ai.dur = 0.55; ai.hit = false; ai.hits = new Set(); AUDIO.play('throw'); }
+      if (ai.t <= 0) { ai.state = 'punch'; ai.t = ai.dur = 0.55; ai.hit = false; ai.hits = new Set(); AUDIO.play('boing'); }
       break;
     case 'punch': {
       // BOING: out fast along the lane, back slowly
@@ -13083,7 +13230,7 @@ BOSS_AI.jack = function (e, dt, d, dx, dz) {
         const o = { x: h[0] + run.vel[0] * 0.35, z: h[2] + run.vel[2] * 0.35 }; resolveCircle(o, e.radius);
         ai.sx = e.x; ai.sz = e.z; ai.tx = o.x; ai.tz = o.z;
         addTele({ kind: 'circle', x: o.x, z: o.z, r: 2.2, dur: 0.95 });
-        ai.state = 'leap'; ai.t = ai.dur = 0.95; e.hidden = true; e.squash = 1.15; AUDIO.play('throw', 0.8);
+        ai.state = 'leap'; ai.t = ai.dur = 0.95; e.hidden = true; e.squash = 1.15; AUDIO.play('boing', 0.8);
       }
       break;
     case 'leap': {
@@ -13206,7 +13353,7 @@ BOSS_AI.kraken = function (e, dt, d, dx, dz) {
         if (!ai.slamHit && laneHit(e.x, e.z, s.rot, KRAKEN.slamLen, 0.9 + HERO_R * 0.5, h[0], h[2])) { ai.slamHit = true; hurtHero(26 * run.info.dmgMul, e.x, e.z); }
         enemiesInRadius(e.x + Math.sin(s.rot) * 5.5, e.z + Math.cos(s.rot) * 5.5, 6.5, o => { if (!o.boss && laneHit(e.x, e.z, s.rot, KRAKEN.slamLen, 1, o.x, o.z)) hurtEnemy(o, 20, 0, 0, { sound: false }); });
         for (let k = 2; k < KRAKEN.slamLen; k += 1.8) FX.burst(e.x + Math.sin(s.rot) * k, 0.3, e.z + Math.cos(s.rot) * k, 4, [0.7, 0.9, 1], 4, 0.09, 0.45, 1);
-        G.cam.shake = Math.max(G.cam.shake, 0.15); AUDIO.play('boom', 0.7);
+        G.cam.shake = Math.max(G.cam.shake, 0.15); AUDIO.play('splash');
       }
       if (ai.slams.every(s => s.hit)) { ai.state = 'walk'; ai.cd = rage ? 1.4 : 2.2; }
       break;
@@ -13230,7 +13377,7 @@ BOSS_AI.kraken = function (e, dt, d, dx, dz) {
       break;
     case 'whirlWind':
       e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 2;
-      if (ai.t <= 0) { ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('zap', 0.6); }
+      if (ai.t <= 0) { ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('roar'); AUDIO.play('wind'); }
       break;
     case 'whirl': {
       // spins in place: the water swirls round and in, dragging you toward its whirling core
@@ -13310,6 +13457,7 @@ const UI = {
     this.octx = this.overlay.getContext('2d');
     $('btnPlay').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginChapter(G.save.selected); });
     $('btnEndless').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginEndless(); });
+    $('btnRush').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginBossRush(); });
     $('chPrev').addEventListener('click', () => { G.save.selected = Math.max(1, G.save.selected - 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
     $('chNext').addEventListener('click', () => { G.save.selected = Math.min(G.save.chapter, G.save.selected + 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
     document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openTab(b.dataset.tab); }));
@@ -13382,14 +13530,14 @@ const UI = {
     this.show('results', s === 'results');
     if (s === 'home') this.refreshHome();
     // a banner that is still animating would sit on top of a modal's title
-    if (['levelup', 'chest', 'pause', 'revive', 'results'].includes(s)) $('banner').classList.remove('show');
+    if (['levelup', 'chest', 'pause', 'revive', 'results'].includes(s)) { $('banner').classList.remove('show'); $('bossCards').classList.remove('show'); }
     if (s === 'revive') this.reviveT = 5;
     if (s === 'results') this.fillResults();
     if (s === 'run') { this.slotSig = ''; }
   },
 
   openTab(tab) {
-    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; }
+    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     if (tab === 'upgrades') this.renderUpgrades();
@@ -13411,11 +13559,29 @@ const UI = {
     $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${bossNames}`;
     const eb = $('btnEndless');
     eb.hidden = !endlessUnlocked();
-    eb.textContent = sv.endlessBest ? `ENDLESS · best ${fmtTime(sv.endlessBest)}` : 'ENDLESS';
+    eb.innerHTML = sv.endlessBest ? `ENDLESS<small>best ${fmtTime(sv.endlessBest)}</small>` : 'ENDLESS';
+    const rb = $('btnRush'), nb = CHAPTER_BOSSES.length;
+    rb.hidden = !rushUnlocked();
+    rb.innerHTML = sv.rushTime ? `BOSS RUSH<small>best ${fmtTime(sv.rushTime)}</small>` : sv.rushBest ? `BOSS RUSH<small>best ${sv.rushBest}/${nb}</small>` : 'BOSS RUSH';
     $('chPrev').disabled = sv.selected <= 1;
     $('chNext').disabled = sv.selected >= sv.chapter;
     this.homePortrait();
+    this.refreshBadges();
     applyArena(info.arena);
+  },
+  // red dots on the home menu: an upgrade is affordable, a scroll or fuse is waiting, a new look is in reach
+  menuAlerts() {
+    const sv = G.save;
+    const canBuy = list => list.some(s => s.cost > 0 && sv.coins >= s.cost);
+    return {
+      upgrades: Object.keys(META_UPGRADES).some(id => (sv.upgrades[id] || 0) < META_UPGRADES[id].max && sv.coins >= upgradeCost(id, sv.upgrades[id] || 0)),
+      gear: sv.scrolls > 0 || canFuse(),
+      skins: canBuy(SKINS.filter(s => !sv.skins.includes(s.id))) || canBuy(COSTUMES.filter(c => !sv.costumes.includes(c.id))),
+    };
+  },
+  refreshBadges() {
+    const al = this.menuAlerts();
+    document.querySelectorAll('.mbtn[data-tab]').forEach(b => { const d = b.querySelector('.dot'); if (d) d.hidden = !al[b.dataset.tab]; });
   },
   // the selected chapter's boss portrait in the picker, once its meshes have loaded
   homePortrait() {
@@ -13461,31 +13627,38 @@ const UI = {
       if (keys.includes(img.dataset.heroIcon)) { img.src = ICONS.map[img.dataset.heroIcon]; img.classList.remove('pending'); }
     });
   },
+  // Three tabs: body colors, costumes and hats. Tapping a card previews it on the blob; the button buys or equips it.
+  blobLists() {
+    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' ? this.blobTab : 'colors';
+    if (tab === 'colors') return { tab, list: SKINS, owned: sv.skins, worn: sv.skin, sel: this.skinPreview, key: 'skin-' };
+    if (tab === 'costumes') return { tab, list: costumesOf('hood'), owned: sv.costumes, worn: sv.costume, sel: this.costumePreview, key: 'costume-' };
+    return { tab, list: costumesOf('hat'), owned: sv.costumes, worn: sv.hat, sel: this.hatPreview, key: 'costume-' };
+  },
   renderSkins() {
-    const sv = G.save, grid = $('skinGrid'), colors = this.blobTab !== 'costumes';
+    const sv = G.save, grid = $('skinGrid');
     if (!this.skinPreview) this.skinPreview = sv.skin;
     if (!this.costumePreview) this.costumePreview = sv.costume;
+    if (!this.hatPreview) this.hatPreview = sv.hat;
+    const { tab, list, owned, worn, sel, key } = this.blobLists();
     document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
-    document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.bt === 'colors') === colors)));
-    const list = colors ? SKINS : COSTUMES, owned = colors ? sv.skins : sv.costumes, worn = colors ? sv.skin : sv.costume;
-    const sel = colors ? this.skinPreview : this.costumePreview;
-    queueHeroIcons(list.map(s => (colors ? 'skin-' : 'costume-') + s.id), true);
+    document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bt === tab)));
+    queueHeroIcons(list.map(s => key + s.id), true);
     grid.replaceChildren(...list.map(s => {
       const b = document.createElement('button');
-      b.className = 'skin' + (s.id === sel ? ' sel' : '');
+      b.className = 'skin' + (s.id === sel ? ' sel' : '') + (worn === s.id ? ' worn' : '');
       b.innerHTML = `<img alt=""><span></span><em class="boost"></em><small></small>`;
       // icons not drawn yet fill in as pumpHeroIcons makes them
-      const key = (colors ? 'skin-' : 'costume-') + s.id, img = b.querySelector('img');
-      img.dataset.heroIcon = key; if (ICONS.map[key]) img.src = ICONS.map[key]; else img.classList.add('pending');
-      b.querySelector('span').textContent = s.name;
+      const k = key + s.id, img = b.querySelector('img');
+      img.dataset.heroIcon = k; if (ICONS.map[k]) img.src = ICONS.map[k]; else img.classList.add('pending');
+      b.querySelector('span').textContent = s.id === 'none' ? (tab === 'hats' ? 'No hat' : 'No costume') : s.name;
       b.querySelector('.boost').textContent = s.boost ? fmtBoost(s.boost) : 'No bonus';
       const sm = b.querySelector('small');
       if (worn === s.id) sm.textContent = 'Equipped';
       else if (owned.includes(s.id)) sm.textContent = 'Owned';
-      else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); }
+      else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); sm.classList.toggle('poor', sv.coins < s.cost); }
       b.addEventListener('click', () => {
-        if (colors) this.skinPreview = s.id; else this.costumePreview = s.id;
-        applySkin(this.skinPreview, this.costumePreview); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins();
+        if (tab === 'colors') this.skinPreview = s.id; else if (tab === 'costumes') this.costumePreview = s.id; else this.hatPreview = s.id;
+        applySkin(this.skinPreview, this.costumePreview, this.hatPreview); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins();
       });
       return b;
     }));
@@ -13495,15 +13668,14 @@ const UI = {
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   skinAction() {
-    const sv = G.save, colors = this.blobTab !== 'costumes';
-    const s = colors ? SKINS.find(k => k.id === this.skinPreview) : COSTUMES.find(k => k.id === this.costumePreview);
+    const sv = G.save, { tab, list, owned, sel } = this.blobLists();
+    const s = list.find(k => k.id === sel);
     if (!s) return;
-    const owned = colors ? sv.skins : sv.costumes;
     if (!owned.includes(s.id)) {
       if (sv.coins < s.cost) return;
       sv.coins -= s.cost; owned.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
     }
-    if (colors) sv.skin = s.id; else sv.costume = s.id;
+    if (tab === 'colors') sv.skin = s.id; else if (tab === 'costumes') sv.costume = s.id; else sv.hat = s.id;
     saveGame(); AUDIO.play('levelup'); G.hero.impulse(2);
     this.renderSkins(); this.refreshHome();
   },
@@ -13592,8 +13764,8 @@ const UI = {
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.endless ? (run.t % ENDLESS.bossEvery) / ENDLESS.bossEvery : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
-      label = run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
+      pct = run.rush ? run.rushK / CHAPTER_BOSSES.length : run.endless ? (run.t % ENDLESS.bossEvery) / ENDLESS.bossEvery : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      label = run.rush ? `BOSS RUSH · ${run.rushK}/${CHAPTER_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
     }
     const pctS = (pct * 100).toFixed(1) + '%';
     if (L.chap !== pctS) { L.chap = pctS; $('chapFill').style.width = pctS; }
@@ -13607,7 +13779,21 @@ const UI = {
     void b.offsetWidth;
     b.classList.add('show');
   },
-  bossIntro(name) { this.banner(name, true); },
+  // a card for each boss dropping in: portrait, name and what to watch for
+  bossIntro(ids) {
+    const wrap = $('bossCards');
+    wrap.replaceChildren(...ids.map(id => {
+      const c = document.createElement('div');
+      c.className = 'bosscard';
+      c.innerHTML = '<img alt=""><div><small>WARNING</small><b></b><span></span></div>';
+      const icon = ICONS.map['boss-' + id], img = c.querySelector('img');
+      if (icon) img.src = icon; else img.hidden = true;
+      c.querySelector('b').textContent = BOSS_TYPES[id].name;
+      c.querySelector('span').textContent = BOSS_HINTS[id] || '';
+      return c;
+    }));
+    wrap.classList.remove('show'); void wrap.offsetWidth; wrap.classList.add('show');
+  },
   toast(msg, secs = 1.6) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); this.toastT = secs; },
 
   // ---------- level up ----------
@@ -13741,7 +13927,7 @@ const UI = {
   // ---------- pause / revive / results ----------
   openPause() {
     const run = G.run;
-    $('pauseSub').textContent = `${run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
+    $('pauseSub').textContent = `${run.rush ? `Boss Rush ${run.rushK}/${CHAPTER_BOSSES.length}` : run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
     $('pauseList').replaceChildren(...run.slots.map(s => {
       const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
@@ -13756,15 +13942,17 @@ const UI = {
   fillResults() {
     const run = G.run;
     if (!run) return;
-    $('resEyebrow').textContent = run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
+    $('resEyebrow').textContent = run.rush ? `Boss Rush · ${run.info.arenaName}` : run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
     const t = $('resTitle');
-    t.textContent = run.won ? 'CLEARED!' : run.endless && run.newBest ? 'NEW BEST!' : 'YOU MELTED';
-    t.style.color = run.won || (run.endless && run.newBest) ? 'var(--mint)' : 'var(--pink)';
+    const special = run.endless || run.rush;
+    t.textContent = run.won ? (run.rush ? 'CHAMPION!' : 'CLEARED!') : special && run.newBest ? 'NEW BEST!' : 'YOU MELTED';
+    t.style.color = run.won || (special && run.newBest) ? 'var(--mint)' : 'var(--pink)';
     $('resTime').textContent = fmtTime(run.t);
     $('resKills').textContent = fmtNum(run.kills);
     $('resLevel').textContent = run.level;
     $('resCoins').textContent = '+' + fmtNum(run.earned || 0);
-    $('resBreak').textContent = run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
+    $('resBreak').textContent = run.rush ? `${run.rushK} of ${CHAPTER_BOSSES.length} bosses beaten · ${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for the bosses`
+      : run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
       : run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
   },
 
@@ -13891,7 +14079,7 @@ function rollChoices() {
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
-  const open = def => (def.from || 1) <= run.powerCap, feat = run.endless ? null : featuredPowerup(run.chapter);
+  const open = def => (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
   if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
   if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
@@ -13932,7 +14120,7 @@ function describeChoiceBase(c) {
   if (sk) {
     if (!lvl) {
       const f = sk.fields.slice(0, 2).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`).join(' · ');
-      return { tag: sk.from === G.run.chapter && !G.run.endless ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
+      return { tag: sk.from === G.run.chapter && !G.run.endless && !G.run.rush ? 'BRAND NEW SKILL' : 'NEW SKILL', name: sk.name, desc: `${sk.intro}<br>${f}`, icon: 'skill-' + c.id, kind: 'skill', isNew: true };
     }
     const parts = [];
     for (const [k, label, unit] of sk.fields) {
@@ -13941,7 +14129,7 @@ function describeChoiceBase(c) {
     }
     return { tag: `LV ${lvl} → ${lvl + 1}`, name: sk.name, desc: parts.join(' · '), icon: 'skill-' + c.id, kind: 'skill', isNew: false };
   }
-  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter && !G.run.endless ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
+  return { tag: lvl ? `LV ${lvl} → ${lvl + 1}` : ps.from === G.run.chapter && !G.run.endless && !G.run.rush ? 'BRAND NEW ABILITY' : 'NEW PASSIVE', name: ps.name, desc: ps.desc, icon: 'passive-' + c.id, kind: 'passive', isNew: !lvl };
 }
 function applyChoice(c) {
   const run = G.run;
@@ -14027,6 +14215,7 @@ function gearStats(sv = G.save) {
   const add = st => { if (st) for (const k in st) out[k] = (out[k] || 0) + st[k]; };
   add((SKINS.find(s => s.id === sv.skin) || {}).boost);
   add((COSTUMES.find(c => c.id === sv.costume) || {}).boost);
+  add((COSTUMES.find(c => c.id === sv.hat) || {}).boost);
   const g = sv.gear;
   if (g) for (const sl in g.eq) { const k = g.eq[sl]; if (k && g.items[k] > 0 && ARTIFACTS[artParse(k).id]) add(artStats(k)); }
   return out;
@@ -14088,6 +14277,7 @@ Object.assign(UI, {
 
   renderGear() {
     const sv = G.save, g = sv.gear;
+    G.hero.setGear(g);
     const tot = gearTotals();
     $('gAtk').textContent = fmtNum(tot.atk); $('gHp').textContent = fmtNum(tot.hp);
     $('gScrolls').textContent = fmtNum(sv.scrolls || 0);
@@ -14451,7 +14641,7 @@ function defaultSave() {
   return {
     v: 1, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
-    skin: 'classic', skins: ['classic'], costume: 'none', costumes: ['none'],
+    skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null } }, devUnlocked: false,
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0 }, tutorial: true,
@@ -14463,7 +14653,7 @@ function loadGame() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      return {
+      const out = {
         ...d, ...s,
         upgrades: { ...d.upgrades, ...(s.upgrades || {}) },
         settings: { ...d.settings, ...(s.settings || {}) },
@@ -14473,6 +14663,9 @@ function loadGame() {
         cleared: s.cleared || {}, best: s.best || {},
         gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) } },
       };
+      // saves from before hats had their own slot: a hat worn as the costume moves over
+      if (HAT_IDS.includes(out.costume)) { out.hat = out.costume; out.costume = 'none'; }
+      return out;
     }
   } catch (_) { /* storage unavailable: play without saving */ }
   return d;
@@ -14650,7 +14843,7 @@ function renderHeroIcons(keys) {
   for (const key of keys) {
     const skin = key.startsWith('skin-'), id = key.slice(skin ? 5 : 8);
     if (skin) { paint(SKINS.find(s => s.id === id) || SKINS[0]); h.setCostume('none'); }
-    else { paint(SKINS[0]); h.setCostume(id); }
+    else { paint(SKINS[0]); h.setCostume(id); } // (a hat id lands in the hat slot)
     shot(key);
   }
   R.goo.base = keep.base; R.goo.accent = keep.accent; R.goo.rim = keep.rim;

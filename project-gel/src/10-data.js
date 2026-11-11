@@ -220,10 +220,10 @@ const ENEMY_TYPES = {
   ghost: { model: 'ghost', hp: 14, speed: 2.6, dmg: 5, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
   zombie: { model: 'stickman', hp: 44, speed: 1.3, dmg: 8, xp: 3, radius: 0.42, scale: 1.45, tint: '#8fd67a', mass: 1.8 },
   crystalbug: { model: 'crystalbug', hp: 34, speed: 2.1, dmg: 6, xp: 3, radius: 0.5, scale: 1.4, tint: '#8af0ff', mass: 1.8, ai: 'lunge', hit: 11 },
-  cloudling: { model: 'cloudling', hp: 16, speed: 2.0, dmg: 4, shot: 7, xp: 2, radius: 0.42, scale: 1.25, tint: '#ffffff', mass: 0.8, ranged: true, shotKind: 'spark', float: 0.45 },
+  cloudling: { model: 'cloudling', hp: 16, speed: 2.0, dmg: 4, shot: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#ffffff', mass: 0.8, ranged: true, shotKind: 'spark', float: 0.45 },
   toysoldier: { model: 'spear', hp: 20, speed: 2.2, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#e8444e', mass: 1.1, ai: 'lunge', hit: 10 },
   teddy: { model: 'teddy', hp: 62, speed: 1.7, dmg: 9, xp: 4, radius: 0.6, scale: 1.6, tint: '#b9834f', mass: 3, ai: 'chop', hit: 14, wind: 0.8, reach: 1.3 },
-  crabling: { model: 'crabling', hp: 20, speed: 3.0, dmg: 5, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
+  crabling: { model: 'crabling', hp: 20, speed: 2.8, dmg: 4, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
   puffer: { model: 'puffer', hp: 14, speed: 2.6, dmg: 4, xp: 2, radius: 0.42, scale: 1.3, tint: '#ffb84a', mass: 0.9, ai: 'bomb', hit: 18, float: 0.3 },
 };
 // Extra enemy types that only show up on one map: [seconds into the run, spawn weight]
@@ -264,6 +264,19 @@ BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 3700, spee
 BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 3600, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 2.1 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 3500, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3400, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 1.25 };
+// one line on what to watch for, shown on the boss's intro card
+const BOSS_HINTS = {
+  stomper: 'Stomps the ground and calls in stickmen.', hurler: 'Hurls boulders at marked spots.',
+  charger: 'Charges down its lane. Sidestep it into a wall.', twins: 'Never cross the rope between them.',
+  conductor: 'Conducts waves of fiery orbs.', sandworm: 'Burrows and bursts up under you.',
+  wreckbot: 'Wrecking-ball swings, rockets and lane slams.', bigbounce: 'Hops onto marked circles, then rolls like a pinball.',
+  jellyqueen: 'Jelly spirals, slime minions and belly flops.', yeti: 'Freezing breath, icicles and a spike ring with gaps.',
+  magma: 'Lava fissures and magma lobs. Brittle after it erupts.', hydra: 'Its heads snap along marked lanes.',
+  crab: 'Claw snaps, cannon fire and homing bubbles.', ufo: 'A tractor beam, sweeping lasers and invaders.',
+  pumpking: 'Pumpkin bombs, ghost rings and pounces from the mist.', geode: 'Crystal shards, spike walls and sweeping lasers.',
+  storm: 'Lightning, gusts of wind and twisters.', jack: 'Spring punches, pounces and tumbling toy blocks.',
+  kraken: 'Tentacle slams, ink puddles and a whirlpool.',
+};
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
 const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
@@ -396,16 +409,19 @@ const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqu
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 function chapterInfo(n) {
   const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
-  const k = n - 1;
+  const k = n - 1, kk = k <= 9 ? k : 9 + (k - 9) * 0.6;
   // bosses still being built fall back to the original roster
   const main = BOSS_TYPES[CHAPTER_BOSSES[i]] ? CHAPTER_BOSSES[i] : BOSS_ORDER[i % BOSS_ORDER.length];
   const bosses = n % 5 === 0 ? [main, GUEST_BOSSES[(n / 5 - 1) % GUEST_BOSSES.length]] : [main];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
-    hpMul: 1 + 0.09 * k + 0.004 * k * k,
-    dmgMul: 1 + 0.06 * k,
-    rateMul: Math.min(1.8, 0.85 + 0.05 * k),
-    bossHpMul: Math.pow(1.17, k) * (bosses.length > 1 ? 0.75 : 1),
+    // enemies toughen steadily through chapter 10, then more gently (kk counts later chapters as 0.6 each)
+    hpMul: 1 + 0.09 * kk + 0.004 * kk * kk,
+    dmgMul: 1 + 0.06 * kk,
+    rateMul: Math.min(1.8, 0.85 + 0.05 * kk),
+    // boss health climbs fast for six chapters, then slowly, so late fights stay around a minute and a half;
+    // two bosses at once each bring less
+    bossHpMul: Math.pow(1.17, Math.min(k, 5)) * Math.pow(1.045, Math.max(0, k - 5)) * (bosses.length > 1 ? 0.6 : 1),
     reward: Math.round(150 * Math.pow(1.08, k)),
     has: { ...Object.fromEntries(Object.entries(ENEMY_MIX).map(([k, v]) => [k, n >= v[0]])), ...Object.fromEntries(Object.keys(THEME_ENEMIES[ARENAS[arena].id] || {}).map(k => [k, true])) },
   };
@@ -725,6 +741,11 @@ const COSTUMES = [
   ] },
 ];
 COSTUMES.sort((a, b) => a.cost - b.cost);
+// Two wearable slots: a hat sits on top of the head, everything else (hoods, faces, tails, wings) is the costume.
+// One of each can be worn together; "none" empties a slot.
+const HAT_IDS = ['party', 'sprout', 'flowers', 'mushroom', 'chef', 'headphones', 'cowboy', 'tophat', 'reindeer', 'witch', 'viking', 'wizard', 'crown', 'angel'];
+for (const c of COSTUMES) c.slot = c.id === 'none' ? 'any' : HAT_IDS.includes(c.id) ? 'hat' : 'hood';
+const costumesOf = slot => COSTUMES.filter(c => c.slot === slot || c.slot === 'any');
 
 // ---------- stat bonuses: skins, costumes and artifacts ----------
 // Percent bonuses, except regen (percent of max health per second)
@@ -768,6 +789,13 @@ const ARTIFACTS = {
   skull: { name: 'Skull Necklace', slot: 'necklace', stats: { dmg: 5 } },
   moon: { name: 'Moon Pendant', slot: 'necklace', stats: { cd: 4 } },
   clover: { name: 'Clover Charm', slot: 'necklace', stats: { gold: 8, magnet: 10 } },
+};
+// How an equipped artifact looks on the blob: its colors (the hero's palette entries 8-12; see Hero.setGear)
+const GEAR_LOOK = {
+  sword: ['#e4ecf4', '#ffc93a'], wand: ['#8a63ff', '#ffe14a'], bow: ['#9a6a3a'],
+  cloak: ['#e8283c'], plate: ['#c2ccd9'], vest: ['#9a6a3a'],
+  goldRing: ['#ffc21f'], silverRing: ['#e8eef6'], rubyRing: ['#ff3b6b'],
+  skull: ['#f4ecd8'], moon: ['#ffe9a0'], clover: ['#4cd964'],
 };
 const artKey = (id, r) => id + ':' + r;
 const artParse = key => { const [id, r] = key.split(':'); return { id, r: Number(r), def: ARTIFACTS[id] }; };

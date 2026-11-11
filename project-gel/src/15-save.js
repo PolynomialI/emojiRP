@@ -6,7 +6,7 @@ function defaultSave() {
   return {
     v: 1, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
-    skin: 'classic', skins: ['classic'], costume: 'none', costumes: ['none'],
+    skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null } }, devUnlocked: false,
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0 }, tutorial: true,
@@ -18,7 +18,7 @@ function loadGame() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      return {
+      const out = {
         ...d, ...s,
         upgrades: { ...d.upgrades, ...(s.upgrades || {}) },
         settings: { ...d.settings, ...(s.settings || {}) },
@@ -28,6 +28,9 @@ function loadGame() {
         cleared: s.cleared || {}, best: s.best || {},
         gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) } },
       };
+      // saves from before hats had their own slot: a hat worn as the costume moves over
+      if (HAT_IDS.includes(out.costume)) { out.hat = out.costume; out.costume = 'none'; }
+      return out;
     }
   } catch (_) { /* storage unavailable: play without saving */ }
   return d;
