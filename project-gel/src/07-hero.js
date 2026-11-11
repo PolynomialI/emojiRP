@@ -70,7 +70,7 @@ class Hero {
       rotInv: new Float32Array(9), boundC: [0, 0, 0], boundR: 1, boxLo: new Float32Array(3), boxHi: new Float32Array(3), aoY: 0, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
       chest: new Float32Array(4), pal: new Float32Array(42), grad: new Float32Array(4), groundY: 0,
     };
-    this.costume = null; this.hat = null; this.gear = null;
+    this.costume = null; this.hat = null; this.hatLift = 0; this.gear = null;
     this.shadow = { data: new Float32Array(14 * 4), count: 0, pos: [0, 0, 0] };
     this._w = [0, 0, 0];
   }
@@ -388,7 +388,8 @@ class Hero {
     for (const wear of [this.costume, this.hat]) {
       if (!wear) continue;
       const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0], palOff = wear === this.hat ? 4 : 0;
-      const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1]; out[2] = a[2] + off[2]; return out; };
+      const lift = wear === this.hat ? this.hatLift : 0;
+      const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1] + (anchor === 'head' ? lift : 0); out[2] = a[2] + off[2]; return out; };
       for (const P of wear.parts) {
         const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + palOff + col;
         if (P[0] === 'sph') {
@@ -433,7 +434,8 @@ class Hero {
     if (gear) {
       const ch = J.chest.p, gp = [0, 0, 0], gq = [0, 0, 0];
       const off = (p, x, y, z, out) => { out[0] = p[0] + x; out[1] = p[1] + y; out[2] = p[2] + z; return out; };
-      if (gear.armor === 'cloak') ell(off(ch, 0, -0.16, -0.24, gp), 0.3, 0.42, 0.06, 0.03, 20, 0);
+      // the cloak hangs down the back, with a collar that shows from the front
+      if (gear.armor === 'cloak') { ell(off(ch, 0, -0.16, -0.24, gp), 0.3, 0.42, 0.06, 0.03, 20, 0); ell(off(ch, 0, 0.17, 0, gp), 0.3, 0.07, 0.29, 0.02, 20, 0); }
       else if (gear.armor) ell(off(ch, 0, -0.01, 0.02, gp), 0.35, gear.armor === 'plate' ? 0.26 : 0.3, 0.285, 0.015, 20, 0);
       if (gear.necklace) sph(off(ch, 0, 0.19, 0.27, gp), 0.062, 0.01, 22, gear.glow.necklace);
       const wa = this.arms[0], ra = this.arms[1];
@@ -518,6 +520,10 @@ class Hero {
     if (c && c.slot === 'hat') { hat = c; c = null; }
     this.costume = c && c.parts.length ? c : null;
     this.hat = hat && hat.slot === 'hat' ? hat : null;
+    // hats are made for the bare head (top at 0.225): over a bulky hood (a helmet, a mane) they sit higher,
+    // by as much as its round parts rise above a snug hood (thin ears and horns may poke through instead)
+    const top = this.costume ? Math.max(0, ...this.costume.parts.filter(p => p[1] === 'head' && p[0] !== 'cap').map(p => p[2][1] + (p[0] === 'sph' ? p[3] : p[3][1]))) : 0;
+    this.hatLift = Math.max(0, top - 0.25) * 0.6; // a brim sits on the dome's shoulder, below its top
     if (this.costume) this.costume.pal.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), i * 3); });
     if (this.hat) this.hat.pal.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), (4 + i) * 3); });
   }
