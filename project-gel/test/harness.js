@@ -1,6 +1,7 @@
 // Injected before the game loads: manual frame control and a bot player.
 (() => {
   window.__allowSoftwareGL = true; // the tests run on SwiftShader on purpose
+  window.__noBootGuard = true; // tests reload pages mid-start; keep their graphics settings as set
   const realRAF = window.requestAnimationFrame.bind(window);
   window.__auto = true;
   window.__rafQ = [];

@@ -510,6 +510,10 @@ uniform vec4 uChest;
 uniform vec3 uPal[14];  // costume colors (0-3), hat colors (4-7) and gear colors (8-13), used by color weights 10..23
 uniform vec4 uGrad;     // body gradient: top color, amount
 uniform float uGroundY;
+uniform float uAoY;
+uniform vec3 uBoxLo;    // the shapes' world-space box (padded): rays that miss it are dropped
+uniform vec3 uBoxHi;
+uniform int uZero; // never set, so always 0: loops that start at it cannot be unrolled
 
 float prim(vec3 p, int i) {
   vec4 A = uPA[i], B = uPB[i], C = uPC[i];
@@ -524,14 +528,6 @@ float prim(vec3 p, int i) {
 float wob(vec3 p) {
   return uWobble * sin(p.x * 13.0 + uTime * 3.1) * sin(p.y * 11.0 - uTime * 2.3) * sin(p.z * 12.0 + uTime * 2.7);
 }
-float mapH(vec3 p) {
-  float d = prim(p, 0);
-  for (int i = 1; i < MAXP; i++) {
-    if (i >= uPCount) break;
-    d = smin(d, prim(p, i), uPB[i].w);
-  }
-  return d + wob(p);
-}
 // color of one shape: goo colors, costume palette, or the body (with its optional gradient)
 vec3 primCol(float w, vec3 p) {
   if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 13.0))];
@@ -539,54 +535,71 @@ vec3 primCol(float w, vec3 p) {
   if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.5, 1.75, p.y - uGroundY));
   return c;
 }
-// distance, with the blended color and glow of the shapes that meet here
-float mapHC(vec3 p, out vec3 col, out float g) {
+// distance, and when asked the blended color and glow of the shapes that meet here
+float mapH(vec3 p, bool wantCol, out vec3 col, out float g) {
   float d = prim(p, 0);
-  col = primCol(uPC[0].y, p); g = uPC[0].w;
+  col = vec3(0.0); g = 0.0;
+  if (wantCol) { col = primCol(uPC[0].y, p); g = uPC[0].w; }
   for (int i = 1; i < MAXP; i++) {
     if (i >= uPCount) break;
     vec2 r = sminW(d, prim(p, i), uPB[i].w);
     d = r.x;
-    col = mix(col, primCol(uPC[i].y, p), 1.0 - r.y);
-    g = mix(g, uPC[i].w, 1.0 - r.y);
+    if (wantCol) { col = mix(col, primCol(uPC[i].y, p), 1.0 - r.y); g = mix(g, uPC[i].w, 1.0 - r.y); }
   }
-  return d;
-}
-vec3 calcN(vec3 p) {
-  const vec2 k = vec2(1.0, -1.0);
-  const float e = 0.0016;
-  return normalize(k.xyy * mapH(p + k.xyy * e) + k.yyx * mapH(p + k.yyx * e) + k.yxy * mapH(p + k.yxy * e) + k.xxx * mapH(p + k.xxx * e));
+  return d + wob(p);
 }
 
 void main() {
   vec3 ro = uCamPos;
   vec3 rd = normalize(vW - uCamPos);
   vec2 bs = sphHit(ro, rd, uBoundC, uBoundR);
-  if (bs.y < 0.0) discard;
+  // and the box: march only where the ray is inside both
+  vec3 inv = 1.0 / mix(rd, vec3(1e-6), lessThan(abs(rd), vec3(1e-6)));
+  vec3 b0 = (uBoxLo - ro) * inv, b1 = (uBoxHi - ro) * inv;
+  vec3 bn = min(b0, b1), bf = max(b0, b1);
+  bs = vec2(max(bs.x, max(max(bn.x, bn.y), bn.z)), min(bs.y, min(min(bf.x, bf.y), bf.z)));
+  if (bs.y < 0.0 || bs.y < bs.x) discard;
   float t = max(bs.x, 0.0), tEnd = bs.y;
   float bestR = 1e9, bestT = t;
   bool hit = false;
-  for (int i = 0; i < 90; i++) {
-    float d = mapH(ro + rd * t);
-    float r = d / (t * uPixAng);
-    if (r < bestR) { bestR = r; bestT = t; }
-    if (d < 0.0004 * t) { hit = true; break; }
-    t += d * 0.9;
-    if (t > tEnd) break;
+  // One loop does all the shape sampling, so mapH is compiled into this shader once: up to 90 march steps,
+  // then eight samples at the surface point (four for the normal, thickness, two for occlusion, then the
+  // color). It starts at a uniform so the compiler cannot unroll it: Windows Chrome inlines every call.
+  bool march = true;
+  int j = 0;
+  float alpha = 0.0, thin = 0.0, occ = 0.0, glowW = 0.0;
+  vec3 p = ro, n = vec3(0.0), base = vec3(0.0);
+  for (int i = uZero; i < 98; i++) {
+    vec3 k = 2.0 * vec3(float(((j + 3) >> 1) & 1), float((j >> 1) & 1), float(j & 1)) - 1.0;
+    vec3 q = march ? ro + rd * t : j < 4 ? p + k * 0.0016 : j == 4 ? p - n * 0.13 : j == 5 ? p + n * 0.05 : j == 6 ? p + n * 0.13 : p;
+    vec3 c; float g;
+    float d = mapH(q, !march && j == 7, c, g);
+    if (march) {
+      float r = d / (t * uPixAng);
+      if (r < bestR) { bestR = r; bestT = t; }
+      if (d < 0.0004 * t) hit = true;
+      else t += d * 0.9;
+      if (hit || t > tEnd || i >= 89) {
+        march = false;
+        alpha = hit ? 1.0 : clamp(0.65 - bestR, 0.0, 1.0);
+        if (alpha < 0.004) break;
+        p = ro + rd * (hit ? t : bestT);
+      }
+    } else {
+      if (j < 4) { n += k * d; if (j == 3) n = normalize(n); }
+      else if (j == 4) thin = clamp(1.0 + d / 0.13, 0.0, 1.0);
+      else if (j == 5) occ += (0.05 - d) * 2.2;
+      else if (j == 6) occ += (0.13 - d) * 1.1;
+      else { base = c; glowW = g; }
+      if (++j == 8) break;
+    }
   }
-  float alpha = hit ? 1.0 : clamp(0.65 - bestR, 0.0, 1.0);
   if (alpha < 0.004) discard;
-  vec3 p = ro + rd * (hit ? t : bestT);
-  vec3 n = calcN(p);
   vec3 v = -rd;
-  vec3 base; float glowW;
-  mapHC(p, base, glowW);
   // living goo: slow swirls inside the body
   float sw = texture(uNoise, p.xz * 0.8 + vec2(p.y * 0.35, uTime * 0.025)).r + texture(uNoise, p.xy * 1.1 - vec2(uTime * 0.02, 0.0)).g;
   base *= 0.93 + 0.12 * (sw - 1.0) * 1.4;
-  float thin = clamp(1.0 + mapH(p - n * 0.13) / 0.13, 0.0, 1.0);
-  float occ = (0.05 - mapH(p + n * 0.05)) * 2.2 + (0.13 - mapH(p + n * 0.13)) * 1.1;
-  float ao = clamp(1.0 - occ * 2.4, 0.0, 1.0) * mix(0.62, 1.0, smoothstep(0.0, 0.4, p.y - uBoundC.y + 0.9));
+  float ao = clamp(1.0 - occ * 2.4, 0.0, 1.0) * mix(0.62, 1.0, smoothstep(0.0, 0.4, p.y - uAoY));
   float emissive = glowW + uGlow * 0.25 + uSpark * (0.6 + 0.4 * sin(uTime * 70.0));
   emissive += uChest.w * exp(-length(p - uChest.xyz) * 5.0) * 1.6;
   vec3 col = gooShade(base, p, n, v, thin, ao, emissive, uGloss * 0.8);
@@ -644,6 +657,7 @@ flat in vec4 fP0;
 flat in vec4 fP1;
 out vec4 fragColor;
 uniform float uPixAng;
+uniform int uZero; // never set, so always 0: loops that start at it cannot be unrolled
 
 // material codes returned by the map: 0 goo, 1 gem, 2 gold, 3 stone, 4 wood, 5 toon orange, 6 emissive orb, 7 white goo tip, 8 steel, 9 dark wood, 10 red goo, 11 parchment, 12 glossy black
 float sdRoundCone(vec3 p, vec3 a, vec3 b, float r1, float r2) {
@@ -1134,33 +1148,44 @@ void main() {
   float t = max(bs.x, 0.0), tEnd = bs.y;
   float bestR = 1e9, bestT = t;
   bool hit = false;
-  vec2 res = vec2(0.0);
-  for (int i = 0; i < 64; i++) {
-    vec3 lp = ro + rd * t;
-    res = mapImp(lp, type, fP0, fP1);
-    float dw = res.x * stepScale;
-    float rr = dw / (t * uPixAng);
-    if (rr < bestR) { bestR = rr; bestT = t; }
-    if (dw < 0.0006 * t) { hit = true; break; }
-    t += dw * 0.85;
-    if (t > tEnd) break;
+  // One loop does all the shape sampling, so mapImp is compiled into this shader once: up to 64 march
+  // steps, then seven samples at the surface point (four for the normal, then material, thickness and
+  // occlusion). It starts at a uniform so the compiler cannot unroll it. Windows Chrome inlines every
+  // call, and the eight copies this used to make could hang its shader compiler (and the browser with it).
+  bool march = true;
+  int j = 0;
+  float alpha = 0.0, tt = t;
+  vec3 lp = ro, nl = vec3(0.0);
+  float thin = 0.0, ao = 0.0, mat = 0.0;
+  for (int i = uZero; i < 71; i++) {
+    vec3 k = 2.0 * vec3(float(((j + 3) >> 1) & 1), float((j >> 1) & 1), float(j & 1)) - 1.0;
+    vec3 q = march ? ro + rd * t : j < 4 ? lp + k * 0.004 : j == 4 ? lp : j == 5 ? lp - nl * 0.25 : lp + nl * 0.12;
+    vec2 r = mapImp(q, type, fP0, fP1);
+    if (march) {
+      float dw = r.x * stepScale;
+      float rr = dw / (t * uPixAng);
+      if (rr < bestR) { bestR = rr; bestT = t; }
+      if (dw < 0.0006 * t) hit = true;
+      else t += dw * 0.85;
+      if (hit || t > tEnd || i >= 63) {
+        march = false;
+        alpha = (hit ? 1.0 : clamp(0.6 - bestR, 0.0, 1.0)) * fP1.w;
+        if (alpha < 0.004) break;
+        tt = hit ? t : bestT;
+        lp = ro + rd * tt;
+      }
+    } else {
+      if (j < 4) nl += k * r.x;
+      else if (j == 4) { mat = r.y; nl = normalize(nl); }
+      else if (j == 5) thin = clamp(1.0 + r.x / 0.25, 0.0, 1.0);
+      else ao = clamp(1.0 - (0.12 - r.x) * 2.5, 0.0, 1.0);
+      if (++j == 7) break;
+    }
   }
-  float alpha = hit ? 1.0 : clamp(0.6 - bestR, 0.0, 1.0);
-  alpha *= fP1.w;
   if (alpha < 0.004) discard;
-  float tt = hit ? t : bestT;
-  vec3 lp = ro + rd * tt;
-  res = mapImp(lp, type, fP0, fP1);
-  const vec2 k = vec2(1.0, -1.0);
-  const float e = 0.004;
-  vec3 nl = normalize(k.xyy * mapImp(lp + k.xyy * e, type, fP0, fP1).x + k.yyx * mapImp(lp + k.yyx * e, type, fP0, fP1).x +
-                      k.yxy * mapImp(lp + k.yxy * e, type, fP0, fP1).x + k.xxx * mapImp(lp + k.xxx * e, type, fP0, fP1).x);
   vec3 n = normalize(toWorld * (nl * sc));
   vec3 wp = uCamPos + rdw * tt;
   vec3 v = -rdw;
-  float thin = clamp(1.0 + mapImp(lp - nl * 0.25, type, fP0, fP1).x / 0.25, 0.0, 1.0);
-  float ao = clamp(1.0 - (0.12 - mapImp(lp + nl * 0.12, type, fP0, fP1).x) * 2.5, 0.0, 1.0);
-  float mat = res.y;
   vec3 col;
   float emissive = fP0.z;
   if (mat > 12.5) {

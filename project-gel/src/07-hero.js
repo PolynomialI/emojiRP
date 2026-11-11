@@ -67,7 +67,7 @@ class Hero {
     this.ghosts = [];
     this.out = {
       pa: new Float32Array(HERO_MAXP * 4), pb: new Float32Array(HERO_MAXP * 4), pc: new Float32Array(HERO_MAXP * 4), count: 0,
-      rotInv: new Float32Array(9), boundC: [0, 0, 0], boundR: 1, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
+      rotInv: new Float32Array(9), boundC: [0, 0, 0], boundR: 1, boxLo: new Float32Array(3), boxHi: new Float32Array(3), aoY: 0, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
       chest: new Float32Array(4), pal: new Float32Array(42), grad: new Float32Array(4), groundY: 0,
     };
     this.costume = null; this.hat = null; this.gear = null;
@@ -459,9 +459,22 @@ class Hero {
     const m = o.rotInv; // column-major mat3 of R_y(-yaw)
     m[0] = c; m[1] = 0; m[2] = s; m[3] = 0; m[4] = 1; m[5] = 0; m[6] = -s; m[7] = 0; m[8] = c;
 
-    // bounds
-    const cx = this.pos[0], cy = this.pos[1] + 0.85 * sc * sq, cz = this.pos[2];
-    let R2 = 0.6 * sc;
+    // bounds: a sphere around the middle of all the shapes, so a hat or a raised weapon grows it only as
+    // much as it must (every pixel inside it is ray-marched, so its size is most of the blob's GPU cost)
+    const by = this.pos[1] + 0.85 * sc * sq;
+    const lo = [this.pos[0] - 0.6 * sc, by - 0.6 * sc, this.pos[2] - 0.6 * sc], hi = [this.pos[0] + 0.6 * sc, by + 0.6 * sc, this.pos[2] + 0.6 * sc];
+    const grow = (x, y, z, r) => {
+      if (x - r < lo[0]) lo[0] = x - r; if (y - r < lo[1]) lo[1] = y - r; if (z - r < lo[2]) lo[2] = z - r;
+      if (x + r > hi[0]) hi[0] = x + r; if (y + r > hi[1]) hi[1] = y + r; if (z + r > hi[2]) hi[2] = z + r;
+    };
+    for (let i = 0; i < n; i++) {
+      const k = i * 4;
+      if (pc[k] < 0.5) grow(pa[k], pa[k + 1], pa[k + 2], pa[k + 3]);
+      else if (pc[k] < 1.5) { const r = Math.max(pa[k + 3], pc[k + 2]); grow(pa[k], pa[k + 1], pa[k + 2], r); grow(pb[k], pb[k + 1], pb[k + 2], r); }
+      else grow(pa[k], pa[k + 1], pa[k + 2], Math.max(pb[k], pb[k + 1], pb[k + 2]));
+    }
+    const cx = (lo[0] + hi[0]) / 2, cy = (lo[1] + hi[1]) / 2, cz = (lo[2] + hi[2]) / 2;
+    let R2 = 0;
     for (let i = 0; i < n; i++) {
       const k = i * 4;
       let ext;
@@ -470,7 +483,14 @@ class Hero {
       else ext = Math.hypot(pa[k] - cx, pa[k + 1] - cy, pa[k + 2] - cz) + Math.max(pb[k], pb[k + 1], pb[k + 2]);
       if (ext > R2) R2 = ext;
     }
-    o.boundC[0] = cx; o.boundC[1] = cy; o.boundC[2] = cz; o.boundR = R2 + 0.06;
+    o.boundC[0] = cx; o.boundC[1] = cy; o.boundC[2] = cz; o.boundR = Math.max(R2, 0.6 * sc) + 0.06;
+    // the same shapes' box: rays that miss it are dropped at once. Padded for the edge fade and for blends,
+    // which can bulge out by up to a quarter of their radius
+    let kMax = 0;
+    for (let i = 0; i < n; i++) if (pb[i * 4 + 3] > kMax) kMax = pb[i * 4 + 3];
+    const pad = 0.06 + kMax * 0.25;
+    for (let j = 0; j < 3; j++) { o.boxLo[j] = lo[j] - pad; o.boxHi[j] = hi[j] + pad; }
+    o.aoY = by - 0.9; // where the shading darkens toward the ground: from the body, whatever the bounds
     o.groundY = this.pos[1];
     o.flash = this.flash; o.glow = this.glow; o.wobble = 0.007 * this.wobbleMul; o.bubbles = this.bubbles; o.spark = this.spark; o.gloss = this.gloss;
     const ch = this.toWorld(J.chest.p, tmp);

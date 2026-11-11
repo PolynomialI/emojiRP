@@ -171,7 +171,15 @@ Where things live:
 - Neon Drone zaps chain to nearby enemies.
 - New-boss health is flatter (3400-4200 base).
 
-## Home screen, balance pass, cosmetics (latest round)
+## Startup freeze fix (latest)
+
+The build with chapters 11-15 froze the whole of Chrome when opened on Windows. The likely cause is shader compilation. Windows Chrome turns WebGL shaders into Direct3D ones and inlines every function call, and the goo-object shader (`FS_IMP`) called its 48-object shape function `mapImp` 8 times, so the compiler received 8 copies of every object. Each chapter's new objects grew all 8. That compile runs in the browser's GPU process, which also draws Chrome's own windows, so a long one stalls them all. The test browser is Linux, so this could not be reproduced. The fixes below each stand on their own:
+- **One copy of each shape function.** In `FS_IMP`, the march, the four normal taps, the material, thickness and occlusion samples all run in one loop. The loop starts at `uZero`, a uniform that is never set and is therefore always 0, so the compiler cannot unroll it. `FS_HERO` does the same: march, taps and color in one loop around `mapH`. The impostor shader's compile cost in the test browser fell from 2.4 s to 0.3 s (2.1 s in the last build that worked). Rendered icons and hero portraits are unchanged. Keep any new `mapImp`/`mapH` sampling inside these loops, never as extra calls.
+- **Background compile.** `GLX.programStart` / `programReady` / `programFinish` (`src/01-gl.js`): every program is handed to the driver at `R.init`, and boot waits with `KHR_parallel_shader_compile` until they finish (`R.programsReady`). No status is queried before then, because a query would block on the spot. `test/check-parallel.mjs` fakes the extension, which the test browser lacks.
+- **Cheaper blob.** The hero's bounding sphere is now centered on its shapes' box rather than the body, and rays also have to pass through that box (`boxLo`/`boxHi`). A hat used to inflate the sphere and double the blob's GPU cost. The ground darkening uses `aoY`, so it does not move with the bounds. Test-browser frame times, before → after: home 1034 → 875 ms, Blobs 934 → 605 ms, a crowded run 1787 → 1357 ms; the home blob with a hat and gear 1537 → 801 ms.
+- **Boot guard.** `projectGel.booting` in localStorage marks a start that has not yet drawn 3 s of the home screen. If the browser freezes or is killed during a start, the next start switches Graphics to Ultra low and says so. Closing the tab clears the mark. The test harness turns it off (`__noBootGuard`).
+
+## Home screen, balance pass, cosmetics
 
 **Home screen** (markup and CSS in `src/index.html`; scene code `updateHome`, `homeFoes`, `emitHomeFoes`, `homeCamera` in `src/17-main.js`):
 - Wide screens: the blob's stage on the left with the chapter picker under it (big arrows, the boss portrait, name and best time), and a column of big buttons on the right (Play, Endless, Upgrades, Gear, Blobs, Chapters, Settings).
@@ -263,6 +271,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `check-gooblin.mjs`: appears, flees, edge arrow, loot when caught, escape.
   - `check-endless.mjs`: the unlock, tiers, a boss that doesn't end the run, results and best time.
   - `check-home.mjs [wide|phone|chromebook]`: drag-to-spin, the blob shooting the background foes, the chapter arrows, and a screenshot.
+  - `check-parallel.mjs`: fakes `KHR_parallel_shader_compile`, then checks that every shader finishes in the background and that nothing queries one early.
 - **Scratch scripts** (git-ignored `test/_*.mjs`, recreate as needed): `_boss.mjs` (`CH=13 STEPS=60,75,90`) forces each attack of a chapter's boss and photographs it; `_cos.mjs` renders costume or color sheets; `_icon.mjs` (`IDS=gale,yoyo`) shows skill icons; `_chap.mjs` (`CH=13`) photographs the Chapters screen.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.

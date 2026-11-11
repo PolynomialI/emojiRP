@@ -18,7 +18,8 @@ const R = {
 R.init = function (canvas) {
   R.canvas = canvas;
   if (!GLX.init(canvas)) return false;
-  const P = (vs, fs, name, attribs) => (R.progs[name] = GLX.program(vs, fs, name, attribs));
+  // every program starts compiling now; boot waits on R.programsReady() and calls R.finishPrograms() before drawing
+  const P = (vs, fs, name, attribs) => (R.progs[name] = GLX.programStart(vs, fs, name, attribs));
   P(VS_FLOOR, FS_FLOOR, 'floor', ['aPos']);
   P(VS_HERO, FS_HERO, 'hero', ['aCorner']);
   P(VS_IMP, FS_IMP, 'imp', ['aCorner', 'iPosS', 'iAxis', 'iP0', 'iP1']);
@@ -115,6 +116,8 @@ R._attachCrown = function (base) {
 };
 R.initEnemies = function (models) { for (const name in models.meshes) R.addEnemyMesh(name, models.meshes[name]); };
 
+R.programsReady = () => Object.values(R.progs).every(GLX.programReady);
+R.finishPrograms = () => { for (const k in R.progs) GLX.programFinish(R.progs[k]); };
 R.resize = function (cssW, cssH, pixelRatio) {
   const w = Math.max(1, Math.round(cssW * pixelRatio)), h = Math.max(1, Math.round(cssH * pixelRatio));
   R.cssW = cssW; R.cssH = cssH; R.pixelRatio = pixelRatio;
@@ -381,7 +384,8 @@ R.drawHero = function (h) {
   gl.uniform1f(u.uFlash, h.flash); gl.uniform1f(u.uGlow, h.glow); gl.uniform1f(u.uWobble, h.wobble);
   gl.uniform1f(u.uBubbles, h.bubbles); gl.uniform1f(u.uSpark, h.spark); gl.uniform1f(u.uGloss, h.gloss);
   gl.uniform4fv(u.uChest, h.chest);
-  gl.uniform3fv(u.uPal, h.pal); gl.uniform4fv(u.uGrad, h.grad); gl.uniform1f(u.uGroundY, h.groundY);
+  gl.uniform3fv(u.uPal, h.pal); gl.uniform4fv(u.uGrad, h.grad); gl.uniform1f(u.uGroundY, h.groundY); gl.uniform1f(u.uAoY, h.aoY);
+  gl.uniform3fv(u.uBoxLo, h.boxLo); gl.uniform3fv(u.uBoxHi, h.boxHi);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.bindVertexArray(R.vaos.quad);
   gl.drawArrays(gl.TRIANGLES, 0, 6);

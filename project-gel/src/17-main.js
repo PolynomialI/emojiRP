@@ -415,6 +415,8 @@ function loop(now) {
     updateHome(dt);
     pumpHeroIcons();
     homeCamera(dt);
+    // a few seconds of the home screen drawn: this start worked
+    if (BOOT_GUARD.set && R.frame.time > 3) bootGuardClear();
   } else if (G.run) updateCamera(0, false, true);
   if (s !== 'loading') renderFrame();
   UI.update(dt);
@@ -431,9 +433,31 @@ function showLoadError(msg) {
   e.textContent = typeof msg === 'string' ? msg : 'The game could not start on this device. ' + (msg && msg.message ? msg.message.split('\n')[0] : '');
   if (msg && msg.message) console.error(msg);
 }
+// A start that never got the home screen drawing (the browser froze, or was killed, while loading)
+// leaves this mark behind; the next start then uses Ultra low graphics, and says why.
+const BOOT_GUARD = { key: 'projectGel.booting', set: false, tripped: false };
+function bootGuardStart() {
+  if (window.__noBootGuard) return;
+  try {
+    BOOT_GUARD.tripped = localStorage.getItem(BOOT_GUARD.key) === '1';
+    localStorage.setItem(BOOT_GUARD.key, '1');
+    BOOT_GUARD.set = true;
+  } catch (_) { /* no storage: no guard */ }
+  // closing the tab while it loads is not a crash
+  window.addEventListener('pagehide', bootGuardClear);
+  if (BOOT_GUARD.tripped && G.save.settings.quality !== 'ultra') G.save.settings.quality = 'ultra';
+  else BOOT_GUARD.tripped = false;
+}
+function bootGuardClear() {
+  if (!BOOT_GUARD.set) return;
+  BOOT_GUARD.set = false;
+  try { localStorage.removeItem(BOOT_GUARD.key); } catch (_) { /* ignore */ }
+}
+
 async function boot() {
   UI.init();
   G.save = loadGame();
+  bootGuardStart();
   setProgress(0.06, 'Warming up the goo…');
   await nextFrame();
   const canvas = $('gl');
@@ -455,6 +479,9 @@ async function boot() {
   applySkin(G.save.skin);
   setProgress(0.5, 'Polishing the goo…');
   await nextFrame();
+  // the shaders have been compiling in the background since R.init; wait for them without blocking the page
+  while (!R.programsReady()) await nextFrame();
+  try { R.finishPrograms(); } catch (err) { showLoadError(err); return; }
   renderAllIcons();
   document.querySelectorAll('img[data-icon]').forEach(img => { img.src = ICONS.get(img.dataset.icon); });
   setProgress(1, 'Ready');
@@ -465,6 +492,7 @@ async function boot() {
   UI.openTab('home');
   // the setting can be on while the browser still falls back to software (blocked driver, or after graphics crashes)
   if (PERF.software) UI.toast(`Your browser is drawing the game without the graphics card (it reports "${gpuName()}"), so it will be slow. Restarting the browser often fixes this; try Graphics: Ultra low too.`, 10);
+  else if (BOOT_GUARD.tripped) UI.toast('The game did not finish starting last time, so Graphics is now Ultra low. You can raise it again in Settings.', 10);
   const off = offlineEarnings();
   if (off) UI.showOffline(off.coins, off.hours);
   saveGame();

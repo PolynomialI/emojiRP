@@ -2,7 +2,7 @@
 // WebGL2 helpers
 // ============================================================
 let gl = null;
-const GLCAPS = { hdr: false, samples: 0 };
+const GLCAPS = { hdr: false, samples: 0, parallel: null };
 
 const GLX = {
   init(canvas) {
@@ -10,6 +10,8 @@ const GLX = {
     if (!gl) return false;
     GLCAPS.hdr = !!gl.getExtension('EXT_color_buffer_float');
     gl.getExtension('OES_texture_float_linear');
+    // compile shaders off the main thread when the browser can: a long compile then never stalls the page or the browser
+    GLCAPS.parallel = gl.getExtension('KHR_parallel_shader_compile');
     GLCAPS.samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES) || 0);
     // half-float targets can support fewer samples than MAX_SAMPLES; use the largest supported count up to 4
     if (GLCAPS.hdr && GLCAPS.samples) {
@@ -19,39 +21,59 @@ const GLX = {
     return true;
   },
 
-  shader(type, src, name) {
+  shader(type, src) {
     const s = gl.createShader(type);
     gl.shaderSource(s, src);
     gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-      const log = gl.getShaderInfoLog(s) || '';
-      const m = /ERROR: \d+:(\d+)/.exec(log);
-      let excerpt = '';
-      if (m) {
-        const lines = src.split('\n'), ln = Number(m[1]);
-        excerpt = lines.slice(Math.max(0, ln - 4), ln + 2).map((l, i) => `${Math.max(1, ln - 3) + i}: ${l}`).join('\n');
-      }
-      throw new Error(`[${name}] ${type === gl.VERTEX_SHADER ? 'vertex' : 'fragment'} shader: ${log}\n${excerpt}`);
-    }
     return s;
   },
+  // the compile error of one shader, with the lines around it
+  shaderError(s, type, src, name) {
+    if (gl.getShaderParameter(s, gl.COMPILE_STATUS)) return null;
+    const log = gl.getShaderInfoLog(s) || '';
+    const m = /ERROR: \d+:(\d+)/.exec(log);
+    let excerpt = '';
+    if (m) {
+      const lines = src.split('\n'), ln = Number(m[1]);
+      excerpt = lines.slice(Math.max(0, ln - 4), ln + 2).map((l, i) => `${Math.max(1, ln - 3) + i}: ${l}`).join('\n');
+    }
+    return new Error(`[${name}] ${type === gl.VERTEX_SHADER ? 'vertex' : 'fragment'} shader: ${log}\n${excerpt}`);
+  },
 
-  program(vs, fs, name, attribs) {
+  // Programs are built in two steps so they can all compile at once, in the background:
+  // programStart() hands the sources to the driver without waiting, programReady() says when the driver
+  // is done (always true without KHR_parallel_shader_compile), and programFinish() checks the result
+  // and looks up the uniforms. Asking for any status earlier would wait for that compile on the spot.
+  programStart(vs, fs, name, attribs) {
     const p = gl.createProgram();
-    gl.attachShader(p, GLX.shader(gl.VERTEX_SHADER, vs, name));
-    gl.attachShader(p, GLX.shader(gl.FRAGMENT_SHADER, fs, name));
+    const v = GLX.shader(gl.VERTEX_SHADER, vs), f = GLX.shader(gl.FRAGMENT_SHADER, fs);
+    gl.attachShader(p, v);
+    gl.attachShader(p, f);
     if (attribs) attribs.forEach((a, i) => gl.bindAttribLocation(p, i, a));
     gl.linkProgram(p);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`[${name}] link: ${gl.getProgramInfoLog(p)}`);
-    const u = {};
+    return { p, u: {}, name, pending: { v, f, vs, fs } };
+  },
+  programReady(prog) {
+    return !prog.pending || !GLCAPS.parallel || gl.getProgramParameter(prog.p, GLCAPS.parallel.COMPLETION_STATUS_KHR);
+  },
+  programFinish(prog) {
+    const job = prog.pending, p = prog.p;
+    if (!job) return prog;
+    prog.pending = null;
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      throw GLX.shaderError(job.v, gl.VERTEX_SHADER, job.vs, prog.name) || GLX.shaderError(job.f, gl.FRAGMENT_SHADER, job.fs, prog.name) ||
+        new Error(`[${prog.name}] link: ${gl.getProgramInfoLog(p)}`);
+    }
+    gl.deleteShader(job.v); gl.deleteShader(job.f);
     const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
     for (let i = 0; i < n; i++) {
       const info = gl.getActiveUniform(p, i);
       const key = info.name.replace(/\[0\]$/, '');
-      u[key] = gl.getUniformLocation(p, info.name);
+      prog.u[key] = gl.getUniformLocation(p, info.name);
     }
-    return { p, u, name };
+    return prog;
   },
+  program(vs, fs, name, attribs) { return GLX.programFinish(GLX.programStart(vs, fs, name, attribs)); },
 
   buffer(data, usage = gl.STATIC_DRAW, target = gl.ARRAY_BUFFER) {
     const b = gl.createBuffer();
