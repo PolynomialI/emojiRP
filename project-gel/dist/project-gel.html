@@ -7732,9 +7732,16 @@ const PASSIVES = {
   reach: { name: 'Reach', short: '+5% area', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
   multishot: { name: 'Projectile Count', short: '+1 projectile', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
   sugar: { name: 'Sugar Rush', short: '+3% rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
-  thorns: { name: 'Thorns', short: '+5 thorn damage', from: 8, desc: 'Enemies that touch you take 10 damage and get shoved away, +5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
+  thorns: { name: 'Thorns', short: '+2.5 thorn damage', from: 8, desc: 'Enemies that touch you take 5 damage and get shoved away, +2.5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
   growth: { name: 'Growth', short: '+4% XP', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
+// Power-ups hit far less hard than they first did: half the damage, the Goo Wave a quarter and the Laser
+// about a third; Aura stays as it is. (Evolutions build on these numbers.)
+const SKILL_POWER = { aura: 1, wave: 0.25, laser: 0.35 };
+for (const id in SKILLS) {
+  const m = SKILL_POWER[id] ?? 0.5;
+  if (m !== 1) for (const L of SKILLS[id].levels) for (const k of ['dmg', 'burst', 'pop']) if (k in L) L[k] = Math.max(1, Math.round(L[k] * m * 10) / 10);
+}
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 // the power-up a chapter's theme introduces (from: the first chapter it appears in)
 // Evolutions: a skill at max level plus its partner ability turns into a stronger, named form, through a chest.
@@ -7990,20 +7997,22 @@ const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 // every chapter is unique: the game ends after the last one (no repeats with stronger stats)
 const CHAPTER_COUNT = ARENAS.length;
 function chapterInfo(n) {
-  const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
-  const k = n - 1, kk = k <= 9 ? k : 9 + (k - 9) * 0.6;
-  // bosses still being built fall back to the original roster
+  const i = clamp(n, 1, CHAPTER_COUNT) - 1, arena = i % ARENAS.length;
+  const k = i;
+  // each chapter has its own boss (no second, borrowed boss any more)
   const main = BOSS_TYPES[CHAPTER_BOSSES[i]] ? CHAPTER_BOSSES[i] : BOSS_ORDER[i % BOSS_ORDER.length];
-  const bosses = n % 5 === 0 ? [main, GUEST_BOSSES[(n / 5 - 1) % GUEST_BOSSES.length]] : [main];
+  const bosses = [main];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
-    // enemies toughen steadily through chapter 10, then more gently (kk counts later chapters as 0.6 each)
-    hpMul: 1 + 0.09 * kk + 0.004 * kk * kk,
-    dmgMul: 1 + 0.06 * kk,
-    rateMul: Math.min(1.8, 0.85 + 0.05 * kk),
-    // boss health climbs fast for six chapters, then slowly, so late fights stay around a minute and a half;
-    // two bosses at once each bring less
-    bossHpMul: Math.pow(1.17, Math.min(k, 5)) * Math.pow(1.045, Math.max(0, k - 5)) * (bosses.length > 1 ? 0.6 : 1),
+    // every chapter is clearly harder than the last: tougher, harder-hitting, faster and far more numerous
+    hpMul: 1 + 0.15 * k + 0.011 * k * k,
+    dmgMul: 1 + 0.09 * k,
+    // chapter 1 is the gentlest (0.6x the spawn curve); chapter 20 brings 2.3x
+    rateMul: 0.6 + 0.09 * k,
+    speedMul: 1 + 0.012 * k,
+    // bosses grow with the chapter too, in health and in size (grand: drawn and hit bigger)
+    bossHpMul: Math.pow(1.17, Math.min(k, 5)) * Math.pow(1.07, Math.max(0, k - 5)),
+    grand: 1 + 0.025 * k,
     reward: Math.round(150 * Math.pow(1.08, k)),
     has: { ...Object.fromEntries(Object.entries(ENEMY_MIX).map(([k, v]) => [k, n >= v[0]])), ...Object.fromEntries(Object.keys(THEME_ENEMIES[ARENAS[arena].id] || {}).map(k => [k, true])) },
   };
@@ -8519,12 +8528,14 @@ function applySkin(id, costume, hat) {
 
 // ---------- runs ----------
 function makeEvents() {
-  const ev = [{ t: 90, kind: 'swarm', n: 14 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 24 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
+  const ev = [{ t: 60, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 40 }, { t: 210, kind: 'swarm', n: 60 }, { t: 240, kind: 'elite' }, { t: 255, kind: 'surge', n: 40 }, { t: 280, kind: 'swarm', n: 80 }, { t: 300, kind: 'boss' }];
   // most runs get a visit from the Golden Gooblin somewhere in the middle
   if (Math.random() < 0.8) ev.push({ t: rand(70, 230), kind: 'gooblin' });
   return ev.sort((a, b) => a.t - b.t);
 }
-const RATE_KEYS = [[0, 0.35], [30, 0.5], [60, 0.72], [120, 1.15], [180, 1.6], [240, 2.0], [270, 2.6], [300, 2.6]];
+// spawns a second: a steady stream from the start (standing still is never safe), then a flood near the end
+const RATE_KEYS = [[0, 0.45], [30, 0.7], [60, 1.0], [120, 2.0], [180, 3.4], [240, 5.5], [270, 8.5], [300, 10.0]];
+const MAX_ALIVE = 600;
 function spawnRate(t) {
   for (let i = 1; i < RATE_KEYS.length; i++) {
     const [t1, r1] = RATE_KEYS[i], [t0, r0] = RATE_KEYS[i - 1];
@@ -8639,17 +8650,20 @@ function recomputeStats() {
 }
 
 // ---------- enemies ----------
+// regular enemies are a little frailer than their table says (with weaker power-ups, the numbers do the work)
+const ENEMY_HP = 0.7, XP_MUL = 0.75;
 function spawnEnemy(type, x, z, opts = {}) {
   const run = G.run, d = ENEMY_TYPES[type], info = run.info;
   const elite = !!opts.elite;
-  // the chapter's extra toughness eases in over the first 90 seconds, while the hero has few skills
+  // the chapter's extra toughness eases in over the first 90 seconds, while the hero has few skills. Within a
+  // run enemies barely toughen: by the end of a chapter each one dies easily, but there are a great many.
   const chapterHp = 1 + (info.hpMul - 1) * clamp(0.5 + run.t / 180, 0.5, 1);
-  const hpMul = chapterHp * (1 + 0.09 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
+  const hpMul = ENEMY_HP * chapterHp * (1 + 0.03 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
   const e = {
     id: run.nextId++, type, def: d, model: d.model, boss: false, elite,
     x, z, vx: 0, vz: 0, kx: 0, kz: 0, yaw: Math.atan2(G.hero.pos[0] - x, G.hero.pos[2] - z),
     hp: d.hp * hpMul, maxHp: d.hp * hpMul,
-    speed: d.speed * (elite ? 0.9 : 1) * rand(0.92, 1.08), dmg: d.dmg * info.dmgMul * (elite ? 1.5 : 1),
+    speed: d.speed * (info.speedMul || 1) * (elite ? 0.9 : 1) * rand(0.92, 1.08), dmg: d.dmg * info.dmgMul * (elite ? 1.5 : 1),
     radius: d.radius * (elite ? 1.5 : 1) * (opts.scale || 1), scale: d.scale * (elite ? 1.5 : 1) * (opts.scale || 1), mass: d.mass * (elite ? 3 : 1),
     xp: elite ? 25 : d.xp, phase: rand(0, 1), flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
     slowT: 0, slowMul: 1, auraTint: 0, bladeT: 0, budT: 0, tint: hexToRgb(opts.tint || d.tint),
@@ -8771,7 +8785,7 @@ function spawnPickup(kind, x, z, value = 1) {
 }
 function gainXp(v) {
   const run = G.run;
-  run.xp += v * run.stats.xpMul;
+  run.xp += v * run.stats.xpMul * XP_MUL;
   while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = xpFor(run.level); run.pending++; }
 }
 
@@ -8809,11 +8823,11 @@ function updateRun(dt) {
     // continuous spawning
     const alive = run.enemies.length;
     if (run.endless) endlessTick(run);
-    const rate = run.rush ? 0.8 : (run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1))) * (run.endless ? 1 + Math.max(0, run.t - 150) / 360 : 1);
+    const rate = run.endless ? endlessRate(run.t) : run.rush ? 1.6 : (run.bossStarted ? 2.5 : spawnRate(run.t)) * run.info.rateMul;
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) {
       run.spawnAcc -= 1;
-      if (alive < 380) spawnFromMix();
+      if (alive < MAX_ALIVE) spawnFromMix();
     }
   }
 
@@ -8867,15 +8881,15 @@ function updateRun(dt) {
 function runEvent(ev) {
   const run = G.run;
   if (ev.kind === 'swarm') {
-    const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU);
-    // a ring of stickmen closing in, with a gap to break out through
-    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU * 0.75; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
+    const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU), n = Math.round(ev.n * run.info.rateMul);
+    // a ring of stickmen closing in, with a gap to break out through (bigger in later chapters)
+    for (let i = 0; i < n; i++) { const a = off + (i / n) * TAU * 0.75; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
   } else if (ev.kind === 'elite') {
     const types = ELITE_TYPES.filter(k => k === 'stickman' || run.info.has[k]);
     const [x, z] = spawnPoint(2);
     spawnEnemy(pick(types), x, z, { elite: true });
   } else if (ev.kind === 'surge') {
-    for (let i = 0; i < 18; i++) spawnFromMix();
+    for (let i = 0; i < Math.round((ev.n || 18) * run.info.rateMul); i++) spawnFromMix();
   } else if (ev.kind === 'boss') {
     startBoss();
   } else if (ev.kind === 'gooblin') {
@@ -8886,7 +8900,13 @@ function runEvent(ev) {
 }
 
 function spawnFromMix() {
-  const run = G.run, t = run.t, ch = run.endless ? Math.max(run.chapter, 1 + run.tier) : run.chapter;
+  const run = G.run, t = run.t, ch = run.chapter;
+  // Endless: any enemy at all, picked at random
+  if (run.endless) {
+    const type = pick(ENDLESS_POOL()), [x, z] = spawnPoint();
+    spawnEnemy(type, x, z, { elite: ELITE_TYPES.includes(type) && Math.random() < ENDLESS.elite });
+    return;
+  }
   const w = { stickman: 1 };
   // each type joins after its unlock time; in later chapters it shows up sooner
   for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.8 : 1)) w[k] = wt; }
@@ -8914,14 +8934,16 @@ function spawnFromMix() {
 function updateEnemies(dt) {
   const run = G.run, h = G.hero.pos;
   let touching = 0;
+  // big crowds: the slower checks (slowing ground, separation, scenery) run for half the crowd each frame
+  const fr = run.frameN = (run.frameN || 0) + 1, crowd = run.enemies.length > 220;
   for (const e of run.enemies) {
     if (e.dying) { e.dying += dt / (e.boss ? 0.6 : 0.14); continue; }
     e.flash = Math.max(0, e.flash - dt); e.flashCd = (e.flashCd || 0) - dt;
     e.contactCd -= dt;
     e.slowT -= dt; if (e.slowT <= 0) e.slowMul = 1;
-    if (ARENA.zones.length && !e.boss) {
+    if (ARENA.zones.length && !e.boss && (e.id + fr) % 3 === 0) {
       const z = zoneAt(e.x, e.z), Z = z && ZONE_KINDS[z.kind];
-      if (Z && Z.slow) { e.slowMul = Math.min(e.slowMul, Z.slow); e.slowT = Math.max(e.slowT, 0.05); }
+      if (Z && Z.slow) { e.slowMul = Math.min(e.slowMul, Z.slow); e.slowT = Math.max(e.slowT, 0.12); }
     }
     e.spawnT = Math.max(0, e.spawnT - dt);
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
@@ -8949,21 +8971,32 @@ function updateEnemies(dt) {
     }
   }
   run.contactSlow = Math.min(0.3, touching * 0.05);
-  // separation between enemies
+  // separation between enemies (inline grid scan: this is the hottest loop with a big crowd)
+  const cell = GRID.cell, map = GRID.map;
   for (const e of run.enemies) {
-    if (e.dying) continue;
-    gridQuery(e.x, e.z, e.radius + 1.2, o => {
-      if (o.id <= e.id) return;
-      const dx = o.x - e.x, dz = o.z - e.z, rr = e.radius + o.radius, d2 = dx * dx + dz * dz;
-      if (d2 >= rr * rr || d2 < 1e-8) return;
-      const d = Math.sqrt(d2), ov = (rr - d) * 0.5, tot = e.mass + o.mass;
-      const ex = dx / d * ov, ez = dz / d * ov;
-      e.x -= ex * (o.mass / tot) * 2; e.z -= ez * (o.mass / tot) * 2;
-      o.x += ex * (e.mass / tot) * 2; o.z += ez * (e.mass / tot) * 2;
-    });
+    if (e.dying || (crowd && !e.boss && (e.id + fr) % 2)) continue;
+    const r = e.radius + (e.boss ? 1.6 : 0.7);
+    const x0 = Math.floor((e.x - r) / cell), x1 = Math.floor((e.x + r) / cell), z0 = Math.floor((e.z - r) / cell), z1 = Math.floor((e.z + r) / cell);
+    // in a packed crowd a handful of neighbours is plenty: stop after 18 looks
+    let looks = e.boss ? 1e9 : 18;
+    for (let cx = x0; cx <= x1 && looks > 0; cx++) for (let cz = z0; cz <= z1 && looks > 0; cz++) {
+      const a = map.get(gkey(cx, cz));
+      if (!a) continue;
+      for (let i = 0; i < a.length && looks > 0; i++) {
+        const o = a[i];
+        looks--;
+        if (o === e || o.dying || (o.id < e.id && !(crowd && !o.boss && (o.id + fr) % 2))) continue;
+        const dx = o.x - e.x, dz = o.z - e.z, rr = e.radius + o.radius, d2 = dx * dx + dz * dz;
+        if (d2 >= rr * rr || d2 < 1e-8) continue;
+        const d = Math.sqrt(d2), ov = (rr - d) * 0.5, tot = e.mass + o.mass;
+        const ex = dx / d * ov, ez = dz / d * ov;
+        e.x -= ex * (o.mass / tot) * 2; e.z -= ez * (o.mass / tot) * 2;
+        o.x += ex * (e.mass / tot) * 2; o.z += ez * (e.mass / tot) * 2;
+      }
+    }
   }
   for (const e of run.enemies) {
-    if (e.dying || (e.y || 0) > 0.6 || e.def.ghost) continue;
+    if (e.dying || (e.y || 0) > 0.6 || e.def.ghost || (crowd && !e.boss && (e.id + fr) % 2 === 1)) continue;
     const hit = resolveCircle(e, e.radius);
     if (hit && e.boss && e.ai.state === 'charge') bossBonk(e, hit);
   }
@@ -9888,38 +9921,27 @@ function gooblinLoot(e) {
   AUDIO.play('levelup', 1.2);
 }
 
-// ---------- Endless: survive as long as you can on a random map; it keeps getting harder ----------
-const ENDLESS = { tierEvery: 50, bossEvery: 120 };
+// ---------- Endless: survive as long as you can, on a random map from any chapter. Enemies are completely
+// random (any type from any chapter, now and then an elite), with no waves and no bosses, and the stream
+// thickens and toughens quickly: after five minutes it is a flood. Scored by time alone. ----------
+const ENDLESS = { rate0: 1.6, rateT: 22, hpT: 75, dmgT: 160, elite: 0.04 };
 function endlessUnlocked() { return true; }
-// the map comes from a chapter already reached; power-ups from every chapter reached are on offer
 function beginEndless() {
   if (!endlessUnlocked()) return;
-  const reached = Math.min(G.save.chapter, CHAPTER_BOSSES.length), ch = randInt(1, reached);
-  beginChapter(ch, { endless: true, powerCap: Math.max(reached, G.save.chapter) });
+  beginChapter(randInt(1, ENDLESS_MAPS()), { endless: true, powerCap: CHAPTER_COUNT });
 }
-function endlessEvents() {
-  const ev = [];
-  for (let k = 0; k < 40; k++) {
-    const t0 = k * ENDLESS.bossEvery;
-    ev.push({ t: t0 + 50, kind: 'swarm', n: 14 + k * 4 }, { t: t0 + 80, kind: 'elite' });
-    if (k % 2 === 0) ev.push({ t: t0 + rand(30, 100), kind: 'gooblin' });
-    // a boss every two minutes, working through all ten; every third visit brings an old friend along
-    if (k > 0) {
-      const main = CHAPTER_BOSSES[(k - 1) % CHAPTER_BOSSES.length];
-      ev.push({ t: t0, kind: 'eboss', ids: k % 3 === 0 ? [main, GUEST_BOSSES[(k / 3 - 1) % GUEST_BOSSES.length]] : [main] });
-    }
-  }
-  return ev.sort((a, b) => a.t - b.t);
-}
-// every tierEvery seconds the enemies take on the next chapter's toughness
+// every chapter's map can come up (chapter 20's crater field too, without its cave)
+const ENDLESS_MAPS = () => CHAPTER_COUNT;
+function endlessEvents() { return []; }
+// spawns a second: about 15 a second after five minutes
+const endlessRate = t => ENDLESS.rate0 + t / ENDLESS.rateT;
+// enemies toughen by the second rather than by chapter
 function endlessTick(run) {
-  const tier = Math.floor(run.t / ENDLESS.tierEvery);
-  if (tier === run.tier) return;
-  run.tier = tier;
-  const T = chapterInfo(1 + tier);
-  Object.assign(run.info, { hpMul: T.hpMul, dmgMul: T.dmgMul, rateMul: T.rateMul, bossHpMul: T.bossHpMul * (tier > 0 ? 0.8 : 1), has: T.has });
-  if (tier > 0) UI.toast(`Endless · danger ${tier + 1}`, 1.6);
+  const t = run.t;
+  run.info.hpMul = 1 + t / ENDLESS.hpT; run.info.dmgMul = 1 + t / ENDLESS.dmgT; run.info.speedMul = 1 + Math.min(0.45, t / 800);
 }
+// any enemy type at all (not the Gooblin)
+const ENDLESS_POOL = () => Object.keys(ENEMY_TYPES).filter(k => k !== 'gooblin' && !ENEMY_TYPES[k].mini);
 // a boss beaten in Endless drops its loot and the run goes on
 function endlessBossDown(run) {
   for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
@@ -11047,7 +11069,7 @@ function thornsTouch(e, dx, dz, d) {
   if (!lv || e.thornAt > run.t || G.state !== 'run') return;
   e.thornAt = run.t + 0.5;
   const l = d || 1;
-  hurtEnemy(e, 10 + 5 * (lv - 1), dx / l * 7, dz / l * 7, { sound: false, color: [0.6, 1, 0.4] });
+  hurtEnemy(e, 5 + 2.5 * (lv - 1), dx / l * 7, dz / l * 7, { sound: false, color: [0.6, 1, 0.4] });
   FX.burst(e.x - dx / l * e.radius, 0.6, e.z - dz / l * e.radius, 4, [0.55, 0.85, 0.3], 3, 0.08, 0.3, 1);
 }
 
@@ -11447,20 +11469,22 @@ function startBoss(list) {
 function spawnBoss(id, x, z, opts) {
   const run = G.run, B = BOSS_TYPES[id], info = run.info;
   const hp = B.hp * info.bossHpMul;
+  // later chapters' bosses are bigger (and hit bigger)
+  const gm = run.rush ? 1 + 0.025 * run.rushK : info.grand || 1;
   const e = {
     id: run.nextId++, type: id, def: B, model: B.model, boss: true, elite: false,
     x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: 0, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * info.dmgMul,
-    radius: B.radius, scale: B.scale, mass: B.mass, xp: 0, phase: 0, flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
+    radius: B.radius * gm, scale: B.scale * gm, grand: gm, mass: B.mass, xp: 0, phase: 0, flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
     slowT: 0, slowMul: 1, auraTint: 0, bladeT: 0, tint: hexToRgb(opts.tint || B.tint), spawnT: 1.2,
     clip: 'run', clipU: 0, dizzy: 0, contactDmg: 0,
     ai: { state: 'enter', t: 1.2, summonT: 8, throwT: 2.5, jumpCd: 2, attackT: 2.5, charges: 0, anchor: [x, z], orbit: rand(0, TAU), mode: 0 },
   };
   e.contactDmg = e.dmg;
-  resolveCircle(e, B.radius * 1.4);
+  resolveCircle(e, e.radius * 1.4);
   run.enemies.push(e); run.bosses.push(e);
   if (B.noDrop) { e.ai.state = 'intro'; e.y = 0; return e; }
   e.y = 9;
-  addTele({ kind: 'circle', x: e.x, z: e.z, r: B.radius * 2.2, dur: 1.2 });
+  addTele({ kind: 'circle', x: e.x, z: e.z, r: e.radius * 2.2, dur: 1.2 });
   return e;
 }
 
@@ -11483,8 +11507,33 @@ function bossWalk(e, dt, tx, tz, speed) {
 const BOSS_AI = {}, BOSS_DRAW = {};
 // drawing for enemy shot kinds added by later chapters: SHOT_DRAW[kind](shot)
 const SHOT_DRAW = {};
+// Stage 2: at half health every boss (and miniboss) stops to roar, a red shockwave shoves you back, and from
+// then on it is frantic: it moves faster and the pauses between its attacks run STAGE2.tempo times as fast.
+// Wind-ups and warnings keep their length, so everything can still be dodged.
+const STAGE2 = { at: 0.5, tempo: 2.5, speed: 1.25, rest: ['walk', 'dizzy', 'cooled', 'recover', 'under', 'stalk', 'slither'] };
+function bossStage2(e) {
+  const ai = e.ai, run = G.run, h = G.hero.pos;
+  ai.stage2 = true; e.speed *= STAGE2.speed;
+  G.cam.shake = Math.max(G.cam.shake, 0.45); AUDIO.play('roar'); AUDIO.play('boss');
+  FX.ring(e.x, e.z, 7 * e.scale / 2, [1, 0.3, 0.2], 0.7, 1); FX.ring(e.x, e.z, 4 * e.scale / 2, [1, 0.6, 0.3], 0.5, 1);
+  FX.crack(e.x, e.z, 3 * e.scale / 2, 2.2);
+  FX.burst(e.x, 1, e.z, 40, [1, 0.35, 0.2], 8, 0.16, 0.7, 2, 2);
+  const dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
+  if (d < 6 + e.radius) { run.vel[0] += dx / d * 11; run.vel[2] += dz / d * 11; }
+  enemiesInRadius(e.x, e.z, 5, o => { if (!o.boss) { const ox = o.x - e.x, oz = o.z - e.z, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 10 / o.mass; o.kz += oz / od * 10 / o.mass; } });
+  if (!e.mini) UI.banner('ENRAGED!', true);
+}
+function bossStage2Tick(e, dt) {
+  const ai = e.ai, extra = dt * (STAGE2.tempo - 1);
+  for (const k of ['cd', 'summonT', 'throwT', 'jumpCd', 'attackT']) if (ai[k] > 0) ai[k] -= extra;
+  if (STAGE2.rest.includes(ai.state) && ai.t > 0) ai.t -= extra;
+  // a hot red pulse around it for the rest of the fight
+  if (Math.random() < 0.35) FX.part(e.x + rand(-1, 1) * e.radius, rand(0.3, 1.4) * e.scale, e.z + rand(-1, 1) * e.radius, 0, rand(1, 2.2), 0, 0.14, 0.03, rand(0.5, 0.9), [1, rand(0.25, 0.5), 0.15], 0.9, 0, 0, 0.5);
+}
 function updateBoss(e, dt) {
   const ai = e.ai, h = G.hero.pos, run = G.run;
+  if (!ai.stage2 && !e.dying && ai.state !== 'enter' && ai.state !== 'intro' && e.hp < e.maxHp * STAGE2.at) bossStage2(e);
+  if (ai.stage2) bossStage2Tick(e, dt);
   ai.t -= dt;
   e.dizzy = Math.max(0, e.dizzy - dt);
   const dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
@@ -11578,7 +11627,7 @@ function updateBoss(e, dt) {
       e.contactDmg = e.dmg;
       if (ai.state === 'walk') {
         bossWalk(e, dt, h[0], h[2], e.speed); bossFace(e, dt);
-        if (ai.t <= 0) { ai.state = 'aim'; ai.t = 0.95; ai.charges = 3; }
+        if (ai.t <= 0) { ai.state = 'aim'; ai.t = 0.95; ai.charges = ai.stage2 ? 5 : 3; }
       } else if (ai.state === 'aim') {
         e.clip = 'idle'; e.phase += dt; bossFace(e, dt, 12);
         e.vx *= 0.8; e.vz *= 0.8;
@@ -11590,14 +11639,15 @@ function updateBoss(e, dt) {
         if (ai.t <= 0) { ai.state = 'charge'; ai.t = 1.0; ai.tele.done = true; AUDIO.play('throw'); }
       } else if (ai.state === 'charge') {
         e.clip = 'run'; e.phase += dt * 3;
-        e.x += ai.dir[0] * 12.5 * dt; e.z += ai.dir[1] * 12.5 * dt;
+        const cs = ai.stage2 ? 15 : 12.5;
+        e.x += ai.dir[0] * cs * dt; e.z += ai.dir[1] * cs * dt;
         e.contactDmg = 30 * run.info.dmgMul;
         if (Math.random() < 0.6) FX.smoke(e.x, 0.2, e.z, 0.5, [0.6, 0.55, 0.5], 0.5, 0.4);
         enemiesInRadius(e.x, e.z, e.radius + 0.3, o => { if (o !== e && !o.boss) { o.kx += -ai.dir[1] * 8 * (Math.random() < 0.5 ? 1 : -1); o.kz += ai.dir[0] * 8; } });
         if (ai.t <= 0) {
           ai.charges--;
           ai.tele = null;
-          if (ai.charges > 0) { ai.state = 'aim'; ai.t = 0.8; }
+          if (ai.charges > 0) { ai.state = 'aim'; ai.t = ai.stage2 ? 0.7 : 0.8; }
           else { ai.state = 'dizzy'; ai.t = 2.5; e.dizzy = 2.5; G.cam.shake = 0.12; AUDIO.play('boom'); }
         }
       } else if (ai.state === 'dizzy') {
@@ -11713,12 +11763,30 @@ function enemyRow(e) {
   return c.row + Math.floor((e.phase - Math.floor(e.phase)) * c.frames);
 }
 
+// From chapter 6 on, bosses carry an air of power that grows with the chapter: a slow swirl of light on the
+// ground under them and motes rising around them, in the map's accent color; from chapter 11, a crown of light too.
+function emitBossGrandeur(e) {
+  const run = G.run, k = run.rush ? run.rushK : run.chapter - 1, s2 = e.ai && e.ai.stage2;
+  if ((k < 5 && !s2) || e.dying || e.portrait) return;
+  const a = s2 ? 1 : clamp((k - 4) / 10, 0.25, 1), r = e.radius * 2.4 * (s2 ? 1 + 0.08 * Math.sin(run.t * 9) : 1), t = run.t, th = ARENA.theme;
+  const ac = s2 ? [1, 0.25, 0.15] : th && th.accent ? hexToRgb(th.accent) : [1, 0.8, 0.4];
+  pushDecal(e.x, e.z, r, r, -t * 0.6, 3, 0, 0.5, ac[0], ac[1], ac[2], 0.18 + 0.22 * a, true);
+  if (Math.random() < 0.25 + 0.5 * a) {
+    const q = rand(0, TAU), d = rand(0.5, 1) * r;
+    FX.part(e.x + Math.cos(q) * d, 0.2, e.z + Math.sin(q) * d, 0, rand(1.5, 3), 0, 0.12 + 0.1 * a, 0.02, rand(0.8, 1.4), ac, 0.9, 0, 0, 0.5);
+  }
+  if (k >= 10 && Math.random() < 0.4) {
+    const q = t * 2.2 + rand(-0.2, 0.2), y = (e.y || 0) + 2.6 * e.scale;
+    FX.glow(e.x + Math.cos(q) * e.radius * 0.7, y, e.z + Math.sin(q) * e.radius * 0.7, 0.35, ac, 0.3, 0.8);
+  }
+}
 function emitRunScene() {
   const run = G.run, h = G.hero.pos, L = R.frame.lightDir;
   const sdx = -L[0] * 0.5, sdz = -L[2] * 0.5;
   emitArena();
   for (const e of run.enemies) {
     if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
+    if (e.boss) emitBossGrandeur(e);
     if (e.boss && BOSS_DRAW[e.type]) { BOSS_DRAW[e.type](e); continue; }
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;
@@ -13996,7 +14064,7 @@ const UI = {
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.rush ? run.rushK / CHAPTER_BOSSES.length : run.endless ? (run.t % ENDLESS.bossEvery) / ENDLESS.bossEvery : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      pct = run.rush ? run.rushK / CHAPTER_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
       label = run.rush ? `BOSS RUSH · ${run.rushK}/${CHAPTER_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
     }
     const pctS = (pct * 100).toFixed(1) + '%';

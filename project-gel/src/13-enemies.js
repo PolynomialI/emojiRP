@@ -35,20 +35,22 @@ function startBoss(list) {
 function spawnBoss(id, x, z, opts) {
   const run = G.run, B = BOSS_TYPES[id], info = run.info;
   const hp = B.hp * info.bossHpMul;
+  // later chapters' bosses are bigger (and hit bigger)
+  const gm = run.rush ? 1 + 0.025 * run.rushK : info.grand || 1;
   const e = {
     id: run.nextId++, type: id, def: B, model: B.model, boss: true, elite: false,
     x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: 0, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * info.dmgMul,
-    radius: B.radius, scale: B.scale, mass: B.mass, xp: 0, phase: 0, flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
+    radius: B.radius * gm, scale: B.scale * gm, grand: gm, mass: B.mass, xp: 0, phase: 0, flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
     slowT: 0, slowMul: 1, auraTint: 0, bladeT: 0, tint: hexToRgb(opts.tint || B.tint), spawnT: 1.2,
     clip: 'run', clipU: 0, dizzy: 0, contactDmg: 0,
     ai: { state: 'enter', t: 1.2, summonT: 8, throwT: 2.5, jumpCd: 2, attackT: 2.5, charges: 0, anchor: [x, z], orbit: rand(0, TAU), mode: 0 },
   };
   e.contactDmg = e.dmg;
-  resolveCircle(e, B.radius * 1.4);
+  resolveCircle(e, e.radius * 1.4);
   run.enemies.push(e); run.bosses.push(e);
   if (B.noDrop) { e.ai.state = 'intro'; e.y = 0; return e; }
   e.y = 9;
-  addTele({ kind: 'circle', x: e.x, z: e.z, r: B.radius * 2.2, dur: 1.2 });
+  addTele({ kind: 'circle', x: e.x, z: e.z, r: e.radius * 2.2, dur: 1.2 });
   return e;
 }
 
@@ -71,8 +73,33 @@ function bossWalk(e, dt, tx, tz, speed) {
 const BOSS_AI = {}, BOSS_DRAW = {};
 // drawing for enemy shot kinds added by later chapters: SHOT_DRAW[kind](shot)
 const SHOT_DRAW = {};
+// Stage 2: at half health every boss (and miniboss) stops to roar, a red shockwave shoves you back, and from
+// then on it is frantic: it moves faster and the pauses between its attacks run STAGE2.tempo times as fast.
+// Wind-ups and warnings keep their length, so everything can still be dodged.
+const STAGE2 = { at: 0.5, tempo: 2.5, speed: 1.25, rest: ['walk', 'dizzy', 'cooled', 'recover', 'under', 'stalk', 'slither'] };
+function bossStage2(e) {
+  const ai = e.ai, run = G.run, h = G.hero.pos;
+  ai.stage2 = true; e.speed *= STAGE2.speed;
+  G.cam.shake = Math.max(G.cam.shake, 0.45); AUDIO.play('roar'); AUDIO.play('boss');
+  FX.ring(e.x, e.z, 7 * e.scale / 2, [1, 0.3, 0.2], 0.7, 1); FX.ring(e.x, e.z, 4 * e.scale / 2, [1, 0.6, 0.3], 0.5, 1);
+  FX.crack(e.x, e.z, 3 * e.scale / 2, 2.2);
+  FX.burst(e.x, 1, e.z, 40, [1, 0.35, 0.2], 8, 0.16, 0.7, 2, 2);
+  const dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
+  if (d < 6 + e.radius) { run.vel[0] += dx / d * 11; run.vel[2] += dz / d * 11; }
+  enemiesInRadius(e.x, e.z, 5, o => { if (!o.boss) { const ox = o.x - e.x, oz = o.z - e.z, od = Math.hypot(ox, oz) || 1; o.kx += ox / od * 10 / o.mass; o.kz += oz / od * 10 / o.mass; } });
+  if (!e.mini) UI.banner('ENRAGED!', true);
+}
+function bossStage2Tick(e, dt) {
+  const ai = e.ai, extra = dt * (STAGE2.tempo - 1);
+  for (const k of ['cd', 'summonT', 'throwT', 'jumpCd', 'attackT']) if (ai[k] > 0) ai[k] -= extra;
+  if (STAGE2.rest.includes(ai.state) && ai.t > 0) ai.t -= extra;
+  // a hot red pulse around it for the rest of the fight
+  if (Math.random() < 0.35) FX.part(e.x + rand(-1, 1) * e.radius, rand(0.3, 1.4) * e.scale, e.z + rand(-1, 1) * e.radius, 0, rand(1, 2.2), 0, 0.14, 0.03, rand(0.5, 0.9), [1, rand(0.25, 0.5), 0.15], 0.9, 0, 0, 0.5);
+}
 function updateBoss(e, dt) {
   const ai = e.ai, h = G.hero.pos, run = G.run;
+  if (!ai.stage2 && !e.dying && ai.state !== 'enter' && ai.state !== 'intro' && e.hp < e.maxHp * STAGE2.at) bossStage2(e);
+  if (ai.stage2) bossStage2Tick(e, dt);
   ai.t -= dt;
   e.dizzy = Math.max(0, e.dizzy - dt);
   const dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
@@ -166,7 +193,7 @@ function updateBoss(e, dt) {
       e.contactDmg = e.dmg;
       if (ai.state === 'walk') {
         bossWalk(e, dt, h[0], h[2], e.speed); bossFace(e, dt);
-        if (ai.t <= 0) { ai.state = 'aim'; ai.t = 0.95; ai.charges = 3; }
+        if (ai.t <= 0) { ai.state = 'aim'; ai.t = 0.95; ai.charges = ai.stage2 ? 5 : 3; }
       } else if (ai.state === 'aim') {
         e.clip = 'idle'; e.phase += dt; bossFace(e, dt, 12);
         e.vx *= 0.8; e.vz *= 0.8;
@@ -178,14 +205,15 @@ function updateBoss(e, dt) {
         if (ai.t <= 0) { ai.state = 'charge'; ai.t = 1.0; ai.tele.done = true; AUDIO.play('throw'); }
       } else if (ai.state === 'charge') {
         e.clip = 'run'; e.phase += dt * 3;
-        e.x += ai.dir[0] * 12.5 * dt; e.z += ai.dir[1] * 12.5 * dt;
+        const cs = ai.stage2 ? 15 : 12.5;
+        e.x += ai.dir[0] * cs * dt; e.z += ai.dir[1] * cs * dt;
         e.contactDmg = 30 * run.info.dmgMul;
         if (Math.random() < 0.6) FX.smoke(e.x, 0.2, e.z, 0.5, [0.6, 0.55, 0.5], 0.5, 0.4);
         enemiesInRadius(e.x, e.z, e.radius + 0.3, o => { if (o !== e && !o.boss) { o.kx += -ai.dir[1] * 8 * (Math.random() < 0.5 ? 1 : -1); o.kz += ai.dir[0] * 8; } });
         if (ai.t <= 0) {
           ai.charges--;
           ai.tele = null;
-          if (ai.charges > 0) { ai.state = 'aim'; ai.t = 0.8; }
+          if (ai.charges > 0) { ai.state = 'aim'; ai.t = ai.stage2 ? 0.7 : 0.8; }
           else { ai.state = 'dizzy'; ai.t = 2.5; e.dizzy = 2.5; G.cam.shake = 0.12; AUDIO.play('boom'); }
         }
       } else if (ai.state === 'dizzy') {
@@ -301,12 +329,30 @@ function enemyRow(e) {
   return c.row + Math.floor((e.phase - Math.floor(e.phase)) * c.frames);
 }
 
+// From chapter 6 on, bosses carry an air of power that grows with the chapter: a slow swirl of light on the
+// ground under them and motes rising around them, in the map's accent color; from chapter 11, a crown of light too.
+function emitBossGrandeur(e) {
+  const run = G.run, k = run.rush ? run.rushK : run.chapter - 1, s2 = e.ai && e.ai.stage2;
+  if ((k < 5 && !s2) || e.dying || e.portrait) return;
+  const a = s2 ? 1 : clamp((k - 4) / 10, 0.25, 1), r = e.radius * 2.4 * (s2 ? 1 + 0.08 * Math.sin(run.t * 9) : 1), t = run.t, th = ARENA.theme;
+  const ac = s2 ? [1, 0.25, 0.15] : th && th.accent ? hexToRgb(th.accent) : [1, 0.8, 0.4];
+  pushDecal(e.x, e.z, r, r, -t * 0.6, 3, 0, 0.5, ac[0], ac[1], ac[2], 0.18 + 0.22 * a, true);
+  if (Math.random() < 0.25 + 0.5 * a) {
+    const q = rand(0, TAU), d = rand(0.5, 1) * r;
+    FX.part(e.x + Math.cos(q) * d, 0.2, e.z + Math.sin(q) * d, 0, rand(1.5, 3), 0, 0.12 + 0.1 * a, 0.02, rand(0.8, 1.4), ac, 0.9, 0, 0, 0.5);
+  }
+  if (k >= 10 && Math.random() < 0.4) {
+    const q = t * 2.2 + rand(-0.2, 0.2), y = (e.y || 0) + 2.6 * e.scale;
+    FX.glow(e.x + Math.cos(q) * e.radius * 0.7, y, e.z + Math.sin(q) * e.radius * 0.7, 0.35, ac, 0.3, 0.8);
+  }
+}
 function emitRunScene() {
   const run = G.run, h = G.hero.pos, L = R.frame.lightDir;
   const sdx = -L[0] * 0.5, sdz = -L[2] * 0.5;
   emitArena();
   for (const e of run.enemies) {
     if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
+    if (e.boss) emitBossGrandeur(e);
     if (e.boss && BOSS_DRAW[e.type]) { BOSS_DRAW[e.type](e); continue; }
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;

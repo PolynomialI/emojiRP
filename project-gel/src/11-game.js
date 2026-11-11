@@ -119,12 +119,14 @@ function applySkin(id, costume, hat) {
 
 // ---------- runs ----------
 function makeEvents() {
-  const ev = [{ t: 90, kind: 'swarm', n: 14 }, { t: 120, kind: 'elite' }, { t: 210, kind: 'swarm', n: 24 }, { t: 240, kind: 'elite' }, { t: 270, kind: 'surge' }, { t: 300, kind: 'boss' }];
+  const ev = [{ t: 60, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 40 }, { t: 210, kind: 'swarm', n: 60 }, { t: 240, kind: 'elite' }, { t: 255, kind: 'surge', n: 40 }, { t: 280, kind: 'swarm', n: 80 }, { t: 300, kind: 'boss' }];
   // most runs get a visit from the Golden Gooblin somewhere in the middle
   if (Math.random() < 0.8) ev.push({ t: rand(70, 230), kind: 'gooblin' });
   return ev.sort((a, b) => a.t - b.t);
 }
-const RATE_KEYS = [[0, 0.35], [30, 0.5], [60, 0.72], [120, 1.15], [180, 1.6], [240, 2.0], [270, 2.6], [300, 2.6]];
+// spawns a second: a steady stream from the start (standing still is never safe), then a flood near the end
+const RATE_KEYS = [[0, 0.45], [30, 0.7], [60, 1.0], [120, 2.0], [180, 3.4], [240, 5.5], [270, 8.5], [300, 10.0]];
+const MAX_ALIVE = 600;
 function spawnRate(t) {
   for (let i = 1; i < RATE_KEYS.length; i++) {
     const [t1, r1] = RATE_KEYS[i], [t0, r0] = RATE_KEYS[i - 1];
@@ -239,17 +241,20 @@ function recomputeStats() {
 }
 
 // ---------- enemies ----------
+// regular enemies are a little frailer than their table says (with weaker power-ups, the numbers do the work)
+const ENEMY_HP = 0.7, XP_MUL = 0.75;
 function spawnEnemy(type, x, z, opts = {}) {
   const run = G.run, d = ENEMY_TYPES[type], info = run.info;
   const elite = !!opts.elite;
-  // the chapter's extra toughness eases in over the first 90 seconds, while the hero has few skills
+  // the chapter's extra toughness eases in over the first 90 seconds, while the hero has few skills. Within a
+  // run enemies barely toughen: by the end of a chapter each one dies easily, but there are a great many.
   const chapterHp = 1 + (info.hpMul - 1) * clamp(0.5 + run.t / 180, 0.5, 1);
-  const hpMul = chapterHp * (1 + 0.09 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
+  const hpMul = ENEMY_HP * chapterHp * (1 + 0.03 * run.t / 60) * (elite ? (d.hp >= 40 ? 12 : d.hp >= 20 ? 16 : 25) : 1);
   const e = {
     id: run.nextId++, type, def: d, model: d.model, boss: false, elite,
     x, z, vx: 0, vz: 0, kx: 0, kz: 0, yaw: Math.atan2(G.hero.pos[0] - x, G.hero.pos[2] - z),
     hp: d.hp * hpMul, maxHp: d.hp * hpMul,
-    speed: d.speed * (elite ? 0.9 : 1) * rand(0.92, 1.08), dmg: d.dmg * info.dmgMul * (elite ? 1.5 : 1),
+    speed: d.speed * (info.speedMul || 1) * (elite ? 0.9 : 1) * rand(0.92, 1.08), dmg: d.dmg * info.dmgMul * (elite ? 1.5 : 1),
     radius: d.radius * (elite ? 1.5 : 1) * (opts.scale || 1), scale: d.scale * (elite ? 1.5 : 1) * (opts.scale || 1), mass: d.mass * (elite ? 3 : 1),
     xp: elite ? 25 : d.xp, phase: rand(0, 1), flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
     slowT: 0, slowMul: 1, auraTint: 0, bladeT: 0, budT: 0, tint: hexToRgb(opts.tint || d.tint),
@@ -371,7 +376,7 @@ function spawnPickup(kind, x, z, value = 1) {
 }
 function gainXp(v) {
   const run = G.run;
-  run.xp += v * run.stats.xpMul;
+  run.xp += v * run.stats.xpMul * XP_MUL;
   while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = xpFor(run.level); run.pending++; }
 }
 
@@ -409,11 +414,11 @@ function updateRun(dt) {
     // continuous spawning
     const alive = run.enemies.length;
     if (run.endless) endlessTick(run);
-    const rate = run.rush ? 0.8 : (run.bossStarted ? 1.0 : spawnRate(run.t) * lerp(1, run.info.rateMul, clamp(run.t / 120, 0, 1))) * (run.endless ? 1 + Math.max(0, run.t - 150) / 360 : 1);
+    const rate = run.endless ? endlessRate(run.t) : run.rush ? 1.6 : (run.bossStarted ? 2.5 : spawnRate(run.t)) * run.info.rateMul;
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) {
       run.spawnAcc -= 1;
-      if (alive < 380) spawnFromMix();
+      if (alive < MAX_ALIVE) spawnFromMix();
     }
   }
 
@@ -467,15 +472,15 @@ function updateRun(dt) {
 function runEvent(ev) {
   const run = G.run;
   if (ev.kind === 'swarm') {
-    const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU);
-    // a ring of stickmen closing in, with a gap to break out through
-    for (let i = 0; i < ev.n; i++) { const a = off + (i / ev.n) * TAU * 0.75; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
+    const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU), n = Math.round(ev.n * run.info.rateMul);
+    // a ring of stickmen closing in, with a gap to break out through (bigger in later chapters)
+    for (let i = 0; i < n; i++) { const a = off + (i / n) * TAU * 0.75; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
   } else if (ev.kind === 'elite') {
     const types = ELITE_TYPES.filter(k => k === 'stickman' || run.info.has[k]);
     const [x, z] = spawnPoint(2);
     spawnEnemy(pick(types), x, z, { elite: true });
   } else if (ev.kind === 'surge') {
-    for (let i = 0; i < 18; i++) spawnFromMix();
+    for (let i = 0; i < Math.round((ev.n || 18) * run.info.rateMul); i++) spawnFromMix();
   } else if (ev.kind === 'boss') {
     startBoss();
   } else if (ev.kind === 'gooblin') {
@@ -486,7 +491,13 @@ function runEvent(ev) {
 }
 
 function spawnFromMix() {
-  const run = G.run, t = run.t, ch = run.endless ? Math.max(run.chapter, 1 + run.tier) : run.chapter;
+  const run = G.run, t = run.t, ch = run.chapter;
+  // Endless: any enemy at all, picked at random
+  if (run.endless) {
+    const type = pick(ENDLESS_POOL()), [x, z] = spawnPoint();
+    spawnEnemy(type, x, z, { elite: ELITE_TYPES.includes(type) && Math.random() < ENDLESS.elite });
+    return;
+  }
   const w = { stickman: 1 };
   // each type joins after its unlock time; in later chapters it shows up sooner
   for (const k in ENEMY_MIX) { const [c0, t0, wt] = ENEMY_MIX[k]; if (ch >= c0 && t > t0 * (ch > c0 ? 0.8 : 1)) w[k] = wt; }
@@ -514,14 +525,16 @@ function spawnFromMix() {
 function updateEnemies(dt) {
   const run = G.run, h = G.hero.pos;
   let touching = 0;
+  // big crowds: the slower checks (slowing ground, separation, scenery) run for half the crowd each frame
+  const fr = run.frameN = (run.frameN || 0) + 1, crowd = run.enemies.length > 220;
   for (const e of run.enemies) {
     if (e.dying) { e.dying += dt / (e.boss ? 0.6 : 0.14); continue; }
     e.flash = Math.max(0, e.flash - dt); e.flashCd = (e.flashCd || 0) - dt;
     e.contactCd -= dt;
     e.slowT -= dt; if (e.slowT <= 0) e.slowMul = 1;
-    if (ARENA.zones.length && !e.boss) {
+    if (ARENA.zones.length && !e.boss && (e.id + fr) % 3 === 0) {
       const z = zoneAt(e.x, e.z), Z = z && ZONE_KINDS[z.kind];
-      if (Z && Z.slow) { e.slowMul = Math.min(e.slowMul, Z.slow); e.slowT = Math.max(e.slowT, 0.05); }
+      if (Z && Z.slow) { e.slowMul = Math.min(e.slowMul, Z.slow); e.slowT = Math.max(e.slowT, 0.12); }
     }
     e.spawnT = Math.max(0, e.spawnT - dt);
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
@@ -549,21 +562,32 @@ function updateEnemies(dt) {
     }
   }
   run.contactSlow = Math.min(0.3, touching * 0.05);
-  // separation between enemies
+  // separation between enemies (inline grid scan: this is the hottest loop with a big crowd)
+  const cell = GRID.cell, map = GRID.map;
   for (const e of run.enemies) {
-    if (e.dying) continue;
-    gridQuery(e.x, e.z, e.radius + 1.2, o => {
-      if (o.id <= e.id) return;
-      const dx = o.x - e.x, dz = o.z - e.z, rr = e.radius + o.radius, d2 = dx * dx + dz * dz;
-      if (d2 >= rr * rr || d2 < 1e-8) return;
-      const d = Math.sqrt(d2), ov = (rr - d) * 0.5, tot = e.mass + o.mass;
-      const ex = dx / d * ov, ez = dz / d * ov;
-      e.x -= ex * (o.mass / tot) * 2; e.z -= ez * (o.mass / tot) * 2;
-      o.x += ex * (e.mass / tot) * 2; o.z += ez * (e.mass / tot) * 2;
-    });
+    if (e.dying || (crowd && !e.boss && (e.id + fr) % 2)) continue;
+    const r = e.radius + (e.boss ? 1.6 : 0.7);
+    const x0 = Math.floor((e.x - r) / cell), x1 = Math.floor((e.x + r) / cell), z0 = Math.floor((e.z - r) / cell), z1 = Math.floor((e.z + r) / cell);
+    // in a packed crowd a handful of neighbours is plenty: stop after 18 looks
+    let looks = e.boss ? 1e9 : 18;
+    for (let cx = x0; cx <= x1 && looks > 0; cx++) for (let cz = z0; cz <= z1 && looks > 0; cz++) {
+      const a = map.get(gkey(cx, cz));
+      if (!a) continue;
+      for (let i = 0; i < a.length && looks > 0; i++) {
+        const o = a[i];
+        looks--;
+        if (o === e || o.dying || (o.id < e.id && !(crowd && !o.boss && (o.id + fr) % 2))) continue;
+        const dx = o.x - e.x, dz = o.z - e.z, rr = e.radius + o.radius, d2 = dx * dx + dz * dz;
+        if (d2 >= rr * rr || d2 < 1e-8) continue;
+        const d = Math.sqrt(d2), ov = (rr - d) * 0.5, tot = e.mass + o.mass;
+        const ex = dx / d * ov, ez = dz / d * ov;
+        e.x -= ex * (o.mass / tot) * 2; e.z -= ez * (o.mass / tot) * 2;
+        o.x += ex * (e.mass / tot) * 2; o.z += ez * (e.mass / tot) * 2;
+      }
+    }
   }
   for (const e of run.enemies) {
-    if (e.dying || (e.y || 0) > 0.6 || e.def.ghost) continue;
+    if (e.dying || (e.y || 0) > 0.6 || e.def.ghost || (crowd && !e.boss && (e.id + fr) % 2 === 1)) continue;
     const hit = resolveCircle(e, e.radius);
     if (hit && e.boss && e.ai.state === 'charge') bossBonk(e, hit);
   }

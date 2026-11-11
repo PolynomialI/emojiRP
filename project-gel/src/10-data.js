@@ -152,9 +152,16 @@ const PASSIVES = {
   reach: { name: 'Reach', short: '+5% area', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
   multishot: { name: 'Projectile Count', short: '+1 projectile', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
   sugar: { name: 'Sugar Rush', short: '+3% rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
-  thorns: { name: 'Thorns', short: '+5 thorn damage', from: 8, desc: 'Enemies that touch you take 10 damage and get shoved away, +5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
+  thorns: { name: 'Thorns', short: '+2.5 thorn damage', from: 8, desc: 'Enemies that touch you take 5 damage and get shoved away, +2.5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
   growth: { name: 'Growth', short: '+4% XP', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
+// Power-ups hit far less hard than they first did: half the damage, the Goo Wave a quarter and the Laser
+// about a third; Aura stays as it is. (Evolutions build on these numbers.)
+const SKILL_POWER = { aura: 1, wave: 0.25, laser: 0.35 };
+for (const id in SKILLS) {
+  const m = SKILL_POWER[id] ?? 0.5;
+  if (m !== 1) for (const L of SKILLS[id].levels) for (const k of ['dmg', 'burst', 'pop']) if (k in L) L[k] = Math.max(1, Math.round(L[k] * m * 10) / 10);
+}
 const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
 // the power-up a chapter's theme introduces (from: the first chapter it appears in)
 // Evolutions: a skill at max level plus its partner ability turns into a stronger, named form, through a chest.
@@ -410,20 +417,22 @@ const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 // every chapter is unique: the game ends after the last one (no repeats with stronger stats)
 const CHAPTER_COUNT = ARENAS.length;
 function chapterInfo(n) {
-  const i = (n - 1) % CHAPTER_BOSSES.length, arena = i % ARENAS.length;
-  const k = n - 1, kk = k <= 9 ? k : 9 + (k - 9) * 0.6;
-  // bosses still being built fall back to the original roster
+  const i = clamp(n, 1, CHAPTER_COUNT) - 1, arena = i % ARENAS.length;
+  const k = i;
+  // each chapter has its own boss (no second, borrowed boss any more)
   const main = BOSS_TYPES[CHAPTER_BOSSES[i]] ? CHAPTER_BOSSES[i] : BOSS_ORDER[i % BOSS_ORDER.length];
-  const bosses = n % 5 === 0 ? [main, GUEST_BOSSES[(n / 5 - 1) % GUEST_BOSSES.length]] : [main];
+  const bosses = [main];
   return {
     n, arena, arenaName: ARENAS[arena].name, bosses,
-    // enemies toughen steadily through chapter 10, then more gently (kk counts later chapters as 0.6 each)
-    hpMul: 1 + 0.09 * kk + 0.004 * kk * kk,
-    dmgMul: 1 + 0.06 * kk,
-    rateMul: Math.min(1.8, 0.85 + 0.05 * kk),
-    // boss health climbs fast for six chapters, then slowly, so late fights stay around a minute and a half;
-    // two bosses at once each bring less
-    bossHpMul: Math.pow(1.17, Math.min(k, 5)) * Math.pow(1.045, Math.max(0, k - 5)) * (bosses.length > 1 ? 0.6 : 1),
+    // every chapter is clearly harder than the last: tougher, harder-hitting, faster and far more numerous
+    hpMul: 1 + 0.15 * k + 0.011 * k * k,
+    dmgMul: 1 + 0.09 * k,
+    // chapter 1 is the gentlest (0.6x the spawn curve); chapter 20 brings 2.3x
+    rateMul: 0.6 + 0.09 * k,
+    speedMul: 1 + 0.012 * k,
+    // bosses grow with the chapter too, in health and in size (grand: drawn and hit bigger)
+    bossHpMul: Math.pow(1.17, Math.min(k, 5)) * Math.pow(1.07, Math.max(0, k - 5)),
+    grand: 1 + 0.025 * k,
     reward: Math.round(150 * Math.pow(1.08, k)),
     has: { ...Object.fromEntries(Object.entries(ENEMY_MIX).map(([k, v]) => [k, n >= v[0]])), ...Object.fromEntries(Object.keys(THEME_ENEMIES[ARENAS[arena].id] || {}).map(k => [k, true])) },
   };

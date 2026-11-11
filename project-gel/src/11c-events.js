@@ -67,38 +67,27 @@ function gooblinLoot(e) {
   AUDIO.play('levelup', 1.2);
 }
 
-// ---------- Endless: survive as long as you can on a random map; it keeps getting harder ----------
-const ENDLESS = { tierEvery: 50, bossEvery: 120 };
+// ---------- Endless: survive as long as you can, on a random map from any chapter. Enemies are completely
+// random (any type from any chapter, now and then an elite), with no waves and no bosses, and the stream
+// thickens and toughens quickly: after five minutes it is a flood. Scored by time alone. ----------
+const ENDLESS = { rate0: 1.6, rateT: 22, hpT: 75, dmgT: 160, elite: 0.04 };
 function endlessUnlocked() { return true; }
-// the map comes from a chapter already reached; power-ups from every chapter reached are on offer
 function beginEndless() {
   if (!endlessUnlocked()) return;
-  const reached = Math.min(G.save.chapter, CHAPTER_BOSSES.length), ch = randInt(1, reached);
-  beginChapter(ch, { endless: true, powerCap: Math.max(reached, G.save.chapter) });
+  beginChapter(randInt(1, ENDLESS_MAPS()), { endless: true, powerCap: CHAPTER_COUNT });
 }
-function endlessEvents() {
-  const ev = [];
-  for (let k = 0; k < 40; k++) {
-    const t0 = k * ENDLESS.bossEvery;
-    ev.push({ t: t0 + 50, kind: 'swarm', n: 14 + k * 4 }, { t: t0 + 80, kind: 'elite' });
-    if (k % 2 === 0) ev.push({ t: t0 + rand(30, 100), kind: 'gooblin' });
-    // a boss every two minutes, working through all ten; every third visit brings an old friend along
-    if (k > 0) {
-      const main = CHAPTER_BOSSES[(k - 1) % CHAPTER_BOSSES.length];
-      ev.push({ t: t0, kind: 'eboss', ids: k % 3 === 0 ? [main, GUEST_BOSSES[(k / 3 - 1) % GUEST_BOSSES.length]] : [main] });
-    }
-  }
-  return ev.sort((a, b) => a.t - b.t);
-}
-// every tierEvery seconds the enemies take on the next chapter's toughness
+// every chapter's map can come up (chapter 20's crater field too, without its cave)
+const ENDLESS_MAPS = () => CHAPTER_COUNT;
+function endlessEvents() { return []; }
+// spawns a second: about 15 a second after five minutes
+const endlessRate = t => ENDLESS.rate0 + t / ENDLESS.rateT;
+// enemies toughen by the second rather than by chapter
 function endlessTick(run) {
-  const tier = Math.floor(run.t / ENDLESS.tierEvery);
-  if (tier === run.tier) return;
-  run.tier = tier;
-  const T = chapterInfo(1 + tier);
-  Object.assign(run.info, { hpMul: T.hpMul, dmgMul: T.dmgMul, rateMul: T.rateMul, bossHpMul: T.bossHpMul * (tier > 0 ? 0.8 : 1), has: T.has });
-  if (tier > 0) UI.toast(`Endless · danger ${tier + 1}`, 1.6);
+  const t = run.t;
+  run.info.hpMul = 1 + t / ENDLESS.hpT; run.info.dmgMul = 1 + t / ENDLESS.dmgT; run.info.speedMul = 1 + Math.min(0.45, t / 800);
 }
+// any enemy type at all (not the Gooblin)
+const ENDLESS_POOL = () => Object.keys(ENEMY_TYPES).filter(k => k !== 'gooblin' && !ENEMY_TYPES[k].mini);
 // a boss beaten in Endless drops its loot and the run goes on
 function endlessBossDown(run) {
   for (const b of run.bosses) spawnPickup('chest', b.x, b.z);

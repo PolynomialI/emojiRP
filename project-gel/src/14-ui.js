@@ -328,7 +328,7 @@ const UI = {
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.rush ? run.rushK / CHAPTER_BOSSES.length : run.endless ? (run.t % ENDLESS.bossEvery) / ENDLESS.bossEvery : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      pct = run.rush ? run.rushK / CHAPTER_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
       label = run.rush ? `BOSS RUSH · ${run.rushK}/${CHAPTER_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
     }
     const pctS = (pct * 100).toFixed(1) + '%';
