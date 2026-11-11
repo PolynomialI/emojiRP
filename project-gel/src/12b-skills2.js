@@ -227,7 +227,7 @@ SKILL_HOOKS.bubble = {
       if (b.t > 1.6 || arenaSd(b.x, b.z) > 0) { b.done = true; continue; }
       if (e && !e.dying && Math.hypot(e.x - b.x, e.z - b.z) < 0.6) {
         b.done = true;
-        if (e.boss || e.bubbled > 0) { hurtEnemy(e, L.dmg * 0.6, 0, 0, { sound: false, color: [0.7, 0.95, 1] }); FX.burst(b.x, 1, b.z, 8, [0.85, 0.97, 1], 3, 0.07, 0.3, 4); }
+        if (e.boss || e.mini || e.bubbled > 0) { hurtEnemy(e, L.dmg * 0.6, 0, 0, { sound: false, color: [0.7, 0.95, 1] }); FX.burst(b.x, 1, b.z, 8, [0.85, 0.97, 1], 3, 0.07, 0.3, 4); }
         else { e.bubbled = L.hold; st.traps.push({ e, t: L.hold, ph: rand(0, 10) }); }
       }
     }

@@ -353,6 +353,7 @@ function emitRunScene() {
   for (const e of run.enemies) {
     if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
     if (e.boss) emitBossGrandeur(e);
+    if (e.mini) emitMiniCrown(e);
     if (e.boss && BOSS_DRAW[e.type]) { BOSS_DRAW[e.type](e); continue; }
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;

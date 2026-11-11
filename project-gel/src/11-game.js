@@ -119,7 +119,9 @@ function applySkin(id, costume, hat) {
 
 // ---------- runs ----------
 function makeEvents() {
-  const ev = [{ t: 60, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 40 }, { t: 210, kind: 'swarm', n: 60 }, { t: 240, kind: 'elite' }, { t: 255, kind: 'surge', n: 40 }, { t: 280, kind: 'swarm', n: 80 }, { t: 300, kind: 'boss' }];
+  const ev = [{ t: 60, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 40 }, { t: 210, kind: 'swarm', n: 60 }, { t: 255, kind: 'surge', n: 40 }, { t: 280, kind: 'swarm', n: 80 }, { t: 300, kind: 'boss' }];
+  // the chapter's miniboss, three times (30%, 55%, 80% of the way to the boss)
+  MINI_VISITS.forEach(([f], k) => ev.push({ t: 300 * f, kind: 'mini', k }));
   // most runs get a visit from the Golden Gooblin somewhere in the middle
   if (Math.random() < 0.8) ev.push({ t: rand(70, 230), kind: 'gooblin' });
   return ev.sort((a, b) => a.t - b.t);
@@ -291,6 +293,7 @@ function killEnemy(e) {
   FX.droplets(e.x, 0.55 * s, e.z, e.boss ? 30 : 5, 5, e.boss ? 7 : 3.2, 0.05 * Math.min(s, 2), null);
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
   AUDIO.play('squish');
+  if (e.mini) { onMiniKilled(e); return; }
   if (e.boss) { onBossKilled(e); return; }
   if (e.def.flee) gooblinLoot(e);
   // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and sometimes a scroll; elites always drop one
@@ -483,6 +486,8 @@ function runEvent(ev) {
     for (let i = 0; i < Math.round((ev.n || 18) * run.info.rateMul); i++) spawnFromMix();
   } else if (ev.kind === 'boss') {
     startBoss();
+  } else if (ev.kind === 'mini') {
+    spawnMiniboss(ev.k);
   } else if (ev.kind === 'gooblin') {
     spawnGooblin();
   } else if (ev.kind === 'eboss') {
@@ -515,6 +520,9 @@ function spawnFromMix() {
     // stickmen arrive in small clumps
     const n = t < 60 ? randInt(1, 2) : randInt(1, 3);
     for (let i = 0; i < n; i++) spawnEnemy('stickman', x + rand(-0.9, 0.9), z + rand(-0.9, 0.9));
+  } else if (type === 'rat' || type === 'pigeon') {
+    const n = randInt(2, type === 'rat' ? 4 : 3);
+    for (let i = 0; i < n; i++) spawnEnemy(type, x + rand(-0.8, 0.8), z + rand(-0.8, 0.8));
   } else if (type === 'toysoldier' || type === 'crabling' || type === 'ghost') {
     // toy soldiers march in a rank; crablings and ghosts come in little groups
     const n = type === 'ghost' ? randInt(2, 3) : 3, h = G.hero.pos, dx = h[0] - x, dz = h[2] - z, d = Math.hypot(dx, dz) || 1;
@@ -543,6 +551,7 @@ function updateEnemies(dt) {
     // trapped in a bubble (Bubble Trap): held off the ground, harmless, until it pops
     else if (e.bubbled > 0) { e.bubbled -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
     else if (e.boss) updateBoss(e, dt);
+    else if (e.mini) updateMini(e, dt);
     else updateEnemyAI(e, dt);
     // knockback
     e.x += e.kx * dt; e.z += e.kz * dt;

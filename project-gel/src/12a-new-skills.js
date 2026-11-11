@@ -233,7 +233,7 @@ SKILL_HOOKS.frostnova = {
       e.novaHit = n.id;
       const ex = e.x - n.x, ez = e.z - n.z, ed = Math.hypot(ex, ez) || 1;
       hurtEnemy(e, L.dmg, ex / ed * 3, ez / ed * 3, { sound: false, color: [0.6, 0.9, 1] });
-      if (e.boss) { e.slowMul = Math.min(e.slowMul, 0.65); e.slowT = Math.max(e.slowT, L.freeze); }
+      if (e.boss || e.mini) { e.slowMul = Math.min(e.slowMul, 0.65); e.slowT = Math.max(e.slowT, L.freeze); }
       else if (!e.dying) e.frozen = Math.max(e.frozen || 0, L.freeze);
       FX.burst(e.x, 0.6, e.z, 3, [0.8, 0.95, 1], 2.5, 0.07, 0.35, 1);
     });

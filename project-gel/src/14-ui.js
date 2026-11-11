@@ -571,6 +571,14 @@ const UI = {
       ctx.fillStyle = col; roundRect(ctx, x, y, Math.max(4, bw * f), bh, 4.5); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.35)'; roundRect(ctx, x + 2, y + 1, Math.max(0, bw * f - 4), 3, 2); ctx.fill();
     }
+    // minibosses: a gold health bar over each one
+    for (const e of run.enemies) {
+      if (!e.mini || e.dying || !R.project(e.x, (e.y || 0) + e.scale * 1.15 + 0.5, e.z, p)) continue;
+      const bw = 92, bh = 10, x = p[0] - bw / 2, y = p[1], f = clamp(e.hp / e.maxHp, 0, 1);
+      ctx.fillStyle = 'rgba(5,15,25,0.85)'; roundRect(ctx, x - 2, y - 2, bw + 4, bh + 4, 6); ctx.fill();
+      ctx.fillStyle = e.ai && e.ai.stage2 ? '#ff4d3d' : '#ffc63a'; roundRect(ctx, x, y, Math.max(4, bw * f), bh, 5); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; roundRect(ctx, x + 2, y + 1, Math.max(0, bw * f - 4), 3, 2); ctx.fill();
+    }
     // a pointer at the screen edge toward something off screen; returns where its badge goes
     const edgeArrow = (col) => {
       const cx = w / 2, cy = h / 2, dx = p[0] - cx, dy = p[1] - cy;

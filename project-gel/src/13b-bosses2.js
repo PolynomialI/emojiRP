@@ -651,3 +651,11 @@ SHOT_DRAW.spark = s => {
   pushImp(s.x, s.y, s.z, 0.2, 0, 0, 1, 1, 15, 0, 0.8, s.ph + G.run.t * 3, 0, 0, 0, 1);
   FX.glow(s.x, s.y, s.z, 0.6, [1, 0.95, 0.5], 0.05, 0.6);
 };
+
+// the magma imp's spat fireball: a hot glowing ember with a smoky trail
+SHOT_DRAW.ember = s => {
+  FX.glow(s.x, s.y, s.z, 0.55, [1, 0.5, 0.15], 0.05, 0.9);
+  FX.glow(s.x, s.y, s.z, 0.28, [1, 0.9, 0.5], 0.05, 1);
+  if (Math.random() < 0.4) FX.smoke(s.x, s.y, s.z, 0.25, [0.35, 0.25, 0.2], 0.4, 0.3);
+  pushDecal(s.x + 0.1, s.z + 0.08, 0.3, 0.25, 0, 1, 0, 0, 0.05, 0.02, 0.02, 0.35);
+};

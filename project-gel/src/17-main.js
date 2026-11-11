@@ -167,6 +167,9 @@ function requiredMeshes(n) {
   // the theme's scenery: scattered props, the wall ring, and whatever its layout and features place
   for (const kind of [...(T.props || []).map(p => p[0]), T.wall || 'rock', ...(T.kinds || [])]) for (const m of PROP_KINDS[kind].models) if (!req.includes(m)) req.push(m);
   for (const k in has) if (has[k] && !req.includes(ENEMY_TYPES[k].model)) req.push(ENEMY_TYPES[k].model);
+  // the chapter's miniboss
+  const M = MINIBOSSES[n];
+  if (M) for (const m of M.boss ? bossMeshes(M.boss) : [ENEMY_TYPES[M.type].model, ENEMY_TYPES[M.summon || M.type].model]) if (!req.includes(m)) req.push(m);
   return req;
 }
 function beginChapter(n, opts) {

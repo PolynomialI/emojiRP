@@ -87,7 +87,7 @@ function endlessTick(run) {
   run.info.hpMul = 1 + t / ENDLESS.hpT; run.info.dmgMul = 1 + t / ENDLESS.dmgT; run.info.speedMul = 1 + Math.min(0.45, t / 800);
 }
 // any enemy type at all (not the Gooblin)
-const ENDLESS_POOL = () => Object.keys(ENEMY_TYPES).filter(k => k !== 'gooblin' && !ENEMY_TYPES[k].mini);
+const ENDLESS_POOL = () => Object.keys(ENEMY_TYPES).filter(k => k !== 'gooblin' && R.enemyDraw[ENEMY_TYPES[k].model]);
 // a boss beaten in Endless drops its loot and the run goes on
 function endlessBossDown(run) {
   for (const b of run.bosses) spawnPickup('chest', b.x, b.z);

@@ -223,6 +223,17 @@ const ENEMY_TYPES = {
   // the Golden Gooblin: a rare treasure runner that flees, spills coins when hit and escapes after a while
   gooblin: { model: 'gooblin', hp: 90, speed: 3.5, dmg: 0, xp: 8, radius: 0.55, scale: 1.65, tint: '#ffc93a', mass: 1.5, flee: true },
   knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
+  // ---------- chapters 1-10: each map's own enemy (see THEME_ENEMIES) ----------
+  pigeon: { model: 'pigeon', hp: 10, speed: 2.8, dmg: 4, xp: 1, radius: 0.36, scale: 1.2, tint: '#9aa6bc', mass: 0.6, weave: 0.6, float: 0.12 },
+  scarab: { model: 'scarab', hp: 22, speed: 2.2, dmg: 5, xp: 2, radius: 0.42, scale: 1.3, tint: '#2fb5a0', mass: 1.3, ai: 'lunge', hit: 9 },
+  rat: { model: 'rat', hp: 8, speed: 3.6, dmg: 3, xp: 1, radius: 0.32, scale: 1.15, tint: '#8a8a98', mass: 0.6, weave: 0.9 },
+  balloon: { model: 'balloon', hp: 14, speed: 2.3, dmg: 5, xp: 2, radius: 0.42, scale: 1.35, tint: '#ff5fae', mass: 0.5, float: 0.3, ai: 'bomb', hit: 12 },
+  gummy: { model: 'gummy', hp: 26, speed: 2.0, dmg: 6, xp: 2, radius: 0.45, scale: 1.4, tint: '#5ff08a', mass: 1.4, ai: 'lunge', hit: 10 },
+  penguin: { model: 'penguin', hp: 18, speed: 2.0, dmg: 5, xp: 2, radius: 0.42, scale: 1.35, tint: '#262c40', mass: 1.2, ai: 'lunge', hit: 10 },
+  magmite: { model: 'magmite', hp: 18, speed: 1.8, dmg: 5, shot: 6, xp: 2, radius: 0.42, scale: 1.35, tint: '#ff5a1f', mass: 1.1, ranged: true, shotKind: 'ember' },
+  frog: { model: 'frog', hp: 20, speed: 2.0, dmg: 5, xp: 2, radius: 0.42, scale: 1.35, tint: '#5ad04a', mass: 1.1, ai: 'lunge', hit: 10 },
+  seagull: { model: 'seagull', hp: 12, speed: 3.0, dmg: 4, xp: 1, radius: 0.4, scale: 1.3, tint: '#f4f6fa', mass: 0.6, weave: 0.8, float: 0.5 },
+  martian: { model: 'martian', hp: 16, speed: 2.0, dmg: 4, shot: 6, xp: 2, radius: 0.38, scale: 1.25, tint: '#7ef06a', mass: 0.9, ranged: true, shotKind: 'spark' },
   // ---------- theme enemies (see THEME_ENEMIES): weave = sways side to side as it comes; float = hovers; ghost = see-through, drifts through scenery ----------
   ghost: { model: 'ghost', hp: 14, speed: 2.45, dmg: 4, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
   zombie: { model: 'stickman', hp: 44, speed: 1.3, dmg: 8, xp: 3, radius: 0.42, scale: 1.45, tint: '#8fd67a', mass: 1.8 },
@@ -235,6 +246,16 @@ const ENEMY_TYPES = {
 };
 // Extra enemy types that only show up on one map: [seconds into the run, spawn weight]
 const THEME_ENEMIES = {
+  plaza: { pigeon: [15, 0.32] },
+  desert: { scarab: [25, 0.3] },
+  city: { rat: [15, 0.26] },
+  bounce: { balloon: [25, 0.28] },
+  candy: { gummy: [25, 0.3] },
+  tundra: { penguin: [25, 0.3] },
+  volcano: { magmite: [30, 0.24] },
+  jungle: { frog: [25, 0.3] },
+  beach: { seagull: [20, 0.3] },
+  moon: { martian: [25, 0.26] },
   graveyard: { ghost: [20, 0.3], zombie: [70, 0.18] },
   caverns: { crystalbug: [45, 0.26] },
   sky: { cloudling: [35, 0.24] },
@@ -292,7 +313,7 @@ const bossMeshes = id => BOSS_TYPES[id].meshes || [BOSS_TYPES[id].model];
 // props / zones: [kind, count per 40x40 of floor, min radius, max radius]; wall: the prop kind ringing the edge.
 const ARENAS = [
   { id: 'plaza', name: 'Stone Plaza', floor: 0, stoneA: '#34536e', stoneB: '#3c5e7b', grout: '#08121c', accent: '#4dffa0', fog: '#0a1f33', sky: '#7aa3c8', ground: '#16304a', light: '#fff6ea', spotMin: 0.5, shadowTint: '#0a1f3a', rock: '#8592a0', pool: '#1f7a9c', poolGlow: 0.05,
-    props: [['rock', 11, 0.8, 1.4]], zones: [['pool', 4, 1.7, 2.6]], wall: 'rock' },
+    props: [['statue', 6, 0.55, 0.7], ['fountain', 3, 0.9, 1.1], ['bench', 6, 0.55, 0.65], ['rock', 4, 0.8, 1.2]], zones: [['pool', 4, 1.7, 2.6]], wall: 'rock' },
   { id: 'desert', name: 'Desert Dunes', floor: 1, stoneA: '#e8c08a', stoneB: '#d29f66', grout: '#5e3b22', accent: '#ffcf70', fog: '#4b2d18', sky: '#f6dcb0', ground: '#a87a48', light: '#fff2d8', spotMin: 0.6, shadowTint: '#5c2f10', rock: '#c4875a', pool: '#a8793f', poolGlow: 0,
     props: [['cactus', 12, 0.4, 0.62], ['rock', 6, 0.9, 1.5], ['skull', 4, 0.45, 0.55]], zones: [['quicksand', 5, 2.0, 3.2]], wall: 'rock', kinds: ['tumbleweed'] },
   { id: 'city', name: 'Neon City', floor: 2, stoneA: '#5a6172', stoneB: '#8d95a6', grout: '#262a35', accent: '#ff4fd8', fog: '#0c0e1d', sky: '#6070b0', ground: '#1a2036', light: '#e8ecff', spotMin: 0.52, shadowTint: '#0a0e2c', rock: '#7c8292', pool: '#2f5f8f', poolGlow: 0.1,
@@ -326,6 +347,9 @@ const ARENAS = [
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
 const PROP_KINDS = {
   rock: { models: ['rock0', 'rock1', 'rock2'], unit: 0.45, tint: 'rock', block: true, shots: true },
+  statue: { models: ['statue'], unit: 0.45, block: true, shots: true, tints: ['#a8b0bc', '#98a0ae', '#b4bac4'], tall: 1.7 },
+  fountain: { models: ['fountain'], unit: 0.95, block: true, shots: false, tints: ['#a8b0bc'] },
+  bench: { models: ['bench'], unit: 0.4, block: true, shots: false, tints: ['#a8b0bc'] },
   cactus: { models: ['cactus0', 'cactus0', 'cactus1'], unit: 0.3, block: true, shots: true, tall: 1.6 },
   skull: { models: ['skull'], unit: 0.35, block: false },
   tumbleweed: { models: ['tumbleweed'], unit: 0.45, block: false },
