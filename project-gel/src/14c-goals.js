@@ -52,6 +52,7 @@ const GOALS = [
   { id: 'fuse2', group: 'gear', name: 'Master Fuser', desc: 'Fuse {n} artifacts', stat: 'fuses', n: 20, coins: 2000, scrolls: 2 },
   { id: 'epic', group: 'gear', name: 'Epic Find', desc: 'Own an Epic artifact', stat: 'rarity', n: 4, coins: 1200 },
   { id: 'legend', group: 'gear', name: 'Legendary', desc: 'Own a Legendary artifact', stat: 'rarity', n: 5, coins: 2500, scrolls: 1 },
+  { id: 'mythic', group: 'gear', name: 'Mythic', desc: 'Fuse a Mythic artifact', stat: 'rarity', n: 6, coins: 6000, scrolls: 3 },
   { id: 'runs1', group: 'play', name: 'Regular', desc: 'Play {n} runs', stat: 'runs', n: 25, coins: 500 },
   { id: 'runs2', group: 'play', name: 'Veteran', desc: 'Play {n} runs', stat: 'runs', n: 150, coins: 2500, scrolls: 2 },
   { id: 'coins', group: 'play', name: 'Rich Blob', desc: 'Earn {n} coins in all', stat: 'coins', n: 50000, coins: 1500 },

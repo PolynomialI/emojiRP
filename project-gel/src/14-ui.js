@@ -137,7 +137,7 @@ const UI = {
     const canBuy = list => list.some(s => s.cost > 0 && sv.coins >= s.cost);
     return {
       upgrades: Object.keys(META_UPGRADES).some(id => (sv.upgrades[id] || 0) < META_UPGRADES[id].max && sv.coins >= upgradeCost(id, sv.upgrades[id] || 0)),
-      gear: sv.scrolls > 0 || canFuse(),
+      gear: sv.scrolls > 0 || canFuse() || canMythic(),
       skins: canBuy(SKINS.filter(s => !sv.skins.includes(s.id))) || canBuy(COSTUMES.filter(c => !sv.costumes.includes(c.id))),
       goals: goalsToClaim(sv) > 0,
     };
@@ -164,8 +164,8 @@ const UI = {
       row.className = 'panel uprow';
       row.innerHTML = `<span class="tile"><img alt=""></span><span><span class="nm"></span><span class="ds"></span></span><button class="jelly gold"></button>`;
       row.querySelector('img').src = ICONS.get('meta-' + id);
-      row.querySelector('.nm').textContent = `${u.name} · Lv ${lvl}`;
-      row.querySelector('.ds').textContent = lvl ? `+${fmtNum(u.per * lvl)}${u.unit}` : `+${u.per}${u.unit} per level`;
+      row.querySelector('.nm').textContent = u.name;
+      row.querySelector('.ds').textContent = `Lv ${lvl} · +${fmtNum(u.per * lvl)}${u.sym}`;
       const b = row.querySelector('button');
       if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
       else {
@@ -214,10 +214,9 @@ const UI = {
       const k = key + s.id, img = b.querySelector('img');
       img.dataset.heroIcon = k; if (ICONS.map[k]) img.src = ICONS.map[k]; else img.classList.add('pending');
       b.querySelector('span').textContent = s.id === 'none' ? (tab === 'hats' ? 'No hat' : 'No costume') : s.name;
-      b.querySelector('.boost').textContent = s.boost ? fmtBoost(s.boost) : 'No bonus';
+      b.querySelector('.boost').textContent = s.boost ? fmtBoost(s.boost) : '';
       const sm = b.querySelector('small');
-      if (worn === s.id) sm.textContent = 'Equipped';
-      else if (owned.includes(s.id)) sm.textContent = 'Owned';
+      if (owned.includes(s.id)) sm.textContent = '';
       else if (s.goal) sm.textContent = '🏆';
       else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); sm.classList.toggle('poor', sv.coins < s.cost); }
       b.addEventListener('click', () => {

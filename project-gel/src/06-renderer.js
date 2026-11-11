@@ -384,7 +384,7 @@ R.drawHero = function (h) {
   gl.uniform1f(u.uFlash, h.flash); gl.uniform1f(u.uGlow, h.glow); gl.uniform1f(u.uWobble, h.wobble);
   gl.uniform1f(u.uBubbles, h.bubbles); gl.uniform1f(u.uSpark, h.spark); gl.uniform1f(u.uGloss, h.gloss);
   gl.uniform4fv(u.uChest, h.chest);
-  gl.uniform3fv(u.uPal, h.pal); gl.uniform4fv(u.uGrad, h.grad); gl.uniform1f(u.uGroundY, h.groundY); gl.uniform1f(u.uAoY, h.aoY);
+  gl.uniform3fv(u.uPal, h.pal); gl.uniform4fv(u.uGrad, h.grad); gl.uniform1f(u.uGroundY, h.groundY); gl.uniform1f(u.uAoY, h.aoY); gl.uniform4fv(u.uGearMat, h.gearMat);
   gl.uniform3fv(u.uBoxLo, h.boxLo); gl.uniform3fv(u.uBoxHi, h.boxHi);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.bindVertexArray(R.vaos.quad);

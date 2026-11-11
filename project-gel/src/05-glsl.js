@@ -511,6 +511,7 @@ uniform vec3 uPal[14];  // costume colors (0-3), hat colors (4-7) and gear color
 uniform vec4 uGrad;     // body gradient: top color, amount
 uniform float uGroundY;
 uniform float uAoY;
+uniform vec4 uGearMat;   // gear metalness: weapon, armor, ring, necklace
 uniform vec3 uBoxLo;    // the shapes' world-space box (padded): rays that miss it are dropped
 uniform vec3 uBoxHi;
 uniform int uZero; // never set, so always 0: loops that start at it cannot be unrolled
@@ -535,16 +536,23 @@ vec3 primCol(float w, vec3 p) {
   if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.5, 1.75, p.y - uGroundY));
   return c;
 }
-// distance, and when asked the blended color and glow of the shapes that meet here
-float mapH(vec3 p, bool wantCol, out vec3 col, out float g) {
+// gear shapes (color weights 18-23, palette 8-13) are solid, not goo: x = 1 for gear, y = how metallic
+// (per slot, from uGearMat: weapon, armor, ring, necklace)
+vec2 primMat(float w) {
+  if (w < 17.5 || w > 23.5) return vec2(0.0);
+  float k = floor(w - 10.0 + 0.5);
+  return vec2(1.0, k < 9.5 ? uGearMat.x : k < 10.5 ? uGearMat.y : k < 11.5 ? uGearMat.z : uGearMat.w);
+}
+// distance, and when asked the blended color, glow and material of the shapes that meet here
+float mapH(vec3 p, bool wantCol, out vec3 col, out float g, out vec2 mat) {
   float d = prim(p, 0);
-  col = vec3(0.0); g = 0.0;
-  if (wantCol) { col = primCol(uPC[0].y, p); g = uPC[0].w; }
+  col = vec3(0.0); g = 0.0; mat = vec2(0.0);
+  if (wantCol) { col = primCol(uPC[0].y, p); g = uPC[0].w; mat = primMat(uPC[0].y); }
   for (int i = 1; i < MAXP; i++) {
     if (i >= uPCount) break;
     vec2 r = sminW(d, prim(p, i), uPB[i].w);
     d = r.x;
-    if (wantCol) { col = mix(col, primCol(uPC[i].y, p), 1.0 - r.y); g = mix(g, uPC[i].w, 1.0 - r.y); }
+    if (wantCol) { float t = 1.0 - r.y; col = mix(col, primCol(uPC[i].y, p), t); g = mix(g, uPC[i].w, t); mat = mix(mat, primMat(uPC[i].y), t); }
   }
   return d + wob(p);
 }
@@ -569,11 +577,12 @@ void main() {
   int j = 0;
   float alpha = 0.0, thin = 0.0, occ = 0.0, glowW = 0.0;
   vec3 p = ro, n = vec3(0.0), base = vec3(0.0);
+  vec2 gmat = vec2(0.0);
   for (int i = uZero; i < 98; i++) {
     vec3 k = 2.0 * vec3(float(((j + 3) >> 1) & 1), float((j >> 1) & 1), float(j & 1)) - 1.0;
     vec3 q = march ? ro + rd * t : j < 4 ? p + k * 0.0016 : j == 4 ? p - n * 0.13 : j == 5 ? p + n * 0.05 : j == 6 ? p + n * 0.13 : p;
-    vec3 c; float g;
-    float d = mapH(q, !march && j == 7, c, g);
+    vec3 c; float g; vec2 m;
+    float d = mapH(q, !march && j == 7, c, g, m);
     if (march) {
       float r = d / (t * uPixAng);
       if (r < bestR) { bestR = r; bestT = t; }
@@ -590,7 +599,7 @@ void main() {
       else if (j == 4) thin = clamp(1.0 + d / 0.13, 0.0, 1.0);
       else if (j == 5) occ += (0.05 - d) * 2.2;
       else if (j == 6) occ += (0.13 - d) * 1.1;
-      else { base = c; glowW = g; }
+      else { base = c; glowW = g; gmat = m; }
       if (++j == 8) break;
     }
   }
@@ -613,6 +622,17 @@ void main() {
     vec2 bq = vec2(p.x * 3.2 + p.z * 1.7, p.y * 2.4 - uTime * 0.35);
     float cell = texture(uNoise, bq * 0.25).b;
     col += vec3(0.8, 1.0, 1.0) * smoothstep(0.08, 0.02, cell) * uBubbles * 0.5 * (0.4 + thin);
+  }
+  // gear: solid metal, wood, cloth or leather in its own colors, not the body's jelly
+  if (gmat.x > 0.01) {
+    float ndl = max(dot(n, uLightDir), 0.0), metal = gmat.y;
+    vec3 H = normalize(uLightDir + v), R = reflect(-v, n);
+    vec3 amb = mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5);
+    vec3 diff = base * (amb * 0.45 + uLightCol * ndl * 0.85) * mix(0.55, 1.0, ao);
+    vec3 refl = base * (envColor(R) * 0.8 + amb * 0.45 + 0.22) * (0.65 + 0.35 * ndl);
+    float spec = pow(max(dot(n, H), 0.0), mix(16.0, 90.0, metal)) * mix(0.15, 1.4, metal);
+    vec3 solid = mix(diff, refl + diff * 0.25, metal) + uLightCol * spec + base * glowW * 0.8;
+    col = mix(col, solid, gmat.x);
   }
   float ndv = clamp(dot(n, v), 0.0, 1.0);
   col = mix(col, vec3(1.0, 0.42, 0.38), uFlash * (0.35 + 0.65 * pow(1.0 - ndv, 2.0)));

@@ -433,11 +433,11 @@ function chapterInfo(n) {
 const xpFor = L => Math.round(4 + 1.6 * L + 0.03 * L * L);
 
 const META_UPGRADES = {
-  damage: { name: 'Damage', per: 3, unit: '% damage', base: 50, growth: 1.18, max: 100, icon: { type: 17, colw: 4 } },
-  health: { name: 'Health', per: 5, unit: '% max health', base: 50, growth: 1.18, max: 100, icon: { type: 10, colw: 4 } },
-  offline: { name: 'Offline earnings', per: 10, unit: ' coins per hour', base: 80, growth: 1.2, max: 50, icon: { type: 26, colw: 0 } },
-  speed: { name: 'Speed', per: 1, unit: '% move speed', base: 120, growth: 1.25, max: 20, icon: { type: 1, colw: 0 } },
-  magnet: { name: 'Magnet', per: 5, unit: '% pickup radius', base: 100, growth: 1.22, max: 20, icon: { type: 11, colw: 4 } },
+  damage: { name: 'Damage', per: 3, unit: '% damage', sym: '%', base: 50, growth: 1.18, max: 100, icon: { type: 17, colw: 4 } },
+  health: { name: 'Health', per: 5, unit: '% max health', sym: '%', base: 50, growth: 1.18, max: 100, icon: { type: 10, colw: 4 } },
+  offline: { name: 'Offline earnings', per: 10, unit: ' coins per hour', sym: '/h', base: 80, growth: 1.2, max: 50, icon: { type: 26, colw: 0 } },
+  speed: { name: 'Speed', per: 1, unit: '% move speed', sym: '%', base: 120, growth: 1.25, max: 20, icon: { type: 1, colw: 0 } },
+  magnet: { name: 'Magnet', per: 5, unit: '% pickup radius', sym: '%', base: 100, growth: 1.22, max: 20, icon: { type: 11, colw: 4 } },
 };
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
 
@@ -777,7 +777,10 @@ const RARITIES = [
   { id: 'rare', name: 'Rare', mul: 2.1, odds: 0.095 },
   { id: 'epic', name: 'Epic', mul: 2.8, odds: 0.03 },
   { id: 'legendary', name: 'Legendary', mul: 3.6, odds: 0.005 },
+  // only made by fusing four of the same Legendary (never found in a chest)
+  { id: 'mythic', name: 'Mythic', mul: 4.8, odds: 0 },
 ];
+const LEGEND = 4, MYTHIC = 5;
 const GEAR_SLOTS = [
   { id: 'weapon', name: 'Weapon' }, { id: 'armor', name: 'Armor' },
   { id: 'ring', name: 'Ring' }, { id: 'necklace', name: 'Necklace' },
@@ -804,6 +807,8 @@ const GEAR_LOOK = {
   goldRing: ['#ffc21f'], silverRing: ['#e8eef6'], rubyRing: ['#ff3b6b'],
   skull: ['#f4ecd8'], moon: ['#ffe9a0'], clover: ['#4cd964'],
 };
+// how metallic each artifact looks on the blob: 1 polished metal, 0 cloth or leather
+const GEAR_MAT = { sword: 1, wand: 0.55, bow: 0.1, cloak: 0, plate: 1, vest: 0.12, goldRing: 1, silverRing: 1, rubyRing: 1, skull: 0.25, moon: 0.85, clover: 0.3 };
 const artKey = (id, r) => id + ':' + r;
 const artParse = key => { const [id, r] = key.split(':'); return { id, r: Number(r), def: ARTIFACTS[id] }; };
 function artStats(key) {

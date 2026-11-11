@@ -88,16 +88,18 @@ function gearTotals(sv = G.save) {
 function rollArtifact() {
   const ids = Object.keys(ARTIFACTS), id = ids[Math.floor(Math.random() * ids.length)];
   let r = 0, x = Math.random();
-  for (; r < RARITIES.length - 1; r++) { if ((x -= RARITIES[r].odds) < 0) break; }
+  for (; r < LEGEND; r++) { if ((x -= RARITIES[r].odds) < 0) break; }
   return artKey(id, r);
 }
 function addArtifact(key, n = 1) { const it = G.save.gear.items; it[key] = (it[key] || 0) + n; }
-// two of one artifact and rarity become one of the next rarity; an equipped copy moves up with it
-const FUSE_N = 2;
+// two of one artifact and rarity become one of the next rarity, up to Legendary; four of the same
+// Legendary become a Mythic. An equipped copy moves up with it.
+const FUSE_N = 2, MYTHIC_N = 4;
+const fuseNeed = r => (r === LEGEND ? MYTHIC_N : FUSE_N);
 function fuseArtifact(key) {
   const g = G.save.gear, { id, r } = artParse(key);
-  if (r >= RARITIES.length - 1 || (g.items[key] || 0) < FUSE_N) return null;
-  g.items[key] -= FUSE_N;
+  if (r >= MYTHIC || (g.items[key] || 0) < fuseNeed(r)) return null;
+  g.items[key] -= fuseNeed(r);
   if (!g.items[key]) delete g.items[key];
   const next = artKey(id, r + 1);
   addArtifact(next);
@@ -105,68 +107,126 @@ function fuseArtifact(key) {
   for (const sl in g.eq) if (g.eq[sl] === key && !g.items[key]) g.eq[sl] = next;
   return next;
 }
-const canFuse = () => Object.keys(G.save.gear.items).some(k => G.save.gear.items[k] >= FUSE_N && artParse(k).r < RARITIES.length - 1);
+const canFuse = () => Object.keys(G.save.gear.items).some(k => G.save.gear.items[k] >= FUSE_N && artParse(k).r < LEGEND);
+const canMythic = () => Object.keys(G.save.gear.items).some(k => G.save.gear.items[k] >= MYTHIC_N && artParse(k).r === LEGEND);
+// fuse everything that can be fused, over and over (fused results can fuse again); returns what was made
+function fuseAll() {
+  const made = [];
+  for (let guard = 0; guard < 500; guard++) {
+    const k = Object.keys(G.save.gear.items).sort((a, b) => artParse(a).r - artParse(b).r).find(k => G.save.gear.items[k] >= fuseNeed(artParse(k).r) && artParse(k).r < MYTHIC);
+    if (!k) break;
+    made.push(fuseArtifact(k));
+  }
+  // only the final results: drop ones that were fused again on the way up
+  const left = {};
+  for (const k of made) left[k] = Math.min((left[k] || 0) + 1, G.save.gear.items[k] || 0);
+  return Object.keys(left).filter(k => left[k] > 0).flatMap(k => Array(left[k]).fill(k)).sort((a, b) => artParse(b).r - artParse(a).r);
+}
+// stat icons for the tooltips and stat lines: a colored glyph per stat, no words
+const STAT_SVG = {
+  dmg: ['#ff5f6d', '<g transform="rotate(45 12 12)"><path d="M12 1.5 L14.6 4.5 V14.5 H9.4 V4.5 Z M6 14.5 H18 V17.2 H6 Z M10.7 17.2 H13.3 V22.5 H10.7 Z"/></g>'],
+  hp: ['#ff4d6d', '<path d="M12 21 C3.5 15.5 1.5 10.5 3.5 6.8 C5.4 3.3 10 3.4 12 7.2 C14 3.4 18.6 3.3 20.5 6.8 C22.5 10.5 20.5 15.5 12 21 Z"/>'],
+  armor: ['#4f8fff', '<path d="M12 2 L20.5 5.2 V11.5 C20.5 16.6 16.8 20.3 12 22 C7.2 20.3 3.5 16.6 3.5 11.5 V5.2 Z"/>'],
+  speed: ['#22c98a', '<path d="M3 5 H11 L16.5 12 L11 19 H3 L8.5 12 Z M10.5 5 H14.5 L20 12 L14.5 19 H10.5 L16 12 Z"/>'],
+  cd: ['#9c6bff', '<path d="M6 2 H18 V4 H16.8 C16.8 8 14.3 10 13.3 12 C14.3 14 16.8 16 16.8 20 H18 V22 H6 V20 H7.2 C7.2 16 9.7 14 10.7 12 C9.7 10 7.2 8 7.2 4 H6 Z"/>'],
+  area: ['#ff8a1f', '<circle cx="12" cy="12" r="3.6"/><path d="M12 3.2 A8.8 8.8 0 1 1 3.2 12 A8.8 8.8 0 0 1 12 3.2 Z M12 5.6 A6.4 6.4 0 1 0 18.4 12 A6.4 6.4 0 0 0 12 5.6 Z" fill-rule="evenodd"/>'],
+  xp: ['#21b5ff', '<path d="M12 1.8 L14.9 8.3 L22 9 L16.6 13.7 L18.2 20.7 L12 17 L5.8 20.7 L7.4 13.7 L2 9 L9.1 8.3 Z"/>'],
+  regen: ['#3fc85a', '<path d="M9 3 H15 V9 H21 V15 H15 V21 H9 V15 H3 V9 H9 Z"/>'],
+  magnet: ['#ff3b6b', '<path d="M4 3 H9.5 V12 A2.5 2.5 0 0 0 14.5 12 V3 H20 V12 A8 8 0 0 1 4 12 Z"/><path d="M4 3 H9.5 V6.5 H4 Z M14.5 3 H20 V6.5 H14.5 Z" fill="#fff" opacity=".85"/>'],
+  gold: ['#f5b400', '<circle cx="12" cy="12" r="9.5"/><path d="M12 6 V18 M9.5 8.5 H13.5 A2 2 0 0 1 13.5 12 H10.5 A2 2 0 0 0 10.5 15.5 H14.5" fill="none" stroke="#fff3c0" stroke-width="2" stroke-linecap="round"/>'],
+};
+const statIcon = k => `<svg class="sti" viewBox="0 0 24 24" fill="${STAT_SVG[k][0]}" aria-hidden="true">${STAT_SVG[k][1]}</svg>`;
+const statChips = st => Object.keys(st).map(k => `<span class="chip">${statIcon(k)}+${+st[k].toFixed(st[k] < 1 ? 2 : 1)}%</span>`).join('');
 const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
 
 // ---------- screens ----------
 Object.assign(UI, {
-  gearSort: 'rarity', artKeyOpen: null, chestBusy: false, fuseSel: [], fuseMade: null,
+  gearSort: 'rarity', artKeyOpen: null, chestBusy: false, fuseSel: [], fuseMade: null, fuseMode: 'fuse',
 
   initGear() {
     ICONS.map.gear = svgUrl(CHEST_SVG); ICONS.map.scroll = gearIcon('scroll'); ICONS.map['g-atk'] = gearIcon('atk'); ICONS.map['g-heart'] = gearIcon('heart');
     $('gSort').addEventListener('click', () => { this.gearSort = this.gearSort === 'rarity' ? 'slot' : 'rarity'; AUDIO.play('click'); this.renderGear(); });
     $('gChest').addEventListener('click', () => { AUDIO.play('click'); this.openScrollChest(); });
-    $('gFuse').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(); });
-    document.querySelectorAll('#fuseBox .fslot[data-i]').forEach(b => b.addEventListener('click', () => {
+    $('gFuse').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(null, 'fuse'); });
+    $('gMythic').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(null, 'mythic'); });
+    $('fuseRow').addEventListener('click', e => {
+      const b = e.target.closest('.fslot[data-i]');
+      if (!b) return;
       const i = Number(b.dataset.i);
       if (i < this.fuseSel.length) { this.fuseSel.splice(i, 1); AUDIO.play('click'); this.renderFuse(); }
-    }));
+    });
     $('fuseGo').addEventListener('click', () => this.fuseGo());
+    $('fuseAll').addEventListener('click', () => this.fuseEverything());
     $('fuseClose').addEventListener('click', () => { AUDIO.play('click'); this.show('fuseBox', false); this.renderGear(); });
     document.querySelectorAll('#gearStage .eq').forEach(b => b.addEventListener('click', () => {
       const k = G.save.gear.eq[b.dataset.slot];
       AUDIO.play('click');
-      if (k) this.openArtifact(k); else this.toast(`No ${b.dataset.slot} equipped`);
+      if (k) this.openArtifact(k);
+    }));
+    // the eye under each slot hides that piece on the blob (its stats still count)
+    document.querySelectorAll('#gearStage .eye').forEach(b => b.addEventListener('click', () => {
+      const h = G.save.gear.hidden = G.save.gear.hidden || {}, sl = b.dataset.slot;
+      h[sl] = !h[sl]; saveGame(); AUDIO.play('click'); G.hero.impulse(1.2); this.renderGear();
     }));
     $('artEquip').addEventListener('click', () => this.equipToggle());
-    $('artFuse').addEventListener('click', () => { AUDIO.play('click'); this.show('artInfo', false); this.openFuse(this.artKeyOpen); });
+    $('artFuse').addEventListener('click', () => { AUDIO.play('click'); this.show('artInfo', false); this.openFuse(this.artKeyOpen, artParse(this.artKeyOpen).r === LEGEND ? 'mythic' : 'fuse'); });
     $('artClose').addEventListener('click', () => { AUDIO.play('click'); this.show('artInfo', false); });
-    $('scOpen').addEventListener('click', () => this.crackChest());
+    $('scOpen').addEventListener('click', () => this.crackChest(1));
+    $('scAll').addEventListener('click', () => this.crackChest(G.save.scrolls || 0));
     $('scDone').addEventListener('click', () => { AUDIO.play('click'); this.show('scrollChest', false); this.renderGear(); });
     $('chestArt').innerHTML = CHEST_SVG;
+    // hovering any artifact shows a tiny tip: its stats as icons and percents, nothing else
+    const tip = $('artTip');
+    document.addEventListener('pointerover', e => {
+      const el = e.pointerType === 'mouse' && e.target.closest && e.target.closest('[data-art]');
+      if (!el) { tip.hidden = true; return; }
+      tip.innerHTML = statChips(artStats(el.dataset.art)); tip.className = 'art-tip r' + artParse(el.dataset.art).r; tip.hidden = false;
+    });
+    document.addEventListener('pointermove', e => {
+      if (tip.hidden) return;
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      tip.style.left = Math.min(innerWidth - w - 6, e.clientX + 14) + 'px';
+      tip.style.top = Math.max(6, e.clientY - h - 10) + 'px';
+    });
   },
 
+  artButton(k, count, extra = '') {
+    const { id, r, def } = artParse(k), b = document.createElement('button');
+    b.className = `art r${r}${extra}`;
+    b.dataset.art = k;
+    b.innerHTML = `<i class="badge"><img alt="" src="${slotIcon(def.slot)}"></i><img alt="" src="${gearIcon(id)}">${count != null ? `<b>${count}</b>` : ''}`;
+    b.setAttribute('aria-label', `${RARITIES[r].name} ${def.name}`);
+    return b;
+  },
   renderGear() {
-    const sv = G.save, g = sv.gear;
+    const sv = G.save, g = sv.gear, hid = g.hidden || {};
     G.hero.setGear(g);
     const tot = gearTotals();
     $('gAtk').textContent = fmtNum(tot.atk); $('gHp').textContent = fmtNum(tot.hp);
     $('gScrolls').textContent = fmtNum(sv.scrolls || 0);
     $('gChest').classList.toggle('glow', (sv.scrolls || 0) > 0);
-    $('gSort').textContent = this.gearSort === 'rarity' ? 'BY RARITY' : 'BY SLOT';
+    $('gSort').textContent = this.gearSort === 'rarity' ? 'RARITY' : 'SLOT';
     $('gFuse').classList.toggle('glow', canFuse());
+    $('gMythic').classList.toggle('glow', canMythic());
     document.querySelectorAll('#gearStage .eq').forEach(b => {
       const k = g.eq[b.dataset.slot];
       b.className = 'eq' + (k ? ' art r' + artParse(k).r : '');
+      if (k) b.dataset.art = k; else delete b.dataset.art;
       b.innerHTML = k ? `<img alt="" src="${gearIcon(artParse(k).id)}">` : `<img alt="" class="ghost" src="${slotIcon(b.dataset.slot)}">`;
       b.setAttribute('aria-label', k ? `${RARITIES[artParse(k).r].name} ${artParse(k).def.name}` : `Empty ${b.dataset.slot} slot`);
     });
-    const cards = this.sortedArtKeys().map(k => {
-      const { id, r, def } = artParse(k), b = document.createElement('button');
-      const worn = g.eq[def.slot] === k;
-      b.className = `art r${r}${worn ? ' worn' : ''}${g.items[k] >= FUSE_N && r < RARITIES.length - 1 ? ' fusable' : ''}`;
-      b.innerHTML = `<i class="badge"><img alt="" src="${slotIcon(def.slot)}"></i><img alt="" src="${gearIcon(id)}"><b>${g.items[k]}</b>`;
-      b.setAttribute('aria-label', `${RARITIES[r].name} ${def.name}, ${g.items[k]} owned${worn ? ', equipped' : ''}`);
+    document.querySelectorAll('#gearStage .eye').forEach(b => {
+      const off = !!hid[b.dataset.slot];
+      b.classList.toggle('off', off); b.hidden = !g.eq[b.dataset.slot];
+      b.innerHTML = off ? EYE_OFF : EYE_ON;
+      b.setAttribute('aria-label', (off ? 'Show ' : 'Hide ') + b.dataset.slot);
+    });
+    $('gearGrid').replaceChildren(...this.sortedArtKeys().map(k => {
+      const { r, def } = artParse(k), worn = g.eq[def.slot] === k;
+      const b = this.artButton(k, g.items[k], `${worn ? ' worn' : ''}${g.items[k] >= fuseNeed(r) && r < MYTHIC ? ' fusable' : ''}`);
       b.addEventListener('click', () => { AUDIO.play('click'); this.openArtifact(k); });
       return b;
-    });
-    if (!cards.length) {
-      const p = document.createElement('p');
-      p.className = 'gear-empty';
-      p.textContent = 'No artifacts yet. Elites and bosses drop scrolls, and tougher enemies sometimes do; each scroll opens a treasure chest.';
-      cards.push(p);
-    }
-    $('gearGrid').replaceChildren(...cards);
+    }));
   },
   sortedArtKeys() {
     const g = G.save.gear, slotOrder = GEAR_SLOTS.map(s => s.id), ids = Object.keys(ARTIFACTS);
@@ -182,22 +242,17 @@ Object.assign(UI, {
     const g = G.save.gear, { id, r, def } = artParse(key), n = g.items[key] || 0;
     this.artKeyOpen = key;
     $('artBig').className = 'art-big art r' + r;
-    $('artBig').innerHTML = `<img alt="" src="${gearIcon(id)}">`;
-    $('artRar').textContent = `${RARITIES[r].name} · ${GEAR_SLOTS.find(s => s.id === def.slot).name}`;
+    $('artBig').innerHTML = `<img alt="" src="${gearIcon(id)}"><b>${n}</b>`;
+    $('artRar').textContent = RARITIES[r].name;
     $('artRar').className = 'eyebrow rar r' + r;
     $('artName').textContent = def.name;
-    const st = artStats(key);
-    $('artStat').textContent = Object.keys(st).map(k => fmtBonus(k, st[k])).join(' · ');
-    const top = r >= RARITIES.length - 1;
-    let note = `You have ${n}.`;
-    if (!top) { const nx = artStats(artKey(id, r + 1)); note += ` Fuse ${FUSE_N} into ${RARITIES[r + 1].name}: ${Object.keys(nx).map(k => fmtBonus(k, nx[k])).join(' · ')}`; }
-    else note += ' Legendary is the top rarity.';
-    $('artNote').textContent = note;
+    $('artStat').innerHTML = statChips(artStats(key));
     const worn = g.eq[def.slot] === key;
     $('artEquip').textContent = worn ? 'Unequip' : 'Equip';
     $('artEquip').className = worn ? 'jelly ghost' : 'jelly';
-    $('artFuse').hidden = top;
-    $('artFuse').textContent = 'Fuse';
+    $('artFuse').hidden = r >= MYTHIC;
+    $('artFuse').textContent = r === LEGEND ? 'Mythic' : 'Fuse';
+    $('artFuse').className = r === LEGEND ? 'jelly mythic' : 'jelly violet';
     this.show('artInfo', true);
   },
   equipToggle() {
@@ -209,103 +264,116 @@ Object.assign(UI, {
     this.renderGear(); this.openArtifact(key);
   },
 
-  // ---------- fuse: two slots, filled from the inventory with the same artifact and rarity ----------
-  openFuse(prefill) {
-    this.fuseSel = []; this.fuseMade = null;
-    const n = prefill ? Math.min(FUSE_N, G.save.gear.items[prefill] || 0) : 0;
-    if (prefill && artParse(prefill).r < RARITIES.length - 1) for (let i = 0; i < n; i++) this.fuseSel.push(prefill);
+  // ---------- fusing. 'fuse': two of the same artifact and rarity, up to Legendary.
+  // 'mythic' (its own menu, under Fuse): four of the same Legendary make a Mythic ----------
+  openFuse(prefill, mode = 'fuse') {
+    this.fuseMode = mode; this.fuseSel = []; this.fuseMade = null;
+    const need = mode === 'mythic' ? MYTHIC_N : FUSE_N;
+    const ok = k => (mode === 'mythic' ? artParse(k).r === LEGEND : artParse(k).r < LEGEND);
+    if (prefill && ok(prefill)) for (let i = 0; i < Math.min(need, G.save.gear.items[prefill] || 0); i++) this.fuseSel.push(prefill);
+    const box = $('fuseBox');
+    box.classList.toggle('mythic', mode === 'mythic');
+    $('fuseTitle').textContent = mode === 'mythic' ? 'MYTHIC' : 'FUSE';
+    $('fuseRow').innerHTML = Array.from({ length: need }, (_, i) => `<button class="fslot" data-i="${i}"></button>`).join('') + '<span class="fuse-arrow" aria-hidden="true">➜</span><div class="fslot result" id="fuseResult"></div>';
     this.show('fuseBox', true);
     this.renderFuse();
   },
   renderFuse() {
-    const g = G.save.gear, sel = this.fuseSel, key = sel[0], top = RARITIES.length - 1;
-    document.querySelectorAll('#fuseBox .fslot[data-i]').forEach((b, i) => {
+    const g = G.save.gear, sel = this.fuseSel, key = sel[0], mythic = this.fuseMode === 'mythic', need = mythic ? MYTHIC_N : FUSE_N;
+    document.querySelectorAll('#fuseRow .fslot[data-i]').forEach((b, i) => {
       const k = sel[i];
       b.className = 'fslot' + (k ? ' art r' + artParse(k).r : '');
       b.innerHTML = k ? `<img alt="" src="${gearIcon(artParse(k).id)}">` : '<span>+</span>';
-      b.setAttribute('aria-label', k ? `Remove ${artParse(k).def.name}` : 'Empty fuse slot');
     });
     const res = $('fuseResult'), show = key || this.fuseMade;
     if (show) {
       const { id, r } = artParse(show), rr = key ? r + 1 : r;
-      res.className = `fslot result art r${rr}${key && sel.length < FUSE_N ? ' faint' : ''}${!key ? ' made' : ''}`;
+      res.className = `fslot result art r${rr}${key && sel.length < need ? ' faint' : ''}${!key ? ' made' : ''}`;
       res.innerHTML = `<img alt="" src="${gearIcon(id)}">`;
-    } else { res.className = 'fslot result'; res.innerHTML = '<span>?</span>'; }
+      res.dataset.art = artKey(id, rr);
+    } else { res.className = 'fslot result'; res.innerHTML = '<span>?</span>'; delete res.dataset.art; }
+    // no words: the result's stats as chips, or the items Fuse all made
     const hint = $('fuseHint');
-    if (key) {
-      const { id, r, def } = artParse(key), nx = artStats(artKey(id, r + 1));
-      hint.textContent = sel.length < FUSE_N ? `Add ${FUSE_N - sel.length} more ${RARITIES[r].name} ${def.name}.`
-        : `Fuse into ${RARITIES[r + 1].name} ${def.name}: ${Object.keys(nx).map(k => fmtBonus(k, nx[k])).join(' · ')}`;
-    } else if (this.fuseMade) {
-      const { r, def } = artParse(this.fuseMade);
-      hint.textContent = `You made a ${RARITIES[r].name} ${def.name}!`;
-    } else hint.textContent = 'Tap an artifact below. Two of the same artifact and rarity fuse into the next rarity.';
-    const cards = this.sortedArtKeys().map(k => {
-      const { id, r, def } = artParse(k), b = document.createElement('button');
+    if (this.fuseAllMade && this.fuseAllMade.length) hint.replaceChildren(...this.fuseAllMade.map(k => this.artButton(k, null, ' mini')));
+    else if (show) { const { id, r } = artParse(show); hint.innerHTML = statChips(artStats(artKey(id, key ? r + 1 : r))); }
+    else hint.innerHTML = '';
+    $('fuseGrid').replaceChildren(...this.sortedArtKeys().filter(k => (mythic ? artParse(k).r === LEGEND : artParse(k).r < LEGEND)).map(k => {
       const left = g.items[k] - sel.filter(x => x === k).length;
-      b.className = `art r${r}`;
-      b.innerHTML = `<i class="badge"><img alt="" src="${slotIcon(def.slot)}"></i><img alt="" src="${gearIcon(id)}"><b>${left}</b>`;
-      b.disabled = left <= 0 || r >= top || sel.length >= FUSE_N || (key && k !== key);
-      b.setAttribute('aria-label', `${RARITIES[r].name} ${def.name}, ${left} left`);
-      b.addEventListener('click', () => { this.fuseMade = null; this.fuseSel.push(k); AUDIO.play('pop'); this.renderFuse(); });
+      const b = this.artButton(k, left);
+      b.disabled = left <= 0 || sel.length >= need || (key && k !== key);
+      b.addEventListener('click', () => { this.fuseMade = null; this.fuseAllMade = null; this.fuseSel.push(k); AUDIO.play('pop'); this.renderFuse(); });
       return b;
-    });
-    $('fuseGrid').replaceChildren(...cards);
-    $('fuseGo').disabled = sel.length < FUSE_N;
+    }));
+    $('fuseGo').disabled = sel.length < need;
+    $('fuseAll').disabled = !(canFuse() || canMythic());
   },
   fuseGo() {
-    const sel = this.fuseSel;
-    if (sel.length < FUSE_N || sel.some(k => k !== sel[0])) return;
+    const sel = this.fuseSel, need = this.fuseMode === 'mythic' ? MYTHIC_N : FUSE_N;
+    if (sel.length < need || sel.some(k => k !== sel[0])) return;
     const made = fuseArtifact(sel[0]);
     if (!made) return;
-    saveGame(); AUDIO.play('chest'); G.hero.impulse(2);
-    this.fuseSel = []; this.fuseMade = made;
+    saveGame(); AUDIO.play(artParse(made).r >= MYTHIC ? 'win' : 'chest'); G.hero.impulse(2);
+    this.fuseSel = []; this.fuseMade = made; this.fuseAllMade = null;
+    this.renderFuse(); this.renderGear();
+  },
+  fuseEverything() {
+    const made = fuseAll();
+    if (!made.length) return;
+    saveGame(); AUDIO.play(made.some(k => artParse(k).r >= MYTHIC) ? 'win' : 'chest'); G.hero.impulse(2.4);
+    this.fuseSel = []; this.fuseMade = null; this.fuseAllMade = made;
     this.renderFuse(); this.renderGear();
   },
 
-  // ---------- scroll chest ----------
+  // ---------- scroll chest: one scroll, or every scroll at once ----------
   openScrollChest() {
     this.chestBusy = false;
-    const st = $('chestStage');
-    st.className = 'chest-stage';
+    $('chestStage').className = 'chest-stage';
     $('chestReveal').hidden = true;
     this.syncChestButtons();
-    $('scText').textContent = (G.save.scrolls || 0) > 0 ? 'Use a scroll to unlock the chest.' : 'You have no scrolls. Elites and bosses drop them, and tougher enemies sometimes do.';
     this.show('scrollChest', true);
   },
   syncChestButtons() {
-    const n = G.save.scrolls || 0, b = $('scOpen');
+    const n = G.save.scrolls || 0, b = $('scOpen'), all = $('scAll');
     b.disabled = n <= 0 || this.chestBusy;
-    b.innerHTML = `<img alt="" src="${gearIcon('scroll')}">${$('chestReveal').hidden ? 'Unlock' : 'Open another'} · ${n}`;
+    b.innerHTML = `<img alt="" src="${gearIcon('scroll')}">1`;
+    all.disabled = n <= 1 || this.chestBusy;
+    all.innerHTML = `<img alt="" src="${gearIcon('scroll')}">${n > 1 ? n : 'All'}`;
   },
-  crackChest() {
+  crackChest(count) {
     const sv = G.save;
-    if (this.chestBusy || !(sv.scrolls > 0)) return;
-    sv.scrolls--;
-    const key = rollArtifact();
-    addArtifact(key);
+    count = Math.min(count, sv.scrolls || 0);
+    if (this.chestBusy || count <= 0) return;
+    const keys = [];
+    for (let i = 0; i < count; i++) { sv.scrolls--; const k = rollArtifact(); addArtifact(k); keys.push(k); }
+    keys.sort((a, b) => artParse(b).r - artParse(a).r);
     saveGame();
     this.chestBusy = true;
-    const st = $('chestStage'), { id, r, def } = artParse(key);
+    const st = $('chestStage'), best = artParse(keys[0]).r;
     $('chestReveal').hidden = true;
     st.className = 'chest-stage';
     void st.offsetWidth;
     st.classList.add('shake');
     AUDIO.play('click');
     this.syncChestButtons();
-    $('scText').textContent = 'Unlocking…';
     setTimeout(() => {
-      st.className = 'chest-stage open r' + r;
+      st.className = 'chest-stage open r' + best + (keys.length > 1 ? ' many' : '');
       const rv = $('chestReveal');
-      rv.innerHTML = `<span class="art r${r}"><img alt="" src="${gearIcon(id)}"></span><small class="rar r${r}">${RARITIES[r].name}</small><b></b><span class="dim"></span>`;
-      rv.querySelector('b').textContent = def.name;
-      const s = artStats(key);
-      rv.querySelector('.dim').textContent = Object.keys(s).map(k => fmtBonus(k, s[k])).join(' · ');
+      if (keys.length === 1) {
+        const { id, r } = artParse(keys[0]);
+        rv.innerHTML = `<span class="art r${r}" data-art="${keys[0]}"><img alt="" src="${gearIcon(id)}"></span><small class="rar r${r}">${RARITIES[r].name}</small><span class="chips">${statChips(artStats(keys[0]))}</span>`;
+      } else {
+        // many at once: a grid of what came out, best first
+        const grid = document.createElement('div');
+        grid.className = 'reveal-grid';
+        grid.replaceChildren(...keys.map(k => this.artButton(k, null, ' mini')));
+        rv.replaceChildren(grid);
+      }
       rv.hidden = false;
-      AUDIO.play(r >= 3 ? 'win' : 'chest');
-      $('scText').textContent = 'Added to your inventory.';
+      AUDIO.play(best >= 3 ? 'win' : 'chest');
       this.chestBusy = false;
       this.syncChestButtons();
-    }, 900);
+    }, keys.length > 1 ? 1100 : 900);
   },
 });
+const EYE_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 C5 6.5 8.5 4.5 12 4.5 S19 6.5 22 12 C19 17.5 15.5 19.5 12 19.5 S5 17.5 2 12 Z"/><circle cx="12" cy="12" r="3.2" fill="#fff"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 C5 6.5 8.5 4.5 12 4.5 S19 6.5 22 12 C19 17.5 15.5 19.5 12 19.5 S5 17.5 2 12 Z" opacity=".55"/><path d="M4 20 L20 4"/></svg>';

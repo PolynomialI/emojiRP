@@ -67,7 +67,7 @@ class Hero {
     this.ghosts = [];
     this.out = {
       pa: new Float32Array(HERO_MAXP * 4), pb: new Float32Array(HERO_MAXP * 4), pc: new Float32Array(HERO_MAXP * 4), count: 0,
-      rotInv: new Float32Array(9), boundC: [0, 0, 0], boundR: 1, boxLo: new Float32Array(3), boxHi: new Float32Array(3), aoY: 0, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
+      rotInv: new Float32Array(9), gearMat: new Float32Array(4), boundC: [0, 0, 0], boundR: 1, boxLo: new Float32Array(3), boxHi: new Float32Array(3), aoY: 0, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
       chest: new Float32Array(4), pal: new Float32Array(42), grad: new Float32Array(4), groundY: 0,
     };
     this.costume = null; this.hat = null; this.hatLift = 0; this.gear = null;
@@ -174,6 +174,7 @@ class Hero {
   }
 
   update(dt, moveVel, alive) {
+    if (this.gear && this.gear.myth) this.rainbowGear();
     this.time += dt;
     // movement and facing
     V3.copy(this.prevVel, this.vel);
@@ -530,18 +531,34 @@ class Hero {
 
   // show the equipped artifacts (the save's gear: { items, eq }); better rarities glow a little
   setGear(g) {
-    const eq = (g && g.eq) || {}, slots = { weapon: 8, armor: 10, ring: 11, necklace: 12 }, out = { glow: {} };
+    const eq = (g && g.eq) || {}, hid = (g && g.hidden) || {}, slots = { weapon: 8, armor: 10, ring: 11, necklace: 12 }, order = ['weapon', 'armor', 'ring', 'necklace'];
+    const out = { glow: {}, myth: null };
     let any = false;
     for (const slot in slots) {
       const key = eq[slot];
-      if (!key || !(g.items[key] > 0)) continue;
+      // a hidden slot keeps its stats but is not drawn
+      if (!key || !(g.items[key] > 0) || hid[slot]) continue;
       const { id, r } = artParse(key), look = GEAR_LOOK[id];
       if (!look) continue;
-      out[slot] = id; out.glow[slot] = r * 0.1; any = true;
+      out[slot] = id; out.glow[slot] = r >= MYTHIC ? 0.5 : r * 0.1; any = true;
+      this.out.gearMat[order.indexOf(slot)] = GEAR_MAT[id] ?? 0.5;
       look.forEach((hex, i) => this.out.pal.set(hexToRgb(hex), (slots[slot] + i) * 3));
+      // mythic: its colors cycle through the rainbow (rainbowGear, every frame)
+      if (r >= MYTHIC) (out.myth = out.myth || []).push([slots[slot], look.length]);
     }
     this.gear = any ? out : null;
   }
+  // mythic gear shimmers through the rainbow
+  rainbowGear() {
+    const t = this.time, pal = this.out.pal;
+    const f = (h, n) => { const k = (n + h * 6) % 6; return 1 - 0.75 * Math.max(0, Math.min(k, 4 - k, 1)); };
+    for (const [at, n] of this.gear.myth) for (let i = 0; i < n; i++) {
+      const h = (t * 0.35 + i * 0.18 + at * 0.07) % 1, o = (at + i) * 3;
+      pal[o] = f(h, 5); pal[o + 1] = f(h, 3); pal[o + 2] = f(h, 1);
+    }
+  }
+
+
 
   // world position of a joint or an arm's fist
   jointWorld(name, out = [0, 0, 0]) { return this.toWorld(this.joints[name].p, out); }

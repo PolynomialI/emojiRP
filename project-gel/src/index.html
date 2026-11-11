@@ -274,12 +274,14 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .gear-stats span { display: inline-flex; align-items: center; gap: 6px; }
 .gear-stats img { width: 30px; height: 30px; }
 .gear-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#gMythic { grid-column: 3; }
+.jelly.mythic { color: #fff; background: linear-gradient(110deg, #ff5f8f, #ffb52a, #4cd964, #33c6f2, #9c6bff, #ff5f8f); background-size: 300% 100%; animation: rainbow 4s linear infinite; box-shadow: inset 0 -4px 0 rgba(0,0,0,.2), inset 0 2px 0 rgba(255,255,255,.5), 0 3px 0 #6a3fb0; text-shadow: 0 2px 0 rgba(60, 20, 110, .45); }
+@keyframes rainbow { to { background-position: 300% 0; } }
 .gear-btns .jelly { min-height: 42px; padding: 6px 6px 10px; font-size: 14px; border-radius: 14px; gap: 5px; }
 .gear-btns .jelly img { width: 22px; height: 22px; }
 .jelly.glow { animation: glow 1.4s ease-in-out infinite; }
 @keyframes glow { 50% { filter: brightness(1.15) drop-shadow(0 0 8px rgba(255, 220, 90, 0.9)); } }
 .gear-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; max-height: 34vh; overflow-y: auto; padding: 2px 2px 6px; align-content: start; }
-.gear-empty { grid-column: 1 / -1; margin: 6px; text-align: center; font-size: 14px; font-weight: 500; color: var(--ink-dim); }
 .art { position: relative; aspect-ratio: 1; border-radius: 14px; display: grid; place-items: center; }
 .art > img { width: 76%; height: 76%; filter: drop-shadow(0 2px 0 rgba(0,0,0,.18)); }
 .art.r0 { background: linear-gradient(180deg, #d5dbe3, #9ba6b4); box-shadow: inset 0 -4px 0 #7b8696, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #5f6a7a; }
@@ -287,6 +289,10 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .art.r2 { background: linear-gradient(180deg, #98d6ff, #3d8ff0); box-shadow: inset 0 -4px 0 #2a6fcf, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #1f55a3; }
 .art.r3 { background: linear-gradient(180deg, #dcbcff, #9a5cf0); box-shadow: inset 0 -4px 0 #7b3fd6, inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #5a2ba3; }
 .art.r4 { background: linear-gradient(180deg, #fff0a0, #ffb52a); box-shadow: inset 0 -4px 0 #e08e0b, inset 0 2px 0 rgba(255,255,255,.7), 0 3px 0 #a86006, 0 0 12px rgba(255, 190, 40, 0.7); }
+/* mythic: a flowing rainbow with a spinning rainbow halo behind it */
+.art.r5 { isolation: isolate; background: linear-gradient(135deg, #ff6b9a, #ffd23a, #5ff08a, #4ad8ff, #b46bff, #ff6b9a); background-size: 300% 300%; animation: rainbow 3s linear infinite;
+  box-shadow: inset 0 -4px 0 rgba(60, 20, 110, .35), inset 0 2px 0 rgba(255,255,255,.75), 0 3px 0 #6a3fb0, 0 0 14px rgba(255, 255, 255, .75); }
+.art.r5::before { content: ''; position: absolute; inset: -5px; border-radius: inherit; z-index: -1; background: conic-gradient(#ff3b6b, #ffd23a, #3ef07a, #3ad8ff, #9c6bff, #ff3b6b); filter: blur(6px); opacity: .9; animation: spin 2.4s linear infinite; }
 .art .badge { position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: #23305a; box-shadow: 0 1px 0 rgba(255,255,255,.4); }
 .art .badge img { width: 14px; height: 14px; }
 .art b { position: absolute; right: 5px; bottom: 2px; font-size: 15px; color: #fff; -webkit-text-stroke: 3.5px #23305a; paint-order: stroke fill; }
@@ -295,6 +301,30 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .art.fusable { animation: fusable 1.6s ease-in-out infinite; }
 @keyframes fusable { 50% { transform: translateY(-2px); filter: brightness(1.12); } }
 .rar.r0 { color: #6d7887; } .rar.r1 { color: #2f9a2a; } .rar.r2 { color: #2a6fcf; } .rar.r3 { color: #7b3fd6; } .rar.r4 { color: #d08300; }
+.rar.r5 { background: linear-gradient(90deg, #ff3b6b, #ff9f1a, #2fc85a, #1fa8ff, #9c4dff, #ff3b6b); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: rainbow 3s linear infinite; }
+.chest-stage.open.r5 .rays { background-color: rgba(255, 120, 220, .5); }
+/* stat chips: an icon and a percent, nothing else */
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 5px; border-radius: 999px; background: #eef4fd; color: var(--ink); font-size: 15px; font-weight: 700; white-space: nowrap; }
+.chip .sti { width: 20px; height: 20px; }
+.art-tip { position: fixed; z-index: 50; pointer-events: none; display: flex; gap: 5px; padding: 5px; border-radius: 14px; background: #fff; box-shadow: 0 0 0 3px #23305a, 0 6px 16px rgba(0, 30, 90, .35); }
+.art-tip.r5 { box-shadow: 0 0 0 3px #9c6bff, 0 0 16px rgba(200, 120, 255, .8); }
+.art-tip .chip { padding: 2px 8px 2px 4px; font-size: 14px; }
+.art.mini { width: 54px; height: 54px; border-radius: 13px; }
+.art.mini .badge { width: 16px; height: 16px; left: 2px; top: 2px; }
+.art.mini .badge img { width: 11px; height: 11px; }
+.reveal-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: min(520px, 86vw); max-height: 250px; overflow-y: auto; padding: 8px; }
+.chest-stage.many #chestArt { transform: translateY(110px) scale(.5); opacity: .5; }
+.chest-reveal .reveal-grid .art { width: 54px; height: 54px; border-radius: 13px; }
+.chest-reveal .chips .chip { font-size: 14px; }
+.fuse-hint { min-height: 34px; align-items: center; }
+#fuseBox.mythic .title { background: linear-gradient(90deg, #ff3b6b, #ff9f1a, #2fc85a, #1fa8ff, #9c4dff, #ff3b6b); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: rainbow 3s linear infinite; }
+#fuseBox.mythic .fslot { width: 58px; height: 58px; }
+.gear-stage .eqw { display: grid; justify-items: center; gap: 5px; }
+.gear-stage .eye { width: 40px; height: 26px; border-radius: 13px; display: grid; place-items: center; background: rgba(11, 79, 168, .35); }
+.gear-stage .eye svg { width: 22px; height: 22px; }
+.gear-stage .eye.off { background: rgba(35, 48, 90, .65); }
+.art-big b { position: absolute; right: 8px; bottom: 4px; font-size: 22px; color: #fff; -webkit-text-stroke: 4px #23305a; paint-order: stroke fill; }
 .art-big { width: 120px; height: 120px; border-radius: 26px; margin: 0 auto; }
 .art-info { display: grid; gap: 6px; padding: 18px 16px; text-align: center; }
 .art-info h2 { margin: 0; font-size: 26px; color: var(--ink); }
@@ -523,12 +553,14 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   <section id="gear" class="screen" hidden>
     <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2 class="ribbon">INVENTORY</h2><div class="pill" title="Scrolls"><img class="ico" alt="Scrolls" data-icon="scroll"><span id="gScrolls">0</span></div></div>
     <div class="col gear-stage" id="gearStage">
-      <button class="eq" data-slot="weapon"></button><button class="eq" data-slot="armor"></button>
-      <button class="eq" data-slot="ring"></button><button class="eq" data-slot="necklace"></button>
+      <div class="eqw" data-slot="weapon"><button class="eq" data-slot="weapon"></button><button class="eye" data-slot="weapon"></button></div>
+      <div class="eqw" data-slot="armor"><button class="eq" data-slot="armor"></button><button class="eye" data-slot="armor"></button></div>
+      <div class="eqw" data-slot="ring"><button class="eq" data-slot="ring"></button><button class="eye" data-slot="ring"></button></div>
+      <div class="eqw" data-slot="necklace"><button class="eq" data-slot="necklace"></button><button class="eye" data-slot="necklace"></button></div>
     </div>
     <div class="col panel gear-panel">
       <div class="gear-stats"><span><img alt="Attack" data-icon="g-atk"><b id="gAtk">100</b></span><span><img alt="Health" data-icon="g-heart"><b id="gHp">140</b></span></div>
-      <div class="gear-btns"><button class="jelly ghost" id="gSort">BY RARITY</button><button class="jelly gold" id="gChest"><img alt="" data-icon="gear">CHEST</button><button class="jelly violet" id="gFuse">FUSE</button></div>
+      <div class="gear-btns"><button class="jelly ghost" id="gSort">RARITY</button><button class="jelly gold" id="gChest"><img alt="" data-icon="gear">CHEST</button><button class="jelly violet" id="gFuse">FUSE</button><button class="jelly mythic" id="gMythic">MYTHIC</button></div>
       <div class="gear-grid" id="gearGrid"></div>
     </div>
   </section>
@@ -537,10 +569,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     <div class="modal-body">
       <div class="panel art-info">
         <div class="art-big" id="artBig"></div>
-        <p class="eyebrow rar" id="artRar">Common · Weapon</p>
+        <p class="eyebrow rar" id="artRar">Common</p>
         <h2 id="artName">Goo Sword</h2>
-        <p class="art-stat" id="artStat"></p>
-        <p class="dim" id="artNote"></p>
+        <p class="art-stat chips" id="artStat"></p>
       </div>
       <div class="row-actions"><button class="jelly" id="artEquip">Equip</button><button class="jelly violet" id="artFuse">Fuse 3</button><button class="jelly ghost" id="artClose">Close</button></div>
     </div>
@@ -548,13 +579,13 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
   <section id="fuseBox" class="screen modal menu" hidden>
     <div class="modal-body">
-      <h1 class="title outline" style="color:var(--violet)">FUSE</h1>
+      <h1 class="title outline" style="color:var(--violet)" id="fuseTitle">FUSE</h1>
       <div class="panel fuse-panel">
-        <div class="fuse-row"><button class="fslot" data-i="0"></button><button class="fslot" data-i="1"></button><span class="fuse-arrow" aria-hidden="true">➜</span><div class="fslot result" id="fuseResult"></div></div>
-        <p class="dim" id="fuseHint"></p>
+        <div class="fuse-row" id="fuseRow"></div>
+        <div class="chips fuse-hint" id="fuseHint"></div>
         <div class="gear-grid fuse-grid" id="fuseGrid"></div>
       </div>
-      <div class="row-actions"><button class="jelly violet" id="fuseGo" disabled>Fuse</button><button class="jelly ghost" id="fuseClose">Done</button></div>
+      <div class="row-actions"><button class="jelly violet" id="fuseGo" disabled>Fuse</button><button class="jelly gold" id="fuseAll">Fuse all</button><button class="jelly ghost" id="fuseClose">Done</button></div>
     </div>
   </section>
 
@@ -562,10 +593,11 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     <div class="modal-body" style="text-align:center">
       <h1 class="title outline" style="color:var(--gold);font-size:clamp(28px,7vw,40px);white-space:nowrap">TREASURE CHEST</h1>
       <div class="chest-stage" id="chestStage"><div class="rays"></div><div id="chestArt"></div><div class="chest-reveal" id="chestReveal" hidden></div></div>
-      <p class="dim" style="margin:0" id="scText"></p>
-      <div class="row-actions"><button class="jelly gold" id="scOpen">Unlock</button><button class="jelly ghost" id="scDone">Done</button></div>
+      <div class="row-actions"><button class="jelly gold" id="scOpen">1</button><button class="jelly gold" id="scAll">All</button><button class="jelly ghost" id="scDone">Done</button></div>
     </div>
   </section>
+
+  <div class="art-tip" id="artTip" hidden></div>
 
   <section id="chapters" class="screen modal menu" hidden style="place-items:start center">
     <div class="col" style="height:100%">
