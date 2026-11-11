@@ -9,7 +9,8 @@ function defaultSave() {
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null } }, devUnlocked: false,
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
-    lastSeen: Date.now(), stats: { runs: 0, kills: 0 }, tutorial: true,
+    lastSeen: Date.now(), stats: { runs: 0, kills: 0, bosses: 0, elites: 0, gooblins: 0, evos: 0, maxLevel: 0, fuses: 0, coinsEarned: 0 },
+    goals: { seen: {}, claimed: {} }, tutorial: true,
   };
 }
 function loadGame() {
@@ -26,8 +27,11 @@ function loadGame() {
         skins: Array.isArray(s.skins) && s.skins.length ? s.skins : d.skins,
         costumes: Array.isArray(s.costumes) && s.costumes.length ? s.costumes : d.costumes,
         cleared: s.cleared || {}, best: s.best || {},
+        goals: { seen: { ...((s.goals && s.goals.seen) || {}) }, claimed: { ...((s.goals && s.goals.claimed) || {}) } },
         gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) } },
       };
+      // saves from before goals counted bosses: every cleared chapter took at least one
+      if (!s.stats || s.stats.bosses == null) out.stats.bosses = Object.keys(out.cleared).length;
       // saves from before hats had their own slot: a hat worn as the costume moves over
       if (HAT_IDS.includes(out.costume)) { out.hat = out.costume; out.costume = 'none'; }
       return out;

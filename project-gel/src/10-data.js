@@ -471,8 +471,13 @@ const SKINS = [
   { id: 'shadow', name: 'Shadow', cost: 2600, base: '#141420', top: '#5a2bd6', accent: '#ff3b6b', rim: '#9a8cff', boost: { dmg: 6 } },
   { id: 'fire', name: 'Fire', cost: 2800, base: '#ff3b1f', top: '#ffe14a', accent: '#ff8a1f', rim: '#ffe0a0', boost: { area: 6 } },
   { id: 'prism', name: 'Prism', cost: 3000, base: '#ff5fb8', top: '#4ad8ff', accent: '#ffd23a', rim: '#ffffff', boost: { xp: 8 } },
+  // goal rewards: cannot be bought (see GOALS in src/14c-goals.js)
+  { id: 'champion', name: 'Champion', cost: 0, goal: 'ch15', base: '#ffc21a', top: '#fff3b0', accent: '#ff7a1a', rim: '#ffffff', boost: { gold: 12 } },
+  { id: 'cosmic', name: 'Cosmic', cost: 0, goal: 'endless20', base: '#24206e', top: '#ff5fb8', accent: '#4ad8ff', rim: '#e0ccff', boost: { cd: 6 } },
+  { id: 'inferno', name: 'Inferno', cost: 0, goal: 'rushall', base: '#3a0d14', top: '#ff3b1f', accent: '#ffd23a', rim: '#ff9a6a', boost: { dmg: 7 } },
 ];
-SKINS.sort((a, b) => a.cost - b.cost);
+// by price, with the goal rewards last
+SKINS.sort((a, b) => (a.goal ? 1e9 : a.cost) - (b.goal ? 1e9 : b.cost));
 // Costumes are extra goo shapes on the hero, offsets in hero units from the head (or pelvis).
 // Parts: ['sph', anchor, pos, r, k, col] | ['cap', anchor, a, b, r1, r2, k, col, sway] | ['ell', anchor, pos, radii, k, col]
 // col: 'b' = body color, 0-3 = this costume's palette. sway lets a tip lag and bob with the head.

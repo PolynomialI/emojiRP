@@ -101,6 +101,7 @@ function fuseArtifact(key) {
   if (!g.items[key]) delete g.items[key];
   const next = artKey(id, r + 1);
   addArtifact(next);
+  G.save.stats.fuses = (G.save.stats.fuses || 0) + 1;
   for (const sl in g.eq) if (g.eq[sl] === key && !g.items[key]) g.eq[sl] = next;
   return next;
 }

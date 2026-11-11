@@ -75,6 +75,7 @@ const UI = {
     this.show('gear', menu && this.menuTab === 'gear');
     if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); this.show('fuseBox', false); }
     this.show('chapters', menu && this.menuTab === 'chapters');
+    this.show('goals', menu && this.menuTab === 'goals');
     const inRun = ['run', 'levelup', 'chest', 'pause', 'dying', 'revive', 'victory'].includes(s);
     this.show('hud', inRun);
     this.show('levelup', s === 'levelup');
@@ -86,7 +87,7 @@ const UI = {
     // a banner that is still animating would sit on top of a modal's title
     if (['levelup', 'chest', 'pause', 'revive', 'results'].includes(s)) { $('banner').classList.remove('show'); $('bossCards').classList.remove('show'); }
     if (s === 'revive') this.reviveT = 5;
-    if (s === 'results') this.fillResults();
+    if (s === 'results') { this.fillResults(); goalsCheck(); }
     if (s === 'run') { this.slotSig = ''; }
   },
 
@@ -98,6 +99,7 @@ const UI = {
     if (tab === 'skins') this.renderSkins();
     if (tab === 'gear') this.renderGear();
     if (tab === 'chapters') this.renderChapters();
+    if (tab === 'goals') this.renderGoals();
     this.onState(G.state);
   },
 
@@ -121,6 +123,7 @@ const UI = {
     $('chNext').disabled = sv.selected >= sv.chapter;
     this.homePortrait();
     this.refreshBadges();
+    if (this.menuTab === 'home') goalsCheck();
     applyArena(info.arena);
   },
   // red dots on the home menu: an upgrade is affordable, a scroll or fuse is waiting, a new look is in reach
@@ -131,6 +134,7 @@ const UI = {
       upgrades: Object.keys(META_UPGRADES).some(id => (sv.upgrades[id] || 0) < META_UPGRADES[id].max && sv.coins >= upgradeCost(id, sv.upgrades[id] || 0)),
       gear: sv.scrolls > 0 || canFuse(),
       skins: canBuy(SKINS.filter(s => !sv.skins.includes(s.id))) || canBuy(COSTUMES.filter(c => !sv.costumes.includes(c.id))),
+      goals: goalsToClaim(sv) > 0,
     };
   },
   refreshBadges() {
@@ -209,6 +213,7 @@ const UI = {
       const sm = b.querySelector('small');
       if (worn === s.id) sm.textContent = 'Equipped';
       else if (owned.includes(s.id)) sm.textContent = 'Owned';
+      else if (s.goal) sm.textContent = '🏆 Goal';
       else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); sm.classList.toggle('poor', sv.coins < s.cost); }
       b.addEventListener('click', () => {
         if (tab === 'colors') this.skinPreview = s.id; else if (tab === 'costumes') this.costumePreview = s.id; else this.hatPreview = s.id;
@@ -219,6 +224,7 @@ const UI = {
     const s = list.find(k => k.id === sel) || list[0], act = $('skinAction');
     if (worn === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
     else if (owned.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
+    else if (s.goal) { act.textContent = `Goal: ${GOALS.find(g => g.id === s.goal).name}`; act.disabled = true; act.className = 'jelly'; }
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   skinAction() {
@@ -226,7 +232,7 @@ const UI = {
     const s = list.find(k => k.id === sel);
     if (!s) return;
     if (!owned.includes(s.id)) {
-      if (sv.coins < s.cost) return;
+      if (s.goal || sv.coins < s.cost) return;
       sv.coins -= s.cost; owned.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
     }
     if (tab === 'colors') sv.skin = s.id; else if (tab === 'costumes') sv.costume = s.id; else sv.hat = s.id;

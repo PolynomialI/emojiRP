@@ -58,6 +58,7 @@ function gooblinHit(e) {
 }
 // caught: the whole sack bursts
 function gooblinLoot(e) {
+  G.run.gooblins++;
   for (let i = 0; i < 16; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), randInt(2, 4));
   spawnPickup('chest', e.x, e.z);
   spawnPickup('scroll', e.x + 0.6, e.z);

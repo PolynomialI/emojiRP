@@ -267,6 +267,7 @@ function bossBonk(e, hit) {
 
 function onBossKilled(e) {
   const run = G.run;
+  run.bossKills++;
   G.cam.shake = 0.3;
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);

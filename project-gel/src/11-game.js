@@ -136,7 +136,7 @@ function spawnRate(t) {
 function startRun(chapter, opts = {}) {
   const info = { ...chapterInfo(chapter) };
   const run = G.run = {
-    chapter, info, t: 0, kills: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
+    chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
@@ -196,6 +196,7 @@ function checkEvolutions() {
 function evolveSkill(id) {
   const run = G.run, s = slotOf(id), E = EVOLUTIONS[id], rows = SKILLS[id].levels, top = rows[rows.length - 1];
   s.evo = true;
+  run.evos++;
   s.evoL = { ...top, ...E.boost(top) };
   if (id === 'frostnova') run.absZero = true;
   recomputeStats();
@@ -279,6 +280,7 @@ function killEnemy(e) {
   const run = G.run;
   e.dying = 0.0001;
   run.kills++;
+  if (e.elite) run.eliteKills++;
   sugarKill(run);
   const s = e.scale;
   FX.droplets(e.x, 0.55 * s, e.z, e.boss ? 30 : 5, 5, e.boss ? 7 : 3.2, 0.05 * Math.min(s, 2), null);
@@ -882,6 +884,7 @@ function finishRun(won) {
   if (won && !run.rush) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   sv.stats.runs++; sv.stats.kills += run.kills;
+  goalsAddRun(run);
   saveGame();
   AUDIO.play(won ? 'win' : 'lose');
   setState('results');

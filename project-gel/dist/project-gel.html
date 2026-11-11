@@ -135,7 +135,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .modes:not(:has(button:not([hidden]))) { display: none; }
 .modes .jelly { min-height: 56px; font-size: 19px; padding-inline: 8px; flex-direction: column; gap: 0; line-height: 1.05; }
 .modes .jelly small { display: block; font-size: 12px; letter-spacing: 0.04em; opacity: 0.92; }
-.mgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.mgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .mbtn { display: grid; justify-items: center; align-content: center; gap: 4px; min-width: 0; padding: 8px 2px 10px; border-radius: 18px; font-size: 14px; color: var(--ink);
   background: var(--card-2); box-shadow: inset 0 -5px 0 var(--card-edge), 0 3px 0 #b9d6f6; transition: transform .2s cubic-bezier(.3,1.8,.5,1); }
 .mbtn:active { transform: scale(1.04, 0.92) translateY(2px); transition-duration: .06s; }
@@ -153,6 +153,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .ic.bl { background: linear-gradient(180deg, #a8f0ff, #33c6f2); }
 .ic.ch { background: linear-gradient(180deg, #d4c4ff, #8f6bff); }
 .ic.st { background: linear-gradient(180deg, #9fc4f2, #4f7fc4); }
+.ic.gl { background: linear-gradient(180deg, #ffd88a, #ff9b2f); }
 /* wide: stage on the left, big buttons stacked on the right */
 @media (min-aspect-ratio: 11/10) {
   #home { grid-template-columns: minmax(0, 1fr) clamp(270px, 29vw, 390px); grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -186,6 +187,27 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .uprow .ds { display: block; font-size: 13px; font-weight: 500; color: var(--ink-dim); }
 .uprow .jelly { min-height: 44px; padding: 6px 12px 10px; font-size: 15px; border-radius: 14px; }
 .uprow .jelly .coin { width: 18px; height: 18px; }
+/* goals */
+.goalsum { text-align: center; font-size: 14px; margin-top: 6px; }
+#goalList { margin-top: 8px; max-height: calc(100% - 92px); }
+.goalrow { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; }
+.goalrow .gicon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; box-shadow: inset 0 -4px 0 rgba(0,0,0,.14), inset 0 2px 0 rgba(255,255,255,.45); }
+.goalrow .gicon svg { width: 62%; height: 62%; }
+.goalrow .gmid { display: grid; gap: 3px; min-width: 0; }
+.goalrow .nm { font-size: 16px; }
+.goalrow .ds { font-size: 13px; font-weight: 500; color: var(--ink-dim); }
+.goalrow .gbar { position: relative; height: 16px; border-radius: 8px; background: #e4eefb; overflow: hidden; }
+.goalrow .gbar i { position: absolute; inset: 0 auto 0 0; border-radius: 8px; background: linear-gradient(180deg, #8fe3ff, #33c6f2); }
+.goalrow.ready .gbar i { background: linear-gradient(180deg, #ffe58a, #ffc23a); }
+.goalrow .gbar b { position: relative; display: block; text-align: center; font-size: 11px; line-height: 16px; color: var(--ink); }
+.goalrow .grew { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; color: var(--ink-dim); }
+.goalrow .grew span { display: inline-flex; align-items: center; gap: 4px; }
+.goalrow .grew .coin { width: 15px; height: 15px; }
+.goalrow .grew img { width: 18px; height: 18px; }
+.goalrow .gskin i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #c8d6e8; }
+.goalrow .jelly { min-height: 44px; min-width: 76px; padding: 6px 12px 10px; font-size: 15px; border-radius: 14px; }
+.goalrow.ready { box-shadow: inset 0 0 0 3px #ffc23a, 0 4px 0 #e0a000; }
+.goalrow.claimed { opacity: .62; }
 .blob-pick { margin-top: auto; display: grid; gap: 10px; }
 .blob-tabs { justify-self: center; }
 .blob-tabs button { padding: 8px 20px; font-size: 15px; }
@@ -457,6 +479,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
         <button class="tab mbtn" data-tab="gear"><span class="ic gr"><i class="dot" hidden></i><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
         <button class="tab mbtn" data-tab="skins"><span class="ic bl"><i class="dot" hidden></i><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
         <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><i class="dot" hidden></i><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
+        <button class="tab mbtn" data-tab="goals"><span class="ic gl"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="#fff"><path d="M7 3h10v2h3.2a.8.8 0 0 1 .8.8c0 3-1.8 5.2-4.6 5.6A5.9 5.9 0 0 1 13 14.6V17h3v3H8v-3h3v-2.4a5.9 5.9 0 0 1-3.4-3.2C4.8 11 3 8.8 3 5.8a.8.8 0 0 1 .8-.8H7zm-2.3 3.6c.2 1.6 1.1 2.7 2.5 3.1A13 13 0 0 1 7 6.6zm14.6 0h-2.3c0 1-.1 2.1-.3 3.1 1.4-.4 2.4-1.5 2.6-3.1z"/></svg></span><span class="lb">Goals</span></button>
         <button class="mbtn" id="btnSettings"><span class="ic st"><i class="dot" hidden></i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></span><span class="lb">Settings</span></button>
       </nav>
     </div>
@@ -529,6 +552,14 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     <div class="col" style="height:100%">
       <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Chapters</h2><span></span></div>
       <div class="map" id="chMap"></div>
+    </div>
+  </section>
+
+  <section id="goals" class="screen modal menu" hidden style="place-items:start center">
+    <div class="col" style="height:100%">
+      <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Goals</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
+      <div class="goalsum dim" id="goalSum"></div>
+      <div class="list" id="goalList"></div>
     </div>
   </section>
 
@@ -7926,8 +7957,13 @@ const SKINS = [
   { id: 'shadow', name: 'Shadow', cost: 2600, base: '#141420', top: '#5a2bd6', accent: '#ff3b6b', rim: '#9a8cff', boost: { dmg: 6 } },
   { id: 'fire', name: 'Fire', cost: 2800, base: '#ff3b1f', top: '#ffe14a', accent: '#ff8a1f', rim: '#ffe0a0', boost: { area: 6 } },
   { id: 'prism', name: 'Prism', cost: 3000, base: '#ff5fb8', top: '#4ad8ff', accent: '#ffd23a', rim: '#ffffff', boost: { xp: 8 } },
+  // goal rewards: cannot be bought (see GOALS in src/14c-goals.js)
+  { id: 'champion', name: 'Champion', cost: 0, goal: 'ch15', base: '#ffc21a', top: '#fff3b0', accent: '#ff7a1a', rim: '#ffffff', boost: { gold: 12 } },
+  { id: 'cosmic', name: 'Cosmic', cost: 0, goal: 'endless20', base: '#24206e', top: '#ff5fb8', accent: '#4ad8ff', rim: '#e0ccff', boost: { cd: 6 } },
+  { id: 'inferno', name: 'Inferno', cost: 0, goal: 'rushall', base: '#3a0d14', top: '#ff3b1f', accent: '#ffd23a', rim: '#ff9a6a', boost: { dmg: 7 } },
 ];
-SKINS.sort((a, b) => a.cost - b.cost);
+// by price, with the goal rewards last
+SKINS.sort((a, b) => (a.goal ? 1e9 : a.cost) - (b.goal ? 1e9 : b.cost));
 // Costumes are extra goo shapes on the hero, offsets in hero units from the head (or pelvis).
 // Parts: ['sph', anchor, pos, r, k, col] | ['cap', anchor, a, b, r1, r2, k, col, sway] | ['ell', anchor, pos, radii, k, col]
 // col: 'b' = body color, 0-3 = this costume's palette. sway lets a tip lag and bob with the head.
@@ -8399,7 +8435,7 @@ function spawnRate(t) {
 function startRun(chapter, opts = {}) {
   const info = { ...chapterInfo(chapter) };
   const run = G.run = {
-    chapter, info, t: 0, kills: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
+    chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
@@ -8459,6 +8495,7 @@ function checkEvolutions() {
 function evolveSkill(id) {
   const run = G.run, s = slotOf(id), E = EVOLUTIONS[id], rows = SKILLS[id].levels, top = rows[rows.length - 1];
   s.evo = true;
+  run.evos++;
   s.evoL = { ...top, ...E.boost(top) };
   if (id === 'frostnova') run.absZero = true;
   recomputeStats();
@@ -8542,6 +8579,7 @@ function killEnemy(e) {
   const run = G.run;
   e.dying = 0.0001;
   run.kills++;
+  if (e.elite) run.eliteKills++;
   sugarKill(run);
   const s = e.scale;
   FX.droplets(e.x, 0.55 * s, e.z, e.boss ? 30 : 5, 5, e.boss ? 7 : 3.2, 0.05 * Math.min(s, 2), null);
@@ -9145,6 +9183,7 @@ function finishRun(won) {
   if (won && !run.rush) { sv.cleared[run.chapter] = true; sv.chapter = Math.max(sv.chapter, run.chapter + 1); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   sv.stats.runs++; sv.stats.kills += run.kills;
+  goalsAddRun(run);
   saveGame();
   AUDIO.play(won ? 'win' : 'lose');
   setState('results');
@@ -9735,6 +9774,7 @@ function gooblinHit(e) {
 }
 // caught: the whole sack bursts
 function gooblinLoot(e) {
+  G.run.gooblins++;
   for (let i = 0; i < 16; i++) spawnPickup('coin', e.x + rand(-0.8, 0.8), e.z + rand(-0.8, 0.8), randInt(2, 4));
   spawnPickup('chest', e.x, e.z);
   spawnPickup('scroll', e.x + 0.6, e.z);
@@ -11534,6 +11574,7 @@ function bossBonk(e, hit) {
 
 function onBossKilled(e) {
   const run = G.run;
+  run.bossKills++;
   G.cam.shake = 0.3;
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
@@ -13592,6 +13633,7 @@ const UI = {
     this.show('gear', menu && this.menuTab === 'gear');
     if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); this.show('fuseBox', false); }
     this.show('chapters', menu && this.menuTab === 'chapters');
+    this.show('goals', menu && this.menuTab === 'goals');
     const inRun = ['run', 'levelup', 'chest', 'pause', 'dying', 'revive', 'victory'].includes(s);
     this.show('hud', inRun);
     this.show('levelup', s === 'levelup');
@@ -13603,7 +13645,7 @@ const UI = {
     // a banner that is still animating would sit on top of a modal's title
     if (['levelup', 'chest', 'pause', 'revive', 'results'].includes(s)) { $('banner').classList.remove('show'); $('bossCards').classList.remove('show'); }
     if (s === 'revive') this.reviveT = 5;
-    if (s === 'results') this.fillResults();
+    if (s === 'results') { this.fillResults(); goalsCheck(); }
     if (s === 'run') { this.slotSig = ''; }
   },
 
@@ -13615,6 +13657,7 @@ const UI = {
     if (tab === 'skins') this.renderSkins();
     if (tab === 'gear') this.renderGear();
     if (tab === 'chapters') this.renderChapters();
+    if (tab === 'goals') this.renderGoals();
     this.onState(G.state);
   },
 
@@ -13638,6 +13681,7 @@ const UI = {
     $('chNext').disabled = sv.selected >= sv.chapter;
     this.homePortrait();
     this.refreshBadges();
+    if (this.menuTab === 'home') goalsCheck();
     applyArena(info.arena);
   },
   // red dots on the home menu: an upgrade is affordable, a scroll or fuse is waiting, a new look is in reach
@@ -13648,6 +13692,7 @@ const UI = {
       upgrades: Object.keys(META_UPGRADES).some(id => (sv.upgrades[id] || 0) < META_UPGRADES[id].max && sv.coins >= upgradeCost(id, sv.upgrades[id] || 0)),
       gear: sv.scrolls > 0 || canFuse(),
       skins: canBuy(SKINS.filter(s => !sv.skins.includes(s.id))) || canBuy(COSTUMES.filter(c => !sv.costumes.includes(c.id))),
+      goals: goalsToClaim(sv) > 0,
     };
   },
   refreshBadges() {
@@ -13726,6 +13771,7 @@ const UI = {
       const sm = b.querySelector('small');
       if (worn === s.id) sm.textContent = 'Equipped';
       else if (owned.includes(s.id)) sm.textContent = 'Owned';
+      else if (s.goal) sm.textContent = '🏆 Goal';
       else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); sm.classList.toggle('poor', sv.coins < s.cost); }
       b.addEventListener('click', () => {
         if (tab === 'colors') this.skinPreview = s.id; else if (tab === 'costumes') this.costumePreview = s.id; else this.hatPreview = s.id;
@@ -13736,6 +13782,7 @@ const UI = {
     const s = list.find(k => k.id === sel) || list[0], act = $('skinAction');
     if (worn === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
     else if (owned.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
+    else if (s.goal) { act.textContent = `Goal: ${GOALS.find(g => g.id === s.goal).name}`; act.disabled = true; act.className = 'jelly'; }
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   skinAction() {
@@ -13743,7 +13790,7 @@ const UI = {
     const s = list.find(k => k.id === sel);
     if (!s) return;
     if (!owned.includes(s.id)) {
-      if (sv.coins < s.cost) return;
+      if (s.goal || sv.coins < s.cost) return;
       sv.coins -= s.cost; owned.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
     }
     if (tab === 'colors') sv.skin = s.id; else if (tab === 'costumes') sv.costume = s.id; else sv.hat = s.id;
@@ -14312,6 +14359,7 @@ function fuseArtifact(key) {
   if (!g.items[key]) delete g.items[key];
   const next = artKey(id, r + 1);
   addArtifact(next);
+  G.save.stats.fuses = (G.save.stats.fuses || 0) + 1;
   for (const sl in g.eq) if (g.eq[sl] === key && !g.items[key]) g.eq[sl] = next;
   return next;
 }
@@ -14703,6 +14751,148 @@ const DEV_CMDS = {
   close: { args: '', desc: 'close the console (or press `)', run: () => { DEV.toggle(false); return ''; } },
 };
 
+// ---- 14c-goals.js ----
+// ============================================================
+// Goals: long-term targets, each with a reward to claim on the Goals screen.
+// A goal reads one number from the save (a stat counted at the end of each run, or something the
+// save already says) and has a target. Reaching it shows a toast once (sv.goals.seen); claiming
+// pays out (sv.goals.claimed). Three goals give colors that cannot be bought (SKINS with `goal`).
+// ============================================================
+const GOAL_VALUE = {
+  kills: sv => sv.stats.kills || 0,
+  bosses: sv => sv.stats.bosses || 0,
+  elites: sv => sv.stats.elites || 0,
+  level: sv => sv.stats.maxLevel || 0,
+  evos: sv => sv.stats.evos || 0,
+  cleared: sv => Object.keys(sv.cleared).length,
+  gooblins: sv => sv.stats.gooblins || 0,
+  endless: sv => Math.floor((sv.endlessBest || 0) / 60),
+  rush: sv => sv.rushBest || 0,
+  colors: sv => sv.skins.length,
+  costumes: sv => sv.costumes.filter(id => id !== 'none').length,
+  upgrades: sv => Object.values(sv.upgrades).reduce((a, b) => a + b, 0),
+  geared: sv => Object.values(sv.gear.eq).filter(Boolean).length,
+  fuses: sv => sv.stats.fuses || 0,
+  rarity: sv => Math.max(0, ...Object.keys(sv.gear.items).map(k => artParse(k).r + 1)),
+  runs: sv => sv.stats.runs || 0,
+  coins: sv => sv.stats.coinsEarned || 0,
+};
+// group: icon color and order on the screen. desc: {n} is the target.
+const GOALS = [
+  { id: 'kills1', group: 'fight', name: 'Goo Getter', desc: 'Defeat {n} foes', stat: 'kills', n: 500, coins: 150 },
+  { id: 'kills2', group: 'fight', name: 'Goo Getter II', desc: 'Defeat {n} foes', stat: 'kills', n: 5000, coins: 500 },
+  { id: 'kills3', group: 'fight', name: 'Goo Getter III', desc: 'Defeat {n} foes', stat: 'kills', n: 25000, coins: 1500, scrolls: 1 },
+  { id: 'kills4', group: 'fight', name: 'Goo Legend', desc: 'Defeat {n} foes', stat: 'kills', n: 100000, coins: 4000, scrolls: 3 },
+  { id: 'bosses1', group: 'fight', name: 'Boss Popper', desc: 'Defeat {n} bosses', stat: 'bosses', n: 5, coins: 300 },
+  { id: 'bosses2', group: 'fight', name: 'Boss Popper II', desc: 'Defeat {n} bosses', stat: 'bosses', n: 25, coins: 1000, scrolls: 1 },
+  { id: 'bosses3', group: 'fight', name: 'Boss Breaker', desc: 'Defeat {n} bosses', stat: 'bosses', n: 75, coins: 3000, scrolls: 2 },
+  { id: 'elites', group: 'fight', name: 'Elite Hunter', desc: 'Defeat {n} elite foes', stat: 'elites', n: 50, coins: 800, scrolls: 1 },
+  { id: 'level1', group: 'fight', name: 'Power Surge', desc: 'Reach level {n} in a run', stat: 'level', n: 25, coins: 400 },
+  { id: 'level2', group: 'fight', name: 'Overcharged', desc: 'Reach level {n} in a run', stat: 'level', n: 50, coins: 1500, scrolls: 1 },
+  { id: 'evo1', group: 'fight', name: 'Evolved', desc: 'Evolve a skill', stat: 'evos', n: 1, coins: 300 },
+  { id: 'evo2', group: 'fight', name: 'Evolution Master', desc: 'Evolve {n} skills', stat: 'evos', n: 25, coins: 2000, scrolls: 2 },
+  { id: 'ch1', group: 'chapter', name: 'First Victory', desc: 'Clear chapter 1', stat: 'cleared', n: 1, coins: 100 },
+  { id: 'ch5', group: 'chapter', name: 'Explorer', desc: 'Clear {n} chapters', stat: 'cleared', n: 5, coins: 600 },
+  { id: 'ch10', group: 'chapter', name: 'Adventurer', desc: 'Clear {n} chapters', stat: 'cleared', n: 10, coins: 2000, scrolls: 1 },
+  { id: 'ch15', group: 'chapter', name: 'Hero of Gel', desc: 'Clear {n} chapters', stat: 'cleared', n: 15, coins: 5000, scrolls: 3, skin: 'champion' },
+  { id: 'gooblin1', group: 'mode', name: 'Lucky Catch', desc: 'Catch a Golden Gooblin', stat: 'gooblins', n: 1, coins: 300 },
+  { id: 'gooblin2', group: 'mode', name: 'Treasure Hunter', desc: 'Catch {n} Golden Gooblins', stat: 'gooblins', n: 10, coins: 1500, scrolls: 2 },
+  { id: 'endless10', group: 'mode', name: 'Endurance', desc: 'Survive {n} minutes in Endless', stat: 'endless', n: 10, coins: 800 },
+  { id: 'endless20', group: 'mode', name: 'Unstoppable', desc: 'Survive {n} minutes in Endless', stat: 'endless', n: 20, coins: 2500, scrolls: 2, skin: 'cosmic' },
+  { id: 'rush5', group: 'mode', name: 'Boss Rusher', desc: 'Beat {n} bosses in one Boss Rush', stat: 'rush', n: 5, coins: 1000 },
+  { id: 'rushall', group: 'mode', name: 'Rush Champion', desc: 'Beat every boss in one Boss Rush', stat: 'rush', n: CHAPTER_BOSSES.length, coins: 4000, scrolls: 3, skin: 'inferno' },
+  { id: 'colors', group: 'collect', name: 'Fashionista', desc: 'Own {n} colors', stat: 'colors', n: 10, coins: 500 },
+  { id: 'costumes1', group: 'collect', name: 'Wardrobe', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 15, coins: 1000 },
+  { id: 'costumes2', group: 'collect', name: 'Collector', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 40, coins: 3000, scrolls: 2 },
+  { id: 'upg1', group: 'collect', name: 'Strong Roots', desc: 'Buy {n} upgrade levels', stat: 'upgrades', n: 25, coins: 600 },
+  { id: 'upg2', group: 'collect', name: 'Powered Up', desc: 'Buy {n} upgrade levels', stat: 'upgrades', n: 100, coins: 2500, scrolls: 1 },
+  { id: 'geared', group: 'gear', name: 'Suited Up', desc: 'Wear gear in all four slots', stat: 'geared', n: 4, coins: 400, scrolls: 1 },
+  { id: 'fuse1', group: 'gear', name: 'Fusion', desc: 'Fuse an artifact', stat: 'fuses', n: 1, coins: 300 },
+  { id: 'fuse2', group: 'gear', name: 'Master Fuser', desc: 'Fuse {n} artifacts', stat: 'fuses', n: 20, coins: 2000, scrolls: 2 },
+  { id: 'epic', group: 'gear', name: 'Epic Find', desc: 'Own an Epic artifact', stat: 'rarity', n: 4, coins: 1200 },
+  { id: 'legend', group: 'gear', name: 'Legendary', desc: 'Own a Legendary artifact', stat: 'rarity', n: 5, coins: 2500, scrolls: 1 },
+  { id: 'runs1', group: 'play', name: 'Regular', desc: 'Play {n} runs', stat: 'runs', n: 25, coins: 500 },
+  { id: 'runs2', group: 'play', name: 'Veteran', desc: 'Play {n} runs', stat: 'runs', n: 150, coins: 2500, scrolls: 2 },
+  { id: 'coins', group: 'play', name: 'Rich Blob', desc: 'Earn {n} coins in all', stat: 'coins', n: 50000, coins: 1500 },
+];
+const GOAL_GROUPS = { fight: '#ff5f8f', chapter: '#8f6bff', mode: '#ff8a1f', collect: '#33c6f2', gear: '#ffc23a', play: '#4cd964' };
+
+const goalProgress = (g, sv = G.save) => Math.min(g.n, GOAL_VALUE[g.stat](sv));
+const goalReached = (g, sv = G.save) => GOAL_VALUE[g.stat](sv) >= g.n;
+const goalClaimable = (g, sv = G.save) => goalReached(g, sv) && !sv.goals.claimed[g.id];
+const goalsToClaim = (sv = G.save) => GOALS.filter(g => goalClaimable(g, sv)).length;
+const goalText = g => g.desc.replace('{n}', fmtNum(g.n));
+
+// toasts for goals reached since the last look (on the home screen and the results)
+function goalsCheck() {
+  const sv = G.save, fresh = GOALS.filter(g => goalReached(g, sv) && !sv.goals.seen[g.id]);
+  if (!fresh.length) return;
+  for (const g of fresh) sv.goals.seen[g.id] = true;
+  saveGame();
+  UI.toast(fresh.length === 1 ? `🏆 Goal reached: ${fresh[0].name}! Claim it in Goals` : `🏆 ${fresh.length} goals reached! Claim them in Goals`, 3);
+}
+// end-of-run counters (finishRun); fuses count as they happen
+function goalsAddRun(run) {
+  const st = G.save.stats;
+  st.bosses = (st.bosses || 0) + (run.bossKills || 0);
+  st.elites = (st.elites || 0) + (run.eliteKills || 0);
+  st.gooblins = (st.gooblins || 0) + (run.gooblins || 0);
+  st.evos = (st.evos || 0) + (run.evos || 0);
+  st.maxLevel = Math.max(st.maxLevel || 0, run.level);
+  st.coinsEarned = (st.coinsEarned || 0) + (run.earned || 0);
+}
+
+const TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M7 3h10v2h3.2a.8.8 0 0 1 .8.8c0 3-1.8 5.2-4.6 5.6A5.9 5.9 0 0 1 13 14.6V17h3v3H8v-3h3v-2.4a5.9 5.9 0 0 1-3.4-3.2C4.8 11 3 8.8 3 5.8a.8.8 0 0 1 .8-.8H7zm-2.3 3.6c.2 1.6 1.1 2.7 2.5 3.1A13 13 0 0 1 7 6.6zm14.6 0h-2.3c0 1-.1 2.1-.3 3.1 1.4-.4 2.4-1.5 2.6-3.1z"/></svg>';
+
+Object.assign(UI, {
+  renderGoals() {
+    const sv = G.save, list = $('goalList');
+    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    const done = GOALS.filter(g => sv.goals.claimed[g.id]).length;
+    $('goalSum').textContent = `${done} of ${GOALS.length} claimed`;
+    // ready to claim first, then the nearest to done, claimed ones last
+    const order = g => sv.goals.claimed[g.id] ? 2 : goalReached(g, sv) ? 0 : 1;
+    const rows = GOALS.slice().sort((a, b) => order(a) - order(b) || (order(a) === 1 ? goalProgress(b, sv) / b.n - goalProgress(a, sv) / a.n : 0));
+    list.replaceChildren(...rows.map(g => {
+      const claimed = !!sv.goals.claimed[g.id], ready = !claimed && goalReached(g, sv), p = goalProgress(g, sv);
+      const row = document.createElement('div');
+      row.className = 'panel goalrow' + (ready ? ' ready' : '') + (claimed ? ' claimed' : '');
+      row.innerHTML = `<span class="gicon">${TROPHY_SVG}</span><span class="gmid"><span class="nm"></span><span class="ds"></span><span class="gbar"><i></i><b></b></span><span class="grew"></span></span><button class="jelly"></button>`;
+      row.querySelector('.gicon').style.background = claimed ? '#c8d6e8' : GOAL_GROUPS[g.group];
+      row.querySelector('.nm').textContent = g.name;
+      row.querySelector('.ds').textContent = goalText(g);
+      row.querySelector('.gbar i').style.width = (p / g.n * 100).toFixed(1) + '%';
+      row.querySelector('.gbar b').textContent = `${fmtNum(p)} / ${fmtNum(g.n)}`;
+      const rew = row.querySelector('.grew');
+      if (g.coins) rew.insertAdjacentHTML('beforeend', `<span><i class="coin"></i>${fmtNum(g.coins)}</span>`);
+      if (g.scrolls) rew.insertAdjacentHTML('beforeend', `<span><img alt="" src="${ICONS.get('scroll')}">×${g.scrolls}</span>`);
+      if (g.skin) {
+        const s = SKINS.find(k => k.id === g.skin);
+        rew.insertAdjacentHTML('beforeend', `<span class="gskin"><i style="background:linear-gradient(180deg, ${s.top || s.base}, ${s.base})"></i>${s.name} color</span>`);
+      }
+      const b = row.querySelector('button');
+      if (claimed) { b.textContent = '✓'; b.disabled = true; }
+      else if (ready) { b.textContent = 'Claim'; b.className = 'jelly gold'; b.addEventListener('click', () => this.claimGoal(g)); }
+      else { b.textContent = Math.floor(p / g.n * 100) + '%'; b.disabled = true; }
+      return row;
+    }));
+  },
+  claimGoal(g) {
+    const sv = G.save;
+    if (!goalClaimable(g, sv)) return;
+    sv.goals.claimed[g.id] = true;
+    sv.coins += g.coins || 0;
+    sv.scrolls = (sv.scrolls || 0) + (g.scrolls || 0);
+    if (g.skin && !sv.skins.includes(g.skin)) sv.skins.push(g.skin);
+    saveGame();
+    AUDIO.play('coin'); AUDIO.play('levelup');
+    const parts = [g.coins && `${fmtNum(g.coins)} coins`, g.scrolls && `${g.scrolls} scroll${g.scrolls > 1 ? 's' : ''}`, g.skin && `the ${SKINS.find(k => k.id === g.skin).name} color`].filter(Boolean);
+    this.toast(`${g.name}: ${parts.join(', ')}`, 2.5);
+    G.hero.impulse(2);
+    this.renderGoals();
+  },
+});
+
 // ---- 15-save.js ----
 // ============================================================
 // Saving progress in localStorage
@@ -14715,7 +14905,8 @@ function defaultSave() {
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null } }, devUnlocked: false,
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
-    lastSeen: Date.now(), stats: { runs: 0, kills: 0 }, tutorial: true,
+    lastSeen: Date.now(), stats: { runs: 0, kills: 0, bosses: 0, elites: 0, gooblins: 0, evos: 0, maxLevel: 0, fuses: 0, coinsEarned: 0 },
+    goals: { seen: {}, claimed: {} }, tutorial: true,
   };
 }
 function loadGame() {
@@ -14732,8 +14923,11 @@ function loadGame() {
         skins: Array.isArray(s.skins) && s.skins.length ? s.skins : d.skins,
         costumes: Array.isArray(s.costumes) && s.costumes.length ? s.costumes : d.costumes,
         cleared: s.cleared || {}, best: s.best || {},
+        goals: { seen: { ...((s.goals && s.goals.seen) || {}) }, claimed: { ...((s.goals && s.goals.claimed) || {}) } },
         gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) } },
       };
+      // saves from before goals counted bosses: every cleared chapter took at least one
+      if (!s.stats || s.stats.bosses == null) out.stats.bosses = Object.keys(out.cleared).length;
       // saves from before hats had their own slot: a hat worn as the costume moves over
       if (HAT_IDS.includes(out.costume)) { out.hat = out.costume; out.costume = 'none'; }
       return out;
