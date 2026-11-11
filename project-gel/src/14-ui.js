@@ -87,7 +87,8 @@ const UI = {
     // a banner that is still animating would sit on top of a modal's title
     if (['levelup', 'chest', 'pause', 'revive', 'results'].includes(s)) { $('banner').classList.remove('show'); $('bossCards').classList.remove('show'); }
     if (s === 'revive') this.reviveT = 5;
-    if (s === 'results') { this.fillResults(); goalsCheck(); }
+    // a message left over from the run ("Boss 3 of 15 down!") does not belong on the results
+    if (s === 'results') { $('toast').classList.remove('show'); this.toastT = 0; this.fillResults(); goalsCheck(); }
     if (s === 'run') { this.slotSig = ''; }
   },
 

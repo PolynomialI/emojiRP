@@ -143,7 +143,7 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
       ai.cd -= dt;
       if (ai.cd <= 0) {
         const k = ['shards', 'spikes', 'laser'][ai.next++ % 3];
-        if (k === 'shards') { ai.state = 'throw'; ai.t = ai.dur = 0.6; ai.volleys = rage ? 3 : 2; }
+        if (k === 'shards') { ai.state = 'throw'; ai.t = ai.dur = 0.6; ai.volleys = 2; }
         else if (k === 'spikes') {
           ai.state = 'slamWind'; ai.t = ai.dur = 1.05; ai.lanes = [];
           const base = Math.atan2(dx, dz), n = rage ? 5 : 3, spread = 0.6;
@@ -162,8 +162,8 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
       if (ai.t <= 0) {
         const n = rage ? 7 : 5, base = Math.atan2(dx, dz), fan = 1.1, step = fan / (n - 1), from = bossLocal(e, 0, 0.6, 0.35);
         for (let i = 0; i < n; i++) {
-          const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 7.5;
-          run.eShots.push({ kind: 'shard', x: from[0], y: 0.9, z: from[2], vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 13 * run.info.dmgMul, r: 0.36, life: 2.6, ph: rand(0, 10) });
+          const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 6.5;
+          run.eShots.push({ kind: 'shard', x: from[0], y: 0.9, z: from[2], vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 11 * run.info.dmgMul, r: 0.36, life: 3, ph: rand(0, 10) });
         }
         AUDIO.play('crystal');
         if (--ai.volleys > 0) ai.t = ai.dur = 0.6;
@@ -582,18 +582,22 @@ BOSS_AI.kraken = function (e, dt, d, dx, dz) {
       break;
     case 'whirlWind':
       e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 2;
-      if (ai.t <= 0) { ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('roar'); AUDIO.play('wind'); }
+      if (ai.t <= 0) {
+        ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('roar'); AUDIO.play('wind');
+        // the core stays marked while it spins, not just during the wind-up
+        addTele({ kind: 'circle', x: e.x, z: e.z, r: KRAKEN.core, dur: ai.t, hold: true });
+      }
       break;
     case 'whirl': {
       // spins in place: the water swirls round and in, dragging you toward its whirling core
       e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 4;
       const ox = e.x - h[0], oz = e.z - h[2], od = Math.hypot(ox, oz) || 1;
       if (od < KRAKEN.whirlR) {
-        const pull = (rage ? 2.3 : 1.9) * dt * (0.4 + 0.6 * (1 - od / KRAKEN.whirlR)), swirl = 1.0 * dt;
+        const pull = (rage ? 1.9 : 1.6) * dt * (0.4 + 0.6 * (1 - od / KRAKEN.whirlR)), swirl = 1.0 * dt;
         h[0] += ox / od * Math.min(pull, od) - oz / od * swirl; h[2] += oz / od * Math.min(pull, od) + ox / od * swirl;
       }
       ai.tick -= dt;
-      if (od < KRAKEN.core + HERO_R * 0.5 && ai.tick <= 0) { ai.tick = 0.45; hurtHero(12 * run.info.dmgMul, e.x, e.z); }
+      if (od < KRAKEN.core + HERO_R * 0.5 && ai.tick <= 0) { ai.tick = 0.6; hurtHero(12 * run.info.dmgMul, e.x, e.z); }
       enemiesInRadius(e.x, e.z, KRAKEN.whirlR, o => { if (o === e || o.boss) return; const qx = e.x - o.x, qz = e.z - o.z, ql = Math.hypot(qx, qz) || 1; o.kx += (qx / ql * 3 - qz / ql * 2) * dt * 4; o.kz += (qz / ql * 3 + qx / ql * 2) * dt * 4; });
       if (Math.random() < 0.8) { const a = rand(0, TAU), r = rand(2, KRAKEN.whirlR); FX.part(e.x + Math.cos(a) * r, 0.15, e.z + Math.sin(a) * r, -Math.sin(a) * 5 - Math.cos(a) * 2, 0.2, Math.cos(a) * 5 - Math.sin(a) * 2, 0.1, 0.03, 0.6, [0.75, 0.92, 1], 0.8, 1, 0, 0); }
       if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }

@@ -161,7 +161,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   .home-title { font-size: clamp(40px, 7.4vh, 64px); }
   .chapter-pick { grid-template-columns: 64px minmax(0, 1fr) 64px; width: min(100%, 600px); }
   .chapter-pick .arrow { width: 64px; height: 64px; }
-  .home-menu { margin: 0; padding: 0; background: none; align-content: center; gap: clamp(8px, 1.6vh, 14px); }
+  .home-menu { margin: 0; padding: 0; background: none; align-content: safe center; gap: clamp(8px, 1.6vh, 14px); overflow-y: auto; }
   .home-menu::before { content: none; }
   .home-menu > * { width: 100%; }
   #btnPlay { min-height: clamp(70px, 13vh, 104px); font-size: clamp(34px, 6.4vh, 48px); border-radius: 26px; }
@@ -172,6 +172,21 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   .mbtn::after { content: ''; margin-left: auto; width: 12px; height: 12px; border: solid #9dbde3; border-width: 0 4px 4px 0; border-radius: 2px; transform: rotate(-45deg); }
   .mbtn:hover { box-shadow: inset 0 0 0 3px var(--sky), inset 0 -5px 0 #d6e8fd, 0 4px 0 #8fbcef, 0 8px 18px rgba(0,40,110,.22); }
   .mbtn .ic { width: clamp(42px, 7vh, 56px); height: clamp(42px, 7vh, 56px); }
+}
+/* short wide windows (a phone on its side, a small laptop window): the menu buttons go two to a row */
+@media (min-aspect-ratio: 11/10) and (max-height: 560px) {
+  .mgrid { grid-template-columns: 1fr 1fr; }
+  .mbtn { min-height: 46px; gap: 8px; padding: 4px 10px 8px 6px; font-size: 16px; border-radius: 16px; }
+  .mbtn::after { content: none; }
+  .mbtn .ic { width: 36px; height: 36px; border-radius: 11px; }
+  #btnPlay { min-height: 58px; font-size: 30px; }
+  .modes .jelly { min-height: 44px; }
+  .chapter-pick { grid-template-columns: 46px minmax(0, 1fr) 46px; }
+  .chapter-pick .arrow { width: 46px; height: 46px; }
+  .ch-mid { min-height: 0; padding: 6px 10px; gap: 8px; }
+  .ch-mid img { width: 44px; height: 44px; border-radius: 12px; }
+  .ch-text b { font-size: 19px; -webkit-line-clamp: 1; }
+  .home-title { font-size: 34px; }
 }
 
 /* sub screens */
@@ -7709,19 +7724,19 @@ const ENEMY_TYPES = {
   gooblin: { model: 'gooblin', hp: 90, speed: 3.5, dmg: 0, xp: 8, radius: 0.55, scale: 1.65, tint: '#ffc93a', mass: 1.5, flee: true },
   knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
   // ---------- theme enemies (see THEME_ENEMIES): weave = sways side to side as it comes; float = hovers; ghost = see-through, drifts through scenery ----------
-  ghost: { model: 'ghost', hp: 14, speed: 2.6, dmg: 5, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
+  ghost: { model: 'ghost', hp: 14, speed: 2.45, dmg: 4, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
   zombie: { model: 'stickman', hp: 44, speed: 1.3, dmg: 8, xp: 3, radius: 0.42, scale: 1.45, tint: '#8fd67a', mass: 1.8 },
-  crystalbug: { model: 'crystalbug', hp: 34, speed: 2.1, dmg: 6, xp: 3, radius: 0.5, scale: 1.4, tint: '#8af0ff', mass: 1.8, ai: 'lunge', hit: 11 },
+  crystalbug: { model: 'crystalbug', hp: 28, speed: 2.1, dmg: 6, xp: 3, radius: 0.5, scale: 1.4, tint: '#8af0ff', mass: 1.8, ai: 'lunge', hit: 9 },
   cloudling: { model: 'cloudling', hp: 16, speed: 2.0, dmg: 4, shot: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#ffffff', mass: 0.8, ranged: true, shotKind: 'spark', float: 0.45 },
   toysoldier: { model: 'spear', hp: 20, speed: 2.2, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#e8444e', mass: 1.1, ai: 'lunge', hit: 10 },
   teddy: { model: 'teddy', hp: 62, speed: 1.7, dmg: 9, xp: 4, radius: 0.6, scale: 1.6, tint: '#b9834f', mass: 3, ai: 'chop', hit: 14, wind: 0.8, reach: 1.3 },
-  crabling: { model: 'crabling', hp: 20, speed: 2.8, dmg: 4, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
+  crabling: { model: 'crabling', hp: 20, speed: 2.6, dmg: 4, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
   puffer: { model: 'puffer', hp: 14, speed: 2.6, dmg: 4, xp: 2, radius: 0.42, scale: 1.3, tint: '#ffb84a', mass: 0.9, ai: 'bomb', hit: 18, float: 0.3 },
 };
 // Extra enemy types that only show up on one map: [seconds into the run, spawn weight]
 const THEME_ENEMIES = {
   graveyard: { ghost: [20, 0.3], zombie: [70, 0.18] },
-  caverns: { crystalbug: [30, 0.3] },
+  caverns: { crystalbug: [45, 0.26] },
   sky: { cloudling: [35, 0.24] },
   toys: { toysoldier: [20, 0.2], teddy: [90, 0.12] },
   reef: { crabling: [20, 0.26], puffer: [75, 0.14] },
@@ -11644,7 +11659,8 @@ function emitRunScene() {
   }
   // telegraphs
   if (run.tele) for (const t of run.tele) {
-    const p = clamp(t.t / t.dur, 0, 1);
+    // hold: a danger that is already live (drawn full) rather than one filling up to strike
+    const p = t.hold ? 1 : clamp(t.t / t.dur, 0, 1);
     if (t.kind === 'circle') pushDecal(t.x, t.z, t.r, t.r, 0, 4, 0, p, 1, 0.22, 0.18, 0.9);
     else if (t.kind === 'cone') pushDecal(t.x, t.z, t.r, t.r, -t.rot, 10, t.half, p, 1, 0.22, 0.18, 0.8);
     else {
@@ -13056,7 +13072,7 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
       ai.cd -= dt;
       if (ai.cd <= 0) {
         const k = ['shards', 'spikes', 'laser'][ai.next++ % 3];
-        if (k === 'shards') { ai.state = 'throw'; ai.t = ai.dur = 0.6; ai.volleys = rage ? 3 : 2; }
+        if (k === 'shards') { ai.state = 'throw'; ai.t = ai.dur = 0.6; ai.volleys = 2; }
         else if (k === 'spikes') {
           ai.state = 'slamWind'; ai.t = ai.dur = 1.05; ai.lanes = [];
           const base = Math.atan2(dx, dz), n = rage ? 5 : 3, spread = 0.6;
@@ -13075,8 +13091,8 @@ BOSS_AI.geode = function (e, dt, d, dx, dz) {
       if (ai.t <= 0) {
         const n = rage ? 7 : 5, base = Math.atan2(dx, dz), fan = 1.1, step = fan / (n - 1), from = bossLocal(e, 0, 0.6, 0.35);
         for (let i = 0; i < n; i++) {
-          const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 7.5;
-          run.eShots.push({ kind: 'shard', x: from[0], y: 0.9, z: from[2], vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 13 * run.info.dmgMul, r: 0.36, life: 2.6, ph: rand(0, 10) });
+          const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 6.5;
+          run.eShots.push({ kind: 'shard', x: from[0], y: 0.9, z: from[2], vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: 11 * run.info.dmgMul, r: 0.36, life: 3, ph: rand(0, 10) });
         }
         AUDIO.play('crystal');
         if (--ai.volleys > 0) ai.t = ai.dur = 0.6;
@@ -13495,18 +13511,22 @@ BOSS_AI.kraken = function (e, dt, d, dx, dz) {
       break;
     case 'whirlWind':
       e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 2;
-      if (ai.t <= 0) { ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('roar'); AUDIO.play('wind'); }
+      if (ai.t <= 0) {
+        ai.state = 'whirl'; ai.t = rage ? 3.6 : 3.0; ai.tick = 0; AUDIO.play('roar'); AUDIO.play('wind');
+        // the core stays marked while it spins, not just during the wind-up
+        addTele({ kind: 'circle', x: e.x, z: e.z, r: KRAKEN.core, dur: ai.t, hold: true });
+      }
       break;
     case 'whirl': {
       // spins in place: the water swirls round and in, dragging you toward its whirling core
       e.vx *= 0.7; e.vz *= 0.7; ai.spin += dt * 4;
       const ox = e.x - h[0], oz = e.z - h[2], od = Math.hypot(ox, oz) || 1;
       if (od < KRAKEN.whirlR) {
-        const pull = (rage ? 2.3 : 1.9) * dt * (0.4 + 0.6 * (1 - od / KRAKEN.whirlR)), swirl = 1.0 * dt;
+        const pull = (rage ? 1.9 : 1.6) * dt * (0.4 + 0.6 * (1 - od / KRAKEN.whirlR)), swirl = 1.0 * dt;
         h[0] += ox / od * Math.min(pull, od) - oz / od * swirl; h[2] += oz / od * Math.min(pull, od) + ox / od * swirl;
       }
       ai.tick -= dt;
-      if (od < KRAKEN.core + HERO_R * 0.5 && ai.tick <= 0) { ai.tick = 0.45; hurtHero(12 * run.info.dmgMul, e.x, e.z); }
+      if (od < KRAKEN.core + HERO_R * 0.5 && ai.tick <= 0) { ai.tick = 0.6; hurtHero(12 * run.info.dmgMul, e.x, e.z); }
       enemiesInRadius(e.x, e.z, KRAKEN.whirlR, o => { if (o === e || o.boss) return; const qx = e.x - o.x, qz = e.z - o.z, ql = Math.hypot(qx, qz) || 1; o.kx += (qx / ql * 3 - qz / ql * 2) * dt * 4; o.kz += (qz / ql * 3 + qx / ql * 2) * dt * 4; });
       if (Math.random() < 0.8) { const a = rand(0, TAU), r = rand(2, KRAKEN.whirlR); FX.part(e.x + Math.cos(a) * r, 0.15, e.z + Math.sin(a) * r, -Math.sin(a) * 5 - Math.cos(a) * 2, 0.2, Math.cos(a) * 5 - Math.sin(a) * 2, 0.1, 0.03, 0.6, [0.75, 0.92, 1], 0.8, 1, 0, 0); }
       if (ai.t <= 0) { ai.state = 'walk'; ai.cd = rage ? 1.5 : 2.3; }
@@ -13651,7 +13671,8 @@ const UI = {
     // a banner that is still animating would sit on top of a modal's title
     if (['levelup', 'chest', 'pause', 'revive', 'results'].includes(s)) { $('banner').classList.remove('show'); $('bossCards').classList.remove('show'); }
     if (s === 'revive') this.reviveT = 5;
-    if (s === 'results') { this.fillResults(); goalsCheck(); }
+    // a message left over from the run ("Boss 3 of 15 down!") does not belong on the results
+    if (s === 'results') { $('toast').classList.remove('show'); this.toastT = 0; this.fillResults(); goalsCheck(); }
     if (s === 'run') { this.slotSig = ''; }
   },
 

@@ -217,19 +217,19 @@ const ENEMY_TYPES = {
   gooblin: { model: 'gooblin', hp: 90, speed: 3.5, dmg: 0, xp: 8, radius: 0.55, scale: 1.65, tint: '#ffc93a', mass: 1.5, flee: true },
   knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
   // ---------- theme enemies (see THEME_ENEMIES): weave = sways side to side as it comes; float = hovers; ghost = see-through, drifts through scenery ----------
-  ghost: { model: 'ghost', hp: 14, speed: 2.6, dmg: 5, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
+  ghost: { model: 'ghost', hp: 14, speed: 2.45, dmg: 4, xp: 2, radius: 0.4, scale: 1.3, tint: '#e9e0ff', mass: 0.6, weave: 0.7, float: 0.25, ghost: true },
   zombie: { model: 'stickman', hp: 44, speed: 1.3, dmg: 8, xp: 3, radius: 0.42, scale: 1.45, tint: '#8fd67a', mass: 1.8 },
-  crystalbug: { model: 'crystalbug', hp: 34, speed: 2.1, dmg: 6, xp: 3, radius: 0.5, scale: 1.4, tint: '#8af0ff', mass: 1.8, ai: 'lunge', hit: 11 },
+  crystalbug: { model: 'crystalbug', hp: 28, speed: 2.1, dmg: 6, xp: 3, radius: 0.5, scale: 1.4, tint: '#8af0ff', mass: 1.8, ai: 'lunge', hit: 9 },
   cloudling: { model: 'cloudling', hp: 16, speed: 2.0, dmg: 4, shot: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#ffffff', mass: 0.8, ranged: true, shotKind: 'spark', float: 0.45 },
   toysoldier: { model: 'spear', hp: 20, speed: 2.2, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#e8444e', mass: 1.1, ai: 'lunge', hit: 10 },
   teddy: { model: 'teddy', hp: 62, speed: 1.7, dmg: 9, xp: 4, radius: 0.6, scale: 1.6, tint: '#b9834f', mass: 3, ai: 'chop', hit: 14, wind: 0.8, reach: 1.3 },
-  crabling: { model: 'crabling', hp: 20, speed: 2.8, dmg: 4, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
+  crabling: { model: 'crabling', hp: 20, speed: 2.6, dmg: 4, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
   puffer: { model: 'puffer', hp: 14, speed: 2.6, dmg: 4, xp: 2, radius: 0.42, scale: 1.3, tint: '#ffb84a', mass: 0.9, ai: 'bomb', hit: 18, float: 0.3 },
 };
 // Extra enemy types that only show up on one map: [seconds into the run, spawn weight]
 const THEME_ENEMIES = {
   graveyard: { ghost: [20, 0.3], zombie: [70, 0.18] },
-  caverns: { crystalbug: [30, 0.3] },
+  caverns: { crystalbug: [45, 0.26] },
   sky: { cloudling: [35, 0.24] },
   toys: { toysoldier: [20, 0.2], teddy: [90, 0.12] },
   reef: { crabling: [20, 0.26], puffer: [75, 0.14] },

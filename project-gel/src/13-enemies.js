@@ -331,7 +331,8 @@ function emitRunScene() {
   }
   // telegraphs
   if (run.tele) for (const t of run.tele) {
-    const p = clamp(t.t / t.dur, 0, 1);
+    // hold: a danger that is already live (drawn full) rather than one filling up to strike
+    const p = t.hold ? 1 : clamp(t.t / t.dur, 0, 1);
     if (t.kind === 'circle') pushDecal(t.x, t.z, t.r, t.r, 0, 4, 0, p, 1, 0.22, 0.18, 0.9);
     else if (t.kind === 'cone') pushDecal(t.x, t.z, t.r, t.r, -t.rot, 10, t.half, p, 1, 0.22, 0.18, 0.8);
     else {
