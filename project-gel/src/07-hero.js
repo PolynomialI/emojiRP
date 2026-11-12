@@ -5,6 +5,8 @@
 // Long legs: the body rides high on thigh and shin segments of LEG_SEG each, and one full
 // gait cycle (two steps) covers STRIDE world units, so the hero takes long strides.
 const PELVIS_Y = 0.88, HIP_Y = 0.78, LEG_SEG = 0.36, STRIDE = 1.8;
+// the robe's swing at rest (Hero Cloak; see updateRobe and buildPrims)
+const ROBE0 = { x: 0, z: 0, tw: 0, sp: 0 };
 const HERO_JOINTS = {
   pelvis: { rest: [0, PELVIS_Y, 0], k: 420, z: 0.62, inertia: 0.15 },
   chest: { rest: [0, 1.21, 0], k: 260, z: 0.42, inertia: 0.42 },
@@ -259,6 +261,7 @@ class Hero {
       V3.set(knee.t, sg * 0.15, hip.t[1] + dy * 0.5 + dz / d * kb, hip.t[2] + dz * 0.5 - dy / d * kb);
       if (lg > 0) { const k = i ? 'B' : 'A'; V3.lerp(hip.t, hip.t, LOUNGE['hip' + k], lg); V3.lerp(knee.t, knee.t, LOUNGE['knee' + k], lg); V3.lerp(foot.t, foot.t, LOUNGE['foot' + k], lg); }
     }
+    if (this.gear && this.gear.armor === 'cloak') this.updateRobe(dt, c, s, lax, laz, sN);
     // arms
     for (const a of this.arms) {
       a.grow += (a.growTarget - a.grow) * Math.min(1, dt * 5);
@@ -377,6 +380,20 @@ class Hero {
     }
   }
 
+  // The robe's hem hangs on damped springs (in the blob's own frame): it trails behind as you run, kicks forward
+  // when you stop and sways back and forth to rest, twists behind you when you turn (or are spun in the menu)
+  updateRobe(dt, c, s, lax, laz, sN) {
+    if (!(dt > 0)) return;
+    const rb = this.robe || (this.robe = { x: 0, z: 0, vx: 0, vz: 0, tw: 0, vtw: 0, sp: 0, yaw: this.yaw });
+    const lvx = c * this.vel[0] - s * this.vel[2], lvz = s * this.vel[0] + c * this.vel[2];
+    const tx = clamp(-lvx * 0.03 - lax * 0.002, -0.22, 0.22), tz = clamp(-lvz * 0.03 - laz * 0.002, -0.26, 0.26);
+    const turn = angleDiff(rb.yaw, this.yaw) / dt; rb.yaw = this.yaw;
+    const ttw = clamp(-turn * 0.05, -0.6, 0.6);
+    rb.vx += ((tx - rb.x) * 70 - rb.vx * 5.5) * dt; rb.vz += ((tz - rb.z) * 70 - rb.vz * 5.5) * dt; rb.vtw += ((ttw - rb.tw) * 55 - rb.vtw * 5) * dt;
+    rb.x = clamp(rb.x + rb.vx * dt, -0.3, 0.3); rb.z = clamp(rb.z + rb.vz * dt, -0.32, 0.32); rb.tw = clamp(rb.tw + rb.vtw * dt, -0.8, 0.8);
+    rb.sp = sN;
+  }
+
   // Export blended primitives in world space for the hero shader
   buildPrims() {
     const o = this.out, pa = o.pa, pb = o.pb, pc = o.pc;
@@ -472,9 +489,11 @@ class Hero {
         cap(mid, [P[0] + sx * 1.5 + w, 0.06, P[2] + 0.18 + w], 0.06, 0.02, 0.04, lc, 0);
       }
     } else {
+      // under a robe only the shins and feet show, so the thighs are left out (and never poke through it)
+      const robed = this.gear && this.gear.armor === 'cloak';
       for (let i = 0; i < 2; i++) {
         const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA;
-        cap(hip.p, knee.p, 0.13, 0.12, 0.1, 0, 0);
+        if (!robed) cap(hip.p, knee.p, 0.13, 0.12, 0.1, 0, 0);
         cap(knee.p, foot.p, 0.12, 0.11, 0.06, 0.05, 0);
         ell(foot.p, 0.12, 0.075, 0.16, 0.07, 0.12, 0);
       }
@@ -503,8 +522,32 @@ class Hero {
     if (gear) {
       const ch = J.chest.p, gp = [0, 0, 0], gq = [0, 0, 0];
       const off = (p, x, y, z, out) => { out[0] = p[0] + x; out[1] = p[1] + y; out[2] = p[2] + z; return out; };
-      // the cloak hangs down the back, with a collar that shows from the front
-      if (gear.armor === 'cloak') { ell(off(ch, 0, -0.16, -0.24, gp), 0.3, 0.42, 0.06, 0.03, 20, 0); ell(off(ch, 0, 0.17, 0, gp), 0.3, 0.07, 0.29, 0.02, 20, 0); }
+      // the Hero Cloak is a full robe: a mantle on the shoulders, a wrapped body and waist, and a skirt of eight
+      // overlapping panels down to the ankles. Their hems swing on the robe's springs (updateRobe), flutter
+      // when you run, and the front ones are pushed out by the striding feet
+      if (gear.armor === 'cloak') {
+        const P = J.pelvis.p, rb = this.robe || ROBE0, t = this.time, push = Math.max(0, J.footA.p[2], J.footB.p[2]) * 0.7;
+        const lift = Math.hypot(rb.x, rb.z) * 0.45;
+        // (a small blend keeps the cloth's color crisp where it lies close over the goo)
+        ell(off(ch, 0, 0.12, -0.01, gp), 0.43, 0.13, 0.33, 0.012, 20, 0);
+        ell(off(ch, 0, -0.05, 0, gp), 0.385, 0.345, 0.315, 0.012, 20, 0);
+        ell(off(P, 0, 0.02, 0, gp), 0.335, 0.24, 0.315, 0.02, 20, 0);
+        // sleeves over the upper arms of the first two arms, so they move with them
+        for (let i = 0; i < 2; i++) {
+          const a = this.arms[i];
+          if (a.grow < 0.5) continue;
+          const sh = a.sh.p, el = a.el.p;
+          cap(sh, [lerp(sh[0], el[0], 0.9), lerp(sh[1], el[1], 0.9), lerp(sh[2], el[2], 0.9)], 0.14, 0.15, 0.012, 20, 0);
+        }
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * TAU, ca = Math.cos(a + rb.tw), sa = Math.sin(a + rb.tw);
+          const fl = Math.sin(t * 9 + i * 1.9) * 0.03 * rb.sp + Math.sin(t * 1.6 + i) * 0.006;
+          gq[0] = P[0] + sa * (0.36 + fl) + rb.x;
+          gq[1] = 0.2 + lift + Math.abs(fl) * 0.6;
+          gq[2] = P[2] + ca * (0.33 + fl) + rb.z + Math.max(0, Math.cos(a)) * push;
+          cap(off(P, Math.sin(a) * 0.2, -0.05, Math.cos(a) * 0.19, gp), gq, 0.1, 0.14, 0.035, 20, 0);
+        }
+      }
       else if (gear.armor) ell(off(ch, 0, -0.01, 0.02, gp), 0.35, gear.armor === 'plate' ? 0.26 : 0.3, 0.285, 0.015, 20, 0);
       if (gear.necklace) sph(off(ch, 0, 0.19, 0.27, gp), 0.062, 0.01, 22, gear.glow.necklace);
       const wa = this.arms[0], ra = this.arms[1];
