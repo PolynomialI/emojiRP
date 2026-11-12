@@ -281,7 +281,7 @@ SKILL_HOOKS.mine = {
     const st = s.st, run = G.run, hero = G.hero;
     st.t = (st.t ?? 1) - dt;
     if (st.t > 0) return;
-    if (run.mines.length >= L.max) { st.t = 0.25; return; }
+    if (run.mines.filter(m => !m.big).length >= L.max) { st.t = 0.25; return; }
     st.t = L.cd * cdMul();
     st.foot = !st.foot;
     hero.addBud({
@@ -294,11 +294,15 @@ function updateMines(dt) {
   const run = G.run;
   for (const m of run.mines) {
     m.t += dt; m.life -= dt;
-    if (m.life <= 0) { m.dead = true; FX.splat(m.x, m.z, 0.4, R.goo.base, 1.2); continue; }
+    // (a Mega Mine, the mine's ability, goes off by itself when its time runs out)
+    if (m.life <= 0 && !m.big) { m.dead = true; FX.splat(m.x, m.z, 0.4, R.goo.base, 1.2); continue; }
     if (m.t < 0.5) continue;
-    let trig = false;
-    enemiesInRadius(m.x, m.z, 1.1, () => { trig = true; });
-    if (trig) { m.dead = true; explode(m.x, m.z, m.radius, m.dmg, 1.8, R.goo.pink); }
+    let trig = m.life <= 0;
+    enemiesInRadius(m.x, m.z, m.big ? 1.9 : 1.1, () => { trig = true; });
+    if (trig) {
+      m.dead = true; explode(m.x, m.z, m.radius, m.dmg, 1.8, R.goo.pink);
+      if (m.big) { FX.ring(m.x, m.z, m.radius * 1.5, [1, 0.6, 0.85], 0.6); FX.crack(m.x, m.z, m.radius, 2.5); G.cam.shake = Math.max(G.cam.shake, 0.3); }
+    }
   }
   run.mines = run.mines.filter(m => !m.dead);
 }

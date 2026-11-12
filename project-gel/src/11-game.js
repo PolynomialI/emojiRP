@@ -498,6 +498,7 @@ function updateRun(dt) {
   gridBuild(run.enemies);
   updateEnemies(dt);
   updateSkills(dt);
+  if (live) tickAbilities(dt);
   updateProjectiles(dt);
   updateEnemyShots(dt);
   updatePickups(dt);

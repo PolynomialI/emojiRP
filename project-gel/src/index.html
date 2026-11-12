@@ -437,6 +437,16 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 #banner { position: absolute; left: 0; right: 0; top: 24%; text-align: center; font-size: clamp(20px, 5.5vw, 30px); padding-inline: 16px; opacity: 0; color: #fff; -webkit-text-stroke: 5px var(--sky-deep); paint-order: stroke fill; pointer-events: none; }
 #banner.show { animation: banner 2.6s ease forwards; }
 /* boss intro cards: portrait, name and a one-line hint, in the upper middle while the boss drops in */
+#abilBar { position: absolute; left: calc(14px + env(safe-area-inset-left, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; }
+.abil { pointer-events: auto; position: relative; width: 64px; height: 64px; padding: 4px; border-radius: 18px; border: 3px solid #ffd34d; background: linear-gradient(180deg, #fffbe6, #ffe08a); box-shadow: 0 4px 0 #c08a10, 0 8px 16px rgba(0,30,80,.3); overflow: hidden; cursor: pointer; transition: transform .15s ease; }
+.abil:hover { transform: translateY(-2px); }
+.abil img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.abil .cdm { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(18,28,64,.62); }
+.abil .cdt { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font: 800 22px/1 var(--font); text-shadow: 0 2px 0 rgba(0,0,0,.45); }
+.abil kbd { position: absolute; left: 3px; top: 3px; min-width: 18px; padding: 2px 4px; border-radius: 7px; background: #fff; color: var(--ink); font: 800 13px/1 var(--font); box-shadow: 0 2px 0 #c08a10; }
+.abil.ready { animation: abilReady 1.6s ease-in-out infinite; }
+@keyframes abilReady { 50% { box-shadow: 0 4px 0 #c08a10, 0 0 18px 4px rgba(255,211,77,.85); } }
+.abil-note { color: #c27400; }
 #bossCards { position: absolute; left: 0; right: 0; top: 21%; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding-inline: 14px; opacity: 0; pointer-events: none; }
 #bossCards.show { animation: bosscards 4.2s ease forwards; }
 @keyframes bosscards { 0% { opacity: 0; transform: scale(0.75); } 7% { opacity: 1; transform: scale(1.05); } 11% { transform: scale(1); } 86% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
@@ -667,6 +677,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
     <div id="banner"></div>
     <div id="bossCards" aria-live="polite"></div>
+    <div id="abilBar"></div>
   </section>
 
   <section id="levelup" class="screen modal" hidden>

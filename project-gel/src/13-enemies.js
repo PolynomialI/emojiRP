@@ -458,9 +458,10 @@ function emitRunScene() {
     // a little goo blob with eyes; its fuse sprout blinks once it is armed
     const armed = m.t > 0.5, grow = clamp(m.t / 0.2, 0, 1), blink = armed && Math.sin(m.t * 10) > 0;
     const fade = clamp(m.life / 0.4, 0, 1);
-    const ms = 0.5 * easeOutBack(grow) * fade;
+    const big = m.big ? 2.4 : 1, ms = 0.5 * big * easeOutBack(grow) * fade;
     pushImp(m.x, 0.65 * ms, m.z, ms, 0, 0, 1, 1, 31, 1.6, 0.1, m.t + m.ph, blink ? 1 : 0, 0, 0, 1);
-    pushDecal(m.x + 0.05, m.z + 0.04, 0.5, 0.4, 0, 1, 0, 0, 0.02, 0.05, 0.1, 0.45);
+    pushDecal(m.x + 0.05, m.z + 0.04, 0.5 * big, 0.4 * big, 0, 1, 0, 0, 0.02, 0.05, 0.1, 0.45);
+    if (m.big && armed) pushDecal(m.x, m.z, m.radius, m.radius, 0, 1, 0, 0, 1, 0.45, 0.75, 0.12 + 0.06 * Math.sin(m.t * 6), true);
   }
   for (const w of run.worms) {
     if (w.state === 'burrow' || w.E < 0.05) pushDecal(w.x, w.z, 0.85, 0.85, 0, 7, 0, 0, 0.35, 0.95, 0.75, 0.75);

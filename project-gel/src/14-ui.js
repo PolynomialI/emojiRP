@@ -357,6 +357,7 @@ const UI = {
       }
       $('slots').replaceChildren(...cells);
     }
+    this.updateAbilities(run);
     // the chapter bar fills toward the boss, then shows the boss's health (in the cave: the rooms, then the Bagger)
     const bossOn = (run.bossStarted && run.bosses.some(b => !b.dying)) || !!(run.cave && run.cave.boss);
     if (L.boss !== bossOn) { L.boss = bossOn; $('chapBar').classList.toggle('boss', bossOn); }
@@ -401,6 +402,29 @@ const UI = {
       return c;
     }));
     wrap.classList.remove('show'); void wrap.offsetWidth; wrap.classList.add('show');
+  },
+  // the ability buttons at the bottom left (12d-abilities.js): rebuilt when the set changes, cooldowns every frame
+  updateAbilities(run) {
+    const list = abilitySlots(), sig = list.map(s => s.id).join(',');
+    if (sig !== this.abilSig || run !== this.abilRun) {
+      const had = run === this.abilRun ? (this.abilSig || '').split(',') : [];
+      list.forEach((s, i) => { if (run === this.abilRun && !had.includes(s.id)) this.toast(`New ability: ${ABILITIES[s.id].name}! Press ${i + 1} or tap it`, 3.2); });
+      this.abilSig = sig; this.abilRun = run;
+      $('abilBar').replaceChildren(...list.map((s, i) => {
+        const A = ABILITIES[s.id], b = document.createElement('button');
+        b.className = 'abil'; b.title = `${A.name} (${i + 1}): ${A.desc}`; b.setAttribute('aria-label', A.name);
+        b.innerHTML = `<img alt=""><i class="cdm"></i><em class="cdt"></em><kbd>${i + 1}</kbd>`;
+        b.querySelector('img').src = ICONS.get('skill-' + s.id);
+        b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useAbility(i); });
+        b.dataset.id = s.id;
+        return b;
+      }));
+    }
+    for (const b of $('abilBar').children) {
+      const cd = abilityCd(b.dataset.id), pct = Math.round(cd / ABILITIES[b.dataset.id].cd * 100), txt = cd > 0 ? String(Math.ceil(cd)) : '';
+      if (b.dataset.pct !== String(pct)) { b.dataset.pct = pct; b.querySelector('.cdm').style.height = pct + '%'; b.classList.toggle('ready', pct === 0); }
+      if (b.dataset.txt !== txt) { b.dataset.txt = txt; b.querySelector('.cdt').textContent = txt; }
+    }
   },
   toast(msg, secs = 1.6) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); this.toastT = secs; },
 
@@ -742,6 +766,7 @@ function describeChoice(c) {
       const f = fields.find(([k]) => sk.levels[lvl - 1][k] !== sk.levels[lvl][k]) || fields[0], [k, label, unit] = f;
       line = `${label} <em>${fmtStat(sk.levels[lvl - 1][k], unit)} → ${fmtStat(sk.levels[lvl][k], unit)}</em>`;
     }
+    if (ABILITIES[c.id] && lvl + 1 === max) line += `<br><b class="abil-note">Max level: unlocks the ${ABILITIES[c.id].name} ability</b>`;
     return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id] };
   }
   const partner = Object.keys(EVOLUTIONS).some(k => EVOLUTIONS[k].with === c.id && G.run && slotOf(k) && !slotOf(k).evo);

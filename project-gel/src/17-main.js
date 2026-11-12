@@ -86,6 +86,7 @@ function initInput(canvas) {
     AUDIO.unlock();
     if ((k === 'escape' || k === 'p') && !e.repeat) { if (G.state === 'run') pauseGame(); else if (G.state === 'pause') resumeGame(); }
     if (G.state === 'levelup' && (k === '1' || k === '2' || k === '3')) UI.pick(Number(k) - 1);
+    else if (G.state === 'run' && /^[1-5]$/.test(k) && !e.repeat) useAbility(Number(k) - 1);
   });
   window.addEventListener('keyup', e => INPUT.keys.delete(e.key.toLowerCase()));
   window.addEventListener('blur', () => { INPUT.keys.clear(); INPUT.stick.active = false; if (G.state === 'run') pauseGame(); });
