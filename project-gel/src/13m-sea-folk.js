@@ -19,8 +19,8 @@ Object.assign(ENEMY_TYPES, {
 });
 
 // each chapter's crowd, islands, weather and miniboss (the boss is in 13n-sea-bosses.js)
-// mix: [type, from second, weight]; isles: island models; fog: how far you see (share of normal);
-// zap: lightning strikes in the storm; current: how hard the water pushes the ship about
+// mix: [type, from second, weight]; isles: island models;
+// zap: lightning strikes in the storm; fogK: how far you see (share of normal); current: how hard the water pushes the ship about
 const SEA_THEMES = [
   { mix: [['pswim', 0, 1], ['pfloat', 50, 0.35], ['ptube', 140, 0.22]], isles: ['isle0', 'isle1'], mini: { name: 'Raft Rascal', ride: 'raft', tint: '#e8414a', atk: ['ram', 'bombs', 'call'] } },
   { mix: [['pswim', 0, 1], ['pdiver', 30, 0.4], ['pfloat', 60, 0.3], ['phat', 120, 0.25], ['ptube', 150, 0.2]], isles: ['icoral', 'isle1'], mini: { name: 'Canoe Corsair', ride: 'canoe', tint: '#ff7aa8', atk: ['ram', 'volley', 'call'] } },
@@ -28,9 +28,9 @@ const SEA_THEMES = [
   { mix: [['pswim', 0, 1], ['phat', 0, 0.35], ['pbomb', 40, 0.25], ['pdiver', 60, 0.35], ['pfloat', 90, 0.3]], isles: ['ihut', 'isle0'], mini: { name: 'Smuggler Sam', ride: 'canoe', tint: '#3a3a4a', atk: ['volley', 'bombs', 'ram'] } },
   { mix: [['pparka', 0, 1], ['pfloat', 0, 0.35], ['phat', 40, 0.3], ['ptube', 80, 0.3], ['pbomb', 120, 0.2]], isles: ['iice'], mini: { name: 'Frostbeard', ride: 'raft', tint: '#3a8ad8', atk: ['ram', 'bombs', 'call'] } },
   { mix: [['pswim', 0, 1], ['phat', 0, 0.4], ['pbomb', 30, 0.3], ['pdiver', 60, 0.35], ['ptube', 100, 0.3]], isles: ['ivolc'], current: 0.3, mini: { name: 'Cinder Jack', ride: 'canoe', tint: '#ff6a1a', atk: ['bombs', 'ram', 'volley'] } },
-  { mix: [['pghost', 0, 1], ['phat', 0, 0.35], ['pdiver', 30, 0.4], ['ptube', 80, 0.3], ['pbomb', 120, 0.2]], isles: ['ighost'], fog: 0.45, current: 0.35, mini: { name: 'The Ghost Mate', ride: 'raft', tint: '#a8fff0', ghost: true, atk: ['ram', 'call', 'volley'] } },
+  { mix: [['pghost', 0, 1], ['phat', 0, 0.35], ['pdiver', 30, 0.4], ['ptube', 80, 0.3], ['pbomb', 120, 0.2]], isles: ['ighost'], fogK: 0.45, current: 0.35, mini: { name: 'The Ghost Mate', ride: 'raft', tint: '#a8fff0', ghost: true, atk: ['ram', 'call', 'volley'] } },
   { mix: [['pswim', 0, 1], ['phat', 0, 0.4], ['pbomb', 0, 0.3], ['pdiver', 30, 0.4], ['pfloat', 60, 0.3], ['ptube', 90, 0.3]], isles: ['ispire'], zap: true, current: 0.45, mini: { name: 'Storm Mate Gale', ride: 'canoe', tint: '#8a9ab8', atk: ['ram', 'volley', 'bombs'] } },
-  { mix: [['pswim', 0, 1], ['phat', 0, 0.45], ['pdiver', 0, 0.45], ['pbomb', 30, 0.3], ['ptube', 60, 0.35]], isles: ['iwreck'], fog: 0.75, current: 0.5, mini: { name: 'Deep Diver Dan', ride: 'canoe', tint: '#2a4a6a', atk: ['call', 'ram', 'bombs'] } },
+  { mix: [['pswim', 0, 1], ['phat', 0, 0.45], ['pdiver', 0, 0.45], ['pbomb', 30, 0.3], ['ptube', 60, 0.35]], isles: ['iwreck'], fogK: 0.75, current: 0.5, mini: { name: 'Deep Diver Dan', ride: 'canoe', tint: '#2a4a6a', atk: ['call', 'ram', 'bombs'] } },
   { mix: [['phat', 0, 1], ['pswim', 0, 0.8], ['pbomb', 0, 0.35], ['pdiver', 20, 0.4], ['ptube', 40, 0.35], ['pfloat', 60, 0.3]], isles: ['ifort', 'ihut'], zap: true, current: 0.55, mini: { name: 'First Mate Fang', ride: 'canoe', tint: '#1e1a24', atk: ['volley', 'ram', 'bombs', 'call'] } },
 ];
 SEA_CHAPTERS.forEach((C, i) => Object.assign(C, SEA_THEMES[i]));
@@ -149,6 +149,7 @@ function seaIsleTick(dt) {
 function updateSeaHazards(dt) {
   const run = G.run;
   for (const h of OC.hz) {
+    if (SEA_HZ_LIVE.includes(h.k)) continue;
     if (h.k === 'ball') {
       h.life -= dt; h.x += h.vx * dt; h.z += h.vz * dt;
       if (hullDist(h.x, h.z) < 0.1 && !OC.sink) { h.dead = true; hurtHero(h.dmg, h.x, h.z); FX.burst(h.x, 0.6, h.z, 6, [0.8, 0.6, 0.4], 2.5, 0.06, 0.3, 2, 1); }
@@ -173,9 +174,12 @@ function updateSeaHazards(dt) {
   OC.hz = OC.hz.filter(h => !h.dead);
   R.frame.flashW = Math.max(0, R.frame.flashW - dt * 1.5);
 }
+// (these the bosses' code runs and draws: 13n-sea-bosses.js)
+const SEA_HZ_LIVE = ['snare', 'mine', 'tent', 'ink'];
 function emitSeaHazards() {
   for (const h of OC.hz) {
-    if (h.k === 'ball') { pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
+    if (SEA_HZ_LIVE.includes(h.k)) continue;
+    if (h.k === 'ball') { if (h.pearl) pushImp(h.x, h.y, h.z, 0.24, 0, 1, 0, 1, 27, 4, 0.5, OC.t, 0, 0, 0, 1); else pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
     if (h.t < 0) continue;
     const u = clamp(h.t / h.dur, 0, 1);
     pushDecal(h.tx ?? h.x, h.tz ?? h.z, h.r, h.r, 0, 4, 0, u, 1, h.k === 'zap' ? 0.9 : 0.22, h.k === 'zap' ? 0.95 : 0.18, 0.9);

@@ -426,7 +426,10 @@ class Hero {
       if (!wear) continue;
       const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0], palOff = wear === this.hat ? 4 : 0;
       const lift = wear === this.hat ? this.hatLift : 0;
-      const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1] + (anchor === 'head' ? lift : 0); out[2] = a[2] + off[2]; return out; };
+      // something worn on the back (a shark fin) moves round to the front while the blob lies on its back,
+      // so it sticks up out of the deck rather than into it
+      const flip = wear.back && this.lng > 0.5;
+      const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1] + (anchor === 'head' ? lift : 0); out[2] = a[2] + (flip && anchor === 'chest' ? -off[2] : off[2]); return out; };
       for (const P of wear.parts) {
         const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + palOff + col;
         if (P[0] === 'sph') {
@@ -441,11 +444,40 @@ class Hero {
         } else ell(at(P[1], P[2], cp), P[3][0], P[3][1], P[3][2], P[4], cw, 0);
       }
     }
-    for (let i = 0; i < 2; i++) {
-      const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA;
-      cap(hip.p, knee.p, 0.13, 0.12, 0.1, 0, 0);
-      cap(knee.p, foot.p, 0.12, 0.11, 0.06, 0.05, 0);
-      ell(foot.p, 0.12, 0.075, 0.16, 0.07, 0.12, 0);
+    const legs = this.costume && this.costume.legs, lc = 10 + ((this.costume && this.costume.legsCol) || 0);
+    if (legs === 'tail') {
+      // a mermaid's tail: both legs as one, ending in a two-lobed fin
+      const kA = J.kneeA.p, kB = J.kneeB.p, fA = J.footA.p, fB = J.footB.p, P = J.pelvis.p;
+      const km = [(kA[0] + kB[0]) / 2, (kA[1] + kB[1]) / 2, (kA[2] + kB[2]) / 2], fm = [(fA[0] + fB[0]) / 2, (fA[1] + fB[1]) / 2 + 0.04, (fA[2] + fB[2]) / 2];
+      cap([P[0], P[1] - 0.1, P[2]], km, 0.24, 0.17, 0.1, lc, 0);
+      cap(km, fm, 0.17, 0.08, 0.06, lc, 0);
+      const sw = Math.sin(this.time * 3.2) * 0.04;
+      ell([fm[0] + 0.12, fm[1] - 0.02, fm[2] + 0.05 + sw], 0.15, 0.04, 0.1, 0.04, lc + 1, 0);
+      ell([fm[0] - 0.12, fm[1] - 0.02, fm[2] + 0.05 - sw], 0.15, 0.04, 0.1, 0.04, lc + 1, 0);
+    } else if (legs === 'tentacles') {
+      // a squid's tentacles: each leg splits in two that curl and wave, and two more hang between them
+      const t = this.time, P = J.pelvis.p;
+      for (let i = 0; i < 2; i++) {
+        const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA, sg = i ? -1 : 1;
+        for (const o of [0.07, -0.05]) {
+          const w = Math.sin(t * 2.6 + i * 2 + o * 20) * 0.05;
+          const kp = [knee.p[0] + sg * o, knee.p[1], knee.p[2] + w], fp = [foot.p[0] + sg * o * 2.2 + w, foot.p[1] - 0.02, foot.p[2] + 0.06 + Math.cos(t * 2.2 + o * 30) * 0.06];
+          cap(hip.p, kp, 0.11, 0.08, 0.08, lc, 0);
+          cap(kp, fp, 0.08, 0.025, 0.05, lc, 0);
+        }
+      }
+      for (const sx of [0.06, -0.06]) {
+        const w = Math.sin(t * 2.2 + sx * 40) * 0.06, mid = [P[0] + sx, P[1] - 0.45, P[2] + 0.06 + w];
+        cap([P[0] + sx, P[1] - 0.15, P[2] + 0.05], mid, 0.09, 0.06, 0.07, lc, 0);
+        cap(mid, [P[0] + sx * 1.5 + w, 0.06, P[2] + 0.18 + w], 0.06, 0.02, 0.04, lc, 0);
+      }
+    } else {
+      for (let i = 0; i < 2; i++) {
+        const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA;
+        cap(hip.p, knee.p, 0.13, 0.12, 0.1, 0, 0);
+        cap(knee.p, foot.p, 0.12, 0.11, 0.06, 0.05, 0);
+        ell(foot.p, 0.12, 0.075, 0.16, 0.07, 0.12, 0);
+      }
     }
     for (const a of this.arms) {
       if (a.grow < 0.02) continue;

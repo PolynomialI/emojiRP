@@ -179,34 +179,62 @@ near each point (`binnedSdf`); the meshes come out the same, about twice as fast
 **Tests:** `test/_cave.mjs` plays chapter 20 end to end (BR=L or R) with screenshots; `test/_save.mjs` checks the
 migration (both git-ignored scratch).
 
-## The Ocean Update (in progress)
+## The Ocean Update
 
-A second game mode on the home screen's second page. Done so far:
+A second game mode with ten chapters of its own, on the home screen's second page.
 - **Home:** "The Ocean Update" sits under the title on both pages. A sideways swipe turns the page (anywhere but the
   buttons; on the blob's stage only a long, quick swipe, since a drag there spins the blob). Once chapter 20 is
   beaten, page dots and an edge arrow show too, with a note the first time. The ocean page keeps the menu buttons;
-  Play becomes SAIL, the picker lists the ocean's chapters (`save.sea`), and the stage shows the blob lounging on
-  the biggest ship it has sailed, rocking on the water.
+  Play becomes SAIL, the picker lists the ocean's chapters and bosses (`save.sea`), and the stage shows the blob
+  lounging on the biggest ship it has sailed. Coins, cosmetics, gear and permanent upgrades are shared.
 - **Sailing** (`src/13k-ocean.js`): runs reuse the land's run object (`G.run.sea`), gems, cards, chests, revive and
   results; `updateRun`, `updateCamera`, `renderFrame`, `heroDown`, `reviveHero` and `recomputeStats` hand over.
   The stick points where to go: the ship turns toward it (better under way), eases off while turning hard, and
-  drifts only a little. The sea is open (islands are scattered by area, about one 46 m square in three, and block
-  the ship). Floor style 21 is the water: soft swells, thin drifting light lines in patches, glints; `uSea` carries
-  roughness and storm for later chapters. A foam wake trails in a V.
+  drifts a little. The sea is open; islands are scattered by area (about one 46 m square in three) and block the
+  ship. Floor style 21 is the water (soft swells, drifting light lines, glints; `uSea` carries roughness and storm).
+  A foam wake trails in a V and grows with the ship. The camera pulls back as the ship grows.
 - **The blob** lies back on deck (`hero.lounge`, `src/07-hero.js`): one leg out, one knee up, a hand behind its
-  head, the weapon hand at its side. The whole rig pitches back about the pelvis, so costumes, hats and gear stay on.
-- **Swimmers** (`src/04k-sea-models.js`): goo pirates in bandanas with eye patches, striped shirts and hooks, treading
-  water. Arm-band and inner-tube floaters soak up damage until the floats pop (`e.shell`). They swim for the hull;
-  a fast enough hull rams them away (damage grows with closing speed and ship), otherwise they climb on and hack at
-  it. Turning hard flings boarders off.
-- **Upgrades** (`src/13l-sea-upgrades.js`): the Ship (always slot 1; levels are the seven ships) and the Homing
-  Cannon (starting weapon: deck cannons that turn and lob homing balls). Mount points per ship (`SHIP_MOUNTS`).
-- **Sinking:** the raft breaks into three pieces that drift apart and keel over (`tilt` clip), the blob drops in,
-  flails and goes under. Reviving rebuilds the ship.
-- Test: `test/_sea.mjs` (git-ignored scratch; `ONLY=home|run`).
-
-Still to come: the other six ships and fourteen upgrades, more sea enemies, miniboss canoes and rafts, themed
-islands, rougher water and storms, ten chapters with boss vehicles, and ocean cosmetics.
+  head, the weapon hand at its side. The whole rig pitches back about the pelvis, so costumes, hats and gear stay
+  on; pieces worn on the back (`back: true`, the shark fin) move to the front while lounging so they stick up.
+- **Ships** (`src/04l-ship-models.js`): raft, canoe, pirate sloop, black galleon, yacht, cruise ship, cargo ship.
+  Each has a hull mesh that rocks (less the bigger it is), three pieces it breaks into, and the pirate ships a
+  separate rig (masts and sails) that fades while it stands between the camera and the blob. The Ship upgrade is
+  always in the first slot; each level is the next ship (more hull, harder rams).
+- **Upgrades** (`src/13l-sea-upgrades.js`, models in `src/04m-mount-models.js`): Homing Cannon (the starting weapon),
+  Musket Ball Pile, Harpoon Gun (reels its catch in), Battleship Gunner (rare: a third as likely), Anchor Flail,
+  Barrel Mines, Lighthouse Lamp, Fishing Net (netted swimmers take 1.5x ram damage), Seagull Squadron, Shark
+  Escort, Water Cannon (washes boarders off), Goo Figurehead (harder rams that splash); passives Fortifications
+  (plating and spikes that hurt boarders), Propellers, Repair Crew (little sailors who patch the hull and bonk
+  boarders) and Gust Sails. Each ship lists where every mount goes (`SHIP_MOUNTS`), so they all move to the next
+  ship. Every weapon evolves with a passive. Land and sea cards never mix (`sea: true`).
+- **Swimmers and folk** (`src/04k-sea-models.js`, `src/13m-sea-folk.js`): goo pirates in bandanas with hooks,
+  arm-band and inner-tube floaters (floats soak up damage until they pop), tricorn pirates with cutlasses, snorkel
+  divers (under water and untargetable until close), keg pushers (the keg blows up on the hull), parka pirates,
+  ghost pirates, and musketeers who come out of island huts and forts to shoot. Swimmers ram away from a fast hull;
+  otherwise they climb on and hack at it, and turning hard flings them off.
+- **Chapters** (`SEA_CHAPTERS`, `SEA_THEMES`): each has its own water colors, roughness, crowd, islands (palm, coral,
+  kelp, smuggler huts, icebergs, volcanoes that spit lava, ghost isles, lightning spires, wrecks, forts with cannon),
+  current, fog and weather. Storms (rain, darker light, thunder) blow in later chapters, some only once the boss
+  arrives; Thunder Sea and Pirate Fortress have lightning strikes on marked circles.
+- **Minibosses:** captains on their own rafts and canoes, three visits a chapter: they circle, charge down a marked
+  lane, lob bombs, fire volleys and call swimmers.
+- **Bosses** (`src/13n-sea-bosses.js`, vehicles in `src/04n-sea-boss-models.js`): Captain Flamingo (inflatable
+  flamingo, water jet), the Coral Queen (clam boat, rings of pearls), Kelpbeard (rowboat, kelp snares), the
+  Smuggler King (speedboat, keg runs), Admiral Frost (icebreaker, ice floes and frost), the Magma Mariner (lava-rock
+  galleon, lava rain), the Phantom Captain (ghost ship, vanishes and reappears), the Thunder Admiral (ironclad,
+  lightning), the Kraken (tentacles and ink), the Pirate King (flagship, everything). One shared brain with an
+  attack cycle each; enraged at half health.
+- **Sinking:** the ship breaks into three pieces that drift apart and keel over, the blob drops in, flails and goes
+  under. Reviving rebuilds the ship.
+- **Cosmetics** (`src/10b-sea-cosmetics.js`): 12 sea colors (sharks, coral, jellyfish, deep sea...), 10 costumes
+  (Shark Suit, Piranha Teeth, Squid with tentacle legs, Mermaid Tail, Octopus Hood, Diving Helmet, Snorkel Mask,
+  Life Ring, Crab, Turtle Shell) and 10 hats (Shark Fin worn on the back, Captain's Cap, Sailor Cap, Admiral
+  Bicorne, Angler Lure, Jellyfish, Starfish, Coral Crown, Narwhal Horn, Seaweed Hair). Costumes can replace the
+  legs (`legs: 'tentacles' | 'tail'`).
+- **Meshes:** the sea's meshes are big and build in the background workers after the land's; SAIL waits only for
+  the chapter's own swimmers and islands, and the rest are moved to the front of the queue.
+- Tests (git-ignored scratch): `test/_seach.mjs` (each chapter's crowd, island, miniboss and boss),
+  `test/_seabot.mjs` (an autopilot plays whole chapters).
 
 ## Upgrade cap, Endless and Boss Rush economy (latest)
 - Every permanent upgrade stops at level 20 (`META_MAX`). Saves past 20 are set back to 20 and refunded the coins

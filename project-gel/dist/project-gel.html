@@ -4485,7 +4485,7 @@ function seaModels(defs) {
     if (o.hat) m.parts = m.parts.filter(p => !bandana.includes(p));
     if (o.hat === 'tricorn') {
       // a black tricorn with gold trim, three corners turned up
-      const y = hd[1] + 0.1, sc = o.big ? 1.3 : 1;
+      const y = hd[1] + 0.1, sc = o.big ? 1.25 : 0.82;
       m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.06, hd[2]], rr: [0.172, 0.12, 0.178], col: C('#1e1a24'), bone: 2, k: 0.01 });
       m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], y + 0.04, hd[2]], r: 0.13 * sc, hh: 0.07 * sc, rd: 0.05, col: C('#1e1a24'), bone: 2, k: 0.02 });
       for (let i = 0; i < 3; i++) { const a = Math.PI / 2 + (i / 3) * TAU, a2 = a + TAU / 3; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.26 * sc, y + 0.05, hd[2] + Math.sin(a) * 0.26 * sc], b: [hd[0] + Math.cos(a2) * 0.26 * sc, y + 0.05, hd[2] + Math.sin(a2) * 0.26 * sc], r: 0.04 * sc, col: C('#1e1a24'), bone: 2, k: 0.03 }); }
@@ -9330,7 +9330,7 @@ function seaModels(defs) {
     if (o.hat) m.parts = m.parts.filter(p => !bandana.includes(p));
     if (o.hat === 'tricorn') {
       // a black tricorn with gold trim, three corners turned up
-      const y = hd[1] + 0.1, sc = o.big ? 1.3 : 1;
+      const y = hd[1] + 0.1, sc = o.big ? 1.25 : 0.82;
       m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.06, hd[2]], rr: [0.172, 0.12, 0.178], col: C('#1e1a24'), bone: 2, k: 0.01 });
       m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], y + 0.04, hd[2]], r: 0.13 * sc, hh: 0.07 * sc, rd: 0.05, col: C('#1e1a24'), bone: 2, k: 0.02 });
       for (let i = 0; i < 3; i++) { const a = Math.PI / 2 + (i / 3) * TAU, a2 = a + TAU / 3; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.26 * sc, y + 0.05, hd[2] + Math.sin(a) * 0.26 * sc], b: [hd[0] + Math.cos(a2) * 0.26 * sc, y + 0.05, hd[2] + Math.sin(a2) * 0.26 * sc], r: 0.04 * sc, col: C('#1e1a24'), bone: 2, k: 0.03 }); }
@@ -13213,7 +13213,10 @@ class Hero {
       if (!wear) continue;
       const hv = J.head.v, t = this.time, cp = [0, 0, 0], cq = [0, 0, 0], palOff = wear === this.hat ? 4 : 0;
       const lift = wear === this.hat ? this.hatLift : 0;
-      const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1] + (anchor === 'head' ? lift : 0); out[2] = a[2] + off[2]; return out; };
+      // something worn on the back (a shark fin) moves round to the front while the blob lies on its back,
+      // so it sticks up out of the deck rather than into it
+      const flip = wear.back && this.lng > 0.5;
+      const at = (anchor, off, out) => { const a = J[anchor].p; out[0] = a[0] + off[0]; out[1] = a[1] + off[1] + (anchor === 'head' ? lift : 0); out[2] = a[2] + (flip && anchor === 'chest' ? -off[2] : off[2]); return out; };
       for (const P of wear.parts) {
         const col = P[P[0] === 'cap' ? 7 : 5], cw = col === 'b' ? 0 : 10 + palOff + col;
         if (P[0] === 'sph') {
@@ -13228,11 +13231,40 @@ class Hero {
         } else ell(at(P[1], P[2], cp), P[3][0], P[3][1], P[3][2], P[4], cw, 0);
       }
     }
-    for (let i = 0; i < 2; i++) {
-      const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA;
-      cap(hip.p, knee.p, 0.13, 0.12, 0.1, 0, 0);
-      cap(knee.p, foot.p, 0.12, 0.11, 0.06, 0.05, 0);
-      ell(foot.p, 0.12, 0.075, 0.16, 0.07, 0.12, 0);
+    const legs = this.costume && this.costume.legs, lc = 10 + ((this.costume && this.costume.legsCol) || 0);
+    if (legs === 'tail') {
+      // a mermaid's tail: both legs as one, ending in a two-lobed fin
+      const kA = J.kneeA.p, kB = J.kneeB.p, fA = J.footA.p, fB = J.footB.p, P = J.pelvis.p;
+      const km = [(kA[0] + kB[0]) / 2, (kA[1] + kB[1]) / 2, (kA[2] + kB[2]) / 2], fm = [(fA[0] + fB[0]) / 2, (fA[1] + fB[1]) / 2 + 0.04, (fA[2] + fB[2]) / 2];
+      cap([P[0], P[1] - 0.1, P[2]], km, 0.24, 0.17, 0.1, lc, 0);
+      cap(km, fm, 0.17, 0.08, 0.06, lc, 0);
+      const sw = Math.sin(this.time * 3.2) * 0.04;
+      ell([fm[0] + 0.12, fm[1] - 0.02, fm[2] + 0.05 + sw], 0.15, 0.04, 0.1, 0.04, lc + 1, 0);
+      ell([fm[0] - 0.12, fm[1] - 0.02, fm[2] + 0.05 - sw], 0.15, 0.04, 0.1, 0.04, lc + 1, 0);
+    } else if (legs === 'tentacles') {
+      // a squid's tentacles: each leg splits in two that curl and wave, and two more hang between them
+      const t = this.time, P = J.pelvis.p;
+      for (let i = 0; i < 2; i++) {
+        const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA, sg = i ? -1 : 1;
+        for (const o of [0.07, -0.05]) {
+          const w = Math.sin(t * 2.6 + i * 2 + o * 20) * 0.05;
+          const kp = [knee.p[0] + sg * o, knee.p[1], knee.p[2] + w], fp = [foot.p[0] + sg * o * 2.2 + w, foot.p[1] - 0.02, foot.p[2] + 0.06 + Math.cos(t * 2.2 + o * 30) * 0.06];
+          cap(hip.p, kp, 0.11, 0.08, 0.08, lc, 0);
+          cap(kp, fp, 0.08, 0.025, 0.05, lc, 0);
+        }
+      }
+      for (const sx of [0.06, -0.06]) {
+        const w = Math.sin(t * 2.2 + sx * 40) * 0.06, mid = [P[0] + sx, P[1] - 0.45, P[2] + 0.06 + w];
+        cap([P[0] + sx, P[1] - 0.15, P[2] + 0.05], mid, 0.09, 0.06, 0.07, lc, 0);
+        cap(mid, [P[0] + sx * 1.5 + w, 0.06, P[2] + 0.18 + w], 0.06, 0.02, 0.04, lc, 0);
+      }
+    } else {
+      for (let i = 0; i < 2; i++) {
+        const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA;
+        cap(hip.p, knee.p, 0.13, 0.12, 0.1, 0, 0);
+        cap(knee.p, foot.p, 0.12, 0.11, 0.06, 0.05, 0);
+        ell(foot.p, 0.12, 0.075, 0.16, 0.07, 0.12, 0);
+      }
     }
     for (const a of this.arms) {
       if (a.grow < 0.02) continue;
@@ -14810,6 +14842,138 @@ function artStats(key) {
   for (const k in def.stats) out[k] = def.stats[k] * RARITIES[r].mul;
   return out;
 }
+
+// ---- 10b-sea-cosmetics.js ----
+// ============================================================
+// The Ocean Update's cosmetics: sea colors, sea costumes and sea hats (same formats as SKINS / COSTUMES in
+// 10-data.js). Two costumes replace the legs (legs: 'tentacles' or 'tail', drawn by Hero.buildPrims in the
+// costume's legsCol color); back: true moves a back piece (the shark fin) round to the front while the blob
+// lounges on deck, so it sticks up instead of into the planks.
+// ============================================================
+SKINS.push(
+  { id: 'shark', name: 'Shark', cost: 900, base: '#eef4f8', top: '#6a8aa8', accent: '#2a4a6a', rim: '#d8ecff', boost: { dmg: 4 } },
+  { id: 'greatwhite', name: 'Great White', cost: 1800, base: '#f6f8fa', top: '#4a5a6a', accent: '#1c2a3a', rim: '#ffffff', boost: { dmg: 6 } },
+  { id: 'hammerhead', name: 'Hammerhead', cost: 1400, base: '#c8d0b8', top: '#6a7a5a', accent: '#3a4a2a', rim: '#eef4e0', boost: { armor: 4 } },
+  { id: 'tigershark', name: 'Tiger Shark', cost: 1600, base: '#e8c890', top: '#7a5a3a', accent: '#4a3020', rim: '#fff0d0', boost: { speed: 4 } },
+  { id: 'coral', name: 'Coral', cost: 700, base: '#ff7a6a', top: '#ffc0a8', accent: '#e8285a', rim: '#ffe0d8', boost: { hp: 4 } },
+  { id: 'jelly', name: 'Jellyfish', cost: 1100, base: '#c890ff', top: '#ffb8f0', accent: '#7a4ad8', rim: '#ffe8ff', boost: { cd: 4 } },
+  { id: 'deepsea', name: 'Deep Sea', cost: 2200, base: '#1a2a5a', top: '#2fe8d0', accent: '#4ad8ff', rim: '#a8fff0', boost: { xp: 6 } },
+  { id: 'seafoam', name: 'Sea Foam', cost: 800, base: '#9af0d8', top: '#e8fff8', accent: '#2fb8a8', rim: '#ffffff', boost: { regen: 0.04 } },
+  { id: 'pearl', name: 'Pearl', cost: 2000, base: '#f4ecf0', top: '#ffffff', accent: '#c8a0d8', rim: '#ffffff', boost: { gold: 6 } },
+  { id: 'tropical', name: 'Tropical Fish', cost: 1000, base: '#ffa02a', top: '#ffe14a', accent: '#2a6aff', rim: '#fff0c0', boost: { speed: 3 } },
+  { id: 'octopus', name: 'Octopus', cost: 1200, base: '#e8504a', top: '#ff9a7a', accent: '#9a1a3a', rim: '#ffd0c0', boost: { area: 4 } },
+  { id: 'turtle', name: 'Sea Turtle', cost: 900, base: '#5ab04a', top: '#c8e07a', accent: '#2a6a3a', rim: '#e0ffc0', boost: { hp: 5 } },
+);
+SKINS.sort((a, b) => (a.goal ? 1e9 : a.cost) - (b.goal ? 1e9 : b.cost));
+
+const SEA_COSTUMES = [
+  // ---------- costumes ----------
+  { id: 'sharksuit', name: 'Shark Suit', cost: 1600, boost: { dmg: 5 }, back: true, pal: ['#6a8aa8', '#eef4f8', '#1c1820'], parts: [
+    ['ell', 'head', [0, 0.07, -0.03], [0.245, 0.2, 0.245], 0.02, 0],
+    ['sph', 'head', [0.19, 0.06, 0.1], 0.032, 0.005, 2], ['sph', 'head', [-0.19, 0.06, 0.1], 0.032, 0.005, 2],
+    ['cap', 'chest', [0, 0.06, -0.24], [0, 0.42, -0.42], 0.11, 0.015, 0.03, 0],
+    ['ell', 'chest', [0.33, -0.06, 0.02], [0.13, 0.03, 0.08], 0.02, 0], ['ell', 'chest', [-0.33, -0.06, 0.02], [0.13, 0.03, 0.08], 0.02, 0],
+    ['cap', 'pelvis', [0, 0.0, -0.24], [0, 0.12, -0.46], 0.08, 0.03, 0.03, 0],
+    ['cap', 'pelvis', [0, 0.12, -0.44], [0, 0.32, -0.56], 0.05, 0.015, 0.02, 0, 0.02],
+  ] },
+  { id: 'piranha', name: 'Piranha Teeth', cost: 1300, boost: { dmg: 4 }, pal: ['#fbf6ee', '#c8283a', '#ff6a3a'], parts: [
+    ['ell', 'head', [0, -0.12, 0.15], [0.17, 0.07, 0.11], 0.02, 1],
+    ...[-0.1, -0.05, 0, 0.05, 0.1].map(x => ['cap', 'head', [x, -0.06, 0.205], [x, -0.12, 0.215], 0.022, 0.004, 0.005, 0]),
+    ...[-0.075, -0.025, 0.025, 0.075].map(x => ['cap', 'head', [x, -0.17, 0.2], [x, -0.115, 0.21], 0.02, 0.004, 0.005, 0]),
+    ['ell', 'head', [0.22, -0.02, -0.02], [0.03, 0.08, 0.1], 0.02, 2], ['ell', 'head', [-0.22, -0.02, -0.02], [0.03, 0.08, 0.1], 0.02, 2],
+  ] },
+  { id: 'squid', name: 'Squid', cost: 2000, boost: { cd: 5 }, legs: 'tentacles', legsCol: 0, pal: ['#ff8ac0', '#ffd0e8'], parts: [
+    ['cap', 'head', [0, 0.12, -0.02], [0, 0.56, -0.08], 0.21, 0.05, 0.05, 0],
+    ['ell', 'head', [0.14, 0.44, -0.06], [0.11, 0.07, 0.03], 0.02, 0], ['ell', 'head', [-0.14, 0.44, -0.06], [0.11, 0.07, 0.03], 0.02, 0],
+    ['sph', 'head', [0.09, 0.3, 0.1], 0.03, 0.01, 1], ['sph', 'head', [-0.07, 0.38, 0.08], 0.025, 0.01, 1],
+  ] },
+  { id: 'mermaid', name: 'Mermaid Tail', cost: 2200, boost: { speed: 6 }, legs: 'tail', legsCol: 0, pal: ['#2fc4a8', '#7af0d8', '#ffd34a', '#ff9ac8'], parts: [
+    ['sph', 'head', [0.18, 0.12, 0.06], 0.05, 0.01, 2], ['sph', 'head', [0.21, 0.08, 0.1], 0.035, 0.01, 3],
+    ['ell', 'pelvis', [0, 0.02, 0], [0.3, 0.06, 0.28], 0.03, 0],
+  ] },
+  { id: 'octohood', name: 'Octopus Hood', cost: 1500, boost: { area: 5 }, pal: ['#e8504a', '#ffb8a0'], parts: [
+    ['ell', 'head', [0, 0.1, -0.04], [0.26, 0.26, 0.27], 0.02, 0],
+    ...[0, 1, 2, 3, 4, 5].map(i => { const a = -1.9 + i * 0.76; return ['cap', 'head', [Math.sin(a) * 0.22, -0.04, Math.cos(a) * 0.22 - 0.04], [Math.sin(a) * 0.33, -0.22, Math.cos(a) * 0.3 - 0.08], 0.05, 0.02, 0.02, 0, 0.03]; }),
+    ['sph', 'head', [0.1, 0.28, 0.12], 0.035, 0.01, 1], ['sph', 'head', [-0.12, 0.22, 0.16], 0.03, 0.01, 1], ['sph', 'head', [0.0, 0.33, -0.05], 0.035, 0.01, 1],
+  ] },
+  { id: 'diver', name: 'Diving Helmet', cost: 1700, boost: { armor: 6 }, pal: ['#d8a040', '#9fe6ff', '#6a4a2a'], parts: [
+    ['sph', 'head', [0, 0.03, 0], 0.29, 0.01, 0],
+    ['ell', 'head', [0, 0.03, 0.22], [0.15, 0.15, 0.08], 0.01, 1],
+    ['ell', 'head', [0, 0.03, 0.21], [0.19, 0.19, 0.07], 0.01, 0],
+    ['sph', 'head', [0.26, 0.05, 0.05], 0.06, 0.01, 1], ['sph', 'head', [-0.26, 0.05, 0.05], 0.06, 0.01, 1],
+    ['ell', 'chest', [0, 0.2, 0], [0.33, 0.06, 0.28], 0.02, 0],
+    ['cap', 'chest', [0, 0.16, -0.25], [0.1, -0.15, -0.34], 0.035, 0.035, 0.01, 2],
+  ] },
+  { id: 'snorkel', name: 'Snorkel Mask', cost: 800, boost: { xp: 4 }, pal: ['#35c4e8', '#9fe6ff', '#ffd34a'], parts: [
+    ['ell', 'head', [0, 0.04, 0], [0.235, 0.05, 0.235], 0.01, 0],
+    ['ell', 'head', [0, 0.04, 0.2], [0.15, 0.075, 0.05], 0.01, 1],
+    ['cap', 'head', [0.2, -0.06, 0.12], [0.24, 0.36, 0.0], 0.035, 0.035, 0.01, 2],
+    ['cap', 'head', [0.2, -0.06, 0.12], [0.04, -0.09, 0.2], 0.03, 0.03, 0.01, 2],
+  ] },
+  { id: 'lifering', name: 'Life Ring', cost: 700, boost: { hp: 5 }, pal: ['#e8414a', '#fbf6ee'], parts:
+    Array.from({ length: 8 }, (_, i) => { const a = i / 8 * TAU; return ['sph', 'pelvis', [Math.cos(a) * 0.31, 0.06, Math.sin(a) * 0.31], 0.11, 0.03, i % 2]; }) },
+  { id: 'crab', name: 'Crab', cost: 1400, boost: { armor: 5 }, pal: ['#e8503a', '#1c1820', '#ff9a7a'], parts: [
+    ['ell', 'chest', [0, 0.02, -0.2], [0.34, 0.26, 0.14], 0.02, 0],
+    ['cap', 'head', [0.08, 0.14, 0.08], [0.11, 0.42, 0.12], 0.025, 0.02, 0.01, 0, 0.02], ['cap', 'head', [-0.08, 0.14, 0.08], [-0.11, 0.42, 0.12], 0.025, 0.02, 0.01, 0, 0.02],
+    ['sph', 'head', [0.11, 0.45, 0.12], 0.045, 0.01, 1, 0.02], ['sph', 'head', [-0.11, 0.45, 0.12], 0.045, 0.01, 1, 0.02],
+    ['ell', 'chest', [0.36, 0.1, 0.06], [0.1, 0.07, 0.12], 0.02, 2], ['ell', 'chest', [-0.36, 0.1, 0.06], [0.1, 0.07, 0.12], 0.02, 2],
+  ] },
+  { id: 'turtleshell', name: 'Turtle Shell', cost: 1200, boost: { hp: 7 }, pal: ['#5a8a3a', '#c8b070', '#3a6a2a'], parts: [
+    ['ell', 'chest', [0, 0.0, -0.21], [0.38, 0.34, 0.16], 0.02, 0],
+    ...[[0, 0.08], [0.16, -0.05], [-0.16, -0.05], [0.1, 0.2], [-0.1, 0.2]].map(([x, y]) => ['sph', 'chest', [x, y, -0.35], 0.07, 0.02, 2]),
+    ['ell', 'chest', [0, -0.03, 0.2], [0.24, 0.24, 0.06], 0.02, 1],
+  ] },
+  // ---------- hats ----------
+  { id: 'sharkfin', name: 'Shark Fin', cost: 1000, boost: { dmg: 4 }, back: true, pal: ['#6a8aa8', '#eef4f8'], parts: [
+    ['cap', 'chest', [0, 0.06, -0.24], [0, 0.52, -0.42], 0.11, 0.015, 0.03, 0],
+    ['cap', 'chest', [0, 0.06, -0.24], [0, 0.16, -0.46], 0.07, 0.02, 0.03, 0],
+    ['cap', 'chest', [0, 0.12, -0.25], [0, 0.4, -0.37], 0.04, 0.01, 0.01, 1],
+  ] },
+  { id: 'captain', name: "Captain's Cap", cost: 900, boost: { gold: 5 }, pal: ['#fbf8f2', '#1c2a4a', '#e8b84a'], parts: [
+    ['ell', 'head', [0, 0.22, 0], [0.26, 0.08, 0.26], 0.02, 0],
+    ['ell', 'head', [0, 0.15, 0], [0.235, 0.055, 0.235], 0.01, 1],
+    ['ell', 'head', [0, 0.13, 0.19], [0.17, 0.02, 0.1], 0.01, 1],
+    ['sph', 'head', [0, 0.18, 0.235], 0.04, 0.01, 2],
+  ] },
+  { id: 'sailor', name: 'Sailor Cap', cost: 600, boost: { speed: 3 }, pal: ['#fbf8f2', '#2f5fb8'], parts: [
+    ['ell', 'head', [0, 0.17, 0], [0.2, 0.1, 0.2], 0.02, 0],
+    ['ell', 'head', [0, 0.13, 0], [0.24, 0.045, 0.24], 0.01, 0],
+    ['ell', 'head', [0, 0.16, 0], [0.205, 0.025, 0.205], 0.01, 1],
+  ] },
+  { id: 'bicorne', name: 'Admiral Bicorne', cost: 1500, boost: { armor: 5 }, pal: ['#1c1820', '#e8b84a', '#fbf8f2'], parts: [
+    ['ell', 'head', [0, 0.23, 0], [0.42, 0.14, 0.12], 0.02, 0],
+    ['ell', 'head', [0, 0.15, 0], [0.42, 0.035, 0.13], 0.01, 1],
+    ['sph', 'head', [0.2, 0.26, 0.1], 0.05, 0.01, 2],
+  ] },
+  { id: 'angler', name: 'Angler Lure', cost: 1300, boost: { magnet: 8 }, pal: ['#5a4a6a', '#ffe86a'], parts: [
+    ['cap', 'head', [0, 0.2, 0.04], [0, 0.5, 0.28], 0.03, 0.022, 0.01, 0, 0.02],
+    ['cap', 'head', [0, 0.5, 0.28], [0, 0.48, 0.44], 0.022, 0.018, 0.01, 0, 0.03],
+    ['sph', 'head', [0, 0.45, 0.48], 0.075, 0.01, 1, 0.03],
+  ] },
+  { id: 'jellyhat', name: 'Jellyfish', cost: 1400, boost: { cd: 4 }, pal: ['#c890ff', '#ffd8ff'], parts: [
+    ['ell', 'head', [0, 0.22, 0], [0.29, 0.18, 0.29], 0.03, 0],
+    ...[0, 1, 2, 3, 4].map(i => { const a = Math.PI * 0.6 + i * 0.5; return ['cap', 'head', [Math.sin(a) * 0.24, 0.12, Math.cos(a) * 0.24], [Math.sin(a) * 0.3, -0.25, Math.cos(a) * 0.3], 0.03, 0.012, 0.01, 1, 0.04]; }),
+  ] },
+  { id: 'starfish', name: 'Starfish', cost: 700, boost: { xp: 4 }, pal: ['#ff8a3a', '#ffd0a0'], parts: [
+    ['sph', 'head', [0, 0.24, 0], 0.07, 0.02, 0],
+    ...[0, 1, 2, 3, 4].map(i => { const a = i / 5 * TAU; return ['cap', 'head', [0, 0.24, 0], [Math.sin(a) * 0.2, 0.2, Math.cos(a) * 0.2], 0.06, 0.025, 0.02, 0]; }),
+    ...[0, 1, 2, 3, 4].map(i => { const a = i / 5 * TAU; return ['sph', 'head', [Math.sin(a) * 0.1, 0.275, Math.cos(a) * 0.1], 0.018, 0.005, 1]; }),
+  ] },
+  { id: 'coralcrown', name: 'Coral Crown', cost: 1800, boost: { hp: 6 }, pal: ['#ff7aa8', '#ffd34a', '#c86aff'], parts: [
+    ['ell', 'head', [0, 0.16, 0], [0.22, 0.04, 0.22], 0.02, 1],
+    ...[0, 1, 2, 3, 4, 5].map(i => { const a = i / 6 * TAU; return ['cap', 'head', [Math.sin(a) * 0.19, 0.17, Math.cos(a) * 0.19], [Math.sin(a + 0.3) * 0.24, 0.38 + (i % 2) * 0.08, Math.cos(a + 0.3) * 0.24], 0.04, 0.02, 0.02, i % 3 === 1 ? 2 : 0]; }),
+  ] },
+  { id: 'narwhal', name: 'Narwhal Horn', cost: 1600, boost: { dmg: 5 }, pal: ['#f4ecdc', '#c8b898'], parts: [
+    ['cap', 'head', [0, 0.18, 0.1], [0, 0.72, 0.3], 0.065, 0.008, 0.02, 0],
+    ...[0.32, 0.46, 0.6].map(y => ['sph', 'head', [0, y, 0.15 + (y - 0.18) * 0.37], 0.04 - (y - 0.3) * 0.06, 0.01, 1]),
+  ] },
+  { id: 'seaweed', name: 'Seaweed Hair', cost: 600, boost: { regen: 0.03 }, pal: ['#3a9a4a', '#6ac85a'], parts:
+    [0, 1, 2, 3, 4, 5].map(i => { const a = Math.PI * 0.45 + i * 0.45; return ['cap', 'head', [Math.sin(a) * 0.15, 0.18, Math.cos(a) * 0.15], [Math.sin(a) * 0.3, -0.12, Math.cos(a) * 0.3], 0.05, 0.02, 0.02, i % 2, 0.04]; }) },
+];
+COSTUMES.push(...SEA_COSTUMES);
+HAT_IDS.push('sharkfin', 'captain', 'sailor', 'bicorne', 'angler', 'jellyhat', 'starfish', 'coralcrown', 'narwhal', 'seaweed');
+for (const c of SEA_COSTUMES) c.slot = HAT_IDS.includes(c.id) ? 'hat' : 'hood';
+COSTUMES.sort((a, b) => a.cost - b.cost);
 
 // ---- 11-game.js ----
 // ============================================================
@@ -22997,15 +23161,15 @@ const SHIPS = [
 const SEA_CHAPTERS = [
   { name: 'Sunny Shallows', rough: 0.0, storm: 0, deep: '#1567c4', shallow: '#2b9be0', lines: '#bfeaff', fog: '#9fdcfa', isle: 'palm',
     mix: [['pswim', 0, 1], ['pfloat', 50, 0.35], ['ptube', 140, 0.22]], boss: 'tuber' },
-  { name: 'Coral Cove', rough: 0.1, storm: 0, deep: '#178bc8', shallow: '#3fd6d6', lines: '#d0fff6', fog: '#79d6e6', isle: 'palm', mix: null },
-  { name: 'Kelp Narrows', rough: 0.2, storm: 0, deep: '#16799f', shallow: '#36b4a6', lines: '#c8f2e0', fog: '#6cbfc4', isle: 'palm', mix: null },
-  { name: "Smugglers' Strait", rough: 0.3, storm: 0, deep: '#1a6fae', shallow: '#3aa8d8', lines: '#c4e8ff', fog: '#74b6de', isle: 'palm', mix: null },
-  { name: 'Glacier Bay', rough: 0.35, storm: 0, deep: '#2a78b8', shallow: '#7cc8ec', lines: '#eef9ff', fog: '#a8d8f0', isle: 'palm', mix: null },
-  { name: 'Volcano Atoll', rough: 0.45, storm: 0.5, deep: '#1c5f8e', shallow: '#3d98b8', lines: '#ffd8b8', fog: '#8aa8b8', isle: 'palm', mix: null },
-  { name: 'Ghost Fog', rough: 0.5, storm: 0.5, deep: '#25506e', shallow: '#4a8098', lines: '#d8f0ff', fog: '#8aa6b4', isle: 'palm', mix: null },
-  { name: 'Thunder Sea', rough: 0.65, storm: 1, deep: '#1d4a6e', shallow: '#3a7898', lines: '#cfe6f6', fog: '#6e8a9e', isle: 'palm', mix: null },
-  { name: 'Kraken Deep', rough: 0.75, storm: 0.5, deep: '#173d63', shallow: '#2c6a8e', lines: '#bfe0f4', fog: '#5f7f96', isle: 'palm', mix: null },
-  { name: 'Pirate Fortress', rough: 0.85, storm: 1, deep: '#1a3f5e', shallow: '#336a88', lines: '#cfe2ee', fog: '#66808f', isle: 'palm', mix: null },
+  { name: 'Coral Cove', rough: 0.1, storm: 0, deep: '#1466b8', shallow: '#2a9ad0', lines: '#c8f4ff', fog: '#8ad0ee', isle: 'palm', mix: null },
+  { name: 'Kelp Narrows', rough: 0.2, storm: 0, deep: '#135a80', shallow: '#2a8a8a', lines: '#c0ecd8', fog: '#7ab8c0', isle: 'palm', mix: null },
+  { name: "Smugglers' Strait", rough: 0.3, storm: 0, deep: '#16548e', shallow: '#2a7cb8', lines: '#c0e2ff', fog: '#7aaed8', isle: 'palm', mix: null },
+  { name: 'Glacier Bay', rough: 0.35, storm: 0, deep: '#1f5c9a', shallow: '#4a96cc', lines: '#eef9ff', fog: '#b0d8f0', isle: 'palm', mix: null },
+  { name: 'Volcano Atoll', rough: 0.45, storm: 0.5, deep: '#18466e', shallow: '#2a6e8e', lines: '#ffd0b0', fog: '#8a98a8', isle: 'palm', mix: null },
+  { name: 'Ghost Fog', rough: 0.5, storm: 0.5, deep: '#1e3a52', shallow: '#356078', lines: '#d0ecf8', fog: '#8aa2b0', isle: 'palm', mix: null },
+  { name: 'Thunder Sea', rough: 0.65, storm: 1, deep: '#163650', shallow: '#2a5a7a', lines: '#c8e0f0', fog: '#6a8494', isle: 'palm', mix: null },
+  { name: 'Kraken Deep', rough: 0.75, storm: 0.5, deep: '#102a48', shallow: '#22506e', lines: '#b8daf0', fog: '#5a7890', isle: 'palm', mix: null },
+  { name: 'Pirate Fortress', rough: 0.85, storm: 1, deep: '#14304a', shallow: '#285670', lines: '#c8dcea', fog: '#62788a', isle: 'palm', mix: null },
 ];
 const SEA_COUNT = SEA_CHAPTERS.length;
 const SEA = {
@@ -23021,7 +23185,7 @@ const OC = { ship: null, wake: [], isles: [], chunks: new Map(), balls: [], shot
 function seaInfo(n) {
   const k = clamp(n, 1, SEA_COUNT) - 1, C = SEA_CHAPTERS[k];
   return {
-    n, sea: true, arenaName: C.name, bosses: [C.boss || 'tuber'],
+    n, sea: true, arenaName: C.name, bosses: [C.boss],
     // the sea starts about where the land's chapter 6 leaves off, then climbs
     hpMul: 1 + 0.18 * k + 0.015 * k * k, dmgMul: 1 + 0.1 * k, rateMul: 0.7 + 0.1 * k, speedMul: 1 + 0.015 * k,
     bossHpMul: Math.pow(1.2, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
@@ -23042,7 +23206,8 @@ function seaLook(n) {
 // ---------- starting and leaving ----------
 function beginSea(n) {
   // the first ships and every mount next (the first level-up offers them), the big ships after
-  prioritizeMeshes([...SEA_MESHES, 'canoe', ...MOUNT_MESHES, 'sloop', 'sloop_rig']);
+  const C = SEA_CHAPTERS[n - 1];
+  prioritizeMeshes([...SEA_MESHES, ...C.isles, ...C.mix.map(x => ENEMY_TYPES[x[0]].model), 'canoe', ...MOUNT_MESHES, 'pcapt', ...bossMeshes(C.boss), 'sloop', 'sloop_rig', 'pmusket']);
   for (const m of ['raft', 'pswim']) ensureMeshNow(m);
   startSea(n);
 }
@@ -23154,6 +23319,7 @@ function updateOcean(dt) {
   seaPassives(dt);
   seaIsleTick(dt);
   updateSeaHazards(dt);
+  seaBossHazards(dt);
   seaWeather(dt);
   updateProjectiles(dt);
   updateEnemyShots(dt);
@@ -23179,7 +23345,8 @@ function updateOcean(dt) {
 function seaSteer(dt) {
   const S = OC.ship, D = shipDef(), run = G.run;
   const ix = G.input.x, iz = G.input.z, m = Math.min(1, Math.hypot(ix, iz));
-  const top = D.speed * run.stats.speedMul;
+  // (kelp and frost patches grip the hull)
+  const top = D.speed * run.stats.speedMul * (1 - (OC.snared || 0));
   let steer = 0, thr = 0;
   if (m > 0.12 && G.state === 'run') {
     const diff = angleDiff(S.yaw, Math.atan2(ix, iz));
@@ -23318,16 +23485,6 @@ function seaEvent(ev) {
   } else if (ev.kind === 'mini') seaMini(ev.k);
   else if (ev.kind === 'boss') seaBossStart();
 }
-// (until each chapter has its own boss vehicle: a giant tuber pirate)
-function seaBossStart() {
-  const run = G.run, [x, z] = seaSpawnPoint();
-  run.bossStarted = true;
-  const e = seaFoe('ptube', x, z, { elite: true, scale: 1.8 });
-  e.hp = e.maxHp = 900 * run.info.bossHpMul; e.shell = e.shellMax = 300 * run.info.bossHpMul; e.radius = 1.0; e.mass = 12; e.speed *= 1.3; e.dmg *= 2;
-  run.bosses.push(e); run.bossTotalHp = e.maxHp;
-  UI.banner('THE BIG TUBER', true); AUDIO.play('boss'); G.cam.shake = 0.15;
-}
-
 // ---------- swimmers: paddle in, get rammed, or climb on and hack at the hull ----------
 function seaFoes(dt) {
   const run = G.run, S = OC.ship, D = shipDef(), n = [0, 0];
@@ -23550,7 +23707,7 @@ function seaCamera(dt, snap) {
 const SEA_WHITE = [1, 1, 1];
 function emitSea() {
   const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
-  const fog = SEA_CHAPTERS[run.chapter - 1].fog || 1;
+  const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
   f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view * fog * fog, 140 * SEA.view * fog];
   SCENE.arenaBox = null; SCENE.pools = [];
   // the ship (or its pieces)
@@ -23605,6 +23762,7 @@ function emitSea() {
   // cannonballs and the rest of the sea's shots, and the hazards
   emitSeaShots();
   emitSeaHazards();
+  emitSeaBossHazards();
 }
 // a ship and everything mounted on it
 function seaDrawShip(x, y, z, yaw, stage, t, flash) {
@@ -23629,7 +23787,7 @@ function seaDrawShip(x, y, z, yaw, stage, t, flash) {
 // ---------- the home screen's ocean page: the blob lounging on its best ship on a calm sea ----------
 const SEA_HOME = { t: 0 };
 // (each chapter's boss vehicle comes later; until then the Big Tuber)
-const seaBossName = n => 'The Big Tuber';
+const seaBossName = n => BOSS_TYPES[SEA_CHAPTERS[n - 1].boss].name;
 function seaHomeStage() { return clamp((G.save.sea && G.save.sea.ship) || 0, 0, SHIPS.length - 1); }
 
 // sea upgrade icons are drawn from their own models once those are built
@@ -24441,8 +24599,8 @@ Object.assign(ENEMY_TYPES, {
 });
 
 // each chapter's crowd, islands, weather and miniboss (the boss is in 13n-sea-bosses.js)
-// mix: [type, from second, weight]; isles: island models; fog: how far you see (share of normal);
-// zap: lightning strikes in the storm; current: how hard the water pushes the ship about
+// mix: [type, from second, weight]; isles: island models;
+// zap: lightning strikes in the storm; fogK: how far you see (share of normal); current: how hard the water pushes the ship about
 const SEA_THEMES = [
   { mix: [['pswim', 0, 1], ['pfloat', 50, 0.35], ['ptube', 140, 0.22]], isles: ['isle0', 'isle1'], mini: { name: 'Raft Rascal', ride: 'raft', tint: '#e8414a', atk: ['ram', 'bombs', 'call'] } },
   { mix: [['pswim', 0, 1], ['pdiver', 30, 0.4], ['pfloat', 60, 0.3], ['phat', 120, 0.25], ['ptube', 150, 0.2]], isles: ['icoral', 'isle1'], mini: { name: 'Canoe Corsair', ride: 'canoe', tint: '#ff7aa8', atk: ['ram', 'volley', 'call'] } },
@@ -24450,9 +24608,9 @@ const SEA_THEMES = [
   { mix: [['pswim', 0, 1], ['phat', 0, 0.35], ['pbomb', 40, 0.25], ['pdiver', 60, 0.35], ['pfloat', 90, 0.3]], isles: ['ihut', 'isle0'], mini: { name: 'Smuggler Sam', ride: 'canoe', tint: '#3a3a4a', atk: ['volley', 'bombs', 'ram'] } },
   { mix: [['pparka', 0, 1], ['pfloat', 0, 0.35], ['phat', 40, 0.3], ['ptube', 80, 0.3], ['pbomb', 120, 0.2]], isles: ['iice'], mini: { name: 'Frostbeard', ride: 'raft', tint: '#3a8ad8', atk: ['ram', 'bombs', 'call'] } },
   { mix: [['pswim', 0, 1], ['phat', 0, 0.4], ['pbomb', 30, 0.3], ['pdiver', 60, 0.35], ['ptube', 100, 0.3]], isles: ['ivolc'], current: 0.3, mini: { name: 'Cinder Jack', ride: 'canoe', tint: '#ff6a1a', atk: ['bombs', 'ram', 'volley'] } },
-  { mix: [['pghost', 0, 1], ['phat', 0, 0.35], ['pdiver', 30, 0.4], ['ptube', 80, 0.3], ['pbomb', 120, 0.2]], isles: ['ighost'], fog: 0.45, current: 0.35, mini: { name: 'The Ghost Mate', ride: 'raft', tint: '#a8fff0', ghost: true, atk: ['ram', 'call', 'volley'] } },
+  { mix: [['pghost', 0, 1], ['phat', 0, 0.35], ['pdiver', 30, 0.4], ['ptube', 80, 0.3], ['pbomb', 120, 0.2]], isles: ['ighost'], fogK: 0.45, current: 0.35, mini: { name: 'The Ghost Mate', ride: 'raft', tint: '#a8fff0', ghost: true, atk: ['ram', 'call', 'volley'] } },
   { mix: [['pswim', 0, 1], ['phat', 0, 0.4], ['pbomb', 0, 0.3], ['pdiver', 30, 0.4], ['pfloat', 60, 0.3], ['ptube', 90, 0.3]], isles: ['ispire'], zap: true, current: 0.45, mini: { name: 'Storm Mate Gale', ride: 'canoe', tint: '#8a9ab8', atk: ['ram', 'volley', 'bombs'] } },
-  { mix: [['pswim', 0, 1], ['phat', 0, 0.45], ['pdiver', 0, 0.45], ['pbomb', 30, 0.3], ['ptube', 60, 0.35]], isles: ['iwreck'], fog: 0.75, current: 0.5, mini: { name: 'Deep Diver Dan', ride: 'canoe', tint: '#2a4a6a', atk: ['call', 'ram', 'bombs'] } },
+  { mix: [['pswim', 0, 1], ['phat', 0, 0.45], ['pdiver', 0, 0.45], ['pbomb', 30, 0.3], ['ptube', 60, 0.35]], isles: ['iwreck'], fogK: 0.75, current: 0.5, mini: { name: 'Deep Diver Dan', ride: 'canoe', tint: '#2a4a6a', atk: ['call', 'ram', 'bombs'] } },
   { mix: [['phat', 0, 1], ['pswim', 0, 0.8], ['pbomb', 0, 0.35], ['pdiver', 20, 0.4], ['ptube', 40, 0.35], ['pfloat', 60, 0.3]], isles: ['ifort', 'ihut'], zap: true, current: 0.55, mini: { name: 'First Mate Fang', ride: 'canoe', tint: '#1e1a24', atk: ['volley', 'ram', 'bombs', 'call'] } },
 ];
 SEA_CHAPTERS.forEach((C, i) => Object.assign(C, SEA_THEMES[i]));
@@ -24571,6 +24729,7 @@ function seaIsleTick(dt) {
 function updateSeaHazards(dt) {
   const run = G.run;
   for (const h of OC.hz) {
+    if (SEA_HZ_LIVE.includes(h.k)) continue;
     if (h.k === 'ball') {
       h.life -= dt; h.x += h.vx * dt; h.z += h.vz * dt;
       if (hullDist(h.x, h.z) < 0.1 && !OC.sink) { h.dead = true; hurtHero(h.dmg, h.x, h.z); FX.burst(h.x, 0.6, h.z, 6, [0.8, 0.6, 0.4], 2.5, 0.06, 0.3, 2, 1); }
@@ -24595,9 +24754,12 @@ function updateSeaHazards(dt) {
   OC.hz = OC.hz.filter(h => !h.dead);
   R.frame.flashW = Math.max(0, R.frame.flashW - dt * 1.5);
 }
+// (these the bosses' code runs and draws: 13n-sea-bosses.js)
+const SEA_HZ_LIVE = ['snare', 'mine', 'tent', 'ink'];
 function emitSeaHazards() {
   for (const h of OC.hz) {
-    if (h.k === 'ball') { pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
+    if (SEA_HZ_LIVE.includes(h.k)) continue;
+    if (h.k === 'ball') { if (h.pearl) pushImp(h.x, h.y, h.z, 0.24, 0, 1, 0, 1, 27, 4, 0.5, OC.t, 0, 0, 0, 1); else pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
     if (h.t < 0) continue;
     const u = clamp(h.t / h.dur, 0, 1);
     pushDecal(h.tx ?? h.x, h.tz ?? h.z, h.r, h.r, 0, 4, 0, u, 1, h.k === 'zap' ? 0.9 : 0.22, h.k === 'zap' ? 0.95 : 0.18, 0.9);
@@ -24729,6 +24891,355 @@ SEA_DRAW.pcapt = e => {
   if (Math.hypot(e.vx, e.vz) > 1 && Math.random() < 0.4) pushDecal(e.x - e.vx * 0.12, e.z - e.vz * 0.12, 0.5, 0.4, 0, 0, Math.random() * 10, 0, 0.95, 0.99, 1, 0.4);
   return true;
 };
+
+// ---- 13n-sea-bosses.js ----
+// ============================================================
+// The ten sea bosses, each on a vehicle of its own (04n-sea-boss-models.js). One shared brain: the boss sails in,
+// circles the ship and works through its attacks (a ram down a marked lane, broadsides of lobbed balls onto
+// marked circles, musket volleys, floating mines, calling up swimmers) plus a signature move of its own. At half
+// health it is enraged and its pauses get shorter. It can be rammed like anything else, though it barely budges.
+// ============================================================
+const SEA_BOSS_IDS = ['sflamingo', 'sclam', 'skelp', 'ssmuggler', 'sfrost', 'smagma', 'sphantom', 'sthunder', 'skraken', 'sking'];
+// ride: the vehicle; rig: its masts; len: its length; deck: where the captain stands; rs: the captain's size;
+// tint: the captain's coat; atk: the attack cycle (the signature move is its own name); pk: portrait size
+Object.assign(BOSS_TYPES, {
+  sflamingo: { name: 'Captain Flamingo', ride: 'bflamingo', len: 4.5, deck: 0.55, rs: 1.9, tint: '#ff5a9a', hp: 2200, speed: 3.4, dmg: 8, atk: ['squirt', 'broadside', 'ram', 'summon'] },
+  sclam: { name: 'The Coral Queen', ride: 'bclam', len: 4.4, deck: 0.35, rs: 1.9, tint: '#ff8a6a', hp: 2400, speed: 3.0, dmg: 8, atk: ['pearls', 'volley', 'summon', 'broadside'] },
+  skelp: { name: 'Kelpbeard', ride: 'browboat', len: 5.6, deck: 0.25, rs: 2.0, tint: '#4a8a3a', hp: 2600, speed: 3.2, dmg: 9, atk: ['snare', 'ram', 'broadside', 'summon'] },
+  ssmuggler: { name: 'The Smuggler King', ride: 'bspeed', len: 5.8, deck: 0.62, rs: 1.9, tint: '#2a2a3a', hp: 2700, speed: 5.0, dmg: 9, atk: ['kegs', 'ram', 'volley', 'kegs', 'ram'] },
+  sfrost: { name: 'Admiral Frost', ride: 'bice', len: 8.6, deck: 1.04, rs: 2.2, tint: '#3a8ad8', hp: 3000, speed: 2.8, dmg: 10, atk: ['floes', 'broadside', 'ram', 'snare'] },
+  smagma: { name: 'The Magma Mariner', ride: 'blava', len: 7.4, deck: 0.94, rs: 2.2, tint: '#ff6a1a', hp: 3200, speed: 2.9, dmg: 10, atk: ['lava', 'broadside', 'mines', 'ram'] },
+  sphantom: { name: 'The Phantom Captain', ride: 'bghost', rig: 'bghost_rig', len: 7.6, deck: 0.885, rs: 2.2, tint: '#a8fff0', ghost: true, hp: 3300, speed: 3.4, dmg: 11, atk: ['vanish', 'summon', 'volley', 'broadside'] },
+  sthunder: { name: 'The Thunder Admiral', ride: 'biron', len: 9.4, deck: 0.84, rs: 2.3, tint: '#5a6a8a', hp: 3600, speed: 3.0, dmg: 11, atk: ['storm', 'broadside', 'ram', 'mines'] },
+  skraken: { name: 'The Kraken', ride: 'bkraken', len: 6, deck: 2.7, rs: 2.0, tint: '#2a4a6a', hp: 4000, speed: 2.6, dmg: 12, atk: ['tentacles', 'summon', 'ink', 'tentacles', 'ram'] },
+  sking: { name: 'The Pirate King', ride: 'bflag', rig: 'bflag_rig', len: 7.6, deck: 0.885, rs: 2.6, tint: '#8a1424', hp: 4400, speed: 3.2, dmg: 12, atk: ['barrage', 'ram', 'summon', 'volley', 'mines'] },
+});
+for (const id of SEA_BOSS_IDS) {
+  const B = BOSS_TYPES[id];
+  Object.assign(B, { sea: true, noDrop: true, model: B.ride, meshes: [B.ride, ...(B.rig ? [B.rig] : []), 'pcapt'], radius: Math.max(1.4, B.len * 0.32), scale: 1, mass: 30, portraitTop: 1.6, pk: 2.6 / B.len });
+  BOSS_DRAW[id] = seaBossDraw;
+  SEA_DRAW[id] = e => { seaBossDraw(e); return true; };
+  SEA_AI[id] = seaBossAI;
+}
+SEA_CHAPTERS.forEach((C, i) => { C.boss = SEA_BOSS_IDS[i]; });
+Object.assign(BOSS_HINTS, {
+  sflamingo: 'Dodge the water jet and the shells; ram it while it circles.',
+  sclam: 'Pearls fly out in rings: weave between them.',
+  skelp: 'Kelp patches tangle your ship: sail around them.',
+  ssmuggler: 'Fast passes and floating kegs: keep moving and shoot the kegs.',
+  sfrost: 'Ice floes block your way and frost slows you.',
+  smagma: 'Lava rains down: watch the circles.',
+  sphantom: 'It vanishes and comes back right beside you.',
+  sthunder: 'Lightning strikes marked circles round your ship.',
+  skraken: 'Tentacles burst up under marked circles.',
+  sking: 'Everything at once. Good luck, captain.',
+});
+
+function seaBossStart() {
+  const run = G.run, id = seaTheme().boss, B = BOSS_TYPES[id], S = OC.ship;
+  for (const m of bossMeshes(id)) ensureMeshNow(m);
+  if (!ICONS.map['boss-' + id]) renderBossPortraitOf(id);
+  run.bossStarted = true;
+  // it sails in from ahead of the ship, just off the screen
+  const a = Math.atan2(S.vx, S.vz) + rand(-0.6, 0.6) || rand(0, TAU), r = VIEW.radius + B.len;
+  const x = S.x + Math.sin(a) * r, z = S.z + Math.cos(a) * r;
+  const hp = B.hp * run.info.bossHpMul;
+  const e = {
+    id: run.nextId++, type: id, def: B, model: B.ride, boss: true, elite: false,
+    x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: Math.atan2(S.x - x, S.z - z), hp, maxHp: hp, speed: B.speed, dmg: B.dmg * run.info.dmgMul * BOSS_DMG,
+    radius: B.radius, scale: 1, mass: B.mass, xp: 0, phase: 0, flash: 0, squash: 1, squashV: 0, dying: 0, contactCd: 0,
+    slowT: 0, slowMul: 1, auraTint: 0, tint: hexToRgb(B.tint), spawnT: 0, ramCd: 0, clip: 'idle', clipU: 0,
+    ai: { state: 'enter', t: 2.2, ang: Math.atan2(x - S.x, z - S.z), n: 0, tempo: 1 },
+  };
+  run.enemies.push(e); run.bosses.push(e); run.bossTotalHp = hp;
+  UI.bossIntro([id]); AUDIO.play('boss'); AUDIO.play('horn');
+  G.cam.shake = 0.15;
+}
+
+// the shared brain
+function seaBossAI(e, dt) {
+  const run = G.run, S = OC.ship, ai = e.ai, B = e.def, D = shipDef();
+  if (!ai.stage2 && ai.state !== 'enter' && e.hp < e.maxHp * 0.5) {
+    ai.stage2 = true; ai.tempo = 1.6; e.speed *= 1.2;
+    UI.banner('ENRAGED!', true); AUDIO.play('roar'); G.cam.shake = Math.max(G.cam.shake, 0.4);
+    FX.ring(e.x, e.z, B.len, [1, 0.35, 0.25], 0.7, 1);
+  }
+  ai.t -= dt * (ai.state === 'circle' ? ai.tempo : 1);
+  e.phase += dt;
+  const dx = S.x - e.x, dz = S.z - e.z, d = Math.hypot(dx, dz) || 1;
+  const steer = (tx, tz, sp, k = 1.5) => {
+    const ox = tx - e.x, oz = tz - e.z, l = Math.hypot(ox, oz) || 1, s2 = Math.min(sp, l * 2);
+    e.vx += (ox / l * s2 - e.vx) * Math.min(1, dt * k); e.vz += (oz / l * s2 - e.vz) * Math.min(1, dt * k);
+  };
+  const ring = D.len * 0.5 + B.len * 0.5 + 6;
+  const hz = o => OC.hz.push(o);
+  const lob = (tx, tz, delay, r = 1.5, col = [1, 0.55, 0.2], extra = {}) => hz({ k: 'lob', sx: e.x, sy: B.deck + 1.5, sz: e.z, tx, tz, x: e.x, y: B.deck + 1.5, z: e.z, t: -delay, dur: 1.2, r, dmg: e.dmg * 0.6, col, ...extra });
+  const lead = k => [S.x + S.vx * k, S.z + S.vz * k];
+  e.clip = 'idle';
+  switch (ai.state) {
+    case 'enter': {
+      steer(S.x, S.z, e.speed * 1.4);
+      if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2; }
+      break;
+    }
+    case 'circle': {
+      ai.ang += dt * 0.3 * (e.speed / 3);
+      steer(S.x + Math.sin(ai.ang) * ring, S.z + Math.cos(ai.ang) * ring, e.speed);
+      if (ai.t <= 0) {
+        const a = B.atk[ai.n++ % B.atk.length];
+        ai.state = a; ai.t = 0; ai.k = 0; ai.done = false;
+        if (a === 'ram') { ai.t = 1.2; ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: e.radius, len: d + 5, rot: Math.atan2(dx, dz), dur: 1.2 }); }
+        else if (a === 'vanish') ai.t = 0.8;
+        else ai.t = 0.6;
+      }
+      break;
+    }
+    case 'ram': {
+      e.vx *= 0.92; e.vz *= 0.92;
+      if (ai.tele) { ai.tele.x = e.x; ai.tele.z = e.z; ai.tele.rot = Math.atan2(dx, dz); ai.tele.len = d + 5; }
+      if (ai.t <= 0) { ai.state = 'charge'; ai.t = 1.5; ai.dir = [dx / d, dz / d]; AUDIO.play('horn', 1.2); }
+      break;
+    }
+    case 'charge': {
+      e.vx = ai.dir[0] * (e.speed * 3.2); e.vz = ai.dir[1] * (e.speed * 3.2);
+      if (Math.random() < 0.7) seaSplash(e.x + rand(-1, 1), e.z + rand(-1, 1), 0.7);
+      const n = [0, 0];
+      if (hullDist(e.x, e.z, n) < e.radius * 0.9) {
+        hurtHero(e.dmg * 1.4, e.x, e.z);
+        S.vx -= n[0] * 8; S.vz -= n[1] * 8; S.speed *= 0.4;
+        e.vx = n[0] * 4; e.vz = n[1] * 4;
+        G.cam.shake = Math.max(G.cam.shake, 0.35); AUDIO.play('thud'); AUDIO.play('crumble');
+        ai.state = 'circle'; ai.t = 2.4;
+      } else if (ai.t <= 0) { ai.state = 'circle'; ai.t = 1.8; }
+      break;
+    }
+    case 'broadside': {
+      // a row of shells across the ship's path, one after another
+      e.vx *= 0.95; e.vz *= 0.95;
+      if (!ai.done) {
+        ai.done = true;
+        const [lx, lz] = lead(1.0), px = -dz / d, pz = dx / d;
+        for (let i = -3; i <= 3; i++) lob(lx + px * i * 2.2, lz + pz * i * 2.2, (i + 3) * 0.1);
+        AUDIO.play('cannon'); FX.smoke(e.x, B.deck + 1, e.z, 1.2, [0.85, 0.85, 0.9], 1, 1);
+      }
+      if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
+      break;
+    }
+    case 'barrage': {
+      // the Pirate King: a ring of shells round the ship, then one big one where it is heading
+      e.vx *= 0.95; e.vz *= 0.95;
+      if (!ai.done) {
+        ai.done = true;
+        for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; lob(S.x + Math.sin(a) * 4, S.z + Math.cos(a) * 4, i * 0.06, 1.6); }
+        const [lx, lz] = lead(1.4);
+        lob(lx, lz, 0.7, 2.0);
+        AUDIO.play('cannon'); AUDIO.play('boom', 0.7);
+      }
+      if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.6; }
+      break;
+    }
+    case 'volley': {
+      e.vx *= 0.92; e.vz *= 0.92;
+      if (ai.t <= 0 && ai.k < 3) {
+        ai.k++; ai.t = 0.35;
+        const a0 = Math.atan2(dx, dz);
+        for (let k = -3; k <= 3; k++) { const a = a0 + k * 0.12 + (ai.k - 2) * 0.05; hz({ k: 'ball', x: e.x, y: B.deck + 1.2, z: e.z, vx: Math.sin(a) * 13, vz: Math.cos(a) * 13, life: 2.4, dmg: e.dmg * 0.35 }); }
+        AUDIO.play('bang');
+      }
+      if (ai.k >= 3 && ai.t <= 0) { ai.state = 'circle'; ai.t = 2.2; }
+      break;
+    }
+    case 'summon': {
+      e.vx *= 0.9; e.vz *= 0.9;
+      if (!ai.done) {
+        ai.done = true;
+        const mix = seaTheme().mix.filter(m => m[0] !== 'pdiver');
+        for (let k = 0; k < 6; k++) { const a = k / 6 * TAU, o = seaFoe(pick(mix)[0], e.x + Math.sin(a) * (B.len * 0.4 + 1), e.z + Math.cos(a) * (B.len * 0.4 + 1)); o.spawnT = 0.3; seaSplash(o.x, o.z, 0.6); }
+        AUDIO.play('horn', 0.8);
+      }
+      if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.6; }
+      break;
+    }
+    case 'mines':
+    case 'kegs': {
+      // floating mines (or the smuggler's kegs) dropped in its wake as it sweeps past
+      if (ai.state === 'kegs') steer(S.x + dz / d * 5, S.z - dx / d * 5, e.speed * 1.5, 3);
+      else { e.vx *= 0.96; e.vz *= 0.96; }
+      if (ai.t <= 0 && ai.k < 5) { ai.k++; ai.t = 0.4; hz({ k: 'mine', x: e.x - e.vx * 0.2, z: e.z - e.vz * 0.2, t: 0, life: 14, r: 1.8, dmg: e.dmg * 0.7, keg: ai.state === 'kegs' }); AUDIO.play('splash', 0.5); }
+      if (ai.k >= 5 && ai.t <= 0) { ai.state = 'circle'; ai.t = 2.2; }
+      break;
+    }
+    case 'squirt': {
+      // the flamingo's water jet: aimed down a lane, then a blast that hurts and shoves the ship away
+      e.vx *= 0.9; e.vz *= 0.9;
+      if (!ai.done) { ai.done = true; ai.t = 1.0; ai.rot = Math.atan2(dx, dz); ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: 1.2, len: 12, rot: ai.rot, dur: 1.0 }); }
+      if (ai.t <= 0 && !ai.fired) {
+        ai.fired = true;
+        const fx = Math.sin(ai.rot), fz = Math.cos(ai.rot), ox = S.x - e.x, oz = S.z - e.z, along = ox * fx + oz * fz;
+        if (along > 0 && along < 12 + D.len / 2 && Math.abs(ox * fz - oz * fx) < 1.2 + D.wid / 2) { hurtHero(e.dmg * 0.8, e.x, e.z); S.vx += fx * 9; S.vz += fz * 9; }
+        for (let i = 0; i < 30; i++) { const u = Math.random() * 12; FX.part(e.x + fx * u, 0.6, e.z + fz * u, fx * 6 + rand(-1, 1), rand(1, 3), fz * 6 + rand(-1, 1), 0.14, 0.05, 0.5, [0.8, 0.94, 1], 0.9, 0, -6); }
+        AUDIO.play('wind'); AUDIO.play('splash');
+      }
+      if (ai.fired && ai.t < -0.6) { ai.fired = false; ai.state = 'circle'; ai.t = 2.2; }
+      break;
+    }
+    case 'pearls': {
+      // rings of pearls rolling out across the water
+      e.vx *= 0.9; e.vz *= 0.9;
+      if (ai.t <= 0 && ai.k < 3) {
+        ai.k++; ai.t = 0.6;
+        const n = 14, off = ai.k * 0.22;
+        for (let i = 0; i < n; i++) { const a = off + i / n * TAU; hz({ k: 'ball', pearl: true, x: e.x, y: 0.5, z: e.z, vx: Math.sin(a) * 7, vz: Math.cos(a) * 7, life: 3, dmg: e.dmg * 0.4 }); }
+        AUDIO.play('crystal');
+      }
+      if (ai.k >= 3 && ai.t <= 0) { ai.state = 'circle'; ai.t = 2.2; }
+      break;
+    }
+    case 'snare':
+    case 'floes': {
+      // kelp patches (or frost) that grip the ship; the admiral also drops ice floes in its way
+      e.vx *= 0.9; e.vz *= 0.9;
+      if (!ai.done) {
+        ai.done = true;
+        const [lx, lz] = lead(1.5);
+        for (let i = 0; i < 4; i++) hz({ k: 'snare', x: lx + rand(-5, 5), z: lz + rand(-5, 5), t: 0, life: 7, r: 2.2, frost: B.ride === 'bice' });
+        if (ai.state === 'floes') for (let i = 0; i < 3; i++) seaFloe(lx + rand(-6, 6), lz + rand(-6, 6));
+        AUDIO.play(B.ride === 'bice' ? 'crystal' : 'splash');
+      }
+      if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
+      break;
+    }
+    case 'lava': {
+      e.vx *= 0.95; e.vz *= 0.95;
+      if (!ai.done) { ai.done = true; for (let i = 0; i < 8; i++) { const [lx, lz] = lead(1.2); lob(lx + rand(-5, 5), lz + rand(-5, 5), i * 0.12, 1.5, [1, 0.45, 0.1], { lava: true }); } AUDIO.play('rumble'); }
+      if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
+      break;
+    }
+    case 'storm': {
+      e.vx *= 0.95; e.vz *= 0.95;
+      if (ai.t <= 0 && ai.k < 5) { ai.k++; ai.t = 0.3; const [lx, lz] = lead(0.8); hz({ k: 'zap', x: lx + rand(-3, 3), z: lz + rand(-3, 3), t: 0, dur: 1.0, r: 1.8, dmg: e.dmg * 0.6 }); }
+      if (ai.k >= 5 && ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
+      break;
+    }
+    case 'vanish': {
+      // the ghost ship fades out and comes back right beside you
+      if (ai.t < 0.4) e.hidden = true;
+      e.fade = clamp(1 - ai.t / 0.8, 0, 1);
+      if (ai.t <= 0 && !ai.done) {
+        ai.done = true;
+        const a = rand(0, TAU), r = D.len * 0.5 + B.len * 0.5 + 3;
+        e.x = S.x + Math.sin(a) * r; e.z = S.z + Math.cos(a) * r; e.vx = e.vz = 0;
+        e.hidden = false; e.fade = 0; ai.t = 0.5;
+        FX.ring(e.x, e.z, B.len * 0.6, [0.7, 1, 0.95], 0.6, 1); AUDIO.play('ghost');
+        for (let k = 0; k < 4; k++) { const b = k / 4 * TAU, o = seaFoe('pghost', e.x + Math.sin(b) * 2.5, e.z + Math.cos(b) * 2.5); o.spawnT = 0.3; }
+      }
+      if (ai.done && ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
+      break;
+    }
+    case 'tentacles': {
+      // tentacles burst up under marked circles round the ship
+      e.vx *= 0.9; e.vz *= 0.9;
+      if (ai.t <= 0 && ai.k < 4) { ai.k++; ai.t = 0.45; const [lx, lz] = lead(0.9); hz({ k: 'tent', x: lx + rand(-2.5, 2.5), z: lz + rand(-2.5, 2.5), t: 0, dur: 1.1, r: 1.6, dmg: e.dmg * 0.7 }); }
+      if (ai.k >= 4 && ai.t <= 0) { ai.state = 'circle'; ai.t = 2.2; }
+      break;
+    }
+    case 'ink': {
+      // a cloud of ink spreads round the ship, and divers come out of it
+      e.vx *= 0.9; e.vz *= 0.9;
+      if (!ai.done) { ai.done = true; hz({ k: 'ink', x: S.x, z: S.z, t: 0, life: 6, r: 6 }); for (let k = 0; k < 6; k++) { const a = k / 6 * TAU, o = seaFoe('pdiver', S.x + Math.sin(a) * 7, S.z + Math.cos(a) * 7); o.spawnT = 0.2; } AUDIO.play('splash'); }
+      if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
+      break;
+    }
+  }
+  if (ai.state !== 'charge') { const sp = Math.hypot(e.vx, e.vz); if (sp > 0.5) e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 1.5)); }
+  else e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 5));
+  e.x += (e.vx + e.kx) * dt; e.z += (e.vz + e.kz) * dt;
+  const kd = Math.exp(-3 * dt); e.kx *= kd; e.kz *= kd;
+  if (ai.state !== 'charge' && !e.hidden) seaVehicleContact(e);
+  for (const I of OC.isles) { const ix = e.x - I.x, iz = e.z - I.z, id = Math.hypot(ix, iz) || 1, ov = I.ob.r + e.radius - id; if (ov > 0) { e.x += ix / id * ov; e.z += iz / id * ov; } }
+  if (Math.hypot(e.vx, e.vz) > 1 && Math.random() < 0.5) OC.wake.push({ x: e.x - Math.sin(e.yaw) * B.len * 0.45, z: e.z - Math.cos(e.yaw) * B.len * 0.45, yaw: e.yaw, t: 0.3, w: B.len * 0.18, k: 0.8, seed: Math.random() * 10 });
+  return true;
+}
+// an ice floe: a small temporary island that blocks the ship for a while
+function seaFloe(x, z) {
+  if (inIsle(x, z, 2) || hullDist(x, z) < 3) return;
+  const r = rand(1.6, 2.4), I = { x, z, r, kind: 'iice', yaw: rand(0, TAU), key: 'floe' + Math.random(), deco: [], floe: 12, ob: { x, z, r: r * 0.9, shape: 'circle', shots: false, isle: true } };
+  OC.isles.push(I); ARENA.obstacles = OC.isles.map(J => J.ob);
+  seaSplash(x, z, r);
+}
+// the boss hazards that live in the water: snares, mines, tentacles, ink (the rest are in updateSeaHazards)
+function seaBossHazards(dt) {
+  const S = OC.ship;
+  OC.snared = 0;
+  for (const h of OC.hz) {
+    if (h.k === 'snare') {
+      h.t += dt; if (h.t > h.life) h.dead = true;
+      if (hullDist(h.x, h.z) < h.r) OC.snared = h.frost ? 0.45 : 0.55;
+    } else if (h.k === 'mine') {
+      h.t += dt;
+      const boom = h.t > h.life || (h.t > 0.6 && hullDist(h.x, h.z) < 0.7);
+      if (boom) {
+        h.dead = true;
+        if (hullDist(h.x, h.z) < h.r) hurtHero(h.dmg, h.x, h.z);
+        FX.ring(h.x, h.z, h.r * 1.2, [1, 0.6, 0.25], 0.45, 1); FX.burst(h.x, 0.4, h.z, 18, [1, 0.55, 0.2], 5, 0.12, 0.5, 1, 2);
+        seaSplash(h.x, h.z, 1.1); AUDIO.play('boom');
+      }
+    } else if (h.k === 'tent') {
+      h.t += dt;
+      if (!h.hit && h.t >= h.dur) {
+        h.hit = true;
+        if (hullDist(h.x, h.z) < h.r) { hurtHero(h.dmg, h.x, h.z); S.speed *= 0.6; }
+        seaSplash(h.x, h.z, 1.4); AUDIO.play('thud'); G.cam.shake = Math.max(G.cam.shake, 0.15);
+      }
+      if (h.t > h.dur + 1.0) h.dead = true;
+    } else if (h.k === 'ink') { h.t += dt; if (h.t > h.life) h.dead = true; }
+  }
+  // floes melt away after a while
+  for (const I of OC.isles) if (I.floe !== undefined && (I.floe -= dt) <= 0) I.gone = true;
+  if (OC.isles.some(I => I.gone)) { OC.isles = OC.isles.filter(I => !I.gone); ARENA.obstacles = OC.isles.map(J => J.ob); }
+}
+function emitSeaBossHazards() {
+  const t = OC.t;
+  for (const h of OC.hz) {
+    if (h.k === 'snare') { const a = clamp(Math.min(h.t * 2, (h.life - h.t) * 1.5), 0, 1); pushDecal(h.x, h.z, h.r, h.r, h.t * 0.3, 0, h.x * 7, 0, h.frost ? 0.85 : 0.25, h.frost ? 0.95 : 0.55, h.frost ? 1 : 0.2, 0.55 * a); }
+    else if (h.k === 'mine') {
+      const by = Math.sin(t * 2 + h.x) * 0.05 - 0.15;
+      if (h.keg && R.enemyDraw.sbarrel) pushEnemy('sbarrel', false, h.x, by, h.z, h.x, MODELS.defs.sbarrel.clips.still.row, 1.1, 1, 0, 0, 0, 1, 1, 1);
+      else pushImp(h.x, 0.25, h.z, 0.45, 0, 1, 0, 1, 31, 1.6, 0.4 + 0.3 * Math.sin(t * 8), t, 0, 0, 0, 1);
+      pushDecal(h.x, h.z, 0.7, 0.7, 0, 3, 0, 0.5, 1, 0.5, 0.4, 0.4, true);
+    } else if (h.k === 'tent') {
+      const u = clamp(h.t / h.dur, 0, 1);
+      pushDecal(h.x, h.z, h.r, h.r, 0, 4, 0, u, 1, 0.22, 0.18, 0.9);
+      if (h.hit) {
+        // a tentacle tip rearing out of the water
+        const up = clamp((h.t - h.dur) * 4, 0, 1) * clamp((h.dur + 1 - h.t) * 3, 0, 1);
+        const n = 6, pts = [];
+        for (let i = 0; i < n; i++) { const v = i / (n - 1); pts.push(h.x + Math.sin(v * 2 + h.x) * 0.4 * v, -0.4 + v * 3.2 * up, h.z + Math.cos(v * 2) * 0.3 * v); }
+        R.ribStrip(pts, n, 0.5, [0.55, 0.3, 0.75, 1], 1, 0, 1, u2 => 1 - u2 * 0.75);
+      }
+    } else if (h.k === 'ink') { const a = clamp(Math.min(h.t * 2, (h.life - h.t)), 0, 1); pushDecal(h.x, h.z, h.r, h.r, h.t * 0.1, 1, 0, 0, 0.04, 0.02, 0.08, 0.75 * a); }
+  }
+}
+// a sea boss: its vehicle (masts too), the captain on deck, a foam ring; small and at the origin for a portrait
+function seaBossDraw(e) {
+  const B = e.def, t = OC.t, dead = e.dying ? clamp(e.dying, 0, 1) : 0, k = e.portrait ? B.pk : 1;
+  const bob = e.portrait ? 0 : Math.sin(t * 1.3 + e.id) * 0.06 - dead * 1.5;
+  const fade = clamp((e.fade || 0) + (B.ghost ? 0.3 : 0), 0, 0.95), flash = e.flash > 0 ? 0.5 : 0;
+  const V = MODELS.defs[B.ride];
+  if (V && R.enemyDraw[B.ride]) { const c = V.clips[V.clipNames[0]]; pushEnemy(B.ride, false, e.x, bob, e.z, e.yaw, c.row + Math.floor(((t * 0.2) % 1) * c.frames), k, 1, dead, flash, 0, 1, 1, 1, fade); }
+  if (B.rig && R.enemyDraw[B.rig]) { const c = MODELS.defs[B.rig].clips.rock; pushEnemy(B.rig, false, e.x, bob, e.z, e.yaw, c.row + Math.floor(((t * 0.2) % 1) * c.frames), k, 1, dead, flash, 0, 1, 1, 1, Math.max(fade, e.portrait ? 0 : 0.25)); }
+  if (R.enemyDraw.pcapt) {
+    const M = MODELS.defs.pcapt, S = OC.ship, face = e.portrait || !S ? e.yaw + 0.3 : Math.atan2(S.x - e.x, S.z - e.z);
+    const busy = ['broadside', 'barrage', 'lava', 'storm', 'summon', 'squirt', 'pearls', 'tentacles'].includes(e.ai.state);
+    const clip = busy ? M.clips.throw : M.clips.idle, u = busy ? clamp(1 - (e.ai.t || 0) / 0.6, 0, 0.999) : (e.phase || 0) % 1;
+    pushEnemy('pcapt', false, e.x, bob + B.deck * k, e.z, face, clip.row + Math.floor(u * clip.frames), B.rs * k, 1, dead, e.flash > 0 ? 0.85 : 0, 0, e.tint[0], e.tint[1], e.tint[2], fade);
+  }
+  if (!e.portrait) {
+    pushDecal(e.x, e.z, B.len * 0.55, B.len * 0.55, 0, 3, 0, 0.5, 1, 1, 1, 0.35 * (1 - fade), true);
+    if (B.ride === 'blava' && Math.random() < 0.3) FX.smoke(e.x, 3.2, e.z, 0.7, [0.35, 0.33, 0.35], 1.4, 1.2);
+    if (B.ghost && Math.random() < 0.2) FX.part(e.x + rand(-2, 2), rand(0.5, 2), e.z + rand(-2, 2), 0, 0.4, 0, 0.3, 0.6, 1.2, [0.6, 1, 0.9], 0.3, 2, 0, 0.5);
+  }
+}
 
 // ---- 14-ui.js ----
 // ============================================================
@@ -24903,7 +25414,11 @@ const UI = {
     $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${seaBossName(n)}`;
     $('chPrev').disabled = n <= 1;
     $('chNext').disabled = n >= S.chapter;
-    $('chBoss').hidden = true;
+    // the boss's portrait, once its meshes are built
+    const boss = C.boss, img = $('chBoss');
+    let icon = ICONS.map['boss-' + boss];
+    if (!icon && bossMeshes(boss).every(m => R.enemyDraw[m])) { renderBossPortraitOf(boss); icon = ICONS.map['boss-' + boss]; }
+    if (icon) { if (img.getAttribute('src') !== icon) img.src = icon; img.hidden = false; } else img.hidden = true;
     this.refreshBadges();
     if (this.menuTab === 'home') goalsCheck();
     seaLook(n);
@@ -25128,7 +25643,7 @@ const UI = {
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
       pct = run.rush ? run.rushK / RUSH_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
-      label = run.rush ? `BOSS RUSH · ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
+      label = run.rush ? `BOSS RUSH · ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : (run.sea ? 'OCEAN ' : 'CHAPTER ') + run.chapter;
       // the crater: the bar fills to the cave (85%) and waits there
       if (craterOpenNow()) { pct = Math.min(pct, CRATER.open / 300); if (ARENA.fx && ARENA.fx.st.open) label = 'ENTER THE CAVE'; }
     }
@@ -26709,7 +27224,9 @@ function beginChapter(n, opts) {
 // set sail: the sea's meshes first (a progress bar while any are still building)
 function beginSeaChapter(n) {
   if (G.state !== 'home') return;
-  const req = SEA_MESHES.concat(['palm', 'rock0', 'rock1', 'rock2']);
+  // (the chapter's islands and swimmers too)
+  const C = SEA_CHAPTERS[n - 1];
+  const req = [...new Set(SEA_MESHES.concat(['palm', 'rock0', 'rock1', 'rock2'], C.isles, C.mix.map(x => ENEMY_TYPES[x[0]].model)))];
   prioritizeMeshes(req);
   const go = () => { beginSea(n); updateCamera(0, true); updateView(); };
   if (req.every(m => R.enemyDraw[m])) { go(); return; }
@@ -26786,6 +27303,8 @@ function updateSeaHome(dt) {
   hero.scale = D.heroS;
   seaPlaceHero(dt);
   if ((HOME.actT -= dt) <= 0) { HOME.actT = rand(3, 6); hero.impulse(rand(-1.5, 2)); seaIcons(); }
+  // the picker's boss portrait appears once its meshes are built
+  if ($('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1.5; UI.refreshSeaHome(); }
   FX.update(dt);
 }
 // Background foes: faded orange and purple grunts walk in from behind; the blob turns and shoots goo at them

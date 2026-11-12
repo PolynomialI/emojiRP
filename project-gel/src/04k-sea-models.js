@@ -128,7 +128,7 @@ function seaModels(defs) {
     if (o.hat) m.parts = m.parts.filter(p => !bandana.includes(p));
     if (o.hat === 'tricorn') {
       // a black tricorn with gold trim, three corners turned up
-      const y = hd[1] + 0.1, sc = o.big ? 1.3 : 1;
+      const y = hd[1] + 0.1, sc = o.big ? 1.25 : 0.82;
       m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.06, hd[2]], rr: [0.172, 0.12, 0.178], col: C('#1e1a24'), bone: 2, k: 0.01 });
       m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], y + 0.04, hd[2]], r: 0.13 * sc, hh: 0.07 * sc, rd: 0.05, col: C('#1e1a24'), bone: 2, k: 0.02 });
       for (let i = 0; i < 3; i++) { const a = Math.PI / 2 + (i / 3) * TAU, a2 = a + TAU / 3; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.26 * sc, y + 0.05, hd[2] + Math.sin(a) * 0.26 * sc], b: [hd[0] + Math.cos(a2) * 0.26 * sc, y + 0.05, hd[2] + Math.sin(a2) * 0.26 * sc], r: 0.04 * sc, col: C('#1e1a24'), bone: 2, k: 0.03 }); }

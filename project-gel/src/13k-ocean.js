@@ -25,15 +25,15 @@ const SHIPS = [
 const SEA_CHAPTERS = [
   { name: 'Sunny Shallows', rough: 0.0, storm: 0, deep: '#1567c4', shallow: '#2b9be0', lines: '#bfeaff', fog: '#9fdcfa', isle: 'palm',
     mix: [['pswim', 0, 1], ['pfloat', 50, 0.35], ['ptube', 140, 0.22]], boss: 'tuber' },
-  { name: 'Coral Cove', rough: 0.1, storm: 0, deep: '#178bc8', shallow: '#3fd6d6', lines: '#d0fff6', fog: '#79d6e6', isle: 'palm', mix: null },
-  { name: 'Kelp Narrows', rough: 0.2, storm: 0, deep: '#16799f', shallow: '#36b4a6', lines: '#c8f2e0', fog: '#6cbfc4', isle: 'palm', mix: null },
-  { name: "Smugglers' Strait", rough: 0.3, storm: 0, deep: '#1a6fae', shallow: '#3aa8d8', lines: '#c4e8ff', fog: '#74b6de', isle: 'palm', mix: null },
-  { name: 'Glacier Bay', rough: 0.35, storm: 0, deep: '#2a78b8', shallow: '#7cc8ec', lines: '#eef9ff', fog: '#a8d8f0', isle: 'palm', mix: null },
-  { name: 'Volcano Atoll', rough: 0.45, storm: 0.5, deep: '#1c5f8e', shallow: '#3d98b8', lines: '#ffd8b8', fog: '#8aa8b8', isle: 'palm', mix: null },
-  { name: 'Ghost Fog', rough: 0.5, storm: 0.5, deep: '#25506e', shallow: '#4a8098', lines: '#d8f0ff', fog: '#8aa6b4', isle: 'palm', mix: null },
-  { name: 'Thunder Sea', rough: 0.65, storm: 1, deep: '#1d4a6e', shallow: '#3a7898', lines: '#cfe6f6', fog: '#6e8a9e', isle: 'palm', mix: null },
-  { name: 'Kraken Deep', rough: 0.75, storm: 0.5, deep: '#173d63', shallow: '#2c6a8e', lines: '#bfe0f4', fog: '#5f7f96', isle: 'palm', mix: null },
-  { name: 'Pirate Fortress', rough: 0.85, storm: 1, deep: '#1a3f5e', shallow: '#336a88', lines: '#cfe2ee', fog: '#66808f', isle: 'palm', mix: null },
+  { name: 'Coral Cove', rough: 0.1, storm: 0, deep: '#1466b8', shallow: '#2a9ad0', lines: '#c8f4ff', fog: '#8ad0ee', isle: 'palm', mix: null },
+  { name: 'Kelp Narrows', rough: 0.2, storm: 0, deep: '#135a80', shallow: '#2a8a8a', lines: '#c0ecd8', fog: '#7ab8c0', isle: 'palm', mix: null },
+  { name: "Smugglers' Strait", rough: 0.3, storm: 0, deep: '#16548e', shallow: '#2a7cb8', lines: '#c0e2ff', fog: '#7aaed8', isle: 'palm', mix: null },
+  { name: 'Glacier Bay', rough: 0.35, storm: 0, deep: '#1f5c9a', shallow: '#4a96cc', lines: '#eef9ff', fog: '#b0d8f0', isle: 'palm', mix: null },
+  { name: 'Volcano Atoll', rough: 0.45, storm: 0.5, deep: '#18466e', shallow: '#2a6e8e', lines: '#ffd0b0', fog: '#8a98a8', isle: 'palm', mix: null },
+  { name: 'Ghost Fog', rough: 0.5, storm: 0.5, deep: '#1e3a52', shallow: '#356078', lines: '#d0ecf8', fog: '#8aa2b0', isle: 'palm', mix: null },
+  { name: 'Thunder Sea', rough: 0.65, storm: 1, deep: '#163650', shallow: '#2a5a7a', lines: '#c8e0f0', fog: '#6a8494', isle: 'palm', mix: null },
+  { name: 'Kraken Deep', rough: 0.75, storm: 0.5, deep: '#102a48', shallow: '#22506e', lines: '#b8daf0', fog: '#5a7890', isle: 'palm', mix: null },
+  { name: 'Pirate Fortress', rough: 0.85, storm: 1, deep: '#14304a', shallow: '#285670', lines: '#c8dcea', fog: '#62788a', isle: 'palm', mix: null },
 ];
 const SEA_COUNT = SEA_CHAPTERS.length;
 const SEA = {
@@ -49,7 +49,7 @@ const OC = { ship: null, wake: [], isles: [], chunks: new Map(), balls: [], shot
 function seaInfo(n) {
   const k = clamp(n, 1, SEA_COUNT) - 1, C = SEA_CHAPTERS[k];
   return {
-    n, sea: true, arenaName: C.name, bosses: [C.boss || 'tuber'],
+    n, sea: true, arenaName: C.name, bosses: [C.boss],
     // the sea starts about where the land's chapter 6 leaves off, then climbs
     hpMul: 1 + 0.18 * k + 0.015 * k * k, dmgMul: 1 + 0.1 * k, rateMul: 0.7 + 0.1 * k, speedMul: 1 + 0.015 * k,
     bossHpMul: Math.pow(1.2, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
@@ -70,7 +70,8 @@ function seaLook(n) {
 // ---------- starting and leaving ----------
 function beginSea(n) {
   // the first ships and every mount next (the first level-up offers them), the big ships after
-  prioritizeMeshes([...SEA_MESHES, 'canoe', ...MOUNT_MESHES, 'sloop', 'sloop_rig']);
+  const C = SEA_CHAPTERS[n - 1];
+  prioritizeMeshes([...SEA_MESHES, ...C.isles, ...C.mix.map(x => ENEMY_TYPES[x[0]].model), 'canoe', ...MOUNT_MESHES, 'pcapt', ...bossMeshes(C.boss), 'sloop', 'sloop_rig', 'pmusket']);
   for (const m of ['raft', 'pswim']) ensureMeshNow(m);
   startSea(n);
 }
@@ -182,6 +183,7 @@ function updateOcean(dt) {
   seaPassives(dt);
   seaIsleTick(dt);
   updateSeaHazards(dt);
+  seaBossHazards(dt);
   seaWeather(dt);
   updateProjectiles(dt);
   updateEnemyShots(dt);
@@ -207,7 +209,8 @@ function updateOcean(dt) {
 function seaSteer(dt) {
   const S = OC.ship, D = shipDef(), run = G.run;
   const ix = G.input.x, iz = G.input.z, m = Math.min(1, Math.hypot(ix, iz));
-  const top = D.speed * run.stats.speedMul;
+  // (kelp and frost patches grip the hull)
+  const top = D.speed * run.stats.speedMul * (1 - (OC.snared || 0));
   let steer = 0, thr = 0;
   if (m > 0.12 && G.state === 'run') {
     const diff = angleDiff(S.yaw, Math.atan2(ix, iz));
@@ -346,16 +349,6 @@ function seaEvent(ev) {
   } else if (ev.kind === 'mini') seaMini(ev.k);
   else if (ev.kind === 'boss') seaBossStart();
 }
-// (until each chapter has its own boss vehicle: a giant tuber pirate)
-function seaBossStart() {
-  const run = G.run, [x, z] = seaSpawnPoint();
-  run.bossStarted = true;
-  const e = seaFoe('ptube', x, z, { elite: true, scale: 1.8 });
-  e.hp = e.maxHp = 900 * run.info.bossHpMul; e.shell = e.shellMax = 300 * run.info.bossHpMul; e.radius = 1.0; e.mass = 12; e.speed *= 1.3; e.dmg *= 2;
-  run.bosses.push(e); run.bossTotalHp = e.maxHp;
-  UI.banner('THE BIG TUBER', true); AUDIO.play('boss'); G.cam.shake = 0.15;
-}
-
 // ---------- swimmers: paddle in, get rammed, or climb on and hack at the hull ----------
 function seaFoes(dt) {
   const run = G.run, S = OC.ship, D = shipDef(), n = [0, 0];
@@ -578,7 +571,7 @@ function seaCamera(dt, snap) {
 const SEA_WHITE = [1, 1, 1];
 function emitSea() {
   const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
-  const fog = SEA_CHAPTERS[run.chapter - 1].fog || 1;
+  const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
   f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view * fog * fog, 140 * SEA.view * fog];
   SCENE.arenaBox = null; SCENE.pools = [];
   // the ship (or its pieces)
@@ -633,6 +626,7 @@ function emitSea() {
   // cannonballs and the rest of the sea's shots, and the hazards
   emitSeaShots();
   emitSeaHazards();
+  emitSeaBossHazards();
 }
 // a ship and everything mounted on it
 function seaDrawShip(x, y, z, yaw, stage, t, flash) {
@@ -657,7 +651,7 @@ function seaDrawShip(x, y, z, yaw, stage, t, flash) {
 // ---------- the home screen's ocean page: the blob lounging on its best ship on a calm sea ----------
 const SEA_HOME = { t: 0 };
 // (each chapter's boss vehicle comes later; until then the Big Tuber)
-const seaBossName = n => 'The Big Tuber';
+const seaBossName = n => BOSS_TYPES[SEA_CHAPTERS[n - 1].boss].name;
 function seaHomeStage() { return clamp((G.save.sea && G.save.sea.ship) || 0, 0, SHIPS.length - 1); }
 
 // sea upgrade icons are drawn from their own models once those are built

@@ -196,7 +196,9 @@ function beginChapter(n, opts) {
 // set sail: the sea's meshes first (a progress bar while any are still building)
 function beginSeaChapter(n) {
   if (G.state !== 'home') return;
-  const req = SEA_MESHES.concat(['palm', 'rock0', 'rock1', 'rock2']);
+  // (the chapter's islands and swimmers too)
+  const C = SEA_CHAPTERS[n - 1];
+  const req = [...new Set(SEA_MESHES.concat(['palm', 'rock0', 'rock1', 'rock2'], C.isles, C.mix.map(x => ENEMY_TYPES[x[0]].model)))];
   prioritizeMeshes(req);
   const go = () => { beginSea(n); updateCamera(0, true); updateView(); };
   if (req.every(m => R.enemyDraw[m])) { go(); return; }
@@ -273,6 +275,8 @@ function updateSeaHome(dt) {
   hero.scale = D.heroS;
   seaPlaceHero(dt);
   if ((HOME.actT -= dt) <= 0) { HOME.actT = rand(3, 6); hero.impulse(rand(-1.5, 2)); seaIcons(); }
+  // the picker's boss portrait appears once its meshes are built
+  if ($('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1.5; UI.refreshSeaHome(); }
   FX.update(dt);
 }
 // Background foes: faded orange and purple grunts walk in from behind; the blob turns and shoots goo at them

@@ -170,7 +170,11 @@ const UI = {
     $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${seaBossName(n)}`;
     $('chPrev').disabled = n <= 1;
     $('chNext').disabled = n >= S.chapter;
-    $('chBoss').hidden = true;
+    // the boss's portrait, once its meshes are built
+    const boss = C.boss, img = $('chBoss');
+    let icon = ICONS.map['boss-' + boss];
+    if (!icon && bossMeshes(boss).every(m => R.enemyDraw[m])) { renderBossPortraitOf(boss); icon = ICONS.map['boss-' + boss]; }
+    if (icon) { if (img.getAttribute('src') !== icon) img.src = icon; img.hidden = false; } else img.hidden = true;
     this.refreshBadges();
     if (this.menuTab === 'home') goalsCheck();
     seaLook(n);
@@ -395,7 +399,7 @@ const UI = {
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
       pct = run.rush ? run.rushK / RUSH_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
-      label = run.rush ? `BOSS RUSH · ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
+      label = run.rush ? `BOSS RUSH · ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : (run.sea ? 'OCEAN ' : 'CHAPTER ') + run.chapter;
       // the crater: the bar fills to the cave (85%) and waits there
       if (craterOpenNow()) { pct = Math.min(pct, CRATER.open / 300); if (ARENA.fx && ARENA.fx.st.open) label = 'ENTER THE CAVE'; }
     }
