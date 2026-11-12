@@ -873,8 +873,8 @@ function cvEmitRoom(Rm) {
   const F = Rm.F, rc = R.frame.rockCol;
   for (const c of Rm.covers) {
     const w = cvW(F, c.lx + (c.shake > 0 ? Math.sin(R.frame.time * 60) * 0.05 * c.shake : 0), c.lz);
-    const dmg = 1 - c.hp / c.maxHp, k = (0.95 - dmg * 0.3) * (1 + c.flash * 0.25);
-    const m = c.broken ? 'rubble' : c.model, sc = c.pillar ? 2.8 : c.broken ? 2.6 : CAVE.coverScale;
+    const dmg = c.pillar ? 0 : 1 - c.hp / c.maxHp, k = (0.95 - dmg * 0.3) * (1 + c.flash * 0.25);
+    const m = c.broken ? 'rubble' : c.model, sc = c.pillar ? 2.35 : c.broken ? 2.6 : CAVE.coverScale;
     if (R.enemyDraw[m]) pushEnemy(m, false, w[0], 0, w[1], F.yaw + c.yaw, MODELS.defs[m].clips.still.row, sc, c.broken || c.pillar ? 1 : 1 - dmg * 0.12, 0, 0, 0, rc[0] * k, rc[1] * k, rc[2] * k, c.fade || 0);
     if (!c.broken && dmg > 0.35) pushDecal(w[0], w[1], 1.6, 0.9, -F.yaw, 8, c.lx, 0.3, 0.03, 0.03, 0.05, 0.6);
   }
@@ -904,7 +904,8 @@ function caveOverlay(ctx, w, h, dt) {
   if (CV.fade > 0.003) { ctx.fillStyle = `rgba(0,0,0,${clamp(CV.fade, 0, 1)})`; ctx.fillRect(0, 0, w, h); }
   if (CV.phase === 'enter') return;
   // the hero's health, big along the bottom
-  const bw = Math.min(460, w * 0.5), bh = 16, x = (w - bw) / 2, y = h - 46, f = clamp(run.hp / run.maxHp, 0, 1);
+  // (in the corner, clear of the blob at the bottom of the view)
+  const bw = Math.min(320, w * 0.32), bh = 16, x = 24, y = h - 40, f = clamp(run.hp / run.maxHp, 0, 1);
   ctx.fillStyle = 'rgba(5,10,15,0.75)'; roundRect(ctx, x - 3, y - 3, bw + 6, bh + 6, 10); ctx.fill();
   ctx.fillStyle = f > 0.5 ? '#5cf2ae' : f > 0.25 ? '#ffc63a' : '#ff4d3d'; roundRect(ctx, x, y, Math.max(6, bw * f), bh, 8); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.35)'; roundRect(ctx, x + 3, y + 2, Math.max(0, bw * f - 6), 4, 2); ctx.fill();

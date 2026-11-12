@@ -273,7 +273,10 @@ The build with chapters 11-15 froze the whole of Chrome when opened on Windows. 
 - Scrolls drop a bit more often (`SCROLL_CHANCE` 0.028).
 
 **Cosmetics:**
-- 30 colors and 38 costumes, both sorted by price. Costume parts are SDF shapes on the raymarched hero; keep each costume to 8 parts or fewer (`HERO_MAXP` is 40 shapes in all).
+- 33 colors, 38 costumes (hoods, faces, tails, wings) and 26 hats. A costume and a hat can be worn together.
+  The latest batch added the duck, hamster, sheep, monkey, cow, raccoon, axolotl, fawn, snail, butterfly,
+  ladybug, alien, bat, robot and dragon, and the pom beanie, big bow, propeller cap, sun hat, santa hat, rain
+  cloud, pirate hat, birthday cake, ice cream, jester hat, sombrero and kabuto. Costume parts are SDF shapes on the raymarched hero; keep each costume to 8 parts or fewer (`HERO_MAXP` is 40 shapes in all).
 - Hero icons are drawn a few at a time by `pumpHeroIcons` (`src/16-icons.js`): in the background on the home screen while frames are quick, and two a frame while the Blobs screen waits. Only the Blobs tile icon is drawn at boot.
 - `test/_cos.mjs` (git-ignored scratch) renders a contact sheet of costumes from four angles (`IDS=fox,owl`), or the colors (`SKINS=1`).
 

@@ -27,7 +27,7 @@ function bagStart(P) {
   const D = BAG_ROOM;
   CV.room = { P, D, F: P.F, hx: 0, hvx: 0, stand: 0, upT: 0, covers: [], foes: [], waves: [], waveT: 0, waveN: 0 };
   for (const x of D.hero) CV.room.covers.push(cvCover(P, x, CAVE.coverZ, CAVE.coverHp, false));
-  for (const [x, z] of D.pillars) CV.room.covers.push({ ...cvCover(P, x, z, Infinity, false), pillar: true, hw: 1.15, hd: 1.15, h: 99, model: 'cpillar' });
+  for (const [x, z] of D.pillars) CV.room.covers.push({ ...cvCover(P, x, z, Infinity, false), pillar: true, hw: 1.0, hd: 1.0, h: 99, model: 'cpillar' });
   for (const [x, z] of D.foe) CV.room.covers.push(cvCover(P, x, z, CAVE.foeCoverHp, true));
   CV.boss = { x: 0, z: BAG.z, slew: 0, pitch: -0.1, wheel: 0, wheelV: 0.6, hp: BAG.hp, maxHp: BAG.hp, stage2: false, state: 'idle', t: 0, cd: 2.2, plan: 0,
     glow: 0, flash: 0, beam: null, rocks: [], drills: [], regrow: [], dying: 0, eyes: 0, tint: hexToRgb('#ff8a2a'), side: 1 };
