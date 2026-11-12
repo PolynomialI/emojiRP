@@ -24844,7 +24844,7 @@ SEA_AI.pcapt = (e, dt) => {
     if (Math.random() < 0.6) seaSplash(e.x, e.z, 0.5);
     const n = [0, 0];
     if (hullDist(e.x, e.z, n) < e.radius) {
-      hurtHero(e.dmg * 1.8, e.x, e.z);
+      hurtHero(e.dmg * 1.2, e.x, e.z);
       S.vx -= n[0] * 6; S.vz -= n[1] * 6; S.speed *= 0.5;
       e.vx = n[0] * 5; e.vz = n[1] * 5; e.stun = 0.8;
       G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('thud'); AUDIO.play('crumble', 0.8);
@@ -24855,7 +24855,7 @@ SEA_AI.pcapt = (e, dt) => {
     e.vx *= 0.95; e.vz *= 0.95;
     if (ai.t < 0.3 && !ai.thrown) {
       ai.thrown = 1;
-      for (let k = 0; k < 3; k++) { const tx = S.x + S.vx * 1.2 + rand(-2.2, 2.2), tz = S.z + S.vz * 1.2 + rand(-2.2, 2.2); OC.hz.push({ k: 'lob', sx: e.x, sy: 1.8, sz: e.z, tx, tz, x: e.x, y: 1.8, z: e.z, t: -k * 0.15, dur: 1.15, r: 1.4, dmg: e.dmg * 1.4 * run.info.dmgMul / Math.max(1, run.info.dmgMul) , col: [1, 0.55, 0.2] }); }
+      for (let k = 0; k < 3; k++) { const tx = S.x + S.vx * 1.2 + rand(-2.2, 2.2), tz = S.z + S.vz * 1.2 + rand(-2.2, 2.2); OC.hz.push({ k: 'lob', sx: e.x, sy: 1.8, sz: e.z, tx, tz, x: e.x, y: 1.8, z: e.z, t: -k * 0.15, dur: 1.15, r: 1.4, dmg: e.dmg * 0.9, col: [1, 0.55, 0.2] }); }
       AUDIO.play('throw');
     }
     if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
@@ -24863,7 +24863,7 @@ SEA_AI.pcapt = (e, dt) => {
     e.vx *= 0.9; e.vz *= 0.9;
     if (ai.t <= 0) {
       const a0 = Math.atan2(dx, dz);
-      for (let k = -2; k <= 2; k++) { const a = a0 + k * 0.16; OC.hz.push({ k: 'ball', x: e.x, y: 1.4, z: e.z, vx: Math.sin(a) * 12, vz: Math.cos(a) * 12, life: 2, dmg: e.dmg * 0.8 }); }
+      for (let k = -2; k <= 2; k++) { const a = a0 + k * 0.16; OC.hz.push({ k: 'ball', x: e.x, y: 1.4, z: e.z, vx: Math.sin(a) * 12, vz: Math.cos(a) * 12, life: 2, dmg: e.dmg * 0.4 }); }
       FX.smoke(e.x, 1.5, e.z, 0.6, [0.92, 0.92, 0.95], 0.7, 1); AUDIO.play('bang');
       ai.state = 'circle'; ai.t = 2.4;
     }
@@ -25974,7 +25974,8 @@ function rollChoices() {
   const pool = [];
   for (const s of owned) {
     const max = maxLevel(s.id);
-    if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
+    // (at sea the next ship comes up more often: it is the hull's main defense)
+    if (s.lvl < max) pool.push({ id: s.id, w: (many ? 1.6 : 1.1) * (s.id === 'ship' ? 1.8 : 1) });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
   // (the sea and the land each have their own upgrades)

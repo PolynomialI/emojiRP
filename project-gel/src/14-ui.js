@@ -724,7 +724,8 @@ function rollChoices() {
   const pool = [];
   for (const s of owned) {
     const max = maxLevel(s.id);
-    if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
+    // (at sea the next ship comes up more often: it is the hull's main defense)
+    if (s.lvl < max) pool.push({ id: s.id, w: (many ? 1.6 : 1.1) * (s.id === 'ship' ? 1.8 : 1) });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
   // (the sea and the land each have their own upgrades)
