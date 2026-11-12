@@ -22,6 +22,8 @@ uniform vec4 uSpot;
 uniform vec2 uFogRange;
 uniform float uSpotMin;
 uniform sampler2D uNoise;
+uniform vec4 uTorch[8];
+uniform vec3 uTorchCol;
 `;
 
 const GLSL_COMMON = `
@@ -30,7 +32,21 @@ float hash11(float p) { p = fract(p * 0.1031); p *= p + 33.33; p *= p + p; retur
 vec3 atmos(vec3 col, vec3 wp) {
   float r = length(wp.xz - uSpot.xz);
   float spot = mix(uSpotMin, 1.0, exp(-r * r / (uSpot.w * uSpot.w)));
-  col *= spot;
+  vec3 lit = vec3(spot);
+  // torches (the cave): warm pools of light round each flame; w is the light's reach (0 ends the list).
+  // Where several overlap the sum eases off, so a wall between torches glows rather than burning white.
+  if (uTorch[0].w > 0.0) {
+    float sum = 0.0;
+    for (int i = 0; i < 8; i++) {
+      vec4 L = uTorch[i];
+      if (L.w <= 0.0) break;
+      vec3 d = wp - L.xyz;
+      float q = dot(d, d) / (L.w * L.w);
+      sum += (1.0 / (1.0 + q * 5.0)) * (1.0 - smoothstep(2.4, 4.0, q));
+    }
+    lit += uTorchCol * (sum / (1.0 + sum * 0.6));
+  }
+  col *= lit;
   return mix(col, uFogCol, smoothstep(uFogRange.x, uFogRange.y, r));
 }
 vec3 envColor(vec3 r) {
@@ -445,6 +461,45 @@ void main() {
     N = normalize(vec3((fine - 0.5) * 0.02 + cf.x * crumb, 1.0, (mott - 0.5) * 0.02 + cf.y * crumb));
     ao = 1.0 - 0.35 * grout;
     gloss = 0.45 + 0.3 * spill; sharp = 70.0;
+  } else if (style == 19) {
+    // the crater: rough broken rock. Big plates split by dark cracks, each plate lumpy and pitted, pale dust in
+    // the low spots and gravel chips everywhere
+    vec2 wp = p + (vec2(texture(uNoise, p * 0.07).g, texture(uNoise, p * 0.07 + 5.3).b) - 0.5) * 3.2;
+    vec3 v = voro(wp / 3.4);
+    float crack = (1.0 - smoothstep(0.0, 0.035 + 0.04 * texture(uNoise, p * 0.2).r, v.y)) * smoothstep(0.3, 0.6, texture(uNoise, p * 0.05 + 2.2).g);
+    float h1 = texture(uNoise, p * 0.11).r, h2 = texture(uNoise, p * 0.37 + 1.7).g, h3 = texture(uNoise, p * 1.3 + 3.1).b;
+    float hgt = h1 * 0.6 + h2 * 0.3 + h3 * 0.1;
+    float hx = texture(uNoise, (p + vec2(0.05, 0.0)) * 0.37 + 1.7).g, hz = texture(uNoise, (p + vec2(0.0, 0.05)) * 0.37 + 1.7).g;
+    float fx = texture(uNoise, (p + vec2(0.02, 0.0)) * 1.3 + 3.1).b, fz = texture(uNoise, (p + vec2(0.0, 0.02)) * 1.3 + 3.1).b;
+    float plate = smoothstep(0.0, 0.3, v.y);
+    N = normalize(vec3(-(hx - h2) * 2.2 - (fx - h3) * 1.1, 1.0, -(hz - h2) * 2.2 - (fz - h3) * 1.1));
+    alb = mix(uStoneB, uStoneA, smoothstep(0.25, 0.8, hgt) * 0.85 + v.z * 0.15) * (0.86 + 0.2 * fine) * (0.9 + 0.2 * texture(uNoise, p * 0.023).b);
+    float dust = smoothstep(0.55, 0.75, texture(uNoise, p * 0.05 + 4.1).r) * (1.0 - crack);
+    alb = mix(alb, uStoneA * 1.12, dust * 0.45);
+    vec2 gc = floor(p * 4.0), gf = fract(p * 4.0) - 0.5;
+    float gh = hash12(gc), chip = step(0.82, gh) * (1.0 - smoothstep(0.08, 0.16, length(gf - (vec2(hash12(gc + 1.3), hash12(gc + 2.9)) - 0.5) * 0.5)));
+    alb = mix(alb, gh > 0.91 ? uStoneA * 1.25 : uGrout * 1.1, chip * 0.8);
+    alb = mix(alb, uGrout * 0.8, crack * 0.6);
+    ao = mix(0.62, 1.0, plate) * (0.85 + 0.15 * hgt);
+    gloss = 0.04; sharp = 18.0;
+  } else if (style == 20) {
+    // the cave: dark worn stone underfoot in rough slabs, grit in the seams, and wet puddles that catch the torchlight
+    vec3 v = voro(p / 1.7);
+    float seam = 1.0 - smoothstep(0.0, 0.07, v.y);
+    float lump = texture(uNoise, p * 0.45 + v.z * 3.0).g;
+    float hx = texture(uNoise, (p + vec2(0.04, 0.0)) * 0.45 + v.z * 3.0).g, hz = texture(uNoise, (p + vec2(0.0, 0.04)) * 0.45 + v.z * 3.0).g;
+    float dome = smoothstep(0.0, 0.25, v.y);
+    N = normalize(vec3(-(hx - lump) * 1.6, 1.0, -(hz - lump) * 1.6));
+    alb = mix(uStoneA, uStoneB, v.z * 0.7 + lump * 0.3) * (0.88 + 0.18 * fine) * (0.8 + 0.2 * dome);
+    alb = mix(alb, uGrout, seam * 0.8);
+    float wet = smoothstep(0.62, 0.68, texture(uNoise, p * 0.06 + 7.3).r);
+    alb *= 1.0 - 0.35 * wet;
+    N = normalize(mix(N, vec3(0.0, 1.0, 0.0), wet));
+    vec2 fc = floor(p * 5.0), ff = fract(p * 5.0) - 0.5;
+    float fleck = step(0.985, hash12(fc)) * (1.0 - smoothstep(0.04, 0.09, length(ff)));
+    emis = uAccent * fleck * 0.3 * (0.6 + 0.4 * sin(uTime * 2.0 + hash12(fc) * 30.0));
+    ao = mix(0.6, 1.0, dome);
+    gloss = 0.08 + wet * 0.85; sharp = 30.0 + wet * 90.0;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -500,7 +555,7 @@ void main() {
   float ang = atan(vUV.y, vUV.x);
   if (uStyle > 0.5) {
     // ice and quicksand: solid patches with their own surface instead of rippling liquid
-    float edge = uStyle > 2.5 ? 0.94 : 0.88 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 5.0 - uSeed * 2.0);
+    float edge = uStyle > 4.5 ? 0.9 + 0.04 * sin(ang * 4.0 + uSeed) + 0.025 * sin(ang * 9.0 - uSeed * 2.0) : uStyle > 2.5 ? 0.94 : 0.88 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 5.0 - uSeed * 2.0);
     float m = 1.0 - smoothstep(edge - 0.02, edge + 0.01, r);
     if (m < 0.003) discard;
     vec2 q = vW.xz;
@@ -529,6 +584,23 @@ void main() {
       col *= 0.6 + 0.55 * max(uLightDir.y, 0.0);
       col += uLightCol * 0.2 * pow(max(dot(normalize(uLightDir + v), vec3(0.0, 1.0, 0.0)), 0.0), 40.0) * (1.0 - ring);
       col *= 1.0 - 0.75 * smoothstep(0.95, 1.0, rr);
+    } else if (uStyle > 4.5) {
+      // crater: a rough rocky lip round a deep bowl, lit and shadowed as if sunk into the ground. Ground height
+      // rises from the deep middle to the lip (0.82) and falls away outside it; normals follow that slope
+      float rr = r / edge;
+      vec2 dir = vUV / max(r, 1e-4);
+      float dh = 2.6 * smoothstep(0.08, 0.5, rr) * (1.0 - smoothstep(0.68, 0.84, rr)) - 1.1 * smoothstep(0.8, 0.86, rr) * (1.0 - smoothstep(0.94, 1.0, rr));
+      float n1 = texture(uNoise, q * 0.9 + uSeed).g - 0.5, n2 = texture(uNoise, q * 0.9 + uSeed + 2.0).b - 0.5;
+      vec3 n = normalize(vec3(-dh * dir.x + n1 * 0.7, 1.0, -dh * dir.y + n2 * 0.7));
+      float ndl = max(dot(n, uLightDir), 0.0);
+      vec3 rock = uPoolCol * 3.4 * (0.85 + 0.3 * texture(uNoise, q * 0.35 + uSeed).r);
+      float deep = 1.0 - smoothstep(0.05, 0.75, rr);
+      col = mix(rock, uPoolCol * 0.7, deep * 0.85) * (0.32 + 0.85 * ndl) * mix(0.35, 1.0, smoothstep(0.0, 0.7, rr));
+      // loose rocks lying in the bottom, and a pale crust along the lip
+      float pebble = step(0.78, texture(uNoise, q * 1.6 + uSeed * 3.0).r) * deep;
+      col = mix(col, rock * (0.5 + 0.6 * ndl), pebble * 0.6);
+      col = mix(col, rock * 1.15 * (0.5 + 0.6 * ndl), smoothstep(0.76, 0.82, rr) * (1.0 - smoothstep(0.84, 0.9, rr)) * 0.6);
+      m *= 1.0 - smoothstep(0.93, 1.0, rr);
     } else if (uStyle > 3.5) {
       // stove burner: a black plate with a coil spiralling in, glowing and throbbing, inside a steel rim
       float rr = r / edge;
@@ -1120,6 +1192,15 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
     return vec2(d, m);
   }
+  if (type == 52) {
+    // fissure: three jagged rock spikes bursting out of a rubble heap (P1.x > 0.5: golden)
+    float d = sdRoundCone(p, vec3(0.0, -0.8, 0.0), vec3(0.05, 0.78, 0.02), 0.34, 0.02);
+    d = min(d, sdRoundCone(p, vec3(-0.42, -0.8, 0.12), vec3(-0.62, 0.25, 0.2), 0.24, 0.02));
+    d = min(d, sdRoundCone(p, vec3(0.4, -0.8, -0.1), vec3(0.64, 0.12, -0.18), 0.22, 0.02));
+    d = smin(d, sdEllipsoid(p - vec3(0.0, -0.8, 0.0), vec3(0.85, 0.18, 0.55)), 0.12);
+    d += 0.025 * sin(p.x * 23.0) * sin(p.y * 19.0 + 1.3) * sin(p.z * 21.0);
+    return vec2(d, P1.x > 0.5 ? 2.0 : 3.0);
+  }
   if (type == 51) {
     // rolling pin: a wooden roller across x with red handles, turning as it rolls along +z; P1.x > 0.5: golden
     vec3 q = p; q.yz = rot2(-ph * 8.0) * q.yz;
@@ -1644,6 +1725,16 @@ void main() {
   } else if (type == 9) {
     float line = 1.0 - smoothstep(0.0, 0.5, abs(q.x));
     a = line * step(abs(q.y), 1.0) * fC.a;
+  } else if (type == 11) {
+    // a glowing floor arrow along +y: three chevrons lighting up one after another, toward the tip
+    for (int i = 0; i < 3; i++) {
+      float fi = float(i), y0 = -0.62 + fi * 0.5;
+      float dist = abs((q.y - y0) - (0.32 - 0.8 * abs(q.x))) * 0.78;
+      float on = (1.0 - smoothstep(0.07, 0.11, dist)) * (1.0 - smoothstep(0.5, 0.58, abs(q.x)));
+      float b = pow(0.5 + 0.5 * sin(uTime * 6.0 - fi * 1.6), 3.0);
+      a = max(a, on * (0.35 + 0.65 * b));
+    }
+    a *= fC.a;
   } else if (type == 10) {
     // cone telegraph: a pie slice of half-angle seed along +y, filling outward with t
     float ang = abs(atan(q.x, q.y));

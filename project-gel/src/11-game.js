@@ -118,12 +118,14 @@ function applySkin(id, costume, hat) {
 }
 
 // ---------- runs ----------
-function makeEvents() {
-  const ev = [{ t: 60, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 40 }, { t: 210, kind: 'swarm', n: 60 }, { t: 255, kind: 'surge', n: 40 }, { t: 280, kind: 'swarm', n: 80 }, { t: 300, kind: 'boss' }];
+function makeEvents(chapter) {
+  let ev = [{ t: 60, kind: 'swarm', n: 24 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 40 }, { t: 210, kind: 'swarm', n: 60 }, { t: 255, kind: 'surge', n: 40 }, { t: 280, kind: 'swarm', n: 80 }, { t: 300, kind: 'boss' }];
   // the chapter's miniboss, three times (30%, 55%, 80% of the way to the boss)
   MINI_VISITS.forEach(([f], k) => ev.push({ t: 300 * f, kind: 'mini', k }));
   // most runs get a visit from the Golden Gooblin somewhere in the middle
   if (Math.random() < 0.8) ev.push({ t: rand(70, 230), kind: 'gooblin' });
+  // the cave chapter has no boss on the arena floor: its boss is inside the cave (11f-crater.js)
+  if (BOSS_TYPES[CHAPTER_BOSSES[chapter - 1]]?.cave) ev = ev.filter(e => e.kind !== 'boss');
   return ev.sort((a, b) => a.t - b.t);
 }
 // spawns a second: a steady stream from the start (standing still is never safe), then a flood near the end
@@ -144,7 +146,7 @@ function startRun(chapter, opts = {}) {
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
-    nextId: 1, spawnAcc: 0, events: opts.endless ? endlessEvents() : opts.rush ? [] : makeEvents(), bosses: [], bossStarted: false, bossTotalHp: 0,
+    nextId: 1, spawnAcc: 0, events: opts.endless ? endlessEvents() : opts.rush ? [] : makeEvents(chapter), bosses: [], bossStarted: false, bossTotalHp: 0,
     endless: !!opts.endless, rush: !!opts.rush, rushK: 0, powerCap: opts.powerCap || chapter, tier: 0,
     vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
   };
@@ -406,6 +408,8 @@ function setState(s) {
 
 // ---------- main run update ----------
 function updateRun(dt) {
+  // inside the cave (chapter 20) nothing of the arena runs: the cave is its own game (13i-cave.js)
+  if (G.run.cave) { G.run.t += dt; updateCave(dt); return; }
   const run = G.run, hero = G.hero, h = hero.pos;
   const live = G.state === 'run';
   run.invuln = Math.max(0, run.invuln - dt);
@@ -614,6 +618,7 @@ function zoneCarry(zone, Z, o, ix, iz, dt) {
 const STEER = [0, 0];
 function updateEnemyAI(e, dt) {
   if (e.def.flee) { fleeAI(e, dt); return; }
+  if (e.def.burrow && burrowAI(e, dt)) return;
   const h = G.hero.pos;
   let dx = h[0] - e.x, dz = h[2] - e.z;
   const d = Math.hypot(dx, dz) || 1;
@@ -652,6 +657,38 @@ function updateEnemyAI(e, dt) {
   e.x += e.vx * dt; e.z += e.vz * dt;
   e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
   e.phase += dt * Math.hypot(e.vx, e.vz) / (0.85 * e.scale);
+}
+
+// the mole: tunnels unseen toward the hero (only a moving mound of dirt shows, and nothing can hit it), bursts up
+// close by to lunge, and after a while dives back under. Returns true while it is underground.
+function burrowAI(e, dt) {
+  const h = G.hero.pos;
+  if (e.under === undefined) { e.under = true; e.hidden = true; e.upT = 0; e.underT = 0; }
+  if (!e.under) {
+    e.upT += dt;
+    if (e.upT > 6 && !e.act && Math.hypot(h[0] - e.x, h[2] - e.z) > 3.5) {
+      e.under = true; e.hidden = true; e.underT = 0;
+      FX.burst(e.x, 0.3, e.z, 10, [0.42, 0.34, 0.26], 3, 0.12, 0.5, 1, 2);
+    }
+    return false;
+  }
+  let dx = h[0] - e.x, dz = h[2] - e.z;
+  const d = Math.hypot(dx, dz) || 1;
+  e.underT += dt;
+  if (d < 2.6 || e.underT > 9) {
+    e.under = false; e.hidden = false; e.upT = 0; e.cool = 0.25; e.squash = 0.62; e.squashV = 6;
+    FX.burst(e.x, 0.4, e.z, 16, [0.45, 0.36, 0.28], 4.5, 0.14, 0.6, 1, 3);
+    FX.crack(e.x, e.z, 1.1);
+    AUDIO.play('punch', 0.7);
+    return false;
+  }
+  if (d > VIEW.radius * 1.7) { const [x, z] = spawnPoint(); e.x = x; e.z = z; return true; }
+  dx /= d; dz /= d;
+  steerAround(e.x, e.z, e.radius, dx, dz, d, STEER);
+  e.x += STEER[0] * e.speed * 1.35 * dt; e.z += STEER[1] * e.speed * 1.35 * dt;
+  e.yaw = Math.atan2(STEER[0], STEER[1]);
+  if (Math.random() < dt * 9) FX.part(e.x + rand(-0.3, 0.3), 0.1, e.z + rand(-0.3, 0.3), rand(-0.6, 0.6), rand(1, 2.2), rand(-0.6, 0.6), 0.07, 0.03, 0.5, [0.4, 0.32, 0.25], 1, 1, 6);
+  return true;
 }
 
 // ---------- weapon attacks: a short wind-up over a floor warning, then the hit ----------
@@ -881,6 +918,7 @@ function updatePickups(dt) {
 
 // ---------- camera ----------
 function updateCamera(dt, snap, noShake) {
+  if (G.run && G.run.cave) { caveCamera(dt); return; }
   const c = G.cam, h = G.hero.pos, run = G.run;
   const vel = run ? run.vel : [0, 0, 0];
   const tx = h[0] + clamp(vel[0] * 0.17, -0.8, 0.8), tz = h[2] + clamp(vel[2] * 0.17, -0.8, 0.8);
@@ -911,8 +949,9 @@ function updateCamera(dt, snap, noShake) {
       z0 = Math.min(z0, q[2] - c.target[2]); z1 = Math.max(z1, q[2] - c.target[2]);
     }
     if (x0 < x1) {
-      const pad = 2.5, ex = ARENA.hw + pad, ez = ARENA.hd + pad;
-      const lx = -ex - x0, hx = ex - x1, lz = -ez - z0, hz = ez - z1;
+      // (a theme can let the view run further past its top edge: the crater shows off its cave mouth)
+      const pad = 2.5, ex = ARENA.hw + pad, ez = ARENA.hd + pad, ezTop = ARENA.hd + (ARENA.theme && ARENA.theme.topPad || pad);
+      const lx = -ex - x0, hx = ex - x1, lz = -ezTop - z0, hz = ez - z1;
       const cx = lx > hx ? 0 : clamp(c.x, lx, hx), cz = lz > hz ? (lz + hz) / 2 : clamp(c.z, lz, hz);
       if (cx !== c.x || cz !== c.z) { c.x = cx; c.z = cz; place(); }
     }

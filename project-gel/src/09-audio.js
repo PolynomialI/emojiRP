@@ -48,7 +48,7 @@ const AUDIO = {
   play(name, p = 1) {
     if (!this.enabled || !this.ctx || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
-    const gap = { hit: 0.035, gem: 0.03, pop: 0.05, squish: 0.04, zap: 0.06, punch: 0.06, coin: 0.05, boom: 0.07, mine: 0.08, laser: 0.25, throw: 0.08, bang: 0.03 }[name] || 0.02;
+    const gap = { hit: 0.035, gem: 0.03, pop: 0.05, squish: 0.04, zap: 0.06, punch: 0.06, coin: 0.05, boom: 0.07, mine: 0.08, laser: 0.25, throw: 0.08, bang: 0.03, twang: 0.05, clang: 0.06, rumble: 0.5, crumble: 0.1, gooshot: 0.05 }[name] || 0.02;
     if (this.last[name] && now - this.last[name] < gap) return;
     if (this.voices > 28 && !['levelup', 'boss', 'win', 'lose', 'hurt', 'click'].includes(name)) return;
     this.last[name] = now;
@@ -85,6 +85,13 @@ const AUDIO = {
       case 'crystal': [1568, 2093, 2637, 3136].forEach((f, i) => this._osc('sine', f * p, f * p, 0.14, 0.06, t + i * 0.035)); break;
       case 'wind': this._noise(0.75, 0.16, t, 'bandpass', 320, 1700, 2, 0.2); break;
       case 'bang': this._noise(0.05, 0.3, t, 'highpass', 2600, 1200, 1); this._noise(0.22, 0.2, t + 0.01, 'lowpass', 900, 160, 1); this._osc('sine', 150, 55, 0.1, 0.14, t); break;
+      // the cave: a crossbow's twang, steel turning a shot, the ground rumbling, the Bagger's horn, rock breaking, a goo shot
+      case 'twang': this._osc('triangle', 520 * p, 180, 0.16, 0.11, t); this._noise(0.05, 0.08, t, 'highpass', 3500, 2000); break;
+      case 'clang': this._osc('square', 880, 860, 0.12, 0.05, t); this._osc('sine', 1760, 1700, 0.25, 0.06, t); this._noise(0.04, 0.12, t, 'highpass', 4000, 3000); break;
+      case 'rumble': this._noise(1.4, 0.26, t, 'lowpass', 220, 60, 1, 0.2); this._osc('sine', 48, 30, 1.3, 0.18, t, 0.2); break;
+      case 'horn': this._osc('sawtooth', 110, 104, 1.1, 0.12, t, 0.08); this._osc('sawtooth', 165, 158, 1.1, 0.08, t, 0.08); this._osc('sine', 55, 52, 1.2, 0.16, t, 0.1); break;
+      case 'crumble': this._noise(0.5, 0.3, t, 'lowpass', 1400, 180, 1); for (let i = 0; i < 4; i++) this._noise(0.06, 0.12, t + 0.05 + i * 0.07, 'bandpass', rand(500, 1300), 400, 2); break;
+      case 'gooshot': this._osc('sine', 340 * p, 140, 0.1, 0.13, t); this._noise(0.06, 0.06, t, 'bandpass', 1800, 900, 2); break;
       case 'whistle': this._osc('sine', 1200, 2100, 0.28, 0.07, t, 0.03); this._osc('sine', 2100, 1500, 0.32, 0.07, t + 0.32, 0.02); break;
       case 'cackle': [660, 590, 620, 520, 560, 440].forEach((f, i) => this._osc('square', f, f * 0.92, 0.07, 0.045, t + i * 0.08)); break;
     }

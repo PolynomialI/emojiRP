@@ -90,9 +90,12 @@ function initInput(canvas) {
   window.addEventListener('keyup', e => INPUT.keys.delete(e.key.toLowerCase()));
   window.addEventListener('blur', () => { INPUT.keys.clear(); INPUT.stick.active = false; if (G.state === 'run') pauseGame(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) { if (G.state === 'run') pauseGame(); saveGame(); } });
+  // the mouse position, always (the cave's crosshair follows it)
+  window.addEventListener('pointermove', e => { INPUT.mx = e.clientX; INPUT.my = e.clientY; });
   canvas.addEventListener('pointerdown', e => {
     AUDIO.unlock();
     if (G.state === 'home') { pokeHero(); return; }
+    if (G.state === 'run' && G.run && G.run.cave) { INPUT.mx = e.clientX; INPUT.my = e.clientY; if (e.button === 0) caveClick(); return; }
     if (G.state !== 'run' || INPUT.stick.active) return;
     Object.assign(INPUT.stick, { active: true, id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY });
     try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
@@ -199,6 +202,7 @@ function resetHeroForHome() {
   h.arms.forEach((a, i) => { a.grow = a.growTarget = i < 2 ? 1 : 0; });
 }
 function goHome() {
+  if (G.run && G.run.cave) caveLeave();
   G.run = null; G.numbers.length = 0; G.bolts.length = 0; FX.clear();
   HOME.yaw = HOME.spinV = 0; HOME.aim = null; HOME.shots.length = 0;
   R.frame.hurt = 0; R.frame.lowHp = 0;
@@ -360,7 +364,13 @@ function renderFrame() {
   SCENE.floor = true; SCENE.backdrop = null; SCENE.aura = null; SCENE.bubble = null; SCENE.pools = [];
   SCENE.arenaBox = G.run && G.state !== 'home' && !ARENA.boxes ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
   SCENE.hero = hero.out; SCENE.heroShadow = hero.shadow;
-  if (G.run && G.state !== 'home') {
+  f.torches[3] = 0;
+  if (G.run && G.state !== 'home' && G.run.cave) {
+    // the cave: its own scene, the hero hidden while it looks out of its own eyes at the fork
+    emitCave();
+    if (CV.phase === 'fork') { SCENE.hero = null; SCENE.heroShadow = null; }
+    f.hurt = Math.max(G.run.hurtFlash, CV.vig * 0.6);
+  } else if (G.run && G.state !== 'home') {
     f.spot = [h[0], 0, h[2], 13]; f.fogRange = [10, 26];
     emitRunScene();
     f.hurt = G.run.hurtFlash;

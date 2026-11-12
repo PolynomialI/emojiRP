@@ -73,8 +73,8 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - **Verified in headless Chromium:** every test mode below runs with no script errors and nothing invalid sent to the GPU.
 
 ## Chapter themes
-Each chapter of a 15-chapter cycle gets its own map, boss and power-up; chapters 16+ repeat them with stronger stats.
-Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Conductor) as a second boss.
+20 chapters, none repeated: each has its own map, obstacles, boss, unique enemy, miniboss and power-up. The game ends
+after chapter 20 (`CHAPTER_COUNT` = `ARENAS.length`).
 
 | Ch | Map | Boss | New power-up (offered from this chapter on) | State |
 |---|---|---|---|---|
@@ -93,6 +93,11 @@ Every 5th chapter adds one of the original bosses (Hurler, Charger, Twins, Condu
 | 13 | Sky Islands (cloud floor, rainbows, updrafts speed you up) | Storm King | Gale Crescents (skill) | done |
 | 14 | Toy Workshop (play rugs, toy slime slows, wind-up cars) | Jack-in-the-Box | Yo-Yo (skill) | done |
 | 15 | Coral Reef (caustic light, kelp beds slow, ink puddles) | Kraken + Twins | Bubble Trap (skill) | done |
+| 16 | Clockwork Factory (turntables carry you round, oil, gear stacks, presses) | Clockwork Colossus | Clockwork Turret (skill) | done |
+| 17 | Mushroom Forest (spore zones, toadstools, logs) | Mycelium Monarch | Spore Cloud (skill) | done |
+| 18 | Dino Valley (tar pits, cycads, ribcages, nests) | Goo T-Rex | Ptero Strike (skill) | done |
+| 19 | Giant Kitchen (burners, grease, pots, cheese) | Chef Cleaver | Rolling Pin (skill) | done |
+| 20 | The Crater (rough rock, craters you can't enter, ground-colored boulders, mine carts, ore, the cave mouth at the top) → the cave | The Bagger (inside the cave) | Fissure (skill) | done |
 
 Boss mechanics in short:
 - Sand Worm: burrows and breaches under you.
@@ -109,6 +114,8 @@ Boss mechanics in short:
 - Storm King: lightning on marked circles in waves, a wind gust along a lane that shoves you, and twisters that chase you. It floats, and its face stays turned to the camera.
 - Jack-in-the-Box: hops after you, punches its head out on the spring along a lane, pounces on a marked circle, and flings toy blocks that land as walls.
 - Kraken: tentacle slams along lanes, ink blobs that leave slowing puddles, and a whirlpool that drags you toward its core.
+- Colossus, Monarch, T-Rex and Chef: see their files (`src/13e`-`13h`).
+- The Bagger: see "The cave" below.
 
 Every boss has a rage phase below half health.
 
@@ -125,6 +132,52 @@ Where things live:
 - Boss AI and drawing (`BOSS_AI`, `BOSS_DRAW`), plus `tempZone`/`tempProp`: `src/13a-bosses.js` (2-10) and `src/13b-bosses2.js` (11-15). New enemy shot kinds draw through `SHOT_DRAW[kind]`; lobbed shots set `lob: true` and an optional `onLand(s)`.
 - Floor styles 0-14, the zone shader, and impostors 32-47: `src/05-glsl.js`. Impostors 43-47 are the wisp (red with P1.x for enemy ghosts), prism, wind crescent, yo-yo and bubble cluster; type 27 with P1.x is a black ink blob and type 32 with P1.x a white twister.
 - Telegraph kinds: `circle`, `lane`, and `cone` (decal type 10).
+
+## The cave (chapter 20)
+
+**Outside** (`src/11f-crater.js`): the crater is a long bowl (56 x 80, `ARENAS` crater `boxes`). Floor style 19 is
+rough broken rock; craters are blocking zones drawn by the zone shader's style 5 (a bowl with a lip). Boulders are
+faceted `crag` meshes tinted the ground's color. The mole miner (`burrow` in `ENEMY_TYPES`, `burrowAI` in
+`src/11-game.js`) tunnels unseen as a moving mound and bursts up to lunge; the Mole Foreman is the miniboss. Fissure
+(`SKILL_HOOKS.fissure`, `src/12c-skills3.js`) sends cracks at enemies that burst into rock spikes; it evolves with
+Reach into Great Rift. There is no boss on the crater floor: at 85% of the bar (`CRATER.open`, 255 s) the rubble in
+the mouth bursts out, the bar stops at 85% and reads ENTER THE CAVE, and glowing floor arrows lead in. The camera
+may look further past the top edge here (`topPad`) so the mountainside and mouth are on screen.
+
+**Inside** (`src/13i-cave.js`): walking into the mouth (`caveEnter`) clears the crater, swings the camera down
+behind the hero with the red vignette pulsing, and fades into the cave. The arena game stops (`updateRun` hands over
+to `updateCave`; `updateCamera`, `renderFrame` and the overlay hand over too). The cave is a chain of pieces
+(tunnel, room, bend, fork, boss hall), each with its own frame; room play happens in room-local coordinates.
+- Rooms: A/D or the arrows slide along a rail behind low rock walls. The blob crouches (`hero.crouch`) unless it
+  has clicked in the last 0.55 s; each click pops it up and fires one goo shot at what the mouse crosshair ray hits
+  (0.26 s cooldown). Rocks have health and crumble. Crossbowmen pop up (or lean out) from behind their rocks with a
+  red aim line that locks before the shot; armored spearmen work forward rock by rock throwing spears onto marked
+  circles, then stab; shieldmen walk in behind tower shields (head shots and shots while they bash get through);
+  moles burst from the walls and rush in. Head shots do double. Waves come in as each one thins out.
+- Torch light: up to 8 point lights (`uTorch`/`uTorchCol` in `GLSL_FRAME`, added in `atmos`); floor style 20 is
+  wet cave stone. The pieces near the hero are drawn; the camera eases between positions (`cvSetCam`).
+- The fork is seen in first person: the view pans left then right, an arrow glows on the floor down each way, and
+  there is no text. Left: four more rooms (each cleared one adds 12% shot damage), and the Bagger then pays 60% of
+  the chapter reward extra plus a scroll. Right: two rooms. Every room cleared heals 20% and pays coins.
+- Dying starts the cave over from the mouth (the fork is chosen again).
+
+**The Bagger** (`src/13j-bagger.js`, meshes in `src/04j-bagger-models.js`): a goo-and-steel bucket-wheel excavator
+drawn from six meshes (crawlers, the goo house, two lattice masts, the counterweight boom, the boom with a pitch
+clip, the spinning wheel with a spin clip), with live cables, hydraulic rams, beacons, smoke and a glowing goo heart.
+It stands three-quarters on so its face and heart are clear of the wheel. Entering, the four arrow keys show for
+1.5 s with left and right lit. Attacks: goo spit at head height (duck), a rock barrage onto marked circles (move), a
+beam from the heart that sweeps the rail at knee height (get behind a rock), a drill-rock that shatters the rock you
+hide behind (rockfalls rebuild it), and its horn calls minions from the side alcoves. Stage 2 at half health. Its
+heart takes 2.5x damage, the body 1x, the steel very little. Boss Rush leaves it out (`RUSH_BOSSES`).
+
+**Save migration** (`loadGame`, `content: 2`): saves from before chapters 16-20 were remade, if past chapter 15,
+go back to chapter 15 with 15 to beat again; coins, cosmetics, gear, upgrades and scrolls are kept.
+
+**Mesher** (`src/03-sdfmesh.js`): a coarse pass skips empty space, and models with many parts sample only the parts
+near each point (`binnedSdf`); the meshes come out the same, about twice as fast. `crag` is a faceted rock shape.
+
+**Tests:** `test/_cave.mjs` plays chapter 20 end to end (BR=L or R) with screenshots; `test/_save.mjs` checks the
+migration (both git-ignored scratch).
 
 ## Evolutions, Golden Gooblin, Endless
 
@@ -188,8 +241,8 @@ The build with chapters 11-15 froze the whole of Chrome when opened on Windows. 
 - Three goals give colors that cannot be bought: Champion (clear 15 chapters), Cosmic (20 minutes in Endless) and Inferno (every boss in one Boss Rush). These are the `SKINS` entries with a `goal` field, listed last on the Blobs screen as "Goal".
 - Runs add bosses, elites, Gooblins, evolutions, best level and coins earned to `sv.stats` (`goalsAddRun` in `finishRun`); fusing counts as it happens. Old saves get one boss per cleared chapter.
 
-**Boss Rush** (`RUSH` and helpers in `src/11c-events.js`; unlocked by clearing chapter 15):
-- All 15 chapter bosses in order, on the selected chapter's map, each a little tougher.
+**Boss Rush** (`RUSH` and helpers in `src/11c-events.js`):
+- Every chapter boss in order (`RUSH_BOSSES`: all but the cave's Bagger), on the selected chapter's map, each a little tougher.
 - It starts with 8 free picks. Each boss down gives 3 more picks, 35% health back, a chest and a 5 s breather; every third boss carries a scroll.
 - The best is the most bosses beaten; a full clear also keeps its fastest time.
 

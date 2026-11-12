@@ -222,3 +222,69 @@ SKILL_HOOKS.rollingpin = {
     }
   },
 };
+
+// ---------- Fissure (chapter 20): cracks race out across the ground toward the nearest enemies, jagged rock spikes
+// bursting up along them; evolved (Great Rift), each crack splits in two at its end and the spikes are golden ----------
+const FISSURE = { v: 15, width: 0.85, every: 0.75, life: 0.95 };
+SKILL_HOOKS.fissure = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, w = FISSURE.width * areaMul();
+    st.cracks = st.cracks || []; st.spikes = st.spikes || [];
+    st.t = (st.t ?? 0.9) - dt;
+    if (st.t <= 0) {
+      const near = [];
+      enemiesInRadius(h[0], h[2], L.len + 1, e => near.push(e));
+      if (near.length) {
+        st.t = L.cd * cdMul();
+        near.sort((a, b) => Math.hypot(a.x - h[0], a.z - h[2]) - Math.hypot(b.x - h[0], b.z - h[2]));
+        const base = Math.atan2(near[0].x - h[0], near[0].z - h[2]);
+        for (let i = 0; i < L.count; i++) {
+          // one crack at each of the nearest enemies; any left over fan out evenly
+          const e = near[i], a = e ? Math.atan2(e.x - h[0], e.z - h[2]) : base + i * TAU / L.count;
+          st.cracks.push({ x: h[0], z: h[2], dx: Math.sin(a), dz: Math.cos(a), d: 0, len: L.len, next: 0.7, hits: new Set(), split: !!s.evo });
+        }
+        AUDIO.play('punch', 0.6);
+        G.cam.shake = Math.max(G.cam.shake, 0.05);
+      } else st.t = 0.3;
+    }
+    for (const c of st.cracks) {
+      const step = FISSURE.v * dt;
+      c.d += step; c.x += c.dx * step; c.z += c.dz * step;
+      if (c.d >= c.next) {
+        c.next += FISSURE.every;
+        st.spikes.push({ x: c.x, z: c.z, t: 0, yaw: rand(0, TAU), s: rand(0.85, 1.15) * w, gold: !!s.evo });
+        FX.crack(c.x, c.z, 1.0 * w, 2.2);
+        FX.burst(c.x, 0.2, c.z, 5, [0.55, 0.48, 0.4], 3.5, 0.09, 0.45, 1, 2.5);
+        enemiesInRadius(c.x, c.z, w + 1, e => {
+          if (c.hits.has(e) || Math.hypot(e.x - c.x, e.z - c.z) > w + e.radius) return;
+          c.hits.add(e);
+          hurtEnemy(e, L.dmg, c.dx * 2, c.dz * 2, { sound: false });
+          e.squash = 1.25; e.squashV = -4;
+        });
+      }
+      if (c.d >= c.len || arenaSd(c.x, c.z) > -0.5 || inRock(c.x, c.z)) {
+        c.done = true;
+        if (c.split) for (const turn of [-0.6, 0.6]) {
+          const a = Math.atan2(c.dx, c.dz) + turn;
+          st.cracks.push({ x: c.x, z: c.z, dx: Math.sin(a), dz: Math.cos(a), d: 0, len: c.len * 0.45, next: 0.4, hits: c.hits, split: false });
+        }
+      }
+    }
+    st.cracks = st.cracks.filter(c => !c.done);
+    for (const sp of st.spikes) sp.t += dt;
+    st.spikes = st.spikes.filter(sp => sp.t < FISSURE.life);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.spikes) return;
+    const mesh = R.enemyDraw.stalag, rc = R.frame.rockCol;
+    for (const sp of st.spikes) {
+      // bursts up, holds, then sinks back into the ground
+      const up = easeOutBack(clamp(sp.t / 0.14, 0, 1)), down = smoothstep(FISSURE.life - 0.3, FISSURE.life, sp.t), k = up * (1 - down);
+      const sc = sp.s * 1.7;
+      if (mesh) pushEnemy('stalag', false, sp.x, -(1 - k) * 0.9 * sc, sp.z, sp.yaw, MODELS.defs.stalag.clips.still.row, sc, 1, 0, 0, 0, sp.gold ? 1.25 : rc[0] * 1.1, sp.gold ? 0.95 : rc[1] * 1.1, sp.gold ? 0.3 : rc[2] * 1.1);
+      else pushImp(sp.x, (k - 0.5) * 0.7 * sc, sp.z, 0.7 * sc, 0, 1, 0, 1, 52, 0, 0.05, 0, sp.gold ? 1 : 0, 0, 0, 1);
+      pushDecal(sp.x, sp.z, 0.7 * sp.s, 0.7 * sp.s, sp.yaw, 1, 0, 0, 0.02, 0.015, 0.01, 0.5 * k);
+    }
+  },
+};

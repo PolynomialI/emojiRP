@@ -148,6 +148,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Rolling pins'], ['width', 'Width', 'm'], ['cd', 'Cooldown', 's']],
     levels: L10({ dmg: [20, 22, 25, 28, 31, 35, 39, 44, 50, 56], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], width: [1.0, 1.05, 1.1, 1.15, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8], cd: [3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.3, 2.1, 2.0] }),
   },
+  fissure: {
+    name: 'Fissure', from: 20, intro: 'Cracks race out across the ground toward enemies and burst into jagged rock spikes along their length.', icon: { type: 52, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Cracks'], ['len', 'Length', 'm'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [22, 25, 28, 31, 35, 39, 44, 49, 55, 62], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], len: [6, 6.4, 6.8, 7.2, 7.6, 8, 8.5, 9, 9.5, 10], cd: [3.4, 3.3, 3.2, 3.1, 3.0, 2.9, 2.8, 2.6, 2.5, 2.3] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -214,6 +219,7 @@ const EVOLUTIONS = {
   turret: { with: 'multishot', name: 'Gatling Turret', desc: 'One more turret, and every turret spins up a gatling barrel that fires twice as fast.', boost: L => ({ count: L.count + 1, rate: +(L.rate * 2).toFixed(1) }) },
   spore: { with: 'growth', name: 'Fungal Bloom', desc: 'Wider, harsher clouds, and every enemy that dies in one bursts into a new cloud.', boost: L => ({ radius: +(L.radius * 1.2).toFixed(1), dmg: Math.round(L.dmg * 1.15) }) },
   ptero: { with: 'speed', name: 'Sky Flock', desc: 'Two more golden pterodactyls, and each swoops onto a second target before flying off.', boost: L => ({ count: L.count + 2 }) },
+  fissure: { with: 'reach', name: 'Great Rift', desc: 'Two more cracks, each splitting at its end, with bigger golden spikes.', boost: L => ({ count: L.count + 2, dmg: Math.round(L.dmg * 1.15), len: +(L.len * 1.1).toFixed(1) }) },
   rollingpin: { with: 'power', name: 'Steamroller', desc: 'Golden pins half again as wide that roll back to you, flattening everything twice.', boost: L => ({ width: +(L.width * 1.5).toFixed(2), dmg: Math.round(L.dmg * 1.2) }) },
   bubble: { with: 'haste', name: 'Bubble Storm', desc: 'One more golden bubble with a slightly bigger pop.', boost: L => ({ count: L.count + 1, radius: +(L.radius * 1.15).toFixed(1) }) },
 };
@@ -283,6 +289,8 @@ const ENEMY_TYPES = {
   trike: { model: 'trike', hp: 70, speed: 1.9, dmg: 8, xp: 4, radius: 0.6, scale: 1.55, tint: '#5a8ab8', mass: 3.5, ai: 'charge', hit: 18 },
   // chapter 19, the Giant Kitchen: meatballs roll at you; pepper shakers shoot clouds of pepper
   meatball: { model: 'meatball', hp: 40, speed: 3.4, dmg: 7, xp: 3, radius: 0.48, scale: 1.45, tint: '#8a4a2a', mass: 2.4, weave: 0.4 },
+  // the crater's mole miner tunnels toward you unseen (a moving mound of dirt), bursts up close by and lunges
+  mole: { model: 'mole', hp: 55, speed: 2.9, dmg: 9, xp: 3, radius: 0.42, scale: 1.45, tint: '#7a6458', mass: 1.8, ai: 'lunge', hit: 12, burrow: true },
   pepper: { model: 'pepper', hp: 22, speed: 2.0, dmg: 5, shot: 7, xp: 2, radius: 0.4, scale: 1.4, tint: '#3a3a44', mass: 1, ranged: true, shotKind: 'pepper' },
   puffer: { model: 'puffer', hp: 14, speed: 2.6, dmg: 4, xp: 2, radius: 0.42, scale: 1.3, tint: '#ffb84a', mass: 0.9, ai: 'bomb', hit: 18, float: 0.3 },
 };
@@ -307,6 +315,7 @@ const THEME_ENEMIES = {
   shroom: { mothling: [15, 0.3], sporeling: [30, 0.3] },
   dino: { raptor: [15, 0.32], trike: [50, 0.18] },
   kitchen: { meatball: [15, 0.3], pepper: [35, 0.24] },
+  crater: { mole: [12, 0.34] },
 };
 // When each type starts showing up: [first chapter, seconds into the run, spawn weight]
 const ENEMY_MIX = {
@@ -342,6 +351,9 @@ BOSS_TYPES.jellyqueen = { name: 'Jelly Queen', meshes: ['slime'], hp: 3700, spee
 BOSS_TYPES.bigbounce = { name: 'Big Bounce', meshes: [], hp: 3600, speed: 3, dmg: 18, scale: 2.4, radius: 2.0, tint: '#ff3b4f', mass: 60, portraitTop: 2.1 };
 BOSS_TYPES.wreckbot = { name: 'Wrecking Bot', model: 'wreckbot', meshes: ['wreckbot', 'wreckball'], hp: 3500, speed: 1.9, dmg: 16, scale: 2.9, radius: 1.15, tint: '#ffc21f', mass: 60, portraitTop: 1.05 };
 BOSS_TYPES.sandworm = { name: 'Sand Worm', meshes: ['wormhead', 'wormseg'], hp: 3400, speed: 3.6, dmg: 18, scale: 2.4, radius: 1.05, tint: '#a856d6', mass: 60, noDrop: true, portraitTop: 1.25 };
+// The Bagger is fought inside the cave (13i-cave.js), not on the arena floor: cave marks it, and Boss Rush skips it
+BOSS_TYPES.bagger = { name: 'The Bagger', model: 'bg_body', meshes: ['bg_base', 'bg_body', 'bg_mast', 'bg_cwt', 'bg_boom', 'bg_wheel',
+  'cwall0', 'cwall1', 'cwall2', 'stalac', 'stalag', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman', 'mole'], hp: 9000, speed: 0, dmg: 0, scale: 4, radius: 3, tint: '#ff8a2a', mass: 60, cave: true, portraitTop: 1.0 };
 // one line on what to watch for, shown on the boss's intro card
 const BOSS_HINTS = {
   stomper: 'Stomps the ground and calls in stickmen.', hurler: 'Hurls boulders at marked spots.',
@@ -358,6 +370,7 @@ const BOSS_HINTS = {
   monarch: 'Spiralling spores, glowing mycelium lanes, spore showers and sprouting sporelings.',
   trex: 'A roaring shockwave in front, a tail sweep behind, and stomping charges that shake rocks loose.',
   chef: 'Cleaver chops down marked lanes, flipped pancakes that leave hot grease, and pepper bombs.',
+  bagger: 'Rock barrages, a sweeping beam and cover-smashing drill rocks. Hide, then pop up and shoot its glowing heart.',
 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
@@ -407,11 +420,21 @@ const ARENAS = [
     props: [['cycad', 13, 0.6, 0.8], ['ribcage', 3.5, 1.0, 1.3], ['dinonest', 4.5, 0.55, 0.65], ['amber', 5, 0.5, 0.65]], zones: [['tarpit', 3, 2.0, 3.2]], wall: 'treefern' },
   { id: 'kitchen', name: 'Giant Kitchen', floor: 18, stoneA: '#f4ecdc', stoneB: '#d84a4a', grout: '#8a7a6a', accent: '#ffd23a', fog: '#3a2a20', sky: '#fff2e0', ground: '#c8b8a0', light: '#fff8ec', spotMin: 0.7, shadowTint: '#5a3a2a', rock: '#d8c8b0', pool: '#e8501a', poolGlow: 0,
     props: [['pot', 3.5, 1.0, 1.2], ['teapot', 3.5, 0.8, 1.0], ['jar', 4, 0.6, 0.75], ['sugarcubes', 4, 0.6, 0.75], ['cheese', 3.5, 0.75, 0.95]], zones: [['hotplate', 2.4, 2.0, 2.8]], wall: 'spicejar' },
+  // a long rocky crater (taller than wide) with the cave mouth at its top end (11f-crater.js)
+  { id: 'crater', name: 'The Crater', floor: 19, stoneA: '#9a8a76', stoneB: '#7c6e5e', grout: '#4a4038', accent: '#ffb84a', fog: '#2e2620', sky: '#ead6ba', ground: '#5a4a3c', light: '#fff0dc', spotMin: 0.6, shadowTint: '#3a2a1e', rock: '#7a6a58', pool: '#1e1814', poolGlow: 0, topPad: 11,
+    boxes: [{ x: 0, z: 0, hw: 28, hd: 40, cr: 5 }],
+    props: [['boulder', 9, 0.9, 1.6], ['ore', 2.5, 0.7, 0.9], ['minecart', 1.5, 0.75, 0.85], ['lanternpost', 2.5, 0.55, 0.6]], zones: [['crater', 2.4, 2.6, 4.2], ['crater', 3.5, 1.1, 1.7]], wall: 'cliff', kinds: ['cavemouth'] },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
 const PROP_KINDS = {
   rock: { models: ['rock0', 'rock1', 'rock2'], unit: 0.45, tint: 'rock', block: true, shots: true },
+  boulder: { models: ['boulder0', 'boulder1', 'boulder2'], unit: 0.5, tint: 'rock', block: true, shots: true },
+  cliff: { models: ['cliff0', 'cliff1'], unit: 0.5, tint: 'rock', block: true, shots: true, wallR: [1.5, 2.1], wallStep: 2.2 },
+  ore: { models: ['ore'], unit: 0.42, tint: 'rock', block: true, shots: true },
+  minecart: { models: ['minecart'], unit: 0.45, block: true, shots: false },
+  lanternpost: { models: ['lanternpost'], unit: 0.16, block: true, shots: false },
+  cavemouth: { models: ['cavemouth'], unit: 1, block: false },
   statue: { models: ['statue'], unit: 0.45, block: true, shots: true, tints: ['#a8b0bc', '#98a0ae', '#b4bac4'], tall: 1.7 },
   fountain: { models: ['fountain'], unit: 0.95, block: true, shots: false, tints: ['#a8b0bc'] },
   bench: { models: ['bench'], unit: 0.4, block: true, shots: false, tints: ['#a8b0bc'] },
@@ -540,10 +563,16 @@ const ZONE_KINDS = {
   hotplate: { burn: 14, col: '#ff4a1a', glow: 0, style: 4 },
   grease: { burn: 9, slow: 0.85, col: '#e8a020', glow: 0.25 },
   peppercloud: { burn: 3, slow: 0.55, col: '#3a3634', glow: 0 },
+  // a rough crater sunk in the rock: nothing can walk into it
+  crater: { block: true, col: '#2a221c', glow: 0, style: 5 },
+  // still black water lying in the cave
+  cavewater: { col: '#16323e', glow: 0.04 },
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken', 'colossus', 'monarch', 'trex', 'chef'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken', 'colossus', 'monarch', 'trex', 'chef', 'bagger'];
+// Boss Rush fights every chapter's boss except the cave's (which is its own shooter, not an arena fight)
+const RUSH_BOSSES = CHAPTER_BOSSES.filter(id => !BOSS_TYPES[id].cave);
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 // every chapter is unique: the game ends after the last one (no repeats with stronger stats)
 const CHAPTER_COUNT = ARENAS.length;
@@ -886,11 +915,233 @@ const COSTUMES = [
     ['cap', 'head', [-0.14, 0.2, 0], [-0.14, 0.3, 0], 0.035, 0.012, 0.01, 0],
     ['sph', 'head', [0, 0.18, 0.17], 0.03, 0.005, 1],
   ] },
+  // ---------- more animals and cute costumes ----------
+  { id: 'duck', name: 'Duck', cost: 300, boost: { speed: 3 }, pal: ['#ffb020'], parts: [
+    ['ell', 'head', [0, -0.045, 0.215], [0.105, 0.035, 0.095], 0.02, 0],
+    ['cap', 'head', [0, 0.2, 0], [0.04, 0.31, 0.05], 0.022, 0.012, 0.03, 'b', 0.02],
+    ['cap', 'pelvis', [0, 0.0, -0.22], [0, 0.13, -0.34], 0.07, 0.02, 0.05, 'b'],
+  ] },
+  { id: 'hamster', name: 'Hamster', cost: 450, boost: { magnet: 20 }, pal: ['#f0b070', '#ffffff', '#ff9ab0'], parts: [
+    ['ell', 'head', [0, 0.06, -0.05], [0.236, 0.21, 0.2], 0.02, 0],
+    ['sph', 'head', [0.165, -0.1, 0.1], 0.075, 0.04, 1],
+    ['sph', 'head', [-0.165, -0.1, 0.1], 0.075, 0.04, 1],
+    ['sph', 'head', [0.16, 0.18, 0], 0.058, 0.02, 0],
+    ['sph', 'head', [-0.16, 0.18, 0], 0.058, 0.02, 0],
+    ['sph', 'head', [0.165, 0.18, 0.035], 0.032, 0.01, 2],
+    ['sph', 'head', [-0.165, 0.18, 0.035], 0.032, 0.01, 2],
+    ['sph', 'head', [0, -0.03, 0.235], 0.022, 0.008, 2],
+  ] },
+  { id: 'sheep', name: 'Sheep', cost: 500, boost: { armor: 4 }, pal: ['#f6f2ea', '#3a3038'], parts: [
+    ['sph', 'head', [0, 0.19, -0.02], 0.12, 0.05, 0],
+    ['sph', 'head', [0.13, 0.15, -0.03], 0.1, 0.05, 0],
+    ['sph', 'head', [-0.13, 0.15, -0.03], 0.1, 0.05, 0],
+    ['sph', 'head', [0, 0.1, -0.15], 0.13, 0.05, 0],
+    ['ell', 'head', [0.235, 0.02, 0], [0.085, 0.035, 0.05], 0.02, 1],
+    ['ell', 'head', [-0.235, 0.02, 0], [0.085, 0.035, 0.05], 0.02, 1],
+  ] },
+  { id: 'monkey', name: 'Monkey', cost: 650, boost: { cd: 4 }, pal: ['#8a5a3a', '#f4d4b0'], parts: [
+    ['ell', 'head', [0, 0.06, -0.05], [0.236, 0.21, 0.2], 0.02, 0],
+    ['ell', 'head', [0, -0.09, 0.165], [0.12, 0.07, 0.07], 0.03, 1],
+    ['sph', 'head', [0.245, 0.02, 0], 0.085, 0.02, 0],
+    ['sph', 'head', [-0.245, 0.02, 0], 0.085, 0.02, 0],
+    ['sph', 'head', [0.255, 0.02, 0.035], 0.052, 0.01, 1],
+    ['sph', 'head', [-0.255, 0.02, 0.035], 0.052, 0.01, 1],
+    ['cap', 'pelvis', [0, -0.05, -0.22], [0, 0.22, -0.5], 0.03, 0.03, 0.03, 0, 0.05],
+    ['sph', 'pelvis', [0, 0.3, -0.47], 0.045, 0.03, 0],
+  ] },
+  { id: 'cow', name: 'Cow', cost: 700, boost: { hp: 5 }, pal: ['#ffffff', '#1c1a22', '#ffb0c0', '#f0e0c0'], parts: [
+    ['cap', 'head', [0.12, 0.16, 0], [0.21, 0.26, 0.01], 0.035, 0.015, 0.02, 3],
+    ['cap', 'head', [-0.12, 0.16, 0], [-0.21, 0.26, 0.01], 0.035, 0.015, 0.02, 3],
+    ['ell', 'head', [0.245, 0.06, 0], [0.09, 0.035, 0.05], 0.02, 0],
+    ['ell', 'head', [-0.245, 0.06, 0], [0.09, 0.035, 0.05], 0.02, 0],
+    ['ell', 'head', [0, -0.075, 0.185], [0.13, 0.085, 0.075], 0.03, 2],
+    ['sph', 'head', [0.04, -0.06, 0.255], 0.015, 0.006, 1],
+    ['sph', 'head', [-0.04, -0.06, 0.255], 0.015, 0.006, 1],
+    ['sph', 'head', [0.11, 0.15, 0.12], 0.06, 0.02, 1],
+  ] },
+  { id: 'raccoon', name: 'Raccoon', cost: 750, boost: { gold: 6 }, pal: ['#76727c', '#1c1a22', '#ece8ec'], parts: [
+    ['cap', 'head', [0.13, 0.14, -0.01], [0.18, 0.28, 0], 0.07, 0.03, 0.03, 0],
+    ['cap', 'head', [-0.13, 0.14, -0.01], [-0.18, 0.28, 0], 0.07, 0.03, 0.03, 0],
+    ['ell', 'head', [0, 0.045, 0.165], [0.175, 0.05, 0.075], 0.02, 1],
+    ['ell', 'head', [0, -0.065, 0.19], [0.09, 0.06, 0.06], 0.02, 2],
+    ['sph', 'head', [0, -0.045, 0.245], 0.022, 0.008, 1],
+    ['cap', 'pelvis', [0, -0.05, -0.22], [0, -0.16, -0.56], 0.085, 0.06, 0.05, 0, 0.04],
+    ['sph', 'pelvis', [0, -0.12, -0.42], 0.085, 0.01, 1],
+  ] },
+  { id: 'axolotl', name: 'Axolotl', cost: 800, boost: { regen: 0.1 }, pal: ['#ff5aa0'], parts: [
+    ['cap', 'head', [0.18, 0.08, -0.02], [0.36, 0.2, -0.05], 0.035, 0.02, 0.02, 0, 0.02],
+    ['cap', 'head', [-0.18, 0.08, -0.02], [-0.36, 0.2, -0.05], 0.035, 0.02, 0.02, 0, 0.02],
+    ['cap', 'head', [0.2, 0.0, -0.02], [0.4, 0.02, -0.06], 0.035, 0.02, 0.02, 0, 0.02],
+    ['cap', 'head', [-0.2, 0.0, -0.02], [-0.4, 0.02, -0.06], 0.035, 0.02, 0.02, 0, 0.02],
+    ['cap', 'head', [0.18, -0.08, -0.02], [0.35, -0.15, -0.05], 0.035, 0.02, 0.02, 0, 0.02],
+    ['cap', 'head', [-0.18, -0.08, -0.02], [-0.35, -0.15, -0.05], 0.035, 0.02, 0.02, 0, 0.02],
+  ] },
+  { id: 'fawn', name: 'Fawn', cost: 850, boost: { speed: 5 }, pal: ['#c88a50', '#ffffff', '#6a4224'], parts: [
+    ['ell', 'head', [0.23, 0.09, -0.02], [0.1, 0.04, 0.06], 0.02, 0],
+    ['ell', 'head', [-0.23, 0.09, -0.02], [0.1, 0.04, 0.06], 0.02, 0],
+    ['cap', 'head', [0.08, 0.17, 0], [0.1, 0.28, -0.01], 0.026, 0.02, 0.02, 2],
+    ['cap', 'head', [-0.08, 0.17, 0], [-0.1, 0.28, -0.01], 0.026, 0.02, 0.02, 2],
+    ['sph', 'head', [0.1, 0.15, 0.13], 0.026, 0.008, 1],
+    ['sph', 'head', [-0.07, 0.17, 0.11], 0.022, 0.008, 1],
+    ['sph', 'head', [0.02, 0.2, 0.06], 0.02, 0.008, 1],
+    ['sph', 'head', [0, -0.035, 0.232], 0.026, 0.008, 2],
+  ] },
+  { id: 'snail', name: 'Snail', cost: 900, boost: { armor: 6 }, pal: ['#d8a050', '#8a5a2a', '#3a2a20'], parts: [
+    ['sph', 'chest', [0, 0.1, -0.32], 0.25, 0.04, 0],
+    ['sph', 'chest', [0, 0.13, -0.5], 0.13, 0.02, 1],
+    ['sph', 'chest', [0, 0.15, -0.58], 0.065, 0.01, 0],
+    ['cap', 'head', [0.08, 0.15, 0.05], [0.13, 0.38, 0.08], 0.025, 0.02, 0.02, 'b', 0.02],
+    ['cap', 'head', [-0.08, 0.15, 0.05], [-0.13, 0.38, 0.08], 0.025, 0.02, 0.02, 'b', 0.02],
+    ['sph', 'head', [0.13, 0.4, 0.08], 0.04, 0.01, 2],
+    ['sph', 'head', [-0.13, 0.4, 0.08], 0.04, 0.01, 2],
+  ] },
+  { id: 'butterfly', name: 'Butterfly', cost: 1000, boost: { xp: 6 }, pal: ['#ff8ad8', '#8ad8ff', '#1c1a22'], parts: [
+    ['ell', 'chest', [0.22, 0.18, -0.25], [0.18, 0.2, 0.022], 0.03, 0],
+    ['ell', 'chest', [-0.22, 0.18, -0.25], [0.18, 0.2, 0.022], 0.03, 0],
+    ['ell', 'chest', [0.16, -0.08, -0.24], [0.12, 0.13, 0.022], 0.03, 1],
+    ['ell', 'chest', [-0.16, -0.08, -0.24], [0.12, 0.13, 0.022], 0.03, 1],
+    ['cap', 'head', [0.06, 0.18, 0.05], [0.14, 0.38, 0.1], 0.012, 0.012, 0.01, 2, 0.02],
+    ['cap', 'head', [-0.06, 0.18, 0.05], [-0.14, 0.38, 0.1], 0.012, 0.012, 0.01, 2, 0.02],
+    ['sph', 'head', [0.14, 0.38, 0.1], 0.03, 0.01, 2],
+    ['sph', 'head', [-0.14, 0.38, 0.1], 0.03, 0.01, 2],
+  ] },
+  { id: 'ladybug', name: 'Ladybug', cost: 1050, boost: { dmg: 4 }, pal: ['#e8283c', '#1c1a22'], parts: [
+    ['ell', 'chest', [0, 0.02, -0.17], [0.3, 0.32, 0.15], 0.04, 0],
+    ['sph', 'chest', [0.12, 0.12, -0.3], 0.05, 0.01, 1],
+    ['sph', 'chest', [-0.13, 0.02, -0.3], 0.05, 0.01, 1],
+    ['sph', 'chest', [0.1, -0.12, -0.29], 0.045, 0.01, 1],
+    ['sph', 'chest', [-0.06, 0.2, -0.28], 0.04, 0.01, 1],
+    ['cap', 'head', [0.06, 0.18, 0.06], [0.12, 0.34, 0.12], 0.012, 0.012, 0.01, 1, 0.02],
+    ['cap', 'head', [-0.06, 0.18, 0.06], [-0.12, 0.34, 0.12], 0.012, 0.012, 0.01, 1, 0.02],
+  ] },
+  { id: 'alien', name: 'Alien', cost: 1150, boost: { area: 5 }, pal: ['#7aff6a', '#ffffff', '#2a8a3a'], parts: [
+    ['cap', 'head', [0.08, 0.17, 0], [0.15, 0.42, 0.02], 0.016, 0.012, 0.02, 2, 0.03],
+    ['cap', 'head', [-0.08, 0.17, 0], [-0.15, 0.42, 0.02], 0.016, 0.012, 0.02, 2, 0.03],
+    ['sph', 'head', [0.15, 0.44, 0.02], 0.05, 0.01, 0],
+    ['sph', 'head', [-0.15, 0.44, 0.02], 0.05, 0.01, 0],
+    ['sph', 'head', [0, 0.15, 0.17], 0.05, 0.02, 1],
+    ['sph', 'head', [0, 0.15, 0.215], 0.025, 0.005, 2],
+  ] },
+  { id: 'bat', name: 'Bat', cost: 1250, boost: { cd: 5 }, pal: ['#3a2a48', '#ff9ab0', '#ffffff'], parts: [
+    ['cap', 'head', [0.12, 0.14, 0], [0.23, 0.37, 0.02], 0.08, 0.02, 0.03, 0],
+    ['cap', 'head', [-0.12, 0.14, 0], [-0.23, 0.37, 0.02], 0.08, 0.02, 0.03, 0],
+    ['cap', 'head', [0.13, 0.16, 0.03], [0.22, 0.33, 0.05], 0.045, 0.01, 0.01, 1],
+    ['cap', 'head', [-0.13, 0.16, 0.03], [-0.22, 0.33, 0.05], 0.045, 0.01, 0.01, 1],
+    ['ell', 'chest', [0.32, 0.1, -0.2], [0.24, 0.16, 0.022], 0.04, 0],
+    ['ell', 'chest', [-0.32, 0.1, -0.2], [0.24, 0.16, 0.022], 0.04, 0],
+    ['cap', 'head', [0.04, -0.1, 0.205], [0.04, -0.155, 0.2], 0.016, 0.004, 0.005, 2],
+    ['cap', 'head', [-0.04, -0.1, 0.205], [-0.04, -0.155, 0.2], 0.016, 0.004, 0.005, 2],
+  ] },
+  { id: 'robot', name: 'Robot', cost: 1350, boost: { armor: 6 }, pal: ['#b8c4d0', '#ffcf40', '#2a3a52'], parts: [
+    ['sph', 'head', [0, 0.005, 0], 0.24, 0.015, 0],
+    ['ell', 'head', [0, 0.03, 0.19], [0.16, 0.06, 0.07], 0.02, 2],
+    ['cap', 'head', [0, 0.22, 0], [0, 0.36, 0], 0.016, 0.016, 0.01, 0],
+    ['sph', 'head', [0, 0.38, 0], 0.042, 0.01, 1],
+    ['sph', 'head', [0.245, 0, 0], 0.055, 0.01, 1],
+    ['sph', 'head', [-0.245, 0, 0], 0.055, 0.01, 1],
+  ] },
+  { id: 'dragon', name: 'Dragon', cost: 2000, boost: { dmg: 6 }, pal: ['#4ac06a', '#ffe080', '#2a8a4a'], parts: [
+    ['cap', 'head', [0.1, 0.15, -0.05], [0.17, 0.34, -0.15], 0.045, 0.01, 0.03, 1],
+    ['cap', 'head', [-0.1, 0.15, -0.05], [-0.17, 0.34, -0.15], 0.045, 0.01, 0.03, 1],
+    ['ell', 'chest', [0.28, 0.16, -0.24], [0.22, 0.15, 0.022], 0.04, 0],
+    ['ell', 'chest', [-0.28, 0.16, -0.24], [0.22, 0.15, 0.022], 0.04, 0],
+    ['sph', 'head', [0, 0.21, -0.12], 0.05, 0.02, 2],
+    ['sph', 'chest', [0, 0.16, -0.27], 0.055, 0.02, 2],
+    ['cap', 'pelvis', [0, -0.05, -0.22], [0, -0.15, -0.6], 0.09, 0.025, 0.05, 0, 0.04],
+    ['ell', 'pelvis', [0, -0.16, -0.64], [0.07, 0.035, 0.07], 0.02, 2],
+  ] },
+  // ---------- more hats (big ones) ----------
+  { id: 'beanie', name: 'Pom Beanie', cost: 400, boost: { regen: 0.1 }, pal: ['#ff6a8a', '#ffffff'], parts: [
+    ['ell', 'head', [0, 0.17, -0.01], [0.235, 0.16, 0.235], 0.02, 0],
+    ['ell', 'head', [0, 0.115, 0], [0.247, 0.045, 0.247], 0.01, 1],
+    ['sph', 'head', [0, 0.36, -0.02], 0.08, 0.03, 1],
+  ] },
+  { id: 'bigbow', name: 'Big Bow', cost: 500, boost: { magnet: 20 }, pal: ['#ff5fb8', '#ffffff'], parts: [
+    ['ell', 'head', [0.14, 0.27, 0], [0.14, 0.09, 0.05], 0.03, 0],
+    ['ell', 'head', [-0.14, 0.27, 0], [0.14, 0.09, 0.05], 0.03, 0],
+    ['sph', 'head', [0, 0.25, 0.01], 0.055, 0.02, 0],
+    ['sph', 'head', [0.09, 0.28, 0.04], 0.03, 0.01, 1],
+    ['sph', 'head', [-0.09, 0.28, 0.04], 0.03, 0.01, 1],
+  ] },
+  { id: 'propeller', name: 'Propeller Cap', cost: 600, boost: { speed: 4 }, pal: ['#e8283c', '#ffd23a', '#3a7aff'], parts: [
+    ['ell', 'head', [0, 0.14, 0], [0.24, 0.13, 0.24], 0.015, 0],
+    ['ell', 'head', [0, 0.115, 0.2], [0.15, 0.02, 0.12], 0.01, 1],
+    ['cap', 'head', [0, 0.26, 0], [0, 0.32, 0], 0.02, 0.02, 0.01, 1],
+    ['ell', 'head', [0, 0.335, 0], [0.24, 0.012, 0.045], 0.005, 2],
+    ['ell', 'head', [0, 0.335, 0], [0.045, 0.012, 0.24], 0.005, 2],
+  ] },
+  { id: 'sunhat', name: 'Sun Hat', cost: 700, boost: { xp: 5 }, pal: ['#d2aa62', '#ff8ab0', '#ffffff', '#ffd23a'], parts: [
+    ['ell', 'head', [0, 0.12, 0], [0.44, 0.028, 0.44], 0.01, 0],
+    ['ell', 'head', [0, 0.2, 0], [0.2, 0.11, 0.2], 0.02, 0],
+    ['ell', 'head', [0, 0.15, 0], [0.207, 0.032, 0.207], 0.01, 1],
+    ['sph', 'head', [0.17, 0.19, 0.11], 0.055, 0.02, 2],
+    ['sph', 'head', [0.18, 0.2, 0.15], 0.026, 0.01, 3],
+  ] },
+  { id: 'santa', name: 'Santa Hat', cost: 800, boost: { gold: 5 }, pal: ['#e8283c', '#ffffff'], parts: [
+    ['ell', 'head', [0, 0.12, 0], [0.255, 0.06, 0.255], 0.02, 1],
+    ['cap', 'head', [0, 0.15, 0], [0.15, 0.46, -0.15], 0.22, 0.045, 0.03, 0, 0.03],
+    ['sph', 'head', [0.17, 0.47, -0.17], 0.07, 0.02, 1, 0.02],
+  ] },
+  { id: 'cloud', name: 'Rain Cloud', cost: 1000, boost: { regen: 0.15 }, pal: ['#eef2fa', '#5ab0ff'], parts: [
+    ['sph', 'head', [0, 0.5, 0], 0.14, 0.06, 0, 0.01],
+    ['sph', 'head', [0.15, 0.46, 0], 0.11, 0.06, 0, 0.01],
+    ['sph', 'head', [-0.15, 0.46, 0], 0.11, 0.06, 0, 0.01],
+    ['sph', 'head', [0.05, 0.59, -0.02], 0.1, 0.06, 0, 0.01],
+    ['sph', 'head', [0.09, 0.32, 0.03], 0.022, 0.006, 1, 0.02],
+    ['sph', 'head', [-0.07, 0.29, 0.0], 0.02, 0.006, 1, 0.02],
+  ] },
+  { id: 'pirate', name: 'Pirate Hat', cost: 1100, boost: { dmg: 5 }, pal: ['#1c1820', '#ffc93a', '#ffffff'], parts: [
+    ['ell', 'head', [0, 0.14, 0], [0.36, 0.03, 0.27], 0.01, 0],
+    ['ell', 'head', [0, 0.24, -0.01], [0.22, 0.13, 0.19], 0.02, 0],
+    ['cap', 'head', [0.3, 0.15, 0], [0.22, 0.31, 0.08], 0.05, 0.03, 0.03, 0],
+    ['cap', 'head', [-0.3, 0.15, 0], [-0.22, 0.31, 0.08], 0.05, 0.03, 0.03, 0],
+    ['ell', 'head', [0, 0.17, 0], [0.225, 0.03, 0.195], 0.01, 1],
+    ['sph', 'head', [0, 0.25, 0.19], 0.045, 0.01, 2],
+  ] },
+  { id: 'cake', name: 'Birthday Cake', cost: 1200, boost: { xp: 6 }, pal: ['#ffe2c8', '#ff8ac8', '#7ad8ff', '#ffd23a'], parts: [
+    ['ell', 'head', [0, 0.17, 0], [0.27, 0.1, 0.27], 0.01, 0],
+    ['ell', 'head', [0, 0.25, 0], [0.28, 0.04, 0.28], 0.02, 1],
+    ['ell', 'head', [0, 0.33, 0], [0.18, 0.08, 0.18], 0.01, 0],
+    ['ell', 'head', [0, 0.39, 0], [0.19, 0.03, 0.19], 0.02, 1],
+    ['cap', 'head', [0, 0.4, 0], [0, 0.52, 0], 0.022, 0.022, 0.005, 2],
+    ['sph', 'head', [0, 0.565, 0], 0.032, 0.01, 3, 0.01],
+  ] },
+  { id: 'icecream', name: 'Ice Cream', cost: 1300, boost: { cd: 5 }, pal: ['#ff9ac8', '#9af0c8', '#fff4dc', '#e8283c'], parts: [
+    ['sph', 'head', [0, 0.26, 0], 0.17, 0.04, 0],
+    ['sph', 'head', [0, 0.46, 0], 0.15, 0.04, 1],
+    ['sph', 'head', [0, 0.63, 0], 0.13, 0.04, 2],
+    ['sph', 'head', [0, 0.78, 0], 0.045, 0.01, 3, 0.01],
+  ] },
+  { id: 'jester', name: 'Jester Hat', cost: 1600, boost: { gold: 6 }, pal: ['#e8283c', '#3a6aff', '#ffc93a'], parts: [
+    ['ell', 'head', [0, 0.12, 0], [0.245, 0.05, 0.245], 0.02, 2],
+    ['cap', 'head', [0.04, 0.16, 0], [0.32, 0.4, -0.05], 0.12, 0.03, 0.04, 0, 0.04],
+    ['cap', 'head', [-0.04, 0.16, 0], [-0.32, 0.4, -0.05], 0.12, 0.03, 0.04, 1, 0.04],
+    ['cap', 'head', [0, 0.18, -0.02], [0, 0.5, -0.14], 0.11, 0.03, 0.04, 0, 0.04],
+    ['sph', 'head', [0.34, 0.39, -0.05], 0.045, 0.01, 2, 0.02],
+    ['sph', 'head', [-0.34, 0.39, -0.05], 0.045, 0.01, 2, 0.02],
+    ['sph', 'head', [0, 0.53, -0.15], 0.045, 0.01, 2, 0.02],
+  ] },
+  { id: 'sombrero', name: 'Sombrero', cost: 1500, boost: { area: 6 }, pal: ['#c8963c', '#e8283c', '#3ab060'], parts: [
+    ['ell', 'head', [0, 0.14, 0], [0.55, 0.03, 0.55], 0.01, 0],
+    ['cap', 'head', [0, 0.14, 0], [0, 0.42, 0], 0.17, 0.12, 0.02, 0],
+    ['ell', 'head', [0, 0.2, 0], [0.18, 0.035, 0.18], 0.01, 1],
+    ['sph', 'head', [0.5, 0.14, 0], 0.04, 0.01, 2],
+    ['sph', 'head', [-0.5, 0.14, 0], 0.04, 0.01, 2],
+    ['sph', 'head', [0, 0.14, 0.5], 0.04, 0.01, 1],
+  ] },
+  { id: 'kabuto', name: 'Kabuto', cost: 2000, boost: { armor: 7 }, pal: ['#6a1a1a', '#ffc93a'], parts: [
+    ['ell', 'head', [0, 0.08, -0.01], [0.25, 0.2, 0.25], 0.015, 0],
+    ['ell', 'head', [0, 0.0, -0.09], [0.3, 0.08, 0.27], 0.02, 0],
+    ['cap', 'head', [0.04, 0.22, 0.2], [0.22, 0.48, 0.22], 0.025, 0.01, 0.01, 1],
+    ['cap', 'head', [-0.04, 0.22, 0.2], [-0.22, 0.48, 0.22], 0.025, 0.01, 0.01, 1],
+    ['sph', 'head', [0, 0.2, 0.225], 0.045, 0.01, 1],
+  ] },
 ];
 COSTUMES.sort((a, b) => a.cost - b.cost);
 // Two wearable slots: a hat sits on top of the head, everything else (hoods, faces, tails, wings) is the costume.
 // One of each can be worn together; "none" empties a slot.
-const HAT_IDS = ['party', 'sprout', 'flowers', 'mushroom', 'chef', 'headphones', 'cowboy', 'tophat', 'reindeer', 'witch', 'viking', 'wizard', 'crown', 'angel'];
+const HAT_IDS = ['party', 'sprout', 'flowers', 'mushroom', 'chef', 'headphones', 'cowboy', 'tophat', 'reindeer', 'witch', 'viking', 'wizard', 'crown', 'angel',
+  'beanie', 'bigbow', 'propeller', 'sunhat', 'santa', 'cloud', 'pirate', 'cake', 'icecream', 'jester', 'sombrero', 'kabuto'];
 for (const c of COSTUMES) c.slot = c.id === 'none' ? 'any' : HAT_IDS.includes(c.id) ? 'hat' : 'hood';
 const costumesOf = slot => COSTUMES.filter(c => c.slot === slot || c.slot === 'any');
 

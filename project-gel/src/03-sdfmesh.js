@@ -13,6 +13,21 @@ function sdSegDist(px, py, pz, ax, ay, az, bx, by, bz) {
   return Math.hypot(pax - bax * h, pay - bay * h, paz - baz * h);
 }
 
+// planes for a 'crag': n seeded directions (spread over the sphere) at slightly uneven distances
+const CRAG_ONE = [1, 1, 1];
+function cragPlanes(seed, n, r) {
+  let a = (seed * 2654435761) >>> 0;
+  const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    // a golden-spiral spread, jittered, so no side is left uncut
+    const y = 1 - 2 * (i + 0.5) / n, rr = Math.sqrt(1 - y * y), ph = i * 2.39996 + rnd() * 0.9;
+    let nx = Math.cos(ph) * rr + (rnd() - 0.5) * 0.35, ny = y + (rnd() - 0.5) * 0.35, nz = Math.sin(ph) * rr + (rnd() - 0.5) * 0.35;
+    const l = Math.hypot(nx, ny, nz) || 1;
+    out.push(nx / l, ny / l, nz / l, r * (0.78 + rnd() * 0.32));
+  }
+  return out;
+}
 // Part shapes. Every part: { s: shape, ...params, k: blend into the union, sub: true to carve, col: fixed color or null, bone: rigid bone or undefined }
 function partDist(pt, x, y, z) {
   switch (pt.s) {
@@ -64,6 +79,14 @@ function partDist(pt, x, y, z) {
       const d2 = -Math.sqrt(dd) * Math.sign(sg);
       return Math.min(Math.max(d2, pz), 0) + Math.hypot(Math.max(d2, 0), Math.max(pz, 0));
     }
+    case 'crag': {
+      // faceted rock: a jagged convex chunk cut by seeded planes (sc squashes it per axis)
+      const pl = pt._pl || (pt._pl = cragPlanes(pt.seed || 1, pt.n || 9, pt.r));
+      const sc = pt.sc || CRAG_ONE, qx = (x - pt.c[0]) / sc[0], qy = (y - pt.c[1]) / sc[1], qz = (z - pt.c[2]) / sc[2];
+      let d = -1e9;
+      for (let i = 0; i < pl.length; i += 4) d = Math.max(d, pl[i] * qx + pl[i + 1] * qy + pl[i + 2] * qz - pl[i + 3]);
+      return d * Math.min(sc[0], sc[1], sc[2]);
+    }
     case 'rock': {
       // lumpy sphere: sphere plus low-frequency bumps
       const dx = x - pt.c[0], dy = y - pt.c[1], dz = z - pt.c[2];
@@ -84,12 +107,14 @@ function partBounds(pt) {
     case 'tor': return [pt.c, pt.R + pt.r];
     case 'box': return [pt.c, Math.hypot(...pt.hs)];
     case 'rock': return [pt.c, pt.r * (1 + pt.bump * 0.8)];
+    case 'crag': { const sc = pt.sc || CRAG_ONE; return [pt.c, pt.r * 1.75 * Math.max(sc[0], sc[1], sc[2])]; }
     case 'gable': return [[pt.c[0], pt.c[1] + pt.h / 2, pt.c[2]], Math.hypot(pt.w, pt.h / 2, pt.hh)];
   }
   return [[0, 0, 0], 1e9];
 }
 function prepParts(parts) {
-  for (const pt of parts) { const [c, r] = partBounds(pt); pt.bc = c; pt.br = r; }
+  // (boxes and cylinders without a rounding radius would give NaN)
+  for (const pt of parts) { if ((pt.s === 'box' || pt.s === 'cyl') && pt.rd === undefined) pt.rd = 0; const [c, r] = partBounds(pt); pt.bc = c; pt.br = r; }
   return parts;
 }
 function modelSdf(parts, x, y, z) {
@@ -123,8 +148,23 @@ function surfaceNets(f, bmin, bmax, h) {
   const nx = Math.ceil((bmax[0] - bmin[0]) / h) + 1, ny = Math.ceil((bmax[1] - bmin[1]) / h) + 1, nz = Math.ceil((bmax[2] - bmin[2]) / h) + 1;
   const vals = new Float32Array(nx * ny * nz);
   const id = (i, j, k) => i + nx * (j + ny * k);
-  for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++)
-    vals[id(i, j, k)] = f(bmin[0] + i * h, bmin[1] + j * h, bmin[2] + k * h);
+  // a coarse pass first: a coarse cell whose corners all sit farther from the surface than the cell is wide
+  // holds no surface (the fields are distance bounds), so its samples take that sign without being evaluated.
+  // Only the masks of empty cells change, and empty cells make no vertices, so the mesh is the same.
+  const S = 4, cnx = Math.ceil((nx - 1) / S) + 1, cny = Math.ceil((ny - 1) / S) + 1, cnz = Math.ceil((nz - 1) / S) + 1;
+  const cval = new Float32Array(cnx * cny * cnz), cidx = (i, j, k) => i + cnx * (j + cny * k);
+  for (let k = 0; k < cnz; k++) for (let j = 0; j < cny; j++) for (let i = 0; i < cnx; i++)
+    cval[cidx(i, j, k)] = f(bmin[0] + Math.min(i * S, nx - 1) * h, bmin[1] + Math.min(j * S, ny - 1) * h, bmin[2] + Math.min(k * S, nz - 1) * h);
+  const margin = S * h * 1.75 * 1.2, far = new Float32Array((cnx - 1) * (cny - 1) * (cnz - 1));
+  for (let k = 0; k < cnz - 1; k++) for (let j = 0; j < cny - 1; j++) for (let i = 0; i < cnx - 1; i++) {
+    let lo = 1e9, hi = -1e9;
+    for (let c = 0; c < 8; c++) { const v = cval[cidx(i + (c & 1), j + ((c >> 1) & 1), k + (c >> 2))]; lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    far[i + (cnx - 1) * (j + (cny - 1) * k)] = lo > margin ? 1 : hi < -margin ? -1 : 0;
+  }
+  for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const fc = far[Math.min((i / S) | 0, cnx - 2) + (cnx - 1) * (Math.min((j / S) | 0, cny - 2) + (cny - 1) * Math.min((k / S) | 0, cnz - 2))];
+    vals[id(i, j, k)] = fc ? fc * margin : f(bmin[0] + i * h, bmin[1] + j * h, bmin[2] + k * h);
+  }
 
   const cx = nx - 1, cy = ny - 1, cz = nz - 1;
   const cid = (i, j, k) => i + cx * (j + cy * k);
@@ -207,10 +247,43 @@ function surfaceNets(f, bmin, bmax, h) {
 
 // Build a skinned mesh from a model: parts + bones (rest pose).
 // Vertex layout (14 floats): pos3, nrm3, bone0, bone1, w0, ao, col rgb, bodyFlag
+// The same field as modelSdf, but each sample only looks at the parts near it: the box is cut into bins and every
+// bin keeps (in order) the parts whose bounds come within reach of it. Anywhere within reach of the surface the
+// value is unchanged, so models with hundreds of small parts mesh many times faster.
+function binnedSdf(parts, bmin, bmax, reach) {
+  const ext = [0, 1, 2].map(a => bmax[a] - bmin[a]), bs = Math.max(...ext) / 22;
+  const nb = ext.map(e => Math.max(1, Math.ceil(e / bs))), lists = [], hd = bs * 0.8661;
+  for (let k = 0; k < nb[2]; k++) for (let j = 0; j < nb[1]; j++) for (let i = 0; i < nb[0]; i++) {
+    const cx = bmin[0] + (i + 0.5) * bs, cy = bmin[1] + (j + 0.5) * bs, cz = bmin[2] + (k + 0.5) * bs;
+    lists.push(parts.filter(pt => Math.hypot(cx - pt.bc[0], cy - pt.bc[1], cz - pt.bc[2]) - pt.br - (pt.k || 0) < hd + reach));
+  }
+  return (x, y, z) => {
+    // (a NaN coordinate lands in bin 0 rather than off the end)
+    let i = Math.floor((x - bmin[0]) / bs) | 0, j = Math.floor((y - bmin[1]) / bs) | 0, kk = Math.floor((z - bmin[2]) / bs) | 0;
+    i = i < 0 ? 0 : i >= nb[0] ? nb[0] - 1 : i; j = j < 0 ? 0 : j >= nb[1] ? nb[1] - 1 : j; kk = kk < 0 ? 0 : kk >= nb[2] ? nb[2] - 1 : kk;
+    const L = lists[i + nb[0] * (j + nb[1] * kk)];
+    let d = 1e9, first = true;
+    for (let n = 0; n < L.length; n++) {
+      const pt = L[n], k = pt.k || 0;
+      const lb = Math.hypot(x - pt.bc[0], y - pt.bc[1], z - pt.bc[2]) - pt.br;
+      if (pt.sub) {
+        if (lb - k > -d) continue;
+        d = smax(d, -partDist(pt, x, y, z), k);
+      } else {
+        if (!first && lb - k > d) continue;
+        const di = partDist(pt, x, y, z);
+        d = first ? di : smin(d, di, k);
+        first = false;
+      }
+    }
+    return d;
+  };
+}
 function buildSkinnedMesh(model, cell) {
   prepParts(model.parts);
-  const f = (x, y, z) => modelSdf(model.parts, x, y, z);
   const [bmin, bmax] = partsBox(model.parts, cell * 2.5);
+  // reach: the farthest any sample is taken from the surface (ambient occlusion probes, the coarse pass)
+  const f = model.parts.length > 24 ? binnedSdf(model.parts, bmin, bmax, Math.max(0.12 * (model.aoScale || 1), cell * 10) + 0.05) : (x, y, z) => modelSdf(model.parts, x, y, z);
   const mesh = surfaceNets(f, bmin, bmax, cell);
   const { P, N, nv } = mesh;
   const V = new Float32Array(nv * 14);

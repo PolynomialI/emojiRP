@@ -9,7 +9,7 @@ const R = {
     time: 0, lightDir: [-0.45, 0.82, 0.36], lightCol: [1, 0.97, 0.92], skyCol: [0.46, 0.62, 0.8], groundCol: [0.1, 0.16, 0.24], fogCol: [0.04, 0.11, 0.19],
     spot: [0, 0, 0, 13], fogRange: [10, 26], spotMin: 0.42, arena: 0, poolCol: [0.1, 0.4, 0.5], poolGlow: 0, rockCol: [0.5, 0.5, 0.55],
     stoneA: [0.17, 0.3, 0.41], stoneB: [0.25, 0.4, 0.53], grout: [0.05, 0.11, 0.17], accent: [0.3, 1, 0.5], shadowTint: [0.05, 0.12, 0.25],
-    bloom: 0.48, hurt: 0, lowHp: 0, flashW: 0,
+    bloom: 0.48, hurt: 0, lowHp: 0, flashW: 0, torches: new Float32Array(32), torchCol: [1.5, 0.85, 0.42],
   },
   goo: { base: hexToRgb('#18d2ff'), accent: hexToRgb('#7b55f5'), pink: hexToRgb('#ff5fb8'), rim: hexToRgb('#8ef3ff') },
   settings: { msaa: true, bloom: true, scale: 1 },
@@ -189,6 +189,7 @@ R.setFrame = function (prog) {
   if (u.uFogRange) gl.uniform2fv(u.uFogRange, f.fogRange);
   if (u.uSpotMin !== undefined && u.uSpotMin) gl.uniform1f(u.uSpotMin, f.spotMin);
   if (u.uPixAng) gl.uniform1f(u.uPixAng, c.pixAng);
+  if (u.uTorch) { gl.uniform4fv(u.uTorch, f.torches); gl.uniform3fv(u.uTorchCol, f.torchCol); }
   if (u.uNoise) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, TEX.noise); gl.uniform1i(u.uNoise, 0); }
   if (u.uGooBase) {
     gl.uniform3fv(u.uGooBase, R.goo.base); gl.uniform3fv(u.uGooAccent, R.goo.accent);

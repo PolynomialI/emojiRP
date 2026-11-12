@@ -182,7 +182,9 @@ class Hero {
     const speed = Math.hypot(this.vel[0], this.vel[2]);
     const prevSpeed = Math.hypot(this.prevVel[0], this.prevVel[2]);
     const yaw0 = this.yaw;
-    if (speed > 0.2) {
+    // the cave holds the hero facing one way (faceYaw) while it slides from side to side
+    if (this.faceYaw != null) { const d = angleDiff(this.yaw, this.faceYaw); this.yaw += clamp(d, -9 * dt, 9 * dt); }
+    else if (speed > 0.2) {
       const want = Math.atan2(this.vel[0], this.vel[2]);
       const d = angleDiff(this.yaw, want);
       const maxTurn = 15.7 * dt;
@@ -203,7 +205,8 @@ class Hero {
     this.phase += dt * (speed / (STRIDE * this.scale)) * TAU;
     const ph = this.phase, t = this.time;
     // the body rises as a leg passes under it and dips when the legs are spread
-    const bob = sN * (0.05 * Math.cos(2 * ph) - 0.03) + (1 - sN) * 0.008 * Math.sin(t * 1.8);
+    // crouch (0..1) sinks the whole body behind cover; the legs fold to suit
+    const bob = sN * (0.05 * Math.cos(2 * ph) - 0.03) + (1 - sN) * 0.008 * Math.sin(t * 1.8) - (this.crouch || 0) * 0.4;
     const lean = sN * 0.17 * this.stretchMul;
     const breathe = Math.sin(t * TAU / 3.4);
     const J = this.joints;

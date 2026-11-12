@@ -4,7 +4,7 @@
 const SAVE_KEY = 'projectGel.save.v1';
 function defaultSave() {
   return {
-    v: 1, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
+    v: 1, content: 2, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {} }, devUnlocked: false,
@@ -34,6 +34,17 @@ function loadGame() {
       if (!s.stats || s.stats.bosses == null) out.stats.bosses = Object.keys(out.cleared).length;
       // saves from before hats had their own slot: a hat worn as the costume moves over
       if (HAT_IDS.includes(out.costume)) { out.hat = out.costume; out.costume = 'none'; }
+      // saves from before chapters 16-20 were remade (16+ used to repeat 1-15 with stronger enemies): anyone past
+      // chapter 15 goes back to it, and has to beat it again to open the new chapters
+      if (!(s.content >= 2)) {
+        if (out.chapter > 15) {
+          out.chapter = 15;
+          for (const k of Object.keys(out.cleared)) if (+k >= 15) delete out.cleared[k];
+          for (const k of Object.keys(out.best)) if (+k > 15) delete out.best[k];
+        }
+        out.selected = Math.min(out.selected || 1, out.chapter);
+        out.content = 2;
+      }
       return out;
     }
   } catch (_) { /* storage unavailable: play without saving */ }

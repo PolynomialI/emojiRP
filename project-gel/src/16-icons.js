@@ -120,6 +120,7 @@ function renderAllIcons() {
     spore: { scale: 0.62, emissive: 0.2, p1: 2 },
     rollingpin: { scale: 0.5, ax: 0.6, az: 0.8, emissive: 0.1 },
     ptero: { scale: 0.55, ax: 0.5, ay: -0.25, az: 0.85, emissive: 0.1, eye: [0, 1.6, 1.9] },
+    fissure: { scale: 0.6, emissive: 0.08, eye: [0, 1.2, 2.1] },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

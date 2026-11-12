@@ -364,6 +364,8 @@ function emitRunScene() {
     if (e.boss) emitBossGrandeur(e);
     if (e.mini) emitMiniCrown(e);
     if (e.boss && BOSS_DRAW[e.type]) { BOSS_DRAW[e.type](e); continue; }
+    // a mole underground: just the mound of dirt it pushes up
+    if (e.under) { pushDecal(e.x, e.z, 0.75, 0.75, 0, 7, 0, 0, 0.4, 0.32, 0.25, 0.9); pushDecal(e.x, e.z, 0.55, 0.55, 0, 1, 0, 0, 0.2, 0.15, 0.1, 0.6); continue; }
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0;
     const appear = e.spawnT > 0 && !e.boss ? 1 - e.spawnT / 0.5 : 1;
     const ic = e.frozen > 0 ? 0.7 : 0, tn = e.tint;

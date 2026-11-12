@@ -112,7 +112,7 @@ function rushPicks(run, n) { run.level += n; run.xpNext = xpFor(run.level); run.
 function rushNext(run) {
   const k = run.rushK;
   Object.assign(run.info, { bossHpMul: 0.5 + 0.13 * k, dmgMul: 1 + 0.05 * k, hpMul: 1 + 0.12 * k, rateMul: 1 });
-  run.events.push({ t: run.t + (k ? RUSH.breather : 3), kind: 'eboss', ids: [CHAPTER_BOSSES[k]] });
+  run.events.push({ t: run.t + (k ? RUSH.breather : 3), kind: 'eboss', ids: [RUSH_BOSSES[k]] });
 }
 function rushStart(run) { run.rushK = 0; rushPicks(run, RUSH.startPicks); rushNext(run); }
 // a boss is down: loot, a breather, some health back and free upgrades. Returns true once the last one falls.
@@ -120,10 +120,10 @@ function rushBossDown(run) {
   for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
   run.bosses = []; run.bossStarted = false; run.bossTotalHp = 0;
   run.rushK++;
-  if (run.rushK >= CHAPTER_BOSSES.length) return true;
+  if (run.rushK >= RUSH_BOSSES.length) return true;
   run.hp = Math.min(run.maxHp, run.hp + run.maxHp * RUSH.heal);
   rushPicks(run, RUSH.picksPerBoss);
-  UI.toast(`Boss ${run.rushK} of ${CHAPTER_BOSSES.length} down!`, 2.2);
+  UI.toast(`Boss ${run.rushK} of ${RUSH_BOSSES.length} down!`, 2.2);
   rushNext(run);
   return false;
 }

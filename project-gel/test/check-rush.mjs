@@ -32,7 +32,7 @@ const res = await page.evaluate(() => {
   window.readInput = () => __botInput(); __bot.on = true;
   const run = G.run, log = [];
   const step = n => { for (let i = 0; i < n; i++) { if (G.state === 'levelup') { UI.choiceLock = 0; UI.pick(0); } if (G.state === 'chest') UI.closeChest(); run.invuln = 1; __frames(1); } };
-  for (let k = 0; k < CHAPTER_BOSSES.length; k++) {
+  for (let k = 0; k < RUSH_BOSSES.length; k++) {
     // the card is shown on a real-time timer, so note it whenever it is up while the boss arrives and fights
     let f = 0, card = '';
     const cards = document.getElementById('bossCards');
@@ -51,13 +51,13 @@ const res = await page.evaluate(() => {
   return { log, state: G.state, best: G.save.rushBest, time: G.save.rushTime, title: document.getElementById('resTitle')?.textContent, reward: run.reward, scrolls: run.scrolls };
 });
 for (const l of res.log) console.log('   ', JSON.stringify(l));
-const order = res.log.map(l => l.types[0]).join(',');
-check(res.log.length === 15 && order === 'stomper,sandworm,wreckbot,bigbounce,jellyqueen,yeti,magma,hydra,crab,outlaw,pumpking,geode,storm,jack,kraken', 'every chapter boss in order');
+const order = res.log.map(l => l.types[0]).join(','), want = await page.evaluate(() => RUSH_BOSSES.join(','));
+check(res.log.length === want.split(',').length && order === want && !want.includes('bagger'), 'every chapter boss in order (the cave\'s Bagger left out): ' + order);
 check(res.log.slice(0, -1).every(l => l.picks === 3 && l.healed > 0.6), 'between bosses: 3 picks and 35% health back');
 check(res.log.every(l => l.card), 'an intro card for every boss');
-check(res.state === 'results' && res.best === 15 && res.time > 0 && /CHAMPION/.test(res.title || ''), `full clear: ${res.title}, best ${res.best}, time ${res.time}, reward ${res.reward}`);
+check(res.state === 'results' && res.best === res.log.length && res.time > 0 && /CHAMPION/.test(res.title || ''), `full clear: ${res.title}, best ${res.best}, time ${res.time}, reward ${res.reward}`);
 
-// a losing rush: three bosses, then the hero melts; the best count stays at 15, the run reports 3
+// a losing rush: three bosses, then the hero melts; the best count stays at the full clear, the run reports 3
 await page.evaluate(() => { __frames(1); });
 await page.click('#btnContinue');
 await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
@@ -78,7 +78,7 @@ const lose = await page.evaluate(() => {
   for (let i = 0; i < 900 && G.state !== 'results'; i++) { run.invuln = 0; if (G.state === 'run' && run.hp > 0) hurtHero(1e6, G.hero.pos[0] + 1, G.hero.pos[2]); step(1); if (states[states.length - 1] !== G.state) states.push(G.state); }
   return { state: G.state, states, k: run.rushK, hp: run.hp, best: G.save.rushBest, title: document.getElementById('resTitle')?.textContent };
 });
-check(lose.state === 'results' && lose.k === 3 && lose.best === 15 && !/CHAMPION/.test(lose.title), `a lost rush after 3 bosses: ${lose.title}, best stays ${lose.best} ` + JSON.stringify(lose));
+check(lose.state === 'results' && lose.k === 3 && lose.best === res.log.length && !/CHAMPION/.test(lose.title), `a lost rush after 3 bosses: ${lose.title}, best stays ${lose.best} ` + JSON.stringify(lose));
 await page.evaluate(() => { __frames(1, 1 / 60, true); });
 await page.screenshot({ path: path.join(dir, 'shots', 'rush-results.png') });
 check(!errs.length, 'no page errors ' + (errs.length ? JSON.stringify(errs.slice(0, 4)) : ''));

@@ -121,7 +121,7 @@ const UI = {
     const eb = $('btnEndless');
     eb.hidden = !endlessUnlocked();
     eb.innerHTML = sv.endlessBest ? `ENDLESS<small>best ${fmtTime(sv.endlessBest)}</small>` : 'ENDLESS';
-    const rb = $('btnRush'), nb = CHAPTER_BOSSES.length;
+    const rb = $('btnRush'), nb = RUSH_BOSSES.length;
     rb.hidden = !rushUnlocked();
     rb.innerHTML = sv.rushTime ? `BOSS RUSH<small>best ${fmtTime(sv.rushTime)}</small>` : sv.rushBest ? `BOSS RUSH<small>best ${sv.rushBest}/${nb}</small>` : 'BOSS RUSH';
     $('chPrev').disabled = sv.selected <= 1;
@@ -319,17 +319,22 @@ const UI = {
       }
       $('slots').replaceChildren(...cells);
     }
-    // the chapter bar fills toward the boss, then shows the boss's health
-    const bossOn = run.bossStarted && run.bosses.some(b => !b.dying);
+    // the chapter bar fills toward the boss, then shows the boss's health (in the cave: the rooms, then the Bagger)
+    const bossOn = (run.bossStarted && run.bosses.some(b => !b.dying)) || !!(run.cave && run.cave.boss);
     if (L.boss !== bossOn) { L.boss = bossOn; $('chapBar').classList.toggle('boss', bossOn); }
     let pct, label;
-    if (bossOn) {
+    if (run.cave && run.cave.boss) { pct = clamp(run.cave.boss.hp / run.cave.boss.maxHp, 0, 1); label = 'THE BAGGER'; }
+    // (how many rooms each way is never shown)
+    else if (run.cave) { pct = 0; label = 'THE CAVE'; }
+    else if (bossOn) {
       const hp = run.bosses.reduce((s, b) => s + Math.max(0, b.dying ? 0 : b.hp), 0);
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.rush ? run.rushK / CHAPTER_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
-      label = run.rush ? `BOSS RUSH · ${run.rushK}/${CHAPTER_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
+      pct = run.rush ? run.rushK / RUSH_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      label = run.rush ? `BOSS RUSH · ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : 'CHAPTER ' + run.chapter;
+      // the crater: the bar fills to the cave (85%) and waits there
+      if (craterOpenNow()) { pct = Math.min(pct, CRATER.open / 300); if (ARENA.fx && ARENA.fx.st.open) label = 'ENTER THE CAVE'; }
     }
     const pctS = (pct * 100).toFixed(1) + '%';
     if (L.chap !== pctS) { L.chap = pctS; $('chapFill').style.width = pctS; }
@@ -493,7 +498,7 @@ const UI = {
   // ---------- pause / revive / results ----------
   openPause() {
     const run = G.run;
-    $('pauseSub').textContent = `${run.rush ? `Boss Rush ${run.rushK}/${CHAPTER_BOSSES.length}` : run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
+    $('pauseSub').textContent = `${run.rush ? `Boss Rush ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
     $('pauseList').replaceChildren(...run.slots.map(s => {
       const d = document.createElement('div'), max = maxLevel(s.id);
       d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
@@ -517,7 +522,7 @@ const UI = {
     $('resKills').textContent = fmtNum(run.kills);
     $('resLevel').textContent = run.level;
     $('resCoins').textContent = '+' + fmtNum(run.earned || 0);
-    $('resBreak').textContent = run.rush ? `${run.rushK} of ${CHAPTER_BOSSES.length} bosses beaten · ${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for the bosses`
+    $('resBreak').textContent = run.rush ? `${run.rushK} of ${RUSH_BOSSES.length} bosses beaten · ${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for the bosses`
       : run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
       : run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
   },
@@ -563,6 +568,7 @@ const UI = {
     }
     G.numbers = G.numbers.filter(n => n.t < 0.75);
     ctx.globalAlpha = 1;
+    if (run.cave) { caveOverlay(ctx, w, h, dt); return; }
     // hero health bar
     const hp = G.hero.pos;
     if (G.state !== 'dying' && R.project(hp[0], -0.15, hp[2], p)) {
