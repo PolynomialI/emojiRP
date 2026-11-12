@@ -23189,7 +23189,7 @@ function seaInfo(n) {
     n, sea: true, arenaName: C.name, bosses: [C.boss],
     // every run starts on a raft, so the chapters climb gently (their crowds, islands and bosses do the rest)
     hpMul: 1 + 0.08 * k + 0.006 * k * k, dmgMul: 1 + 0.045 * k, rateMul: 0.7 + 0.05 * k, speedMul: 1 + 0.01 * k,
-    bossHpMul: Math.pow(1.15, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
+    bossHpMul: Math.pow(1.12, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
   };
 }
 const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
@@ -24948,8 +24948,8 @@ function seaBossStart() {
   // it sails in from ahead of the ship, just off the screen
   const a = Math.atan2(S.vx, S.vz) + rand(-0.6, 0.6) || rand(0, TAU), r = VIEW.radius + B.len;
   const x = S.x + Math.sin(a) * r, z = S.z + Math.cos(a) * r;
-  // (a quarter less than the table: a sea boss fight should not drag)
-  const hp = B.hp * 0.75 * run.info.bossHpMul;
+  // (half the table: a sea boss fight should not drag)
+  const hp = B.hp * 0.5 * run.info.bossHpMul;
   const e = {
     id: run.nextId++, type: id, def: B, model: B.ride, boss: true, elite: false,
     x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: Math.atan2(S.x - x, S.z - z), hp, maxHp: hp, speed: B.speed, dmg: B.dmg * run.info.dmgMul * BOSS_DMG,

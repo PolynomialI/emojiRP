@@ -231,6 +231,14 @@ A second game mode with ten chapters of its own, on the home screen's second pag
   Life Ring, Crab, Turtle Shell) and 10 hats (Shark Fin worn on the back, Captain's Cap, Sailor Cap, Admiral
   Bicorne, Angler Lure, Jellyfish, Starfish, Coral Crown, Narwhal Horn, Seaweed Hair). Costumes can replace the
   legs (`legs: 'tentacles' | 'tail'`).
+- **Balance** (`seaInfo`, the autopilot in `test/_seabot.mjs`, which takes the first card offered and never revives):
+  every run starts on a raft, so the chapters climb gently (health +8%/chapter plus a little, damage +4.5%, spawns
+  +5%). Swimmers can only climb aboard while the ship is below 60% of its top speed, and hook blows do 70% damage;
+  a raft holds 4 boarders, a cargo ship 14. The next ship is offered 1.8x as often as other upgrades. While a boss
+  is out, swimmers come at under half the rate and every other cannon locks onto it. Sea bosses have half their
+  table health (x1.12 per chapter: the Pirate King about 6,100). Autopilot results: ocean 1 won (lowest hull 61%),
+  ocean 5 won (12%), ocean 9 and 10 held (67% and 39%) but their bosses outlasted the run cap before the last
+  boss health cut.
 - **Meshes:** the sea's meshes are big and build in the background workers after the land's; SAIL waits only for
   the chapter's own swimmers and islands, and the rest are moved to the front of the queue.
 - Tests (git-ignored scratch): `test/_seach.mjs` (each chapter's crowd, island, miniboss and boss),

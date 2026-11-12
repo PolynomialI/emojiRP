@@ -48,8 +48,8 @@ function seaBossStart() {
   // it sails in from ahead of the ship, just off the screen
   const a = Math.atan2(S.vx, S.vz) + rand(-0.6, 0.6) || rand(0, TAU), r = VIEW.radius + B.len;
   const x = S.x + Math.sin(a) * r, z = S.z + Math.cos(a) * r;
-  // (a quarter less than the table: a sea boss fight should not drag)
-  const hp = B.hp * 0.75 * run.info.bossHpMul;
+  // (half the table: a sea boss fight should not drag)
+  const hp = B.hp * 0.5 * run.info.bossHpMul;
   const e = {
     id: run.nextId++, type: id, def: B, model: B.ride, boss: true, elite: false,
     x, z, y: 0, vx: 0, vz: 0, kx: 0, kz: 0, yaw: Math.atan2(S.x - x, S.z - z), hp, maxHp: hp, speed: B.speed, dmg: B.dmg * run.info.dmgMul * BOSS_DMG,

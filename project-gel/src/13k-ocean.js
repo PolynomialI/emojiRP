@@ -52,7 +52,7 @@ function seaInfo(n) {
     n, sea: true, arenaName: C.name, bosses: [C.boss],
     // every run starts on a raft, so the chapters climb gently (their crowds, islands and bosses do the rest)
     hpMul: 1 + 0.08 * k + 0.006 * k * k, dmgMul: 1 + 0.045 * k, rateMul: 0.7 + 0.05 * k, speedMul: 1 + 0.01 * k,
-    bossHpMul: Math.pow(1.15, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
+    bossHpMul: Math.pow(1.12, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
   };
 }
 const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
