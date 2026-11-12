@@ -313,8 +313,20 @@ function seaWake(dt) {
   if (OC.wakeT <= 0 && sp > 0.5 && !OC.sink) {
     OC.wakeT = 0.07;
     const p = shipW(0, -D.len / 2 + 0.1);
-    OC.wake.push({ x: p[0], z: p[1], yaw: S.yaw, t: 0, w: D.wake, k: clamp(sp / 4, 0.3, 1.2), seed: Math.random() * 10 });
+    OC.wake.push({ x: p[0], z: p[1], yaw: S.yaw, t: 0, w: D.wake, k: clamp(sp / 4, 0.3, 1.2), seed: Math.random() * 10, born: OC.t });
+    seaTrailFx(p[0], p[1], D);
   }
+}
+// what rises out of the wake: bubbles, sparkles, hearts, flames (wake trails, 10c-ship-cosmetics.js)
+function seaTrailFx(x, z, D) {
+  const P = shipLook().trail.part, w = D.wake * 0.6;
+  if (!P) return;
+  const rx = () => x + rand(-w, w), rz = () => z + rand(-w, w);
+  if (P === 'bubble') FX.part(rx(), 0.1, rz(), 0, rand(0.5, 1.1), 0, rand(0.06, 0.12), 0.03, 0.9, [0.85, 0.97, 1], 0.9, 4, -0.4);
+  else if (P === 'sparkle') FX.part(rx(), rand(0.2, 0.6), rz(), 0, rand(0.6, 1.4), 0, rand(0.1, 0.18), 0.03, 0.8, [1, 0.88, 0.45], 1, 3);
+  else if (P === 'heart') FX.part(rx(), 0.3, rz(), 0, rand(0.8, 1.4), 0, rand(0.12, 0.2), 0.04, 0.9, [1, 0.45, 0.65], 1, 3);
+  else if (P === 'flame') { FX.part(rx(), 0.2, rz(), 0, rand(1.2, 2.2), 0, rand(0.18, 0.3), 0.05, 0.5, [1, rand(0.4, 0.7), 0.15], 1, 0); if (Math.random() < 0.3) FX.smoke(x, 0.6, z, 0.4, [0.35, 0.3, 0.3], 0.8, 0.5); }
+  else if (P === 'rainbow') FX.part(rx(), 0.2, rz(), 0, rand(0.6, 1.2), 0, rand(0.1, 0.16), 0.03, 0.7, hslRgb(Math.random(), 0.9, 0.65), 1, 3);
 }
 
 // ---------- spawning ----------
@@ -609,20 +621,23 @@ function emitSea() {
     for (const P of OC.sink.pieces) {
       const m = MODELS.defs[P.m], Dk = shipDef();
       seaShadow(P.x, P.z, Dk.wid * 0.5, Dk.len * 0.24, -P.yaw, 0.5 * clamp(1 + P.y * 0.6, 0.3, 1));
-      if (m && R.enemyDraw[P.m]) pushEnemy(P.m, false, P.x, P.y, P.z, P.yaw, m.clips.tilt.row + Math.min(15, Math.floor(P.tilt * 15.99)), 1, 1, 0, 0, 0, 1, 1, 1);
+      const pt = shipTint(Dk.id, 'hull');
+      if (m && R.enemyDraw[P.m]) pushEnemy(P.m, false, P.x, P.y, P.z, P.yaw, m.clips.tilt.row + Math.min(15, Math.floor(P.tilt * 15.99)), 1, 1, 0, 0, 0, pt[0], pt[1], pt[2]);
     }
-    const rg = shipDef().model + '_rig', mid = OC.sink.pieces[1];
-    if (R.enemyDraw[rg]) pushEnemy(rg, false, mid.x, mid.y, mid.z, mid.yaw, MODELS.defs[rg].clips.tilt.row + Math.min(15, Math.floor(mid.tilt * 15.99)), 1, 1, 0, 0, 0, 1, 1, 1);
+    const rg = shipDef().model + '_rig', mid = OC.sink.pieces[1], rt = shipTint(shipDef().id, 'sail');
+    if (R.enemyDraw[rg]) pushEnemy(rg, false, mid.x, mid.y, mid.z, mid.yaw, MODELS.defs[rg].clips.tilt.row + Math.min(15, Math.floor(mid.tilt * 15.99)), 1, 1, 0, 0, 0, rt[0], rt[1], rt[2]);
   } else seaDrawShip(S.x, S.y, S.z, S.yaw, OC.stage, t, run.hurtFlash > 0.4 ? 0.5 : 0);
-  // the wake
+  // the wake (its color from the wake trail, 10c-ship-cosmetics.js)
+  const TR = shipLook().trail;
   for (const w of OC.wake) {
     const u = w.t / 1.7, a = (1 - u) * 0.55 * w.k, sp = w.w * (0.45 + u * 1.6), c = Math.cos(w.yaw), s = Math.sin(w.yaw);
+    const wc = TR.col || hslRgb((w.born * 0.6) % 1, 0.85, 0.65);
     for (const sd of [-1, 1]) {
       const x = w.x + c * sd * sp - Math.sin(w.yaw) * u * 0.6, z = w.z - s * sd * sp - Math.cos(w.yaw) * u * 0.6, r = (0.28 + u * 0.5) * w.w;
-      pushDecal(x, z, r, r * 0.8, w.yaw + w.seed, 0, w.seed + sd, 0, 0.95, 0.99, 1, a);
+      pushDecal(x, z, r, r * 0.8, w.yaw + w.seed, 0, w.seed + sd, 0, wc[0], wc[1], wc[2], a, !!TR.add);
     }
     const r = (0.45 + u * 0.4) * w.w;
-    pushDecal(w.x, w.z, r, r, w.seed, 0, w.seed * 3, 0, 0.9, 0.97, 1, a * 0.7);
+    pushDecal(w.x, w.z, r, r, w.seed, 0, w.seed * 3, 0, wc[0] * 0.95, wc[1] * 0.98, wc[2], a * 0.7, !!TR.add);
   }
   // the bow wave
   if (!OC.sink) {
@@ -671,15 +686,24 @@ function seaDrawShip(x, y, z, yaw, stage, t, flash) {
   const c = M.clips.rock, row = c.row + Math.floor(((t * 0.18) % 1) * c.frames);
   seaShadow(x, z, D.wid * 1.35, D.len * 0.8, -yaw, 0.45, 0.2);
   seaShadow(x, z, D.wid * 0.92, D.len * 0.64, -yaw, 0.85);
-  pushEnemy(model, false, x, y, z, yaw, row, 1, 1, 0, flash, 0, 1, 1, 1);
+  // its paint and sails (the Ships tab, 10c-ship-cosmetics.js)
+  const look = shipLook(), ht = shipTint(D.id, 'hull', look), st = shipTint(D.id, 'sail', look);
+  pushEnemy(model, false, x, y, z, yaw, row, 1, 1, 0, flash, 0, ht[0], ht[1], ht[2]);
+  // its flag, streaming back from a pole
+  const FS = FLAG_SPOT[D.id], fm = 'flag_' + look.flag.id;
+  if (FS && look.flag.id !== 'none') {
+    if (R.enemyDraw[fm]) { const c = Math.cos(yaw), s = Math.sin(yaw), FM = MODELS.defs[fm], fc = FM.clips.flutter; pushEnemy(fm, false, x + c * FS[0] + s * FS[1], y + FS[2], z - s * FS[0] + c * FS[1], yaw + Math.PI, fc.row + Math.floor((t * 1.6 % 1) * fc.frames), FS[3], 1, 0, flash, 0, 1, 1, 1); }
+    else prioritizeMeshes([fm]);
+  }
   const rg = model + '_rig';
   if (R.enemyDraw[rg]) {
     // masts and sails fade while they stand between the camera (to the south) and the blob
     const h = G.hero.pos, Rm = MODELS.defs[rg], mx = x + Math.sin(yaw) * 0.6, mz = z + Math.cos(yaw) * 0.6;
-    const front = (mz - h[2]) > -0.5 && Math.abs(mx - h[0]) < 1.8 + Math.abs(Math.cos(yaw)) * 0.4;
+    // (only while sailing: in the menus the sails stay solid)
+    const front = G.state !== 'home' && (mz - h[2]) > -0.5 && Math.abs(mx - h[0]) < 1.8 + Math.abs(Math.cos(yaw)) * 0.4;
     OC.rigFade = clamp((OC.rigFade || 0) + (front ? 0.08 : -0.08), 0, 0.62);
     const rc = Rm.clips.rock;
-    pushEnemy(rg, false, x, y, z, yaw, rc.row + Math.floor(((t * 0.18) % 1) * rc.frames), 1, 1, 0, flash, 0, 1, 1, 1, OC.rigFade);
+    pushEnemy(rg, false, x, y, z, yaw, rc.row + Math.floor(((t * 0.18) % 1) * rc.frames), 1, 1, 0, flash, 0, st[0], st[1], st[2], OC.rigFade);
   }
   if (G.run && G.run.sea && D === SHIPS[stage]) seaDrawMounts(x, y, z, yaw, D);
 }

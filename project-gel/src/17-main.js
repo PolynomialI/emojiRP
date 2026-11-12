@@ -4,7 +4,9 @@
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
 const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, cap: 60, software: false };
 // home scene: camera framing, the blob's spin (drag) and aim, and the faded foes it shoots in the background
-const HOME = { view: () => (UI.homePage === 'sea' ? Math.max(1, shipDef().len / 3) : 1), t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], shots: [], portT: 0 };
+// the home stage shows the ship on open water: on the ocean page, and in the Blobs screen's Ships tab
+const seaStageOn = () => G.state === 'home' && ((UI.homePage === 'sea' && UI.menuTab === 'home') || (UI.menuTab === 'skins' && UI.blobTab === 'ships'));
+const HOME = { view: () => (seaStageOn() ? Math.max(1, shipDef().len / 3) : 1), t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], shots: [], portT: 0 };
 const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
@@ -256,7 +258,7 @@ function goHome() {
 function updateHome(dt) {
   HOME.t += dt; HOME.idle += dt;
   const hero = G.hero, onHome = UI.menuTab === 'home';
-  if (onHome && UI.homePage === 'sea') { updateSeaHome(dt); return; }
+  if (seaStageOn()) { updateSeaHome(dt); return; }
   if (hero.lounge) { hero.lounge = hero.lng = 0; hero.faceYaw = null; hero.scale = 1; }
   hero.pos[0] = 0; hero.pos[1] = 0; hero.pos[2] = 0;
   if (!HOME.drag) { HOME.yaw += HOME.spinV * dt; HOME.spinV *= Math.exp(-dt * 2.5); }
@@ -278,7 +280,7 @@ function updateSeaHome(dt) {
   const hero = G.hero;
   if (!HOME.drag) { HOME.yaw += HOME.spinV * dt; HOME.spinV *= Math.exp(-dt * 2.5); }
 
-  OC.stage = seaHomeStage(); OC.t += dt;
+  OC.stage = UI.menuTab === 'skins' ? UI.shipStage() : seaHomeStage(); OC.t += dt;
   const D = shipDef();
   OC.ship = OC.ship || { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
   const S = OC.ship;
@@ -289,7 +291,7 @@ function updateSeaHome(dt) {
   seaPlaceHero(dt);
   if ((HOME.actT -= dt) <= 0) { HOME.actT = rand(3, 6); hero.impulse(rand(-1.5, 2)); seaIcons(); }
   // the picker's boss portrait appears once its meshes are built
-  if ($('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1.5; UI.refreshSeaHome(); }
+  if (UI.menuTab === 'home' && $('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1.5; UI.refreshSeaHome(); }
   FX.update(dt);
 }
 // Background foes: faded orange and purple grunts walk in from behind and come at the blob; tap or click the stage
@@ -449,7 +451,7 @@ function homeCamera(dt) {
   const k = HOME.frac ? 1 - Math.exp(-dt * 6) : 1;
   HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
   // the ocean page frames the whole ship from a little higher up
-  const sea = UI.homePage === 'sea' && UI.menuTab === 'home', D = sea ? shipDef() : null;
+  const sea = seaStageOn(), D = sea ? shipDef() : null;
   const viewH = (sea ? Math.max(1.9, D.len * 0.62 + D.deck * 0.5) : 2.2) / HOME.frac, d = viewH / (2 * half);
   const tgt = [HOME.side * viewH * aspect, (sea ? D.deck * 0.6 + 0.25 : portrait ? 1.15 : 1.1) - HOME.lift * viewH, 0];
   const pitch = sea ? 0.6 : 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
@@ -476,7 +478,7 @@ function renderFrame() {
     f.spot = [h[0], 0, h[2], 13]; f.fogRange = [10, 26];
     emitRunScene();
     f.hurt = G.run.hurtFlash;
-  } else if (UI.homePage === 'sea' && UI.menuTab === 'home' && G.state === 'home') {
+  } else if (seaStageOn()) {
     // the ocean page: the ship at anchor on open water that fades into the sky
     SCENE.arenaBox = null;
     f.spot = [0, 0, 0, 1e4]; f.fogRange = [22 * HOME.view(), 60 * HOME.view()]; f.hurt = 0; f.lowHp = 0;

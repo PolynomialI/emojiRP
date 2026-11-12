@@ -113,7 +113,7 @@ function seaBossModels(defs) {
   const ghost = c => { const l = lum(c); return [0.45 + 0.4 * l, 0.75 + 0.25 * l, 0.8 + 0.2 * l]; };
   const royal = c => { const l = lum(c); return l < 0.2 ? [0.42, 0.06, 0.1] : l < 0.45 ? [0.7, 0.12, 0.16] : [1.0, 0.8, 0.32]; };
   for (const [name, fn] of [['bghost', ghost], ['bflag', royal]]) {
-    const a = P(name, repaint(G0, fn).map(p => ({ ...p })), { ao: 0.5 }), b = P(name + '_rig', repaint(G1, name === 'bflag' ? c => (lum(c) < 0.3 ? [0.75, 0.1, 0.14] : royal(c)) : ghost).map(p => ({ ...p })), { ao: 0.4 });
+    const a = P(name, repaint(G0, fn).map(p => ({ ...p, paint: false })), { ao: 0.5 }), b = P(name + '_rig', repaint(G1, name === 'bflag' ? c => (lum(c) < 0.3 ? [0.75, 0.1, 0.14] : royal(c)) : ghost).map(p => ({ ...p, paint: false })), { ao: 0.4 });
     a.bones = G0.bones.map(x => ({ ...x })); b.bones = G1.bones.map(x => ({ ...x }));
   }
   // 8. the Thunder Admiral's ironclad: grey armor plates, a big turret, a tall stack with a lightning rod

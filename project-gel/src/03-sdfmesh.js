@@ -316,7 +316,8 @@ function buildSkinnedMesh(model, cell) {
     const o = v * 14;
     V[o] = x; V[o + 1] = y; V[o + 2] = z; V[o + 3] = nx; V[o + 4] = ny; V[o + 5] = nz;
     V[o + 6] = b0; V[o + 7] = b1; V[o + 8] = w0; V[o + 9] = ao;
-    if (bp && bp.col) { V[o + 10] = bp.col[0]; V[o + 11] = bp.col[1]; V[o + 12] = bp.col[2]; V[o + 13] = 0; }
+    // (w: 0 a fixed color, 1 the instance tint, 2 a fixed color the tint multiplies: a ship's paint, 10c-ship-cosmetics.js)
+    if (bp && bp.col) { V[o + 10] = bp.col[0]; V[o + 11] = bp.col[1]; V[o + 12] = bp.col[2]; V[o + 13] = bp.paint ? 2 : 0; }
     else { V[o + 10] = 1; V[o + 11] = 1; V[o + 12] = 1; V[o + 13] = 1; }
   }
   return { verts: V, idx: mesh.idx, nv, ni: mesh.idx.length };

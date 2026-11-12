@@ -14,6 +14,19 @@ for (const id of SHIP_IDS) {
 }
 for (const id of SHIP_RIGS) { THEME_CLIPS[id + '_rig'] = ['rock', 'tilt']; THEME_CELLS[id + '_rig'] = SHIP_CELL[id] * 0.85; }
 const SHIP_MESHES = SHIP_IDS.flatMap(id => [id, ...(SHIP_RIGS.includes(id) ? [id + '_rig'] : [])]);
+// the flags (10c-ship-cosmetics.js): a pole 1 tall and a cloth in two halves (bones 1, 2) that flutter
+// (the mesh workers see only the model files, so the flags' looks live here; 10c-ship-cosmetics.js names and prices them)
+const FLAG_LOOKS = {
+  roger: { cloth: '#1c1820', mark: '#f4ecdc', emblem: 'skull' }, goo: { cloth: '#2a8ad8', mark: '#7affe0', emblem: 'blob' }, heart: { cloth: '#ffd8e8', mark: '#ff3a6a', emblem: 'heart' },
+  checker: { cloth: '#ffffff', mark: '#1c1820', emblem: 'checker' }, swords: { cloth: '#a8242c', mark: '#f2c440', emblem: 'swords' }, rainbow: { cloth: '#ff5a5a', mark: '#4aa8ff', emblem: 'rainbow' },
+};
+const FLAG_MESHES = Object.keys(FLAG_LOOKS).map(id => 'flag_' + id);
+for (const id of FLAG_MESHES) { THEME_CLIPS[id] = ['flutter']; THEME_CELLS[id] = 0.012; }
+MESH_ORDER.push(...FLAG_MESHES);
+CLIPS.flutter = { frames: 24, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0, 0.25 * Math.sin(a), 0] : b === 2 ? [0, 0.45 * Math.sin(a - 1.2), 0] : [0, 0, 0])) };
+} };
 const SHIP_PIECES = SHIP_IDS.flatMap(id => [0, 1, 2].map(i => id + '_p' + i));
 MESH_ORDER.push(...SHIP_MESHES);
 
@@ -41,8 +54,8 @@ function shipModels(defs) {
   const hull = o => {
     const W = o.wid / 2, L = o.len / 2, H = o.top - o.bot;
     const p = [
-      { s: 'ell', c: [0, o.top, -L * 0.1], rr: [W, H, L * 0.9], col: o.col, k: 0 },
-      { s: 'ell', c: [0, o.top, L * 0.32], rr: [W * 0.74, H * 0.96, L * 0.68], col: o.col, k: W * 0.45 },
+      { s: 'ell', c: [0, o.top, -L * 0.1], rr: [W, H, L * 0.9], col: o.col, paint: true, k: 0 },
+      { s: 'ell', c: [0, o.top, L * 0.32], rr: [W * 0.74, H * 0.96, L * 0.68], col: o.col, paint: true, k: W * 0.45 },
       // (each band follows the hull's curve at its height, a hair proud of it)
       ...(o.bands || []).flatMap(([y, h, col]) => { const f = Math.sqrt(Math.max(0, 1 - ((y - o.top) / H) ** 2)), f2 = Math.sqrt(Math.max(0, 1 - ((y - o.top) / (H * 0.96)) ** 2)); return [
         { s: 'ell', c: [0, y, -L * 0.1], rr: [W * f + 0.015, h, L * 0.9 * f + 0.015], col, k: 0 },
@@ -83,13 +96,13 @@ function shipModels(defs) {
   {
     const hc = C('#c0582e'), inside = C('#d89a5a');
     const p = [
-      { s: 'ell', c: [0, 0.36, 0], rr: [0.52, 0.56, 1.9], col: hc, k: 0 },
+      { s: 'ell', c: [0, 0.36, 0], rr: [0.52, 0.56, 1.9], col: hc, paint: true, k: 0 },
       { s: 'box', c: [0, 2.38, 0], hs: [2, 2, 3], sub: true, k: 0 },
       { s: 'ell', c: [0, 0.38, 0], rr: [0.43, 0.29, 1.78], sub: true, k: 0 },
       { s: 'box', c: [0, 0.1, 0], hs: [0.36, 0.025, 1.35], rd: 0.02, col: inside, k: 0 },
       // the upturned ends
-      { s: 'cap', a: [0, 0.3, 1.72], b: [0, 0.6, 2.02], r: 0.08, r2: 0.05, col: hc, k: 0.04 },
-      { s: 'cap', a: [0, 0.3, -1.72], b: [0, 0.6, -2.02], r: 0.08, r2: 0.05, col: hc, k: 0.04 },
+      { s: 'cap', a: [0, 0.3, 1.72], b: [0, 0.6, 2.02], r: 0.08, r2: 0.05, col: hc, paint: true, k: 0.04 },
+      { s: 'cap', a: [0, 0.3, -1.72], b: [0, 0.6, -2.02], r: 0.08, r2: 0.05, col: hc, paint: true, k: 0.04 },
       { s: 'sph', c: [0, 0.62, 2.04], r: 0.06, col: cream, k: 0 }, { s: 'sph', c: [0, 0.62, -2.04], r: 0.06, col: cream, k: 0 },
       // cream dots along both sides
       ...[-1, 1].flatMap(sx => Array.from({ length: 7 }, (_, i) => { const z = -1.2 + i * 0.4, w = 0.52 * Math.sqrt(Math.max(0, 1 - (z / 1.9) ** 2)); return { s: 'sph', c: [sx * (w - 0.01), 0.27, z], r: 0.045, col: cream, k: 0 }; })),
@@ -138,7 +151,7 @@ function shipModels(defs) {
       { s: 'cap', a: [-1.15, 3.05, 0.62], b: [1.15, 3.05, 0.62], r: 0.045, col: C('#6e4426'), k: 0 },
       { s: 'cap', a: [-1.0, 1.45, 0.62], b: [1.0, 1.45, 0.62], r: 0.045, col: C('#6e4426'), k: 0 },
       // the sail: a shell bulging forward, with a red band
-      { s: 'ell', c: [0, 2.25, 0.62], rr: [1.08, 0.82, 0.3], col: sail, k: 0 },
+      { s: 'ell', c: [0, 2.25, 0.62], rr: [1.08, 0.82, 0.3], col: sail, paint: true, k: 0 },
       { s: 'ell', c: [0, 2.25, 0.57], rr: [1.08, 0.82, 0.27], sub: true, k: 0 },
       { s: 'box', c: [0, 2.25, 0.4], hs: [2, 2, 0.3], sub: true, k: 0 },
       { s: 'ell', c: [0, 2.0, 0.63], rr: [1.09, 0.14, 0.31], col: sailB, k: 0 },
@@ -181,7 +194,7 @@ function shipModels(defs) {
     const tatter = (x, y, z) => ({ s: 'sph', c: [x, y, z], r: 0.16, sub: true, k: 0.03 });
     const sq = (z, y, w, h, flag) => [
       { s: 'cap', a: [-w - 0.1, y + h + 0.1, z], b: [w + 0.1, y + h + 0.1, z], r: 0.05, col: mastC, k: 0 },
-      { s: 'ell', c: [0, y, z], rr: [w, h, 0.32], col: sail, k: 0 },
+      { s: 'ell', c: [0, y, z], rr: [w, h, 0.32], col: sail, paint: true, k: 0 },
       { s: 'ell', c: [0, y, z - 0.05], rr: [w, h, 0.29], sub: true, k: 0 },
       { s: 'box', c: [0, y, z - 0.3], hs: [3, 3, 0.3], sub: true, k: 0 },
       tatter(-w * 0.5, y - h * 0.95, z + 0.2), tatter(w * 0.35, y - h * 0.97, z + 0.2), tatter(w * 0.85, y - h * 0.6, z + 0.15),
@@ -392,7 +405,7 @@ function shipModels(defs) {
     const sailW = C('#fffaf0'), mastG = C('#c8962a');
     const sail = (z, y, w, h) => [
       { s: 'cap', a: [-w - 0.15, y + h + 0.12, z], b: [w + 0.15, y + h + 0.12, z], r: 0.07, col: mastG, k: 0 },
-      { s: 'ell', c: [0, y, z], rr: [w, h, 0.4], col: sailW, k: 0 }, { s: 'ell', c: [0, y, z - 0.06], rr: [w, h, 0.36], sub: true, k: 0 },
+      { s: 'ell', c: [0, y, z], rr: [w, h, 0.4], col: sailW, paint: true, k: 0 }, { s: 'ell', c: [0, y, z - 0.06], rr: [w, h, 0.36], sub: true, k: 0 },
       { s: 'box', c: [0, y, z - 0.4], hs: [4, 4, 0.4], sub: true, k: 0 },
       { s: 'ell', c: [0, y + h * 0.1, z + 0.36], rr: [w * 0.32, w * 0.32, 0.06], col: C('#f2c440'), k: 0 }];
     rigMesh('ark_rig', [
@@ -402,5 +415,26 @@ function shipModels(defs) {
       { s: 'cap', a: [0, 8.3, 0.8], b: [0, 2.6, 10.6], r: 0.05, col: gold, k: 0 },
       { s: 'cap', a: [0, 8.3, 0.8], b: [0, 4.5, -7.6], r: 0.05, col: gold, k: 0 },
     ], 10.5);
+  }
+
+  // ---------- flags: a pole with a gold knob and a two-part cloth with its emblem ----------
+  for (const [id, F] of Object.entries(FLAG_LOOKS)) {
+    F.id = id;
+    const cloth = C(F.cloth), mark = C(F.mark), W = 0.36, H = 0.24, x0 = 0.04;
+    const half = (b, xa, xb) => ({ s: 'box', c: [0, 0.82, (xa + xb) / 2], hs: [0.012, H, (xb - xa) / 2], rd: 0.008, col: cloth, bone: b, k: 0 });
+    const parts = [{ s: 'cap', a: [0, 0, 0], b: [0, 1.0, 0], r: 0.025, col: C('#6e4426'), k: 0 }, { s: 'sph', c: [0, 1.02, 0], r: 0.04, col: gold, k: 0 },
+      half(1, x0, x0 + W), half(2, x0 + W, x0 + W * 2)];
+    const at = (u, v) => [0.016, 0.82 + v * H, x0 + u * W * 2];
+    const B = u => (u < 0.5 ? 1 : 2);
+    if (F.emblem === 'skull') parts.push({ s: 'sph', c: at(0.5, 0.15), r: 0.08, col: mark, bone: 2, k: 0 }, { s: 'box', c: at(0.5, -0.32), hs: [0.008, 0.035, 0.05], rd: 0.01, col: mark, bone: 2, k: 0 },
+      ...[[-0.6, 0.6], [0.6, -0.6]].map(([a2, b2]) => ({ s: 'cap', a: at(0.5 + a2 * 0.18, -0.7), b: at(0.5 + b2 * 0.18, -0.15), r: 0.018, col: mark, bone: 2, k: 0 })));
+    else if (F.emblem === 'blob') parts.push({ s: 'ell', c: at(0.5, -0.05), rr: [0.012, 0.13, 0.1], col: mark, bone: 2, k: 0 }, ...[-0.06, 0.06].map(d => ({ s: 'sph', c: [0.024, 0.83, x0 + W + d], r: 0.018, col: C('#1e2230'), bone: 2, k: 0 })));
+    else if (F.emblem === 'heart') parts.push(...[-0.05, 0.05].map(d => ({ s: 'sph', c: [0.016, 0.86, x0 + W + d], r: 0.065, col: mark, bone: 2, k: 0.02 })), { s: 'cap', a: [0.016, 0.84, x0 + W], b: [0.016, 0.72, x0 + W], r: 0.07, r2: 0.01, col: mark, bone: 2, k: 0.02 });
+    else if (F.emblem === 'checker') for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) { if ((i + j) % 2) continue; const u = (i + 0.5) / 4, v = j ? 0.5 : -0.5; parts.push({ s: 'box', c: at(u, v), hs: [0.014, H * 0.48, W * 0.24], rd: 0.004, col: mark, bone: B(u), k: 0 }); }
+    else if (F.emblem === 'swords') parts.push(...[[-0.7, 0.7], [0.7, -0.7]].map(([a2, b2]) => ({ s: 'cap', a: at(0.5 + a2 * 0.3, -0.7), b: at(0.5 + b2 * 0.3, 0.7), r: 0.016, col: mark, bone: 2, k: 0 })));
+    else if (F.emblem === 'rainbow') ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff', '#a86aff'].forEach((c, i) => { const v = 0.83 - (i - 2.5) / 6 * H * 2; parts.push({ s: 'box', c: [0.014, v, x0 + W * 0.5], hs: [0.014, H / 6, W * 0.5], rd: 0.002, col: C(c), bone: 1, k: 0 }, { s: 'box', c: [0.014, v, x0 + W * 1.5], hs: [0.014, H / 6, W * 0.5], rd: 0.002, col: C(c), bone: 2, k: 0 }); });
+    const m = prop(defs, 'flag_' + F.id, parts, { ao: 0.3 });
+    rig(m, { 0: [0, 0.5, 0] });
+    m.bones[1].p = [0, 0.82, x0]; m.bones[2].p = [0, 0.82, x0 + W];
   }
 }

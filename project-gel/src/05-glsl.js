@@ -1665,7 +1665,7 @@ void main() {
   if (uOutline > 0.0) { fragColor = vec4(atmos(uOutlineCol, vW), 1.0); return; }
   vec3 n = normalize(vN);
   vec3 v = normalize(uCamPos - vW);
-  vec3 body = vCol.w > 0.5 ? vTint : vCol.rgb;
+  vec3 body = vCol.w > 1.5 ? vCol.rgb * vTint : vCol.w > 0.5 ? vTint : vCol.rgb;
   float ndl = dot(n, uLightDir);
   float lit = smoothstep(-0.05, 0.55, ndl);
   float mid = smoothstep(-0.6, -0.05, ndl);
@@ -1677,7 +1677,7 @@ void main() {
   col += vec3(1.0, 0.82, 0.62) * rim * 0.15 * smoothstep(-0.2, 0.4, ndl + 0.3);
   float tex = texture(uNoise, vRest.xy * 2.3 + vRest.z * 1.7).g;
   col *= 0.95 + 0.1 * tex;
-  if (vCol.w < 0.5) {
+  if (vCol.w < 0.5 || vCol.w > 1.5) {
     vec3 H = normalize(uLightDir + v);
     col += uLightCol * pow(max(dot(n, H), 0.0), 40.0) * 0.35;
   }

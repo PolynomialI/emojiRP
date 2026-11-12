@@ -200,8 +200,8 @@ function seaDeepBossModels(defs) {
       ...Array.from({ length: 8 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -2.6 + Math.floor(i / 2) * 1.6; return { s: 'cap', a: [sx * 1.25, 0.7, z], b: [sx * 1.45, -0.2, z + 0.2], r: 0.07, r2: 0.03, col: C('#3a7a3a'), k: 0.02 }; }),
       ...[[0.6, 1.5], [-0.5, -1.2]].flatMap(([x, z], i) => [0, 1, 2].map(j => { const a = j * 2.1 + i; return { s: 'cap', a: [x, 0.9, z], b: [x + Math.cos(a) * 0.3, 1.5, z + Math.sin(a) * 0.3], r: 0.08, r2: 0.04, col: coral[(i + j) % 4], k: 0.04 }; })),
     ];
-    const a = P('bjones', [...G0.parts.map(p => ({ ...p, col: p.col ? sea(p.col) : p.col })), ...extra], { ao: 0.5 });
-    const b = P('bjones_rig', G1.parts.map(p => ({ ...p, col: p.col ? sea(p.col) : p.col })), { ao: 0.4 });
+    const a = P('bjones', [...G0.parts.map(p => ({ ...p, col: p.col ? sea(p.col) : p.col, paint: false })), ...extra], { ao: 0.5 });
+    const b = P('bjones_rig', G1.parts.map(p => ({ ...p, col: p.col ? sea(p.col) : p.col, paint: false })), { ao: 0.4 });
     a.bones = G0.bones.map(x => ({ ...x })); b.bones = G1.bones.map(x => ({ ...x }));
   }
   // 20. Neptune himself, standing in a great scallop-shell chariot of pearl and gold drawn by two seahorses:

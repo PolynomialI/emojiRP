@@ -51,7 +51,7 @@ const UI = {
       el.addEventListener('pointerdown', e => {
         if (openOnly && e.target !== el) return;
         AUDIO.unlock(); el.setPointerCapture(e.pointerId);
-        HOME.drag = { x: e.clientX, t: performance.now(), moved: 0, x0: e.clientX, t0: performance.now(), yaw0: this.homePage === 'sea' ? HOME.yaw : G.hero.yaw }; HOME.yaw = HOME.drag.yaw0; HOME.spinV = 0; HOME.aim = null;
+        HOME.drag = { x: e.clientX, t: performance.now(), moved: 0, x0: e.clientX, t0: performance.now(), yaw0: seaStageOn() ? HOME.yaw : G.hero.yaw }; HOME.yaw = HOME.drag.yaw0; HOME.spinV = 0; HOME.aim = null;
       });
       el.addEventListener('pointermove', e => {
         const d = HOME.drag;
@@ -230,7 +230,8 @@ const UI = {
   },
   // Three tabs: body colors, costumes and hats. Tapping a card previews it on the blob; the button buys or equips it.
   blobLists() {
-    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' ? this.blobTab : 'colors';
+    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' || this.blobTab === 'ships' ? this.blobTab : 'colors';
+    if (tab === 'ships') return { tab, list: [], owned: [], worn: null, sel: null, key: 'ship-' };
     if (tab === 'colors') return { tab, list: SKINS, owned: sv.skins, worn: sv.skin, sel: this.skinPreview, key: 'skin-' };
     if (tab === 'costumes') return { tab, list: costumesOf('hood'), owned: sv.costumes, worn: sv.costume, sel: this.costumePreview, key: 'costume-' };
     return { tab, list: costumesOf('hat'), owned: sv.costumes, worn: sv.hat, sel: this.hatPreview, key: 'costume-' };
@@ -243,6 +244,8 @@ const UI = {
     const { tab, list, owned, worn, sel, key } = this.blobLists();
     document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
     document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bt === tab)));
+    if (tab === 'ships') { this.renderShipLooks(); return; }
+    this.shipPreview = null; this.shipTabOn = false;
     queueHeroIcons(list.map(s => key + s.id), true);
     grid.replaceChildren(...list.map(s => {
       const b = document.createElement('button');
@@ -269,7 +272,56 @@ const UI = {
     else if (s.goal) { act.textContent = `🏆 ${GOALS.find(g => g.id === s.goal).name}`; act.disabled = true; act.className = 'jelly'; }
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
+  // ---------- the Ships tab: hull paint, sails, flags and wake trails, tried on a ship on open water ----------
+  shipStage() {
+    // at least the pirate sloop (so there are sails); a ship with sails when sails are picked
+    const sailed = seaHomeStage(), k = this.shipSel && this.shipSel.key;
+    if (k === 'sail' && !(SHIP_BASE_COL[SHIPS[Math.max(sailed, 2)].id] || {}).sail) return sailed >= 9 ? 9 : 3;
+    return Math.max(sailed, 2);
+  },
+  renderShipLooks() {
+    const sv = G.save, S = sv.sea, grid = $('skinGrid');
+    if (!this.shipTabOn) { this.shipTabOn = true; HOME.yaw = 1.9; seaLook(S.selected || 1); }
+    this.shipPreview = this.shipPreview || { paint: S.paint, sail: S.sail, flag: S.flag, trail: S.trail };
+    this.shipSel = this.shipSel || { key: 'paint', id: S.paint };
+    OC.stage = this.shipStage();
+    const D = shipDef(); prioritizeMeshes([D.model, D.model + '_rig', ...(this.shipPreview.flag !== 'none' ? ['flag_' + this.shipPreview.flag] : [])]);
+    const owns = (key, id) => S.looks.includes(key + ':' + id);
+    const cells = [];
+    for (const K of SHIP_LOOK_KINDS) {
+      const h = document.createElement('div'); h.className = 'skin-head'; h.textContent = K.title; cells.push(h);
+      for (const it of K.list) {
+        const b = document.createElement('button'), sel = this.shipSel.key === K.key && this.shipSel.id === it.id;
+        b.className = 'skin' + (sel ? ' sel' : '') + (S[K.key] === it.id ? ' worn' : '');
+        b.innerHTML = `<img alt=""><span></span><small></small>`;
+        b.querySelector('img').src = shipLookIcon(K.key, it);
+        b.querySelector('span').textContent = it.name;
+        const sm = b.querySelector('small');
+        if (!owns(K.key, it.id)) { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(it.cost); sm.classList.toggle('poor', sv.coins < it.cost); }
+        b.addEventListener('click', () => { this.shipSel = { key: K.key, id: it.id }; this.shipPreview[K.key] = it.id; AUDIO.play('click'); this.renderShipLooks(); });
+        cells.push(b);
+      }
+    }
+    grid.replaceChildren(...cells);
+    const K = SHIP_LOOK_KINDS.find(k => k.key === this.shipSel.key), it = K.list.find(x => x.id === this.shipSel.id), act = $('skinAction');
+    if (S[K.key] === it.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
+    else if (owns(K.key, it.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
+    else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(it.cost); act.disabled = sv.coins < it.cost; act.className = 'jelly gold'; }
+  },
+  shipLookAction() {
+    const sv = G.save, S = sv.sea, sel = this.shipSel;
+    if (!sel) return;
+    const K = SHIP_LOOK_KINDS.find(k => k.key === sel.key), it = K.list.find(x => x.id === sel.id), tag = sel.key + ':' + sel.id;
+    if (!S.looks.includes(tag)) {
+      if (sv.coins < it.cost) return;
+      sv.coins -= it.cost; S.looks.push(tag); AUDIO.play('coin'); this.toast(`${it.name} unlocked`);
+    }
+    S[sel.key] = sel.id;
+    saveGame(); AUDIO.play('levelup');
+    this.renderShipLooks();
+  },
   skinAction() {
+    if (this.blobTab === 'ships') { this.shipLookAction(); return; }
     const sv = G.save, { tab, list, owned, sel } = this.blobLists();
     const s = list.find(k => k.id === sel);
     if (!s) return;

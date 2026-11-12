@@ -27,13 +27,9 @@ const SHIP_SAILS = [
 // flags: the cloth's color and its emblem (drawn as flag_<id>, built in 04l-ship-models.js)
 const SHIP_FLAGS = [
   { id: 'none', name: 'No Flag', cost: 0 },
-  { id: 'roger', name: 'Jolly Roger', cost: 800, cloth: '#1c1820', mark: '#f4ecdc', emblem: 'skull' },
-  { id: 'goo', name: 'Goo Flag', cost: 800, cloth: '#2a8ad8', mark: '#7affe0', emblem: 'blob' },
-  { id: 'heart', name: 'Sweetheart', cost: 1000, cloth: '#ffd8e8', mark: '#ff3a6a', emblem: 'heart' },
-  { id: 'checker', name: 'Racing Flag', cost: 1000, cloth: '#ffffff', mark: '#1c1820', emblem: 'checker' },
-  { id: 'swords', name: 'Crossed Swords', cost: 1300, cloth: '#a8242c', mark: '#f2c440', emblem: 'swords' },
-  { id: 'rainbow', name: 'Rainbow Flag', cost: 1600, cloth: '#ff5a5a', mark: '#4aa8ff', emblem: 'rainbow' },
-];
+  { id: 'roger', name: 'Jolly Roger', cost: 800 }, { id: 'goo', name: 'Goo Flag', cost: 800 }, { id: 'heart', name: 'Sweetheart', cost: 1000 },
+  { id: 'checker', name: 'Racing Flag', cost: 1000 }, { id: 'swords', name: 'Crossed Swords', cost: 1300 }, { id: 'rainbow', name: 'Rainbow Flag', cost: 1600 },
+].map(F => ({ ...F, ...(FLAG_LOOKS[F.id] || {}) }));
 // wake trails: the wake's foam color, and what rises out of it
 const WAKE_TRAILS = [
   { id: 'foam', name: 'Sea Foam', cost: 0, col: [0.95, 0.99, 1] },
@@ -92,4 +88,10 @@ function shipLookIcon(key, item) {
     inner = `<path d="M6 54 Q30 50 58 10" stroke="#9fd0ff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".5"/>` + dots.map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col || ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff'][i]}" ${ol.replace('3"', '2"')}/>`).join('');
   }
   return svgUrl(svgDoc(inner));
+}
+// hue, saturation, lightness (0-1) to [r, g, b] (the rainbow wake)
+function hslRgb(h, s, l) {
+  const k = n => (n + h * 12) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return [f(0), f(8), f(4)];
 }

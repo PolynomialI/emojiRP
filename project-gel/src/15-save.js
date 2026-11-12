@@ -12,7 +12,8 @@ function defaultSave() {
     lastSeen: Date.now(), stats: { runs: 0, kills: 0, bosses: 0, elites: 0, gooblins: 0, evos: 0, maxLevel: 0, fuses: 0, coinsEarned: 0 },
     goals: { seen: {}, claimed: {} }, tutorial: true,
     // the Ocean Update's own chapters; ship: the biggest ship ever sailed (shown on the ocean page)
-    sea: { chapter: 1, selected: 1, cleared: {}, best: {}, ship: 0 },
+    // paint, sail, flag, trail: the ship's looks (10c-ship-cosmetics.js); looks: the ones owned, as 'kind:id'
+    sea: { chapter: 1, selected: 1, cleared: {}, best: {}, ship: 0, paint: 'classic', sail: 'classic', flag: 'none', trail: 'foam', looks: ['paint:classic', 'sail:classic', 'flag:none', 'trail:foam'] },
   };
 }
 function loadGame() {
