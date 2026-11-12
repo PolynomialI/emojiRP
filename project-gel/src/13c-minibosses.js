@@ -22,6 +22,7 @@ const MINIBOSSES = {
   15: { name: 'Puffer King', type: 'puffer', scale: 2.4, hp: 1200, attacks: ['fan', 'charge'], shot: 'arrow' },
   16: { name: 'Foreman Bot', type: 'cogbot', scale: 2.6, hp: 1300, tint: '#e8a43a', attacks: ['charge', 'summon'], summon: 'gearling' },
   18: { name: 'Raptor Alpha', type: 'raptor', scale: 2.6, hp: 1600, tint: '#c84a3a', attacks: ['leap', 'charge'] },
+  19: { name: 'Chef Meatball', type: 'meatball', scale: 2.7, hp: 1750, tint: '#a8502a', attacks: ['charge', 'rain'] },
   17: { name: 'Sporeling Elder', type: 'sporeling', scale: 2.7, hp: 1450, tint: '#8a3ad8', attacks: ['leap', 'summon'], summon: 'sporeling' },
 };
 // the three visits: health and size

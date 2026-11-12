@@ -238,6 +238,7 @@ function modelDefs() {
   factoryModels(defs);
   shroomModels(defs);
   dinoModels(defs);
+  kitchenModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)

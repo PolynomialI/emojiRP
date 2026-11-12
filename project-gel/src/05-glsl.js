@@ -431,6 +431,20 @@ void main() {
     alb = mix(alb, vec3(0.72, 0.64, 0.54), peb);
     N = normalize(vec3((blades - 0.5) * 0.3 * (1.0 - trail) + peb * pf.x, 1.0, (fine - 0.5) * 0.3 * (1.0 - trail) + peb * pf.y));
     ao = mix(0.78, 1.0, blades * (1.0 - trail) + trail) * (1.0 - 0.2 * frond);
+  } else if (style == 18) {
+    // giant kitchen: big glossy checkered tiles in cream and red, grout lines, crumbs, and the odd spill of sauce or milk
+    vec2 g = p / 2.2, cell = floor(g), f = fract(g) - 0.5;
+    float grout = 1.0 - smoothstep(0.0, 0.025, 0.5 - max(abs(f.x), abs(f.y)));
+    alb = mix(uStoneA, uStoneB, mod(cell.x + cell.y, 2.0)) * (0.95 + 0.07 * fine) * (0.97 + 0.06 * hash12(cell));
+    alb = mix(alb, uGrout, grout);
+    vec2 cc = floor(p * 3.0), cf = fract(p * 3.0) - 0.5 - (vec2(hash12(cc + 1.1), hash12(cc + 2.3)) - 0.5) * 0.5;
+    float crumb = step(0.975, hash12(cc)) * (1.0 - smoothstep(0.04, 0.08, length(cf)));
+    alb = mix(alb, vec3(0.85, 0.62, 0.3), crumb);
+    float spill = smoothstep(0.72, 0.75, texture(uNoise, p * 0.035 + 2.3).r);
+    alb = mix(alb, texture(uNoise, p * 0.01 + 5.1).g > 0.5 ? vec3(0.62, 0.12, 0.08) : vec3(0.95, 0.93, 0.88), spill * 0.9);
+    N = normalize(vec3((fine - 0.5) * 0.02 + cf.x * crumb, 1.0, (mott - 0.5) * 0.02 + cf.y * crumb));
+    ao = 1.0 - 0.35 * grout;
+    gloss = 0.45 + 0.3 * spill; sharp = 70.0;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -501,7 +515,7 @@ void main() {
       col = mix(uPoolCol * 0.85, uPoolCol * 1.15, smoothstep(edge, 0.0, r)) + envColor(reflect(-v, n)) * (0.18 + F * 0.5);
       col += uLightCol * pow(max(dot(n, normalize(uLightDir + v)), 0.0), 140.0) * 1.4;
       col = mix(col, vec3(1.0), crack * 0.5 + smoothstep(edge - 0.08, edge - 0.01, r) * 0.35);
-    } else if (uStyle > 2.5) {
+    } else if (uStyle > 2.5 && uStyle < 3.5) {
       // turntable: a steel disc turning, with spokes, a brass hub and a hazard-striped rim sunk in a dark slot
       float sp = ang - uTime * 1.5 + uSeed, rr = r / edge;
       float ring = step(0.8, rr);
@@ -515,6 +529,14 @@ void main() {
       col *= 0.6 + 0.55 * max(uLightDir.y, 0.0);
       col += uLightCol * 0.2 * pow(max(dot(normalize(uLightDir + v), vec3(0.0, 1.0, 0.0)), 0.0), 40.0) * (1.0 - ring);
       col *= 1.0 - 0.75 * smoothstep(0.95, 1.0, rr);
+    } else if (uStyle > 3.5) {
+      // stove burner: a black plate with a coil spiralling in, glowing and throbbing, inside a steel rim
+      float rr = r / edge;
+      float coil = (1.0 - smoothstep(0.06, 0.12, abs(fract(rr * 4.5 - ang / 6.2832 + uSeed) - 0.5))) * step(0.12, rr) * step(rr, 0.86);
+      float heat = 0.7 + 0.3 * sin(uTime * 3.0 + uSeed * 3.0);
+      col = vec3(0.07, 0.065, 0.07) * (0.8 + 0.3 * texture(uNoise, q * 0.7).g);
+      col = mix(col, mix(uPoolCol, vec3(1.0, 0.85, 0.4), 0.25) * (1.1 + 0.9 * heat), coil);
+      col = mix(col, vec3(0.62, 0.62, 0.68), smoothstep(0.9, 0.97, rr) * 0.8);
     } else {
       // quicksand: a slow swirl sinking toward the middle
       float swirl = sin(ang * 3.0 + r * 9.0 - uTime * 1.2 + uSeed) * 0.5 + 0.5;
@@ -1096,6 +1118,18 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (eye < d) { d = eye; m = length(e - vec3(-0.02, 0.0, 0.11)) < 0.085 ? 12.0 : 7.0; }
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
+  if (type == 51) {
+    // rolling pin: a wooden roller across x with red handles, turning as it rolls along +z; P1.x > 0.5: golden
+    vec3 q = p; q.yz = rot2(-ph * 8.0) * q.yz;
+    vec2 dd = vec2(length(q.yz) - 0.3, abs(q.x) - 0.6);
+    float body = min(max(dd.x, dd.y), 0.0) + length(max(dd, 0.0)) - 0.03;
+    float handle = sdCapsule(q, vec3(-0.98, 0.0, 0.0), vec3(0.98, 0.0, 0.0), 0.09);
+    float knob = min(length(q - vec3(1.02, 0.0, 0.0)), length(q + vec3(1.02, 0.0, 0.0))) - 0.13;
+    float h2 = min(handle, knob), d = min(body, h2);
+    float m = P1.x > 0.5 ? 2.0 : (h2 < body ? 13.0 : 4.0);
+    if (P1.x < 0.5 && body < h2 && abs(abs(q.x) - 0.45) < 0.03) m = 13.0;
     return vec2(d, m);
   }
   if (type == 50) {

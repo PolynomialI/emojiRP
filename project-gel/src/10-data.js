@@ -143,6 +143,11 @@ const SKILLS = {
     fields: [['dmg', 'Damage'], ['count', 'Pterodactyls'], ['radius', 'Splash', 'm'], ['cd', 'Cooldown', 's']],
     levels: L10({ dmg: [24, 27, 30, 34, 38, 42, 47, 52, 58, 66], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], radius: [1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3, 2.5], cd: [3.2, 3.1, 3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.3, 2.1] }),
   },
+  rollingpin: {
+    name: 'Rolling Pin', from: 19, intro: 'Rolls giant rolling pins out across the floor, flattening every enemy in their path.', icon: { type: 51, colw: 0 },
+    fields: [['dmg', 'Damage'], ['count', 'Rolling pins'], ['width', 'Width', 'm'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [20, 22, 25, 28, 31, 35, 39, 44, 50, 56], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], width: [1.0, 1.05, 1.1, 1.15, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8], cd: [3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.3, 2.1, 2.0] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -209,6 +214,7 @@ const EVOLUTIONS = {
   turret: { with: 'multishot', name: 'Gatling Turret', desc: 'One more turret, and every turret spins up a gatling barrel that fires twice as fast.', boost: L => ({ count: L.count + 1, rate: +(L.rate * 2).toFixed(1) }) },
   spore: { with: 'growth', name: 'Fungal Bloom', desc: 'Wider, harsher clouds, and every enemy that dies in one bursts into a new cloud.', boost: L => ({ radius: +(L.radius * 1.2).toFixed(1), dmg: Math.round(L.dmg * 1.15) }) },
   ptero: { with: 'speed', name: 'Sky Flock', desc: 'Two more golden pterodactyls, and each swoops onto a second target before flying off.', boost: L => ({ count: L.count + 2 }) },
+  rollingpin: { with: 'power', name: 'Steamroller', desc: 'Golden pins half again as wide that roll back to you, flattening everything twice.', boost: L => ({ width: +(L.width * 1.5).toFixed(2), dmg: Math.round(L.dmg * 1.2) }) },
   bubble: { with: 'haste', name: 'Bubble Storm', desc: 'One more golden bubble with a slightly bigger pop.', boost: L => ({ count: L.count + 1, radius: +(L.radius * 1.15).toFixed(1) }) },
 };
 function featuredPowerup(chapter) {
@@ -275,6 +281,9 @@ const ENEMY_TYPES = {
   // chapter 18, Dino Valley: raptors weave in and lunge; baby triceratops paw the ground and charge
   raptor: { model: 'raptor', hp: 30, speed: 3.6, dmg: 6, xp: 3, radius: 0.45, scale: 1.55, tint: '#6aa84a', mass: 1.4, weave: 0.6, ai: 'lunge', hit: 13 },
   trike: { model: 'trike', hp: 70, speed: 1.9, dmg: 8, xp: 4, radius: 0.6, scale: 1.55, tint: '#5a8ab8', mass: 3.5, ai: 'charge', hit: 18 },
+  // chapter 19, the Giant Kitchen: meatballs roll at you; pepper shakers shoot clouds of pepper
+  meatball: { model: 'meatball', hp: 40, speed: 3.4, dmg: 7, xp: 3, radius: 0.48, scale: 1.45, tint: '#8a4a2a', mass: 2.4, weave: 0.4 },
+  pepper: { model: 'pepper', hp: 22, speed: 2.0, dmg: 5, shot: 7, xp: 2, radius: 0.4, scale: 1.4, tint: '#3a3a44', mass: 1, ranged: true, shotKind: 'pepper' },
   puffer: { model: 'puffer', hp: 14, speed: 2.6, dmg: 4, xp: 2, radius: 0.42, scale: 1.3, tint: '#ffb84a', mass: 0.9, ai: 'bomb', hit: 18, float: 0.3 },
 };
 // Extra enemy types that only show up on one map: [seconds into the run, spawn weight]
@@ -297,6 +306,7 @@ const THEME_ENEMIES = {
   factory: { gearling: [15, 0.28], cogbot: [35, 0.3] },
   shroom: { mothling: [15, 0.3], sporeling: [30, 0.3] },
   dino: { raptor: [15, 0.32], trike: [50, 0.18] },
+  kitchen: { meatball: [15, 0.3], pepper: [35, 0.24] },
 };
 // When each type starts showing up: [first chapter, seconds into the run, spawn weight]
 const ENEMY_MIX = {
@@ -321,6 +331,7 @@ BOSS_TYPES.jack = { name: 'Jack-in-the-Box', model: 'jackbox', meshes: ['jackbox
 BOSS_TYPES.colossus = { name: 'Clockwork Colossus', model: 'colossus', meshes: ['colossus', 'sawblade'], hp: 4900, speed: 1.8, dmg: 22, scale: 3.0, radius: 1.35, tint: '#d8a440', mass: 60, portraitTop: 1.15 };
 BOSS_TYPES.monarch = { name: 'Mycelium Monarch', model: 'monarch', meshes: ['monarch', 'sporeling'], hp: 5200, speed: 1.9, dmg: 22, scale: 3.0, radius: 1.45, tint: '#efe2c8', mass: 60, portraitTop: 1.45 };
 BOSS_TYPES.trex = { name: 'Goo T-Rex', model: 'trex', meshes: ['trex', 'dinorock'], hp: 5500, speed: 2.1, dmg: 24, scale: 3.1, radius: 1.5, tint: '#4aa04a', mass: 60, portraitTop: 1.1 };
+BOSS_TYPES.chef = { name: 'Chef Cleaver', model: 'chef', meshes: ['chef', 'pancake', 'pitball'], hp: 5800, speed: 2.2, dmg: 24, scale: 3.0, radius: 1.4, tint: '#ffc0a0', mass: 60, portraitTop: 1.35 };
 BOSS_TYPES.kraken = { name: 'Kraken', model: 'kraken', meshes: ['kraken'], hp: 4800, speed: 1.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#8a4ab0', mass: 60, portraitTop: 1.45 };
 BOSS_TYPES.outlaw = { name: 'The Outlaw', model: 'outlaw', meshes: ['outlaw', 'dynamite', 'bison'], hp: 4200, speed: 2.7, dmg: 20, scale: 2.6, radius: 1.0, tint: '#8f5bd8', mass: 60, portraitTop: 1.15 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
@@ -346,6 +357,7 @@ const BOSS_HINTS = {
   colossus: 'Saw blades that fly back, piston punches and steam vents.',
   monarch: 'Spiralling spores, glowing mycelium lanes, spore showers and sprouting sporelings.',
   trex: 'A roaring shockwave in front, a tail sweep behind, and stomping charges that shake rocks loose.',
+  chef: 'Cleaver chops down marked lanes, flipped pancakes that leave hot grease, and pepper bombs.',
 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
@@ -393,6 +405,8 @@ const ARENAS = [
     props: [['toadstool', 9, 0.8, 1.2], ['shroomcluster', 9, 0.55, 0.7], ['stump', 5, 0.7, 0.9], ['log', 4, 1.1, 1.4]], zones: [['sporezone', 3, 2.0, 3.0]], wall: 'bigshroom' },
   { id: 'dino', name: 'Dino Valley', floor: 17, stoneA: '#8ab45a', stoneB: '#6e9a46', grout: '#8a5a36', accent: '#ff8a3a', fog: '#2a3a20', sky: '#ffd8a0', ground: '#4a6a30', light: '#fff4dc', spotMin: 0.62, shadowTint: '#2a3a14', rock: '#8a7a6a', pool: '#1e1612', poolGlow: 0,
     props: [['cycad', 13, 0.6, 0.8], ['ribcage', 3.5, 1.0, 1.3], ['dinonest', 4.5, 0.55, 0.65], ['amber', 5, 0.5, 0.65]], zones: [['tarpit', 3, 2.0, 3.2]], wall: 'treefern' },
+  { id: 'kitchen', name: 'Giant Kitchen', floor: 18, stoneA: '#f4ecdc', stoneB: '#d84a4a', grout: '#8a7a6a', accent: '#ffd23a', fog: '#3a2a20', sky: '#fff2e0', ground: '#c8b8a0', light: '#fff8ec', spotMin: 0.7, shadowTint: '#5a3a2a', rock: '#d8c8b0', pool: '#e8501a', poolGlow: 0,
+    props: [['pot', 3.5, 1.0, 1.2], ['teapot', 3.5, 0.8, 1.0], ['jar', 4, 0.6, 0.75], ['sugarcubes', 4, 0.6, 0.75], ['cheese', 3.5, 0.75, 0.95]], zones: [['hotplate', 2.4, 2.0, 2.8]], wall: 'spicejar' },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -491,6 +505,12 @@ const PROP_KINDS = {
   dinonest: { models: ['dinonest'], unit: 0.45, block: true },
   amber: { models: ['amber'], unit: 0.45, block: true, shots: true },
   treefern: { models: ['treefern'], unit: 0.45, block: true, shots: true, wallR: [1.0, 1.4], tall: 3 },
+  pot: { models: ['pot'], unit: 0.5, block: true, shots: true, tall: 1.6 },
+  teapot: { models: ['teapot'], unit: 0.5, block: true, shots: true, tints: ['#7ac8e8', '#ff8ab0', '#8ad87a', '#ffd23a'] },
+  jar: { models: ['jar'], unit: 0.32, block: true, shots: true, tints: ['#ffb81a', '#c8283a', '#7a3ab8', '#ff8a2a'], tall: 1.8 },
+  sugarcubes: { models: ['sugarcubes'], unit: 0.4, block: true, shots: true },
+  cheese: { models: ['cheese'], unit: 0.5, block: true, shots: true },
+  spicejar: { models: ['spicejar'], unit: 0.3, block: true, shots: true, tints: ['#c83a1a', '#e8b02a', '#5a8a3a', '#7a4a2a', '#e86a2a'], wallR: [0.85, 0.85], tall: 2 },
   reefwall: { models: ['rock0', 'rock1', 'rock2'], unit: 0.45, block: true, shots: true, tints: ['#5a8a94', '#6a7a9a', '#4a7a7a'], wallR: [1.0, 1.4] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
@@ -516,10 +536,14 @@ const ZONE_KINDS = {
   turntable: { spin: 2.4, col: '#8a929e', glow: 0, style: 3 },
   sporezone: { burn: 5, slow: 0.8, col: '#7a3ab8', glow: 0.12 },
   tarpit: { slow: 0.4, col: '#1e1612', glow: 0 },
+  // a stove burner, its coil glowing red; and the hot grease and pepper the chef leaves about
+  hotplate: { burn: 14, col: '#ff4a1a', glow: 0, style: 4 },
+  grease: { burn: 9, slow: 0.85, col: '#e8a020', glow: 0.25 },
+  peppercloud: { burn: 3, slow: 0.55, col: '#3a3634', glow: 0 },
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken', 'colossus', 'monarch', 'trex'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken', 'colossus', 'monarch', 'trex', 'chef'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 // every chapter is unique: the game ends after the last one (no repeats with stronger stats)
 const CHAPTER_COUNT = ARENAS.length;

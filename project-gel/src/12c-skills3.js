@@ -170,3 +170,55 @@ SKILL_HOOKS.ptero = {
     }
   },
 };
+
+// ---------- Rolling Pin (chapter 19): giant rolling pins roll out across the floor and flatten everything in their
+// path; evolved (Steamroller), golden and half again as wide, they roll back to you and flatten everything again ----------
+const PIN = { v: 10, range: 9 };
+SKILL_HOOKS.rollingpin = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, w = L.width * areaMul();
+    st.pins = st.pins || [];
+    st.t = (st.t ?? 0.8) - dt;
+    if (st.t <= 0) {
+      let tgt = null, bd = 9;
+      enemiesInRadius(h[0], h[2], 9, e => { const d = Math.hypot(e.x - h[0], e.z - h[2]); if (d < bd) { bd = d; tgt = e; } });
+      if (tgt) {
+        st.t = L.cd * cdMul();
+        const base = Math.atan2(tgt.x - h[0], tgt.z - h[2]);
+        for (let i = 0; i < L.count; i++) { const a = base + i * TAU / L.count; st.pins.push({ x: h[0], z: h[2], dx: Math.sin(a), dz: Math.cos(a), d: 0, hits: new Set(), ph: rand(0, 10), back: false }); }
+        AUDIO.play('throw', 0.5);
+      } else st.t = 0.25;
+    }
+    for (const p of st.pins) {
+      const step = PIN.v * dt;
+      if (!p.back) {
+        p.d += step; p.x += p.dx * step; p.z += p.dz * step;
+        if (p.d >= PIN.range || arenaSd(p.x, p.z) > -0.5 || inRock(p.x, p.z)) { if (s.evo) { p.back = true; p.hits = new Set(); } else p.done = true; }
+      } else {
+        const bx = h[0] - p.x, bz = h[2] - p.z, bd = Math.hypot(bx, bz) || 1;
+        p.dx = -bx / bd; p.dz = -bz / bd;
+        p.x += bx / bd * step * 1.2; p.z += bz / bd * step * 1.2;
+        if (bd < 0.9) p.done = true;
+      }
+      p.ph += step / (0.3 * w * 8) * (p.back ? -1 : 1);
+      // everything across the pin's width and under it gets flattened
+      enemiesInRadius(p.x, p.z, w + 0.5, e => {
+        if (p.hits.has(e) || Math.abs((e.x - p.x) * p.dx + (e.z - p.z) * p.dz) > 0.6 + e.radius * 0.5) return;
+        p.hits.add(e);
+        hurtEnemy(e, L.dmg, p.dx * (p.back ? -5 : 5), p.dz * (p.back ? -5 : 5), { sound: false });
+        e.squash = 0.35; e.squashV = 0;
+      });
+    }
+    st.pins = st.pins.filter(p => !p.done);
+  },
+  emit(s, L) {
+    const st = s.st;
+    if (!st.pins || !L) return;
+    const w = L.width * areaMul(), sc = w / 1.05;
+    for (const p of st.pins) {
+      pushImp(p.x, 0.33 * sc, p.z, sc, p.dx, 0, p.dz, 1, 51, 0, 0.08, p.ph, s.evo ? 1 : 0, 0, 0, 1);
+      pushDecal(p.x + 0.1, p.z + 0.08, w * 1.05, 0.35 * sc, -Math.atan2(p.dz, -p.dx), 1, 0, 0, 0.01, 0.03, 0.07, 0.4);
+      if (Math.random() < 0.4) FX.part(p.x - p.dx * 0.3, 0.1, p.z - p.dz * 0.3, rand(-0.5, 0.5), rand(0.3, 0.8), rand(-0.5, 0.5), 0.07, 0.02, 0.6, [1, 0.97, 0.9], 0.7, 2, 0, 1);
+    }
+  },
+};
