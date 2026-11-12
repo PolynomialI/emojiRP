@@ -39,6 +39,17 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   keeps its charge. Land runs only.
 - `specimen` (dev console) also opens every sea chapter and gives a mythic of every gear item; `ocean <n>` opens sea
   chapters up to n.
+- **Home stage shooting.** A tap or click on the home stage shoots goo at the grunt nearest the tap (`homeShoot`,
+  17-main.js). Grunts walk all the way up and shove the blob until shot; the blob also shoots by itself, slowly.
+- **The Hero Cloak is a full robe** (07-hero.js): mantle, sleeves, a wrapped body and eight pleated skirt panels.
+  The hem hangs on damped springs (`updateRobe`): it trails when running, sways to rest on stopping, twists behind
+  turns and menu spins, flutters at speed, and the striding feet push the front panels out. 13 of the hero's 48
+  shapes; the thighs are not drawn under it.
+- **Art.** Every gear icon and the scroll are redrawn to fill their tiles, with gradient shading and highlights; the
+  scroll chest has wood grain, gold bands with rivets, a keyhole lock, a lid gem, and a glow inside when it opens.
+- Menu text is larger throughout and the chapter picker shows the boss name without "Boss:".
+- Testing note: `__frames(n)` in test/harness.js does not render unless its third argument is true; render one frame
+  (`__frames(1, 1 / 60, true)`) before taking a screenshot after stepping manually.
 
 ## Done
 - **Rendering:**
@@ -281,7 +292,8 @@ A second game mode with ten chapters of its own, on the home screen's second pag
 
 ## Upgrade cap, Endless and Boss Rush economy
 - Every permanent upgrade stops at level 20 (`META_MAX`). Saves past 20 are set back to 20 and refunded the coins
-  for the levels above it (save `content: 3`).
+  for the levels above it (save `content: 3`). (Since replaced: the permanent upgrades no longer count; see the
+  per-blob upgrades above.)
 - Endless and Boss Rush: 40% of the XP (`gainXp`), a quarter of the coins (half of what they paid before), a quarter
   of the scroll odds, and Boss Rush starts with 3 free picks and gets 1 per boss (was 8 and 3). Both start on a
   random chapter's map.
