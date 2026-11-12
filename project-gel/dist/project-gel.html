@@ -14202,12 +14202,14 @@ function chapterInfo(n) {
 // XP needed to go from level L to L+1
 const xpFor = L => Math.round(4 + 1.6 * L + 0.03 * L * L);
 
+// every permanent upgrade stops at level 20 (past that, damage and health made runs far too easy)
+const META_MAX = 20;
 const META_UPGRADES = {
-  damage: { name: 'Damage', per: 3, unit: '% damage', sym: '%', base: 50, growth: 1.18, max: 100, icon: { type: 17, colw: 4 } },
-  health: { name: 'Health', per: 5, unit: '% max health', sym: '%', base: 50, growth: 1.18, max: 100, icon: { type: 10, colw: 4 } },
-  offline: { name: 'Offline earnings', per: 10, unit: ' coins per hour', sym: '/h', base: 80, growth: 1.2, max: 50, icon: { type: 26, colw: 0 } },
-  speed: { name: 'Speed', per: 1, unit: '% move speed', sym: '%', base: 120, growth: 1.25, max: 20, icon: { type: 1, colw: 0 } },
-  magnet: { name: 'Magnet', per: 5, unit: '% pickup radius', sym: '%', base: 100, growth: 1.22, max: 20, icon: { type: 11, colw: 4 } },
+  damage: { name: 'Damage', per: 3, unit: '% damage', sym: '%', base: 50, growth: 1.18, max: META_MAX, icon: { type: 17, colw: 4 } },
+  health: { name: 'Health', per: 5, unit: '% max health', sym: '%', base: 50, growth: 1.18, max: META_MAX, icon: { type: 10, colw: 4 } },
+  offline: { name: 'Offline earnings', per: 10, unit: ' coins per hour', sym: '/h', base: 80, growth: 1.2, max: META_MAX, icon: { type: 26, colw: 0 } },
+  speed: { name: 'Speed', per: 1, unit: '% move speed', sym: '%', base: 120, growth: 1.25, max: META_MAX, icon: { type: 1, colw: 0 } },
+  magnet: { name: 'Magnet', per: 5, unit: '% pickup radius', sym: '%', base: 100, growth: 1.22, max: META_MAX, icon: { type: 11, colw: 4 } },
 };
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
 
@@ -15186,7 +15188,8 @@ function reviveHero() {
 // tier 0 is the small blue crystal, tier 1 the big green emerald
 const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.028;
 // every random scroll drop passes this: 3 in 4 (scrolls are 25% rarer), and half of that again in Endless
-const scrollOdds = () => 0.75 * (G.run && G.run.endless ? 0.5 : 1);
+// (Endless and Boss Rush: a quarter of that again, and Endless half of what is left)
+const scrollOdds = () => 0.75 * (G.run && (G.run.endless || G.run.rush) ? 0.25 : 1) * (G.run && G.run.endless ? 0.5 : 1);
 function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {
@@ -15204,7 +15207,8 @@ function spawnPickup(kind, x, z, value = 1) {
 }
 function gainXp(v) {
   const run = G.run;
-  run.xp += v * run.stats.xpMul * XP_MUL;
+  // (Endless and Boss Rush level up far more slowly: 40% of the XP)
+  run.xp += v * run.stats.xpMul * XP_MUL * (run.endless || run.rush ? 0.4 : 1);
   while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = xpFor(run.level); run.pending++; }
 }
 
@@ -15793,8 +15797,8 @@ function finishRun(won) {
   run.over = true;
   run.won = won;
   const sv = G.save;
-  // Endless and Boss Rush pay half
-  const modeMul = run.endless || run.rush ? 0.5 : 1;
+  // Endless and Boss Rush pay a quarter
+  const modeMul = run.endless || run.rush ? 0.25 : 1;
   const reward = Math.round((run.rush ? run.rushK * 70 * (1 + run.rushK * 0.1) : won ? run.info.reward : run.endless ? run.t / 3 : 0) * modeMul);
   run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100) * modeMul);
   run.reward = reward;
@@ -16428,8 +16432,8 @@ function endlessTick(run) {
   const t = run.t;
   run.info.hpMul = 1 + t / ENDLESS.hpT; run.info.dmgMul = 1 + t / ENDLESS.dmgT; run.info.speedMul = 1 + Math.min(0.45, t / 800);
 }
-// any enemy type at all (not the Gooblin)
-const ENDLESS_POOL = () => Object.keys(ENEMY_TYPES).filter(k => k !== 'gooblin' && R.enemyDraw[ENEMY_TYPES[k].model]);
+// any land enemy type at all (not the Gooblin, nor the sea's swimmers)
+const ENDLESS_POOL = () => Object.keys(ENEMY_TYPES).filter(k => k !== 'gooblin' && !ENEMY_TYPES[k].sea && R.enemyDraw[ENEMY_TYPES[k].model]);
 // a boss beaten in Endless drops its loot and the run goes on
 function endlessBossDown(run) {
   for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
@@ -16438,15 +16442,15 @@ function endlessBossDown(run) {
 }
 
 // ============================================================
-// Boss Rush: every chapter boss, one after another, on the selected chapter's map.
+// Boss Rush: every chapter boss, one after another, on a random chapter's map.
 // You start with a handful of free upgrades and earn more after each boss; a light trickle of
 // regular enemies keeps the skills fed. Open to everyone from the start.
 // ============================================================
-const RUSH = { startPicks: 8, picksPerBoss: 3, breather: 5, heal: 0.35 };
+const RUSH = { startPicks: 3, picksPerBoss: 1, breather: 5, heal: 0.35 };
 function rushUnlocked() { return true; }
 function beginBossRush() {
   if (!rushUnlocked()) return;
-  beginChapter(G.save.selected, { rush: true, powerCap: Math.max(G.save.chapter, CHAPTER_BOSSES.length) });
+  beginChapter(randInt(1, CHAPTER_COUNT), { rush: true, powerCap: Math.max(G.save.chapter, CHAPTER_BOSSES.length) });
 }
 // free level-ups: they count as levels, so the level shown always matches the number of upgrades picked
 function rushPicks(run, n) { run.level += n; run.xpNext = xpFor(run.level); run.pending += n; }
@@ -18675,7 +18679,7 @@ function onBossKilled(e) {
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
   for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
   // (in Boss Rush only every third boss carries a scroll)
-  if ((!run.rush || run.rushK % 3 === 2) && (!run.endless || Math.random() < 0.5)) spawnPickup('scroll', e.x, e.z);
+  if ((!run.rush || run.rushK % 3 === 2) && Math.random() < (run.endless || run.rush ? 0.25 : 1) * (run.endless ? 0.5 : 1)) spawnPickup('scroll', e.x, e.z);
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);
@@ -26213,7 +26217,7 @@ Object.assign(UI, {
 const SAVE_KEY = 'projectGel.save.v1';
 function defaultSave() {
   return {
-    v: 1, content: 2, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
+    v: 1, content: 3, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {} }, devUnlocked: false,
@@ -26256,6 +26260,16 @@ function loadGame() {
         }
         out.selected = Math.min(out.selected || 1, out.chapter);
         out.content = 2;
+      }
+      // saves from before the permanent upgrades stopped at level 20: anything past 20 is refunded in coins
+      if (!(s.content >= 3)) {
+        for (const id in META_UPGRADES) {
+          const lvl = out.upgrades[id] || 0, max = META_UPGRADES[id].max;
+          if (lvl <= max) continue;
+          for (let l = max; l < lvl; l++) out.coins += upgradeCost(id, l);
+          out.upgrades[id] = max;
+        }
+        out.content = 3;
       }
       return out;
     }

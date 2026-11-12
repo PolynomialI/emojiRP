@@ -86,8 +86,8 @@ function endlessTick(run) {
   const t = run.t;
   run.info.hpMul = 1 + t / ENDLESS.hpT; run.info.dmgMul = 1 + t / ENDLESS.dmgT; run.info.speedMul = 1 + Math.min(0.45, t / 800);
 }
-// any enemy type at all (not the Gooblin)
-const ENDLESS_POOL = () => Object.keys(ENEMY_TYPES).filter(k => k !== 'gooblin' && R.enemyDraw[ENEMY_TYPES[k].model]);
+// any land enemy type at all (not the Gooblin, nor the sea's swimmers)
+const ENDLESS_POOL = () => Object.keys(ENEMY_TYPES).filter(k => k !== 'gooblin' && !ENEMY_TYPES[k].sea && R.enemyDraw[ENEMY_TYPES[k].model]);
 // a boss beaten in Endless drops its loot and the run goes on
 function endlessBossDown(run) {
   for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
@@ -96,15 +96,15 @@ function endlessBossDown(run) {
 }
 
 // ============================================================
-// Boss Rush: every chapter boss, one after another, on the selected chapter's map.
+// Boss Rush: every chapter boss, one after another, on a random chapter's map.
 // You start with a handful of free upgrades and earn more after each boss; a light trickle of
 // regular enemies keeps the skills fed. Open to everyone from the start.
 // ============================================================
-const RUSH = { startPicks: 8, picksPerBoss: 3, breather: 5, heal: 0.35 };
+const RUSH = { startPicks: 3, picksPerBoss: 1, breather: 5, heal: 0.35 };
 function rushUnlocked() { return true; }
 function beginBossRush() {
   if (!rushUnlocked()) return;
-  beginChapter(G.save.selected, { rush: true, powerCap: Math.max(G.save.chapter, CHAPTER_BOSSES.length) });
+  beginChapter(randInt(1, CHAPTER_COUNT), { rush: true, powerCap: Math.max(G.save.chapter, CHAPTER_BOSSES.length) });
 }
 // free level-ups: they count as levels, so the level shown always matches the number of upgrades picked
 function rushPicks(run, n) { run.level += n; run.xpNext = xpFor(run.level); run.pending += n; }

@@ -374,7 +374,8 @@ function reviveHero() {
 // tier 0 is the small blue crystal, tier 1 the big green emerald
 const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.028;
 // every random scroll drop passes this: 3 in 4 (scrolls are 25% rarer), and half of that again in Endless
-const scrollOdds = () => 0.75 * (G.run && G.run.endless ? 0.5 : 1);
+// (Endless and Boss Rush: a quarter of that again, and Endless half of what is left)
+const scrollOdds = () => 0.75 * (G.run && (G.run.endless || G.run.rush) ? 0.25 : 1) * (G.run && G.run.endless ? 0.5 : 1);
 function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {
@@ -392,7 +393,8 @@ function spawnPickup(kind, x, z, value = 1) {
 }
 function gainXp(v) {
   const run = G.run;
-  run.xp += v * run.stats.xpMul * XP_MUL;
+  // (Endless and Boss Rush level up far more slowly: 40% of the XP)
+  run.xp += v * run.stats.xpMul * XP_MUL * (run.endless || run.rush ? 0.4 : 1);
   while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = xpFor(run.level); run.pending++; }
 }
 
@@ -981,8 +983,8 @@ function finishRun(won) {
   run.over = true;
   run.won = won;
   const sv = G.save;
-  // Endless and Boss Rush pay half
-  const modeMul = run.endless || run.rush ? 0.5 : 1;
+  // Endless and Boss Rush pay a quarter
+  const modeMul = run.endless || run.rush ? 0.25 : 1;
   const reward = Math.round((run.rush ? run.rushK * 70 * (1 + run.rushK * 0.1) : won ? run.info.reward : run.endless ? run.t / 3 : 0) * modeMul);
   run.coins = Math.round(run.coins * (1 + ((run.gear && run.gear.gold) || 0) / 100) * modeMul);
   run.reward = reward;

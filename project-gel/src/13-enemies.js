@@ -310,7 +310,7 @@ function onBossKilled(e) {
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
   for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
   // (in Boss Rush only every third boss carries a scroll)
-  if ((!run.rush || run.rushK % 3 === 2) && (!run.endless || Math.random() < 0.5)) spawnPickup('scroll', e.x, e.z);
+  if ((!run.rush || run.rushK % 3 === 2) && Math.random() < (run.endless || run.rush ? 0.25 : 1) * (run.endless ? 0.5 : 1)) spawnPickup('scroll', e.x, e.z);
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);

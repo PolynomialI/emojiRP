@@ -4,7 +4,7 @@
 const SAVE_KEY = 'projectGel.save.v1';
 function defaultSave() {
   return {
-    v: 1, content: 2, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
+    v: 1, content: 3, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {} }, devUnlocked: false,
@@ -47,6 +47,16 @@ function loadGame() {
         }
         out.selected = Math.min(out.selected || 1, out.chapter);
         out.content = 2;
+      }
+      // saves from before the permanent upgrades stopped at level 20: anything past 20 is refunded in coins
+      if (!(s.content >= 3)) {
+        for (const id in META_UPGRADES) {
+          const lvl = out.upgrades[id] || 0, max = META_UPGRADES[id].max;
+          if (lvl <= max) continue;
+          for (let l = max; l < lvl; l++) out.coins += upgradeCost(id, l);
+          out.upgrades[id] = max;
+        }
+        out.content = 3;
       }
       return out;
     }

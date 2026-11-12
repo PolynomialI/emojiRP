@@ -601,12 +601,14 @@ function chapterInfo(n) {
 // XP needed to go from level L to L+1
 const xpFor = L => Math.round(4 + 1.6 * L + 0.03 * L * L);
 
+// every permanent upgrade stops at level 20 (past that, damage and health made runs far too easy)
+const META_MAX = 20;
 const META_UPGRADES = {
-  damage: { name: 'Damage', per: 3, unit: '% damage', sym: '%', base: 50, growth: 1.18, max: 100, icon: { type: 17, colw: 4 } },
-  health: { name: 'Health', per: 5, unit: '% max health', sym: '%', base: 50, growth: 1.18, max: 100, icon: { type: 10, colw: 4 } },
-  offline: { name: 'Offline earnings', per: 10, unit: ' coins per hour', sym: '/h', base: 80, growth: 1.2, max: 50, icon: { type: 26, colw: 0 } },
-  speed: { name: 'Speed', per: 1, unit: '% move speed', sym: '%', base: 120, growth: 1.25, max: 20, icon: { type: 1, colw: 0 } },
-  magnet: { name: 'Magnet', per: 5, unit: '% pickup radius', sym: '%', base: 100, growth: 1.22, max: 20, icon: { type: 11, colw: 4 } },
+  damage: { name: 'Damage', per: 3, unit: '% damage', sym: '%', base: 50, growth: 1.18, max: META_MAX, icon: { type: 17, colw: 4 } },
+  health: { name: 'Health', per: 5, unit: '% max health', sym: '%', base: 50, growth: 1.18, max: META_MAX, icon: { type: 10, colw: 4 } },
+  offline: { name: 'Offline earnings', per: 10, unit: ' coins per hour', sym: '/h', base: 80, growth: 1.2, max: META_MAX, icon: { type: 26, colw: 0 } },
+  speed: { name: 'Speed', per: 1, unit: '% move speed', sym: '%', base: 120, growth: 1.25, max: META_MAX, icon: { type: 1, colw: 0 } },
+  magnet: { name: 'Magnet', per: 5, unit: '% pickup radius', sym: '%', base: 100, growth: 1.22, max: META_MAX, icon: { type: 11, colw: 4 } },
 };
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
 

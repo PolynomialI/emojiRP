@@ -22,8 +22,8 @@ check(s.unlocked && !s.hidden, 'open and shown on a fresh save');
 
 await page.click('#btnRush');
 await page.waitForFunction(() => G.state === 'run' || G.state === 'levelup', null, { timeout: 60000, polling: 100 });
-s = await page.evaluate(() => ({ rush: G.run.rush, level: G.run.level, pending: G.run.pending, ev: G.run.events.map(e => e.kind + ':' + e.ids) }));
-check(s.rush && s.pending === 8 && s.level === 9 && s.ev[0] === 'eboss:stomper', 'starts with 8 free picks and the first boss queued: ' + JSON.stringify(s));
+s = await page.evaluate(() => ({ rush: G.run.rush, level: G.run.level, pending: G.run.pending, start: RUSH.startPicks, ev: G.run.events.map(e => e.kind + ':' + e.ids) }));
+check(s.rush && s.pending === s.start && s.level === s.start + 1 && s.ev[0] === 'eboss:stomper', `starts with ${s.start} free picks and the first boss queued: ` + JSON.stringify(s));
 
 await page.evaluate(() => __manual());
 await page.waitForTimeout(300);
@@ -53,7 +53,7 @@ const res = await page.evaluate(() => {
 for (const l of res.log) console.log('   ', JSON.stringify(l));
 const order = res.log.map(l => l.types[0]).join(','), want = await page.evaluate(() => RUSH_BOSSES.join(','));
 check(res.log.length === want.split(',').length && order === want && !want.includes('bagger'), 'every chapter boss in order (the cave\'s Bagger left out): ' + order);
-check(res.log.slice(0, -1).every(l => l.picks === 3 && l.healed > 0.6), 'between bosses: 3 picks and 35% health back');
+check(res.log.slice(0, -1).every(l => l.picks === 1 && l.healed > 0.6), 'between bosses: 1 pick and 35% health back');
 check(res.log.every(l => l.card), 'an intro card for every boss');
 check(res.state === 'results' && res.best === res.log.length && res.time > 0 && /CHAMPION/.test(res.title || ''), `full clear: ${res.title}, best ${res.best}, time ${res.time}, reward ${res.reward}`);
 

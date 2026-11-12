@@ -208,6 +208,13 @@ A second game mode on the home screen's second page. Done so far:
 Still to come: the other six ships and fourteen upgrades, more sea enemies, miniboss canoes and rafts, themed
 islands, rougher water and storms, ten chapters with boss vehicles, and ocean cosmetics.
 
+## Upgrade cap, Endless and Boss Rush economy (latest)
+- Every permanent upgrade stops at level 20 (`META_MAX`). Saves past 20 are set back to 20 and refunded the coins
+  for the levels above it (save `content: 3`).
+- Endless and Boss Rush: 40% of the XP (`gainXp`), a quarter of the coins (half of what they paid before), a quarter
+  of the scroll odds, and Boss Rush starts with 3 free picks and gets 1 per boss (was 8 and 3). Both start on a
+  random chapter's map.
+
 ## Evolutions, Golden Gooblin, Endless
 
 **Evolutions** (`EVOLUTIONS` in `src/10-data.js`; logic in `src/11-game.js`):
@@ -272,7 +279,7 @@ The build with chapters 11-15 froze the whole of Chrome when opened on Windows. 
 
 **Boss Rush** (`RUSH` and helpers in `src/11c-events.js`):
 - Every chapter boss in order (`RUSH_BOSSES`: all but the cave's Bagger), on the selected chapter's map, each a little tougher.
-- It starts with 8 free picks. Each boss down gives 3 more picks, 35% health back, a chest and a 5 s breather; every third boss carries a scroll.
+- It starts on a random chapter's map with 3 free picks. Each boss down gives 1 more pick, 35% health back, a chest and a 5 s breather; every third boss may carry a scroll.
 - The best is the most bosses beaten; a full clear also keeps its fastest time.
 
 **Hats** (`HAT_IDS`, `costumesOf(slot)` in `src/10-data.js`): a hood costume and a hat can be worn together (the Blobs screen has Colors, Costumes and Hats tabs). Over a bulky hood, such as the astronaut helmet, the shark or the lion's mane, a hat sits higher (`hatLift` in `setCostume`). Old saves wearing a hat as their costume move it to the hat slot.
