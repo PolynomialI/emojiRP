@@ -29285,9 +29285,11 @@ const DEV = {
         sv.skins = SKINS.map(s => s.id); sv.costumes = COSTUMES.map(c => c.id);
         // the ocean's chapters too, and one mythic of every artifact (more with: gear <id|all> <rarity> [n])
         sv.sea.chapter = SEA_COUNT;
+        // every ship look, and the biggest ship to show them on
+        sv.sea.looks = SHIP_LOOK_KINDS.flatMap(K => K.list.map(it => K.key + ':' + it.id)); sv.sea.ship = Math.max(sv.sea.ship || 0, SHIPS.length - 1);
         for (const id in ARTIFACTS) addArtifact(artKey(id, MYTHIC));
         if (!sv.devUnlocked) { sv.devUnlocked = true; this.log('Dev console unlocked. Press ` (backtick) to open or close it. Type help for commands.', 'ok'); }
-        this.log('Every chapter (land and ocean), cosmetic and a mythic of every item unlocked. Add any power-up in a run with: skill <id> [levels]; coins with: coins <n>.', 'ok');
+        this.log('Every chapter (land and ocean), cosmetic, ship look and a mythic of every item unlocked. Add any power-up in a run with: skill <id> [levels]; coins with: coins <n>.', 'ok');
         devRefresh();
         e.preventDefault();
         this.toggle(true);

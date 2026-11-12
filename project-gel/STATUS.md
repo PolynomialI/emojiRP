@@ -13,7 +13,46 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - Buttons slide a little to the left under the pointer (CSS `translate`, so it stacks with each button's own
   `transform`); a new button with its own `transition` list must add `translate` to it.
 
-## Blob upgrades, boss immunities, abilities (latest)
+## The Deep: oceans 11-20, new ships, ship looks (latest)
+- **Weight in the water.** Everything in the sea has a dark mass under the surface (decal type 12, `seaShadow` in
+  13k-ocean.js): swimmers, divers, minibosses, bosses, the ship and its wreck pieces, mines and kegs, shark
+  escorts, rising tentacles; islands have a dark drop-off round their shallows. The color is the chapter's deep
+  water, darkened.
+- **Islands rebuilt.** The iceberg, volcano, ghost isle, spire, wreck, fort and kelp rock were single faceted
+  crags (huge flat slabs); they are now blended masses of lumpy boulders (`rockMass` in 04k) with surface layers,
+  detail and pebbles round the shore.
+- **Ship deck fix.** Every hull's two thin deck plates were blended, and thin flat shapes have a poor distance
+  estimate off their plane, so the blend smeared the deck out into a wide flat skirt (the sloop and galleon looked
+  like barges). They are joined without a blend now. Rule: never blend (k > 0) two thin flat shapes.
+- **Three new ships** after the Cargo Ship: the Battleship (teak deck, three twin turrets, the blob lounging on
+  the raised one), the Aircraft Carrier (flight deck, island tower, jets, a helicopter) and the Golden Ark
+  (ivory and gold, a domed temple, gem lanterns, an angel figurehead, white and gold sails). Ship goes to level 10.
+- **Oceans 11-20** (13o-sea-deep.js; models 04o): Glowtide Lagoon, Sargasso Snarl, Maelstrom Reach, Sunken
+  Atlantis, Soda Sea, Bermuda Triangle, Sky Sea, Leviathan Trench, Davy Jones' Locker, World's Edge. Each has its
+  own water (the shader's `uSea.z`: 1 glowing night water, 2 fizzy soda, 3 a sea of clouds, 4 ghost-lit water,
+  5 golden water), light and sky, islands, crowd, miniboss and a mechanic (`DEEP_SPAWN`, `seaDeepTick`): glowing
+  jellyfish, drifting weed mats, whirlpools (decal 13), columns bursting up, fizz geysers, warp rifts (decal 14),
+  wind lanes, a leviathan's shadow that breaches, cursed ghost-fire, and a mix of them at the World's Edge. New
+  swimmers: glowing jellyfish (sting the hull), weed-tangled pirates (slow the ship while aboard), merfolk (throw
+  tridents from range), gummy bears (split in two), lost pilots (blink closer), balloon pirates (float overhead
+  and drop bombs; only shot down), anglerfish (lunge and bite), skeletons (pull themselves back together once).
+  Oceans 11-20 are a little steeper (`seaInfo`: +3% health and damage per ocean past 10, more spawns).
+- **Ten new bosses** (13p-sea-deep-bosses.js; models 04p): the Lantern Angler, the Weed Witch, the Whirl Wyrm,
+  the Trident Titan, Captain Sugarbeard, the Triangle Saucer, the Cloud Whale, the Leviathan, Davy Jones and
+  Neptune, on the shared sea-boss brain with new moves in `SEA_BOSS_ATK` (lure, hex, coils, trident lanes, tidal
+  wave, sprinkles, cherry bombs, tractor beam, zap lines, gusts, dive and breach, maw, tail slams, cursed pearls,
+  ghost fire). Creature bosses have no rider (`noRider`) and some carry lights (`glow`).
+- **Trophies:** sinking each of those bosses unlocks an achievement (group `ocean`) whose reward is a hat or
+  costume that cannot be bought; achievements can reward costumes now. Eight new sea colors.
+- **Ship looks** (the Ships tab on the Blobs screen, 10c-ship-cosmetics.js): 9 hull paints, 7 sail colors,
+  7 flags and 7 wake trails, tried on a ship on open water. Paint uses a third vertex color mode (`paint: true`
+  parts keep their color and shading, multiplied by the tint; the tint is paint / the ship's own color). The
+  boss ships built from the galleon opt out (`paint: false`). `specimen` unlocks every look too.
+- Tests (scratch): `test/_seaview.mjs` (a quick look at a chapter, a ship stage and its boss), `test/_isles.mjs`
+  (every island in a grid), `test/_ships.mjs` (the Ships tab), `test/_cos2.mjs` (trophies), `test/_seach.mjs`
+  with CHS=11..20.
+
+## Blob upgrades, boss immunities, abilities
 - **Fresh start.** Saves from before this update (`content` < 4) are reset to a new save; settings are kept.
 - **Upgrades moved to the blob.** The Upgrades tab is gone and the old permanent upgrades no longer count. In Gear,
   the Upgrade button under the blob opens that color's own upgrades (`BLOB_UPS`, 10-data.js): three stats each,
@@ -227,7 +266,7 @@ migration (both git-ignored scratch).
 
 ## The Ocean Update
 
-A second game mode with ten chapters of its own, on the home screen's second page.
+A second game mode with twenty chapters of its own (11-20: see The Deep, above), on the home screen's second page.
 - **Home:** "The Ocean Update" sits under the title on both pages. A sideways swipe turns the page (anywhere but the
   buttons; on the blob's stage only a long, quick swipe, since a drag there spins the blob). Once chapter 20 is
   beaten, page dots and an edge arrow show too, with a note the first time. The ocean page keeps the menu buttons;
