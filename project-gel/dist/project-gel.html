@@ -561,7 +561,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
     <div class="home-title">PROJECT GEL<small class="home-sub">The Ocean Update</small></div>
     <div class="pagedots" id="pageDots" hidden><button data-page="land" aria-label="Land"></button><button data-page="sea" aria-label="Ocean"></button></div>
     <button class="pagetab" id="pageTab" hidden aria-label="Go to the ocean"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
-    <div class="home-stage" id="heroTap" aria-label="Your blob. Drag to spin it, tap to poke it."></div>
+    <div class="home-stage" id="heroTap" aria-label="Your blob. Drag to spin it, tap to shoot the grunts coming at it."></div>
     <div class="chapter-pick">
       <button class="arrow" id="chPrev" aria-label="Previous chapter"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="panel ch-mid">
@@ -25541,13 +25541,13 @@ const UI = {
         d.x = e.clientX; d.t = now; d.moved += Math.abs(dx);
         HOME.yaw += dx * 0.012; HOME.spinV = clamp(lerp(HOME.spinV, dx * 0.012 / dts, 0.5), -12, 12);
       });
-      const release = () => {
+      const release = e => {
         const d = HOME.drag;
         if (!d) return;
         HOME.drag = null; HOME.idle = 0;
         // a long, quick swipe across the home stage turns the page instead of spinning the blob
         if (!openOnly && Math.abs(d.x - d.x0) > Math.min(260, window.innerWidth * 0.3) && performance.now() - d.t0 < 450) { HOME.spinV = 0; HOME.yaw = d.yaw0; this.swipePage(); return; }
-        if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
+        if (d.moved < 8) { HOME.spinV = 0; pokeHero(e.clientX, e.clientY); }
         else if (performance.now() - d.t > 90) HOME.spinV = 0;
       };
       el.addEventListener('pointerup', release); el.addEventListener('pointercancel', release);
@@ -27412,7 +27412,7 @@ function initInput(canvas) {
   window.addEventListener('pointermove', e => { INPUT.mx = e.clientX; INPUT.my = e.clientY; });
   canvas.addEventListener('pointerdown', e => {
     AUDIO.unlock();
-    if (G.state === 'home') { pokeHero(); return; }
+    if (G.state === 'home') { pokeHero(e.clientX, e.clientY); return; }
     if (G.state === 'run' && G.run && G.run.cave) { INPUT.mx = e.clientX; INPUT.my = e.clientY; if (e.button === 0) caveClick(); return; }
     if (G.state !== 'run' || INPUT.stick.active) return;
     Object.assign(INPUT.stick, { active: true, id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY });
@@ -27609,7 +27609,8 @@ function updateSeaHome(dt) {
   if ($('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1.5; UI.refreshSeaHome(); }
   FX.update(dt);
 }
-// Background foes: faded orange and purple grunts walk in from behind; the blob turns and shoots goo at them
+// Background foes: faded orange and purple grunts walk in from behind and come at the blob; tap or click the stage
+// to shoot goo at the one nearest your tap (the blob also shoots now and then by itself, slowly)
 const HOME_FOE_MODELS = ['stickman', 'sprinter', 'helmet', 'spear'];
 const HOME_FOE_COLS = [[1, 0.55, 0.16], [0.68, 0.42, 1]];
 function spawnHomeFoe(f, first) {
@@ -27617,7 +27618,7 @@ function spawnHomeFoe(f, first) {
   const c = R.cam.pos, w = clamp(0.3 * R.w / R.h, 0.15, 0.45);
   const a = Math.atan2(-c[0], -c[2]) + rand(-w, w), r = first ? rand(10, 14) : rand(14.5, 16.5);
   return Object.assign(f, { x: Math.sin(a) * r, z: Math.cos(a) * r, model: pick(HOME_FOE_MODELS), col: pick(HOME_FOE_COLS), phase: Math.random(),
-    speed: rand(0.7, 1.1), stop: rand(9, 11.5), yaw: 0, moving: true, appear: first ? 1 : 0, flash: 0, dying: 0, targeted: false });
+    speed: rand(0.7, 1.1), stop: rand(2.8, 3.4), yaw: 0, moving: true, appear: first ? 1 : 0, flash: 0, dying: 0, bumpT: rand(0.3, 1) });
 }
 function homeFoes(dt) {
   const F = HOME.foes, hero = G.hero;
@@ -27631,7 +27632,11 @@ function homeFoes(dt) {
     f.yaw = Math.atan2(-f.x, -f.z);
     f.moving = d > f.stop;
     if (f.moving) { f.x -= f.x / d * f.speed * dt; f.z -= f.z / d * f.speed * dt; f.phase += dt * f.speed * 1.5; }
-    else f.phase += dt * 0.7;
+    else {
+      // one that reaches the blob shoves it now and then until it is shot
+      f.phase += dt * 0.7;
+      if ((f.bumpT -= dt) <= 0) { f.bumpT = rand(1.2, 1.8); hero.impulse(rand(-1.4, -0.8)); FX.burst(f.x * 0.45, 0.9, f.z * 0.45, 6, f.col, 3, 0.06, 0.25, 1, 0.3); if (G.state === 'home') AUDIO.play('boing', 0.8); }
+    }
   }
   // goo shots home in on their foe
   for (const s of HOME.shots) {
@@ -27640,7 +27645,8 @@ function homeFoes(dt) {
     if (l < 0.5 || s.t > 1.8 || f.dying) {
       s.dead = true;
       if (!f.dying) {
-        f.dying = 0.001; f.flash = 1; f.targeted = false;
+        f.dying = 0.001; f.flash = 1;
+        AUDIO.play('squish');
         FX.burst(f.x, 0.8, f.z, 12, f.col, 4, 0.07, 0.35, 1, 0.4);
         FX.glow(f.x, 0.8, f.z, 1.1, f.col, 0.2);
         FX.burst(s.x, s.y, s.z, 6, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 3, 0.05, 0.25, 1, 0.3);
@@ -27658,22 +27664,44 @@ function homeFoes(dt) {
   if (a) {
     a.t += dt; a.yaw = Math.atan2(a.foe.x, a.foe.z);
     const facing = Math.abs(angleLerp(hero.yaw, a.yaw, 1) - hero.yaw) < 0.3;
-    if (!a.fired && (facing || a.t > 0.7)) {
-      a.fired = a.t; const f = a.foe, tw = [f.x, 0.75, f.z];
-      const go = from => HOME.shots.push({ x: from[0], y: from[1], z: from[2], vx: 0, vy: 0, vz: 0, t: 0, trail: [], foe: f, ph: Math.random() * 10 });
-      const arm = hero.freeArm(tw);
-      if (arm >= 0) hero.thrust(arm, tw, 0.17, 0, wp => go(wp)); else go(hero.jointWorld('chest'));
-    }
+    if (!a.fired && (facing || a.t > 0.7)) { a.fired = a.t; homeFire(a.foe); }
     if (a.fired && a.t > a.fired + 0.55) HOME.aim = null;
   } else if ((HOME.shootT -= dt) <= 0 && !HOME.drag && HOME.idle > 1.5) {
     let best = null, bd = 1e9;
     for (const f of F) {
       const d = Math.hypot(f.x, f.z);
-      if (!f.dying && !f.targeted && f.appear >= 1 && d < 13 && d < bd) { bd = d; best = f; }
+      if (!f.dying && !homeTargeted(f) && f.appear >= 1 && d < 13 && d < bd) { bd = d; best = f; }
     }
-    HOME.shootT = rand(1.3, 2.8);
-    if (best) { best.targeted = true; HOME.aim = { foe: best, t: 0, yaw: Math.atan2(best.x, best.z), fired: 0 }; }
+    HOME.shootT = rand(2.6, 4.2);
+    if (best) HOME.aim = { foe: best, t: 0, yaw: Math.atan2(best.x, best.z), fired: 0 };
   }
+}
+// a foe already has goo on its way (or the blob is turning to shoot it)
+const homeTargeted = f => HOME.shots.some(s => s.foe === f) || (HOME.aim && HOME.aim.foe === f && !HOME.aim.fired);
+// the blob flicks a goo shot at a foe from a free arm (or its chest when both are busy)
+function homeFire(f) {
+  const hero = G.hero, tw = [f.x, 0.75, f.z];
+  const go = from => HOME.shots.push({ x: from[0], y: from[1], z: from[2], vx: 0, vy: 0, vz: 0, t: 0, trail: [], foe: f, ph: Math.random() * 10 });
+  const arm = hero.freeArm(tw);
+  if (arm >= 0) hero.thrust(arm, tw, 0.17, 0, wp => go(wp)); else go(hero.jointWorld('chest'));
+  if (G.state === 'home') AUDIO.play('gooshot', 0.8);
+}
+// a tap on the home stage: shoot the foe nearest the tap on screen (ones already being shot count as farther),
+// or the nearest one to the blob when there was no tap point; false when there is nothing to shoot
+function homeShoot(sx, sy) {
+  if (G.state !== 'home' || UI.menuTab !== 'home' || UI.homePage === 'sea') return false;
+  let best = null, bd = 1e9;
+  const p = [0, 0];
+  for (const f of HOME.foes) {
+    if (f.dying || f.appear < 0.3) continue;
+    const busy = homeTargeted(f);
+    const d = sx != null && R.project(f.x, 0.8, f.z, p) ? Math.hypot(p[0] - sx, p[1] - sy) + (busy ? 300 : 0) : Math.hypot(f.x, f.z) + (busy ? 30 : 0);
+    if (d < bd) { bd = d; best = f; }
+  }
+  if (!best) return false;
+  HOME.aim = { foe: best, t: 0, yaw: Math.atan2(best.x, best.z), fired: 0.001 };
+  homeFire(best);
+  return true;
 }
 function emitHomeFoes() {
   for (const f of HOME.foes) {
@@ -27707,13 +27735,14 @@ function homeAction(loud) {
     if (loud) AUDIO.play('pop', 0.7);
   }
 }
-function pokeHero() {
+function pokeHero(sx, sy) {
   if (G.state !== 'home') return;
   if (UI.homePage === 'sea' && UI.menuTab === 'home') {
     const h = G.hero.pos; G.hero.impulse(2.6); AUDIO.play('splash', 0.8);
     FX.burst(h[0], 0.2, h[2], 14, [0.85, 0.95, 1], 4, 0.08, 0.5, 2, 3); FX.droplets(h[0], h[1] + 0.5, h[2], 3, 0, 1.5, 0.04, null);
     return;
   }
+  if (homeShoot(sx, sy)) return;
   homeAction(true); FX.droplets(0, 1.0, 0, 3, 0, 1.5, 0.04, null);
 }
 function homeCamera(dt) {

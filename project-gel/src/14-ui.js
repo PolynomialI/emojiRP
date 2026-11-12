@@ -60,13 +60,13 @@ const UI = {
         d.x = e.clientX; d.t = now; d.moved += Math.abs(dx);
         HOME.yaw += dx * 0.012; HOME.spinV = clamp(lerp(HOME.spinV, dx * 0.012 / dts, 0.5), -12, 12);
       });
-      const release = () => {
+      const release = e => {
         const d = HOME.drag;
         if (!d) return;
         HOME.drag = null; HOME.idle = 0;
         // a long, quick swipe across the home stage turns the page instead of spinning the blob
         if (!openOnly && Math.abs(d.x - d.x0) > Math.min(260, window.innerWidth * 0.3) && performance.now() - d.t0 < 450) { HOME.spinV = 0; HOME.yaw = d.yaw0; this.swipePage(); return; }
-        if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
+        if (d.moved < 8) { HOME.spinV = 0; pokeHero(e.clientX, e.clientY); }
         else if (performance.now() - d.t > 90) HOME.spinV = 0;
       };
       el.addEventListener('pointerup', release); el.addEventListener('pointercancel', release);
