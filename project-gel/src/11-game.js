@@ -130,7 +130,7 @@ function makeEvents(chapter) {
 }
 // spawns a second: a steady stream from the start (standing still is never safe), then a flood near the end
 const RATE_KEYS = [[0, 0.45], [30, 0.7], [60, 1.0], [120, 2.0], [180, 3.4], [240, 5.5], [270, 8.5], [300, 10.0]];
-const MAX_ALIVE = 600;
+const MAX_ALIVE = 300;
 function spawnRate(t) {
   for (let i = 1; i < RATE_KEYS.length; i++) {
     const [t1, r1] = RATE_KEYS[i], [t0, r0] = RATE_KEYS[i - 1];
@@ -192,11 +192,8 @@ function checkEvolutions() {
   for (const s of evolvable()) {
     if (run.evoSeen[s.id]) continue;
     run.evoSeen[s.id] = true;
-    const h = G.hero.pos, a = rand(0, TAU), o = { x: h[0] + Math.cos(a) * 4, z: h[2] + Math.sin(a) * 4 };
-    resolveCircle(o, 0.6);
-    spawnPickup('chest', o.x, o.z);
-    run.pickups[run.pickups.length - 1].evo = true;
-    if (G.state === 'run' || G.state === 'levelup') UI.toast(`${SKILLS[s.id].name} can evolve! Grab the golden chest.`, 2.6);
+    // (no chest of its own: any chest now has a small chance to evolve it)
+    if (G.state === 'run' || G.state === 'levelup') UI.toast(`${SKILLS[s.id].name} can evolve! Chests sometimes evolve a skill.`, 2.6);
   }
 }
 function evolveSkill(id) {
@@ -224,14 +221,15 @@ function recomputeStats() {
     dmgMul: (1 + 0.05 * lv('power')) * (1 + g('dmg')),
     speedMul: (1 + 0.04 * lv('speed')) * (1 + g('speed')),
     magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + g('magnet')),
-    armorMul: Math.pow(0.97, lv('armor')) * (1 - Math.min(0.6, g('armor'))),
+    armorMul: Math.pow(0.96, lv('armor')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('haste')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: (1 + 0.05 * lv('reach')) * (1 + g('area')),
     extra: lv('multishot'),
     xpMul: (1 + 0.04 * lv('growth')) * (1 + g('xp')),
-    regen: 0.002 * lv('regen') + g('regen'),
+    regen: 0.003 * lv('regen') + g('regen'),
+    crit: 0.03 * lv('crit'), leech: 0.015 * lv('leech'), dodge: 0.025 * lv('dodge'), second: lv('second'),
   };
-  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + g('hp'));
+  run.maxHp = 140 * (1 + 0.12 * lv('thick')) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = 1 + 0.01 * lv('thick');
@@ -269,9 +267,21 @@ function spawnEnemy(type, x, z, opts = {}) {
   return e;
 }
 
+// the skill behind the damage being dealt right now (set around each skill's update, its projectiles and
+// blasts), so a boss can shrug it off or take extra from it (BOSS_TYPES[id].immune / .weak)
+let DMG_SRC = null;
+const WEAK_MUL = 1.8;
 function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   if (e.dying || e.hp <= 0) return false;
+  if (e.boss && DMG_SRC && e.def.immune && e.def.immune.includes(DMG_SRC)) {
+    if (!(e.immuneAt > G.run.t)) { e.immuneAt = G.run.t + 0.6; addNumberAt(e.x, e.scale * 0.9 + 0.8, e.z, 'IMMUNE', [0.75, 0.78, 0.85]); }
+    return false;
+  }
+  let weak = false;
+  if (e.boss && DMG_SRC && e.def.weak && e.def.weak.includes(DMG_SRC)) { dmg *= WEAK_MUL; weak = true; opts = { ...opts, color: [1, 0.55, 0.15] }; }
   dmg *= G.run.stats.dmgMul;
+  // Lucky Splat: now and then a hit does double
+  if (G.run.stats.crit && Math.random() < G.run.stats.crit) { dmg *= 2; opts = { ...opts, color: [1, 0.9, 0.2] }; }
   if (e.boss && e.dizzy > 0) dmg *= 1.5;
   if (e.frozen > 0 && G.run.absZero) dmg *= 1.2;
   // a sea pirate's floats take the damage first (13k-ocean.js)
@@ -304,6 +314,8 @@ function killEnemy(e) {
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
   AUDIO.play('squish');
   if (e.def.onKill) e.def.onKill(e);
+  // Goo Leech: some kills heal a little
+  if (run.stats.leech && Math.random() < run.stats.leech && run.hp > 0) { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.01); FX.glow(G.hero.pos[0], 1.2, G.hero.pos[2], 0.5, [0.4, 1, 0.6], 0.15); }
   if (e.mini) { onMiniKilled(e); return; }
   if (e.boss) { onBossKilled(e); return; }
   if (e.def.flee) gooblinLoot(e);
@@ -334,6 +346,8 @@ function killEnemy(e) {
 function hurtHero(dmg, fromX, fromZ) {
   const run = G.run;
   if (G.state !== 'run' || run.invuln > 0 || run.over || DEV.god) return;
+  // Slippery: now and then a hit misses entirely
+  if (run.stats.dodge && Math.random() < run.stats.dodge) { run.invuln = 0.25; addNumberAt(G.hero.pos[0], 2.2, G.hero.pos[2], 'DODGE', [0.6, 0.95, 1]); AUDIO.play('pop', 1.4); return; }
   if (SKILL_HOOKS.shield.absorb(run, fromX, fromZ)) return;
   dmg *= run.stats.armorMul;
   run.hp -= dmg;
@@ -370,6 +384,18 @@ function reviveHero() {
   setState('run');
 }
 
+// Second Wind: dropping under 30% health heals a chunk, once every 45 s
+function secondWind(run) {
+  const lv = run.stats.second;
+  if (!lv || run.hp <= 0 || run.hp > run.maxHp * 0.3 || (run.secondAt || -1e9) > run.t) return;
+  run.secondAt = run.t + 45;
+  const heal = run.maxHp * (0.06 + 0.02 * (lv - 1));
+  run.hp = Math.min(run.maxHp, run.hp + heal);
+  const h = G.hero.pos;
+  FX.ring(h[0], h[2], 3, [0.4, 1, 0.6], 0.6, 1); FX.burst(h[0], 1, h[2], 16, [0.4, 1, 0.6], 4, 0.1, 0.5, 3);
+  addNumberAt(h[0], 2.1, h[2], heal, [0.4, 1, 0.6]); AUDIO.play('levelup', 1.3);
+}
+
 // ---------- gems and pickups ----------
 // tier 0 is the small blue crystal, tier 1 the big green emerald
 const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.028;
@@ -402,7 +428,7 @@ function gainXp(v) {
 function addNumber(e, v, color) {
   if (!G.save.settings.numbers) return;
   const now = G.run.t;
-  if (e.num && now - e.numT < 0.2 && G.numbers.includes(e.num)) { e.num.v += v; e.num.t = 0; e.numT = now; return; }
+  if (e.num && now - e.numT < 0.2 && G.numbers.includes(e.num) && typeof e.num.v === 'number') { e.num.v += v; e.num.t = 0; e.numT = now; return; }
   e.num = addNumberAt(e.x, 0.9 * e.scale + 0.4, e.z, v, color);
   e.numT = now;
 }
@@ -478,6 +504,7 @@ function updateRun(dt) {
 
   // regen
   if (run.stats.regen > 0 && run.hp > 0) run.hp = Math.min(run.maxHp, run.hp + run.maxHp * run.stats.regen * dt);
+  secondWind(run);
   R.frame.lowHp = run.hp / run.maxHp < 0.25 ? 0.35 : 0;
 
   // victory check: the remaining enemies melt and every gem and coin flies to the hero

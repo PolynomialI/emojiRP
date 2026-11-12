@@ -10,11 +10,15 @@ const extraShots = () => G.run.stats.extra;
 function updateSkills(dt) {
   const run = G.run;
   G.hero.auraLevel = 0;
+  // (DMG_SRC names the skill dealing the damage, for bosses that are immune or weak to it)
   for (const s of run.slots) {
     if (s.kind !== 'skill') continue;
+    DMG_SRC = s.id;
     SKILL_HOOKS[s.id].update(s, skillL(s), dt);
   }
-  updateMines(dt); updateBombs(dt); updateWorms(dt); updateBuddies(dt); updateAxes(dt); updateStorms(dt); updateZaps(dt); updateBouncy(dt);
+  DMG_SRC = 'mine'; updateMines(dt); DMG_SRC = 'grenade'; updateBombs(dt); DMG_SRC = 'worms'; updateWorms(dt); DMG_SRC = 'buddies'; updateBuddies(dt);
+  DMG_SRC = 'axe'; updateAxes(dt); DMG_SRC = 'sandstorm'; updateStorms(dt); DMG_SRC = 'drone'; updateZaps(dt); DMG_SRC = 'bouncy'; updateBouncy(dt);
+  DMG_SRC = null;
   for (const b of G.bolts) b.life -= dt;
   G.bolts = G.bolts.filter(b => b.life > 0);
 }
@@ -91,6 +95,7 @@ function updateProjectiles(dt) {
   const run = G.run;
   for (const p of run.proj) {
     p.t += dt; p.life -= dt;
+    DMG_SRC = p.kind;
     if (p.kind === 'ball') {
       p.x += p.vx * dt; p.y = Math.max(0.35, p.y + p.vy * dt); p.z += p.vz * dt;
       if (arenaSd(p.x, p.z) > 0) p.dead = true;
@@ -142,6 +147,7 @@ function updateProjectiles(dt) {
     if (!p.dead) { p.trail.unshift([p.x, p.y, p.z]); if (p.trail.length > (p.kind === 'missile' ? 12 : 7)) p.trail.pop(); }
   }
   run.proj = run.proj.filter(p => !p.dead);
+  DMG_SRC = null;
 }
 
 function explode(x, z, radius, dmg, colw, col) {
@@ -192,6 +198,10 @@ SKILL_HOOKS.fists = {
   },
 };
 function fistImpact(imp, L) {
+  const was = DMG_SRC; DMG_SRC = 'fists';
+  try { fistHit(imp, L); } finally { DMG_SRC = was; }
+}
+function fistHit(imp, L) {
   const h = G.hero.pos;
   let hitAny = false;
   enemiesInRadius(imp[0], imp[2], 0.65 * areaMul(), e => {

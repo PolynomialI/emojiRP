@@ -299,7 +299,7 @@ function thornsTouch(e, dx, dz, d) {
   if (!lv || e.thornAt > run.t || G.state !== 'run') return;
   e.thornAt = run.t + 0.5;
   const l = d || 1;
-  hurtEnemy(e, 5 + 2.5 * (lv - 1), dx / l * 7, dz / l * 7, { sound: false, color: [0.6, 1, 0.4] });
+  hurtEnemy(e, 6 + 3 * (lv - 1), dx / l * 7, dz / l * 7, { sound: false, color: [0.6, 1, 0.4] });
   FX.burst(e.x - dx / l * e.radius, 0.6, e.z - dz / l * e.radius, 4, [0.55, 0.85, 0.3], 3, 0.08, 0.3, 1);
 }
 

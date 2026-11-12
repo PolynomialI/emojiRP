@@ -167,22 +167,26 @@ const SKILLS = {
 
 // Passives ("blob abilities"): 10 levels each (Projectile Count adds a whole projectile per level, so it stays at 2)
 const PASSIVES = {
-  thick: { name: 'Thick Goo', short: '+10% health', desc: '+10% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
-  regen: { name: 'Regen', short: '+0.2% health/s', desc: 'Heal 0.2% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
+  thick: { name: 'Thick Goo', short: '+12% health', desc: '+12% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
+  regen: { name: 'Regen', short: '+0.3% health/s', desc: 'Heal 0.3% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
   speed: { name: 'Speed', short: '+4% speed', desc: '+4% move speed.', max: 10, icon: { type: 1, colw: 0 } },
   magnet: { name: 'Magnet', short: '+15% pickup range', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
   power: { name: 'Power', short: '+5% damage', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
-  armor: { name: 'Armor', short: '-3% damage taken', desc: 'Take 3% less damage.', max: 10, icon: { type: 21, colw: 0 } },
+  armor: { name: 'Armor', short: '-4% damage taken', desc: 'Take 4% less damage.', max: 10, icon: { type: 21, colw: 0 } },
   haste: { name: 'Haste', short: '+4% cooldown speed', desc: 'Skills recharge 4% faster.', max: 10, icon: { type: 22, colw: 0 } },
   reach: { name: 'Reach', short: '+5% area', desc: '+5% skill area.', max: 10, icon: { type: 23, colw: 0 } },
   multishot: { name: 'Projectile Count', short: '+1 projectile', desc: '+1 projectile for Blob Ball, Blob Missile, Goo Axe and Bouncy Ball.', max: 2, icon: { type: 24, colw: 0.4 } },
   sugar: { name: 'Sugar Rush', short: '+3% rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
-  thorns: { name: 'Thorns', short: '+2.5 thorn damage', from: 8, desc: 'Enemies that touch you take 5 damage and get shoved away, +2.5 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
+  thorns: { name: 'Thorns', short: '+3 thorn damage', from: 8, desc: 'Enemies that touch you take 6 damage and get shoved away, +3 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
+  crit: { name: 'Lucky Splat', short: '+3% double hits', from: 2, desc: 'Each hit has a 3% chance per level to do double damage.', max: 10, icon: { type: 20, colw: 2 } },
+  leech: { name: 'Goo Leech', short: '+1.5% heal on kill', from: 3, desc: 'Each kill has a 1.5% chance per level to heal 1% of your max health.', max: 10, icon: { type: 10, colw: 2.5 } },
+  dodge: { name: 'Slippery', short: '+2.5% dodge', from: 4, desc: 'A 2.5% chance per level to slip out of a hit completely.', max: 10, icon: { type: 1, colw: 4 } },
+  second: { name: 'Second Wind', short: '+2% rescue heal', from: 6, desc: 'Dropping under 30% health heals 6% of your max health, +2% per level, once every 45 s.', max: 10, icon: { type: 25, colw: 3 } },
   growth: { name: 'Growth', short: '+4% XP', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
 };
 // Power-ups hit far less hard than they first did: half the damage, the Goo Wave a quarter and the Laser
 // about a third; Aura stays as it is. (Evolutions build on these numbers.)
-const SKILL_POWER = { aura: 1, wave: 0.25, laser: 0.35 };
+const SKILL_POWER = { aura: 1, wave: 0.16, laser: 0.24, bouncy: 0.32 };
 for (const id in SKILLS) {
   const m = SKILL_POWER[id] ?? 0.5;
   if (m !== 1) for (const L of SKILLS[id].levels) for (const k of ['dmg', 'burst', 'pop']) if (k in L) L[k] = Math.max(1, Math.round(L[k] * m * 10) / 10);
@@ -571,6 +575,29 @@ const ZONE_KINDS = {
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
 const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken', 'colossus', 'monarch', 'trex', 'chef', 'bagger'];
+// What each boss shrugs off (immune: no damage) and what hurts it most (weak: 1.8x). Every boss with an
+// immunity has at least one weakness. Ids are skills (SKILLS); see DMG_SRC in 11-game.js.
+const BOSS_RESIST = {
+  sandworm: { immune: ['sandstorm', 'fissure'], weak: ['wave', 'frostnova'] },
+  wreckbot: { immune: ['laser', 'prism'], weak: ['wave', 'lightning'] },
+  bigbounce: { immune: ['bouncy'], weak: ['blade'] },
+  jellyqueen: { immune: ['aura', 'bubble'], weak: ['frostnova', 'meteor'] },
+  yeti: { immune: ['frostnova'], weak: ['meteor'] },
+  magma: { immune: ['meteor', 'fissure'], weak: ['wave', 'frostnova'] },
+  hydra: { immune: ['spore'], weak: ['axe'] },
+  crab: { immune: ['wave'], weak: ['lightning'] },
+  outlaw: { immune: ['turret'], weak: ['ptero'] },
+  pumpking: { immune: ['wisps'], weak: ['meteor'] },
+  geode: { immune: ['blade', 'axe'], weak: ['fissure', 'grenade'] },
+  storm: { immune: ['lightning', 'gale'], weak: ['laser', 'prism'] },
+  jack: { immune: ['yoyo'], weak: ['rollingpin'] },
+  kraken: { immune: ['wave'], weak: ['lightning'] },
+  colossus: { immune: ['drone'], weak: ['wave'] },
+  monarch: { immune: ['spore', 'aura'], weak: ['meteor', 'gale'] },
+  trex: { immune: ['fists'], weak: ['frostnova'] },
+  chef: { immune: ['rollingpin'], weak: ['bubble'] },
+};
+for (const id in BOSS_RESIST) Object.assign(BOSS_TYPES[id], BOSS_RESIST[id]);
 // Boss Rush fights every chapter's boss except the cave's (which is its own shooter, not an arena fight)
 const RUSH_BOSSES = CHAPTER_BOSSES.filter(id => !BOSS_TYPES[id].cave);
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];

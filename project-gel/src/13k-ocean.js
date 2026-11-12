@@ -190,6 +190,7 @@ function updateOcean(dt) {
   updateEnemyShots(dt);
   updatePickups(dt);
   if (run.stats.regen > 0 && run.hp > 0) run.hp = Math.min(run.maxHp, run.hp + run.maxHp * run.stats.regen * dt);
+  secondWind(run);
   R.frame.lowHp = run.hp / run.maxHp < 0.25 ? 0.35 : 0;
   // a storm rolls in with the boss in some chapters
   const C = SEA_CHAPTERS[run.chapter - 1], want = C.storm >= 1 || (C.storm > 0 && run.bossStarted) ? 1 : 0;

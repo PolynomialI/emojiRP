@@ -396,7 +396,8 @@ const UI = {
       const icon = ICONS.map['boss-' + id], img = c.querySelector('img');
       if (icon) img.src = icon; else img.hidden = true;
       c.querySelector('b').textContent = BOSS_TYPES[id].name;
-      c.querySelector('span').textContent = BOSS_HINTS[id] || '';
+      const B = BOSS_TYPES[id], nm = l => l.map(k => (SKILLS[k] ? SKILLS[k].name : k)).join(', ');
+      c.querySelector('span').textContent = (BOSS_HINTS[id] || '') + (B.weak ? ` Weak to ${nm(B.weak)}.` : '') + (B.immune ? ` Immune to ${nm(B.immune)}.` : '');
       return c;
     }));
     wrap.classList.remove('show'); void wrap.offsetWidth; wrap.classList.add('show');
@@ -407,6 +408,8 @@ const UI = {
   openLevelUp() {
     const run = G.run;
     run.choices = rollChoices();
+    // (a level with nothing to offer passes quietly)
+    if (!run.choices.length) { run.pending = Math.max(0, run.pending - 1); return; }
     this.renderChoices();
     $('luSub').textContent = `Level ${run.level - run.pending + 1}`;
     this.choiceLock = performance.now() + 350;
@@ -454,16 +457,19 @@ const UI = {
     this.chestRun = G.run;
     const run = G.run;
     run.chestQueued--;
-    // a ready evolution comes first; otherwise one upgrade per chest
+    // a random upgrade; only now and then (1 in 8) an evolution, if one is ready. Skills at level 8 and up
+    // come up half as often, so the last levels before an evolution take a while
     const evos = evolvable();
-    this.chestEvo = evos.length ? pick(evos).id : null;
+    this.chestEvo = evos.length && Math.random() < 0.125 ? pick(evos).id : null;
     const n = this.chestEvo ? 0 : 1;
     const results = [];
     for (let k = 0; k < n; k++) {
       const up = run.slots.filter(s => s.lvl < maxLevel(s.id) - results.filter(x => x === s.id).length);
       if (!up.length) break;
-      const skills = up.filter(s => s.kind === 'skill');
-      results.push(pick(skills.length && Math.random() < 0.75 ? skills : up).id);
+      const w = up.map(s => (s.kind === 'skill' ? (s.lvl >= 8 ? 0.5 : 1.5) : 1));
+      let r = Math.random() * w.reduce((a, b) => a + b, 0), i = 0;
+      while ((r -= w[i]) > 0 && i < up.length - 1) i++;
+      results.push(up[i].id);
     }
     this.chestResults = results;
     this.chestCoins = results.length || this.chestEvo ? 0 : 40;
@@ -595,8 +601,8 @@ const UI = {
       const life = 0.75, u = n.t / life;
       if (u >= 1) continue;
       if (!R.project(n.x, n.y + u * 0.9, n.z, p)) continue;
-      const v = Math.round(n.v);
-      const size = clamp(15 + Math.log10(Math.max(1, v)) * 7, 15, 34);
+      const v = typeof n.v === 'string' ? n.v : Math.round(n.v);
+      const size = typeof v === 'string' ? 18 : clamp(15 + Math.log10(Math.max(1, v)) * 7, 15, 34);
       const pop = n.t < 0.12 ? 1 + (1 - n.t / 0.12) * 0.5 : 1;
       ctx.globalAlpha = u > 0.65 ? 1 - (u - 0.65) / 0.35 : 1;
       ctx.font = `700 ${Math.round(size * pop)}px Fredoka, ui-rounded, system-ui, sans-serif`;
@@ -696,7 +702,7 @@ function rollChoices() {
   for (const s of owned) {
     const max = maxLevel(s.id);
     // (at sea the next ship comes up more often: it is the hull's main defense)
-    if (s.lvl < max) pool.push({ id: s.id, w: (many ? 1.6 : 1.1) * (s.id === 'ship' ? 1.8 : 1) });
+    if (s.lvl < max) pool.push({ id: s.id, w: (many ? 1.6 : 1.1) * (s.id === 'ship' ? 1.8 : 1) * (s.kind === 'skill' && s.lvl >= 8 && s.id !== 'ship' ? 0.45 : 1) });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
   // (the sea and the land each have their own upgrades)
@@ -710,7 +716,8 @@ function rollChoices() {
     out.push({ id: pool[i].id });
     pool.splice(i, 1);
   }
-  if (!out.length) out.push({ id: 'snack' });
+  // everything maxed: a Goo Snack every other level, nothing on the levels between
+  if (!out.length && run.level % 2 === 0) out.push({ id: 'snack' });
   return out;
 }
 function fmtStat(v, unit) {
@@ -725,7 +732,7 @@ function fmtStat(v, unit) {
 // a level-up card: name, level dots and one short number line (no sentences); ★ marks a skill that can
 // evolve, or an ability that would evolve a skill you hold
 function describeChoice(c) {
-  if (c.id === 'snack') return { name: 'Goo Snack', desc: '+30% health', icon: 'passive-regen', kind: 'passive', lvl: 1, max: 1 };
+  if (c.id === 'snack') return { name: 'Goo Snack', desc: '+12% health', icon: 'passive-regen', kind: 'passive', lvl: 1, max: 1 };
   const sk = SKILLS[c.id], ps = PASSIVES[c.id], lvl = lvlOf(c.id), max = maxLevel(c.id);
   if (sk) {
     const fields = sk.fields;
@@ -742,6 +749,6 @@ function describeChoice(c) {
 }
 function applyChoice(c) {
   const run = G.run;
-  if (c.id === 'snack') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.3); return; }
+  if (c.id === 'snack') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.12); return; }
   addOrLevel(c.id);
 }
