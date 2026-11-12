@@ -690,6 +690,7 @@ function emitSeaShots() {
   for (const b of OC.mines) {
     const by = Math.sin(b.ph) * 0.05 - 0.18;
     if (R.enemyDraw.sbarrel) pushEnemy('sbarrel', false, b.x, by, b.z, b.yaw, MODELS.defs.sbarrel.clips.still.row, ms * 0.95, 1, 0, b.t > 17 ? 0.5 * (Math.sin(b.t * 30) > 0) : 0, 0, 1, 1, 1);
+    seaShadow(b.x, b.z, 0.38 * ms, 0.38 * ms, b.yaw, 0.45);
     pushDecal(b.x, b.z, 0.32 * ms, 0.32 * ms, 0, 3, 0, 0.5, 1, 1, 1, 0.35, true);
     if (Math.random() < 0.3) FX.part(b.x, 0.45 * ms, b.z, 0, 0.6, 0, 0.06, 0.02, 0.25, [1, 0.8, 0.3], 1, 1);
   }
@@ -734,6 +735,7 @@ function emitSeaShots() {
     for (const f of ss.st.fins) {
       const sc = ss.evo ? 1.7 : 1.15;
       pushEnemy('sshark', false, f.x, -0.12 * sc, f.z, f.yaw, c.row + Math.floor((f.ph % 1) * c.frames), sc, 1, 0, 0, 0, 1, 1, 1);
+      seaShadow(f.x, f.z, 0.4 * sc, 1.25 * sc, -f.yaw, 0.6);
       pushDecal(f.x, f.z, 0.5 * sc, 0.9 * sc, -f.yaw, 3, 0, 0.5, 1, 1, 1, 0.35, true);
     }
   }

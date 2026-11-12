@@ -54,7 +54,7 @@ SEA_DRAW.pdiver = e => {
   if (e.surfaced || e.dying) return false;
   const M = MODELS.defs.pdiver, c = M.clips.paddle;
   if (R.enemyDraw.pdiver) pushEnemy('pdiver', false, e.x, -1.42 * e.scale / 1.25, e.z, e.yaw, c.row + Math.floor((e.phase % 1) * c.frames), e.scale, 1, 0, 0, 0, e.tint[0], e.tint[1], e.tint[2]);
-  pushDecal(e.x, e.z, 0.45, 0.6, -e.yaw, 1, 0, 0, 0.05, 0.15, 0.3, 0.35);
+  seaShadow(e.x, e.z, 0.5, 0.8, -e.yaw, 0.55);
   if (Math.random() < 0.25) FX.part(e.x + rand(-0.2, 0.2), 0.05, e.z + rand(-0.2, 0.2), 0, rand(0.3, 0.6), 0, 0.05, 0.02, 0.4, [0.9, 0.97, 1], 0.9, 4, -0.5);
   return true;
 };
@@ -306,6 +306,7 @@ SEA_DRAW.pcapt = e => {
     const S = OC.ship, face = Math.atan2(S.x - e.x, S.z - e.z), tn = e.tint;
     pushEnemy('pcapt', false, e.x, bob + deck, e.z, e.ai.state === 'charge' ? e.yaw : face, clip.row + Math.floor(u * clip.frames), e.scale, e.squash, dead, e.flash > 0 ? 0.85 : 0, 0, tn[0], tn[1], tn[2], e.ghost ? 0.35 : 0);
   }
+  seaShadow(e.x, e.z, e.ride === 'raft' ? 1.25 : 0.75, e.ride === 'raft' ? 1.6 : 2.1, -e.yaw, (e.ghost ? 0.3 : 0.6) * (1 - dead));
   pushDecal(e.x, e.z, e.radius * 1.6, e.radius * 1.6, 0, 3, 0, 0.5, 1, 1, 1, 0.4, true);
   emitMiniCrown({ ...e, y: deck + bob });
   if (Math.hypot(e.vx, e.vz) > 1 && Math.random() < 0.4) pushDecal(e.x - e.vx * 0.12, e.z - e.vz * 0.12, 0.5, 0.4, 0, 0, Math.random() * 10, 0, 0.95, 0.99, 1, 0.4);

@@ -10398,6 +10398,10 @@ vec3 voro(vec2 p) {
 }
 
 // the open sea's swell: a few long crossing waves and a slow noise drift (height in about -amp..amp)
+// a sea of clouds' height: three layers of drifting billows
+float cloudH(vec2 p) {
+  return texture(uNoise, p * 0.045).r * 0.55 + texture(uNoise, p * 0.12 + 1.7).g * 0.3 + texture(uNoise, p * 0.31 + 4.1).b * 0.15;
+}
 float seaH(vec2 p, float amp) {
   float t = uTime;
   float h = sin(dot(p, vec2(0.36, 0.12)) + t * 1.1) * 0.5 + sin(dot(p, vec2(-0.18, 0.31)) + t * 0.9) * 0.35
@@ -10732,6 +10736,38 @@ void main() {
     float gh = hash12(gc), tw = max(0.0, sin(uTime * 3.0 + gh * 40.0));
     emis = vec3(1.0) * step(0.94, gh) * (1.0 - smoothstep(0.02, 0.08, length(gf))) * tw * tw * 0.7 * (1.0 - storm * 0.8);
     gloss = 0.4; sharp = 60.0;
+    // the later chapters' seas (uSea.z): 1 glowing night water, 2 fizzy soda, 3 a sea of clouds, 4 the underworld's
+    // ghost-lit water, 5 golden water at the edge of the world
+    int vt = int(uSea.z + 0.5);
+    if (vt == 1) {
+      // the light lines glow, and specks of plankton drift and pulse
+      emis = uGrout * (line * mask * 0.85 + line * 0.12);
+      vec2 pq = p * 3.0 + vec2(uTime * 0.15, uTime * 0.06), pc = floor(pq), pf = fract(pq) - 0.5;
+      float ph = hash12(pc);
+      emis += uGrout * step(0.88, ph) * (1.0 - smoothstep(0.02, 0.1, length(pf))) * (0.45 + 0.55 * sin(uTime * 2.3 + ph * 50.0)) * 1.3;
+      gloss = 0.55; sharp = 70.0;
+    } else if (vt == 2) {
+      // bubbles rise, swell and pop all over the soda
+      vec2 bq = p * 2.4 + vec2(0.0, uTime * 0.08), bc = floor(bq), bf = fract(bq) - 0.5;
+      float bh = hash12(bc), life = fract(uTime * 0.45 + bh * 7.0), br = 0.05 + 0.14 * life;
+      float ring = (1.0 - smoothstep(0.0, 0.03, abs(length(bf) - br))) * step(0.55, bh) * (1.0 - life * life);
+      alb = mix(alb, vec3(1.0, 0.96, 0.99), ring * 0.75);
+      emis += vec3(1.0, 0.92, 0.96) * ring * 0.2;
+      gloss = 0.7; sharp = 90.0;
+    } else if (vt == 3) {
+      // cloud tops: soft billows drifting, lit from above, no glints or lines
+      vec2 cq = p + vec2(uTime * 0.25, uTime * 0.1);
+      float c0 = cloudH(cq), cx = cloudH(cq + vec2(0.4, 0.0)), cz = cloudH(cq + vec2(0.0, 0.4));
+      N = normalize(vec3(-(cx - c0) * 3.0, 1.0, -(cz - c0) * 3.0));
+      alb = mix(uStoneA, uStoneB, smoothstep(0.35, 0.75, c0));
+      alb = mix(alb, uGrout, smoothstep(0.62, 0.8, c0) * 0.5);
+      emis = vec3(0.0); gloss = 0.03; sharp = 8.0;
+    } else if (vt == 4) {
+      emis = uGrout * line * mask * 0.55 + uGrout * step(0.96, gh) * (1.0 - smoothstep(0.02, 0.1, length(gf))) * tw * 0.6;
+    } else if (vt == 5) {
+      emis *= vec3(1.6, 1.25, 0.55) * 2.2;
+      alb = mix(alb, uGrout, line * mask * 0.25);
+    }
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -11968,6 +12004,15 @@ void main() {
       a = max(a, on * (0.35 + 0.65 * b));
     }
     a *= fC.a;
+  } else if (type == 12) {
+    // the dark mass of something in the water (13k-ocean.js seaShadow): darkest in the middle, its edge wavering
+    // with the water, crossed by faint drifting light ripples
+    float ang = atan(q.y, q.x);
+    float wav = texture(uNoise, vec2(ang * 0.22 + seed, uTime * 0.04 + seed * 0.37)).r - 0.5;
+    float edge = 0.94 + wav * 0.14;
+    float m = 1.0 - smoothstep(edge * 0.45, edge, r);
+    float rip = texture(uNoise, vW.xz * 0.35 + vec2(uTime * 0.05, uTime * 0.03)).g;
+    a = m * (0.85 + 0.25 * (rip - 0.5)) * fC.a;
   } else if (type == 10) {
     // cone telegraph: a pie slice of half-angle seed along +y, filling outward with t
     float ang = abs(atan(q.x, q.y));
@@ -23475,7 +23520,8 @@ function seaLook(n) {
   f.floorStyle = 21; f.stoneA = hexToRgb(C.deep); f.stoneB = hexToRgb(C.shallow); f.grout = hexToRgb(C.lines); f.accent = [1, 1, 1];
   f.fogCol = hexToRgb(C.fog); f.skyCol = [0.8, 0.93, 1.0]; f.groundCol = hexToRgb(C.deep).map(v => v * 0.8); f.lightCol = [1.0, 0.97, 0.9];
   f.spotMin = 1; f.shadowTint = [0.2, 0.35, 0.55];
-  f.sea[0] = C.rough; f.sea[1] = C.storm >= 1 ? 1 : 0;
+  f.sea[0] = C.rough; f.sea[1] = C.storm >= 1 ? 1 : 0; f.sea[2] = C.vt || 0;
+  const dp = hexToRgb(C.deep); for (let i = 0; i < 3; i++) SEA_SH[i] = dp[i] * 0.1;
 }
 
 // ---------- starting and leaving ----------
@@ -23983,6 +24029,13 @@ function seaCamera(dt, snap) {
 
 // ---------- drawing ----------
 const SEA_WHITE = [1, 1, 1];
+// the dark mass under the surface of anything in the water: a soft shape (sx across, sz along rot, the decal's
+// rotation) a little down-light of it, in the chapter's deep water darkened, so it reads as solid and heavy
+const SEA_SH = [0.02, 0.05, 0.1];
+function seaShadow(x, z, sx, sz, rot, a, off = 0.12) {
+  const k = Math.max(sx, sz) * off;
+  pushDecal(x + 0.55 * k, z - 0.45 * k, sx, sz, rot, 12, (x * 0.37 + z * 0.11) % 7, 0, SEA_SH[0], SEA_SH[1], SEA_SH[2], a);
+}
 function emitSea() {
   const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
   const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
@@ -23991,7 +24044,8 @@ function emitSea() {
   // the ship (or its pieces)
   if (OC.sink) {
     for (const P of OC.sink.pieces) {
-      const m = MODELS.defs[P.m];
+      const m = MODELS.defs[P.m], Dk = shipDef();
+      seaShadow(P.x, P.z, Dk.wid * 0.5, Dk.len * 0.24, -P.yaw, 0.5 * clamp(1 + P.y * 0.6, 0.3, 1));
       if (m && R.enemyDraw[P.m]) pushEnemy(P.m, false, P.x, P.y, P.z, P.yaw, m.clips.tilt.row + Math.min(15, Math.floor(P.tilt * 15.99)), 1, 1, 0, 0, 0, 1, 1, 1);
     }
     const rg = shipDef().model + '_rig', mid = OC.sink.pieces[1];
@@ -24015,7 +24069,8 @@ function emitSea() {
   // islands
   for (const I of OC.isles) {
     if (!onScreen(I.x, I.z, I.r + 4)) continue;
-    // shallow light water and a foam ring that breathes
+    // the rock going down into deep water, shallow light water over it, and a foam ring that breathes
+    seaShadow(I.x, I.z, I.r * 3.0, I.r * 3.0, I.yaw, 0.75, 0.05);
     pushDecal(I.x, I.z, I.r * 1.7, I.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, 0.38, true);
     const br = 1.06 + 0.04 * Math.sin(t * 1.4 + I.x);
     pushDecal(I.x, I.z, I.r * br, I.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
@@ -24032,6 +24087,7 @@ function emitSea() {
     const y = (e.grab ? -0.32 : -SEA.sink) * e.scale * (M.top || 1) * 0.9 + bob - dead * 0.6 * e.scale;
     const row = e.act && M.clips[e.act.clip] ? M.clips[e.act.clip].row + Math.floor(clamp(e.act.u, 0, 0.999) * M.clips[e.act.clip].frames) : M.clips.paddle.row + Math.floor((e.phase - Math.floor(e.phase)) * M.clips.paddle.frames);
     const tn = e.tint;
+    seaShadow(e.x, e.z, e.radius * 1.5, e.radius * 2.0, -e.yaw, (e.def.ghost ? 0.35 : 0.75) * (1 - dead) * clamp(appear, 0, 1));
     pushEnemy(e.model, e.elite, e.x, y, e.z, e.yaw, row, e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? 0.85 : 0, e.auraTint || 0, tn[0], tn[1], tn[2], e.def.ghost ? 0.35 : 0);
     const rr = e.radius * 1.15 * (1 + 0.05 * Math.sin(t * 3 + e.bobPh));
     pushDecal(e.x, e.z, rr, rr, 0, 3, 0, 0.5, 1, 1, 1, 0.42 * (1 - dead), true);
@@ -24049,6 +24105,8 @@ function seaDrawShip(x, y, z, yaw, stage, t, flash) {
   const model = D.model, M = MODELS.defs[model];
   if (!M || !R.enemyDraw[model]) return;
   const c = M.clips.rock, row = c.row + Math.floor(((t * 0.18) % 1) * c.frames);
+  seaShadow(x, z, D.wid * 1.35, D.len * 0.8, -yaw, 0.45, 0.2);
+  seaShadow(x, z, D.wid * 0.92, D.len * 0.64, -yaw, 0.85);
   pushEnemy(model, false, x, y, z, yaw, row, 1, 1, 0, flash, 0, 1, 1, 1);
   const rg = model + '_rig';
   if (R.enemyDraw[rg]) {
@@ -24787,6 +24845,7 @@ function emitSeaShots() {
   for (const b of OC.mines) {
     const by = Math.sin(b.ph) * 0.05 - 0.18;
     if (R.enemyDraw.sbarrel) pushEnemy('sbarrel', false, b.x, by, b.z, b.yaw, MODELS.defs.sbarrel.clips.still.row, ms * 0.95, 1, 0, b.t > 17 ? 0.5 * (Math.sin(b.t * 30) > 0) : 0, 0, 1, 1, 1);
+    seaShadow(b.x, b.z, 0.38 * ms, 0.38 * ms, b.yaw, 0.45);
     pushDecal(b.x, b.z, 0.32 * ms, 0.32 * ms, 0, 3, 0, 0.5, 1, 1, 1, 0.35, true);
     if (Math.random() < 0.3) FX.part(b.x, 0.45 * ms, b.z, 0, 0.6, 0, 0.06, 0.02, 0.25, [1, 0.8, 0.3], 1, 1);
   }
@@ -24831,6 +24890,7 @@ function emitSeaShots() {
     for (const f of ss.st.fins) {
       const sc = ss.evo ? 1.7 : 1.15;
       pushEnemy('sshark', false, f.x, -0.12 * sc, f.z, f.yaw, c.row + Math.floor((f.ph % 1) * c.frames), sc, 1, 0, 0, 0, 1, 1, 1);
+      seaShadow(f.x, f.z, 0.4 * sc, 1.25 * sc, -f.yaw, 0.6);
       pushDecal(f.x, f.z, 0.5 * sc, 0.9 * sc, -f.yaw, 3, 0, 0.5, 1, 1, 1, 0.35, true);
     }
   }
@@ -24914,7 +24974,7 @@ SEA_DRAW.pdiver = e => {
   if (e.surfaced || e.dying) return false;
   const M = MODELS.defs.pdiver, c = M.clips.paddle;
   if (R.enemyDraw.pdiver) pushEnemy('pdiver', false, e.x, -1.42 * e.scale / 1.25, e.z, e.yaw, c.row + Math.floor((e.phase % 1) * c.frames), e.scale, 1, 0, 0, 0, e.tint[0], e.tint[1], e.tint[2]);
-  pushDecal(e.x, e.z, 0.45, 0.6, -e.yaw, 1, 0, 0, 0.05, 0.15, 0.3, 0.35);
+  seaShadow(e.x, e.z, 0.5, 0.8, -e.yaw, 0.55);
   if (Math.random() < 0.25) FX.part(e.x + rand(-0.2, 0.2), 0.05, e.z + rand(-0.2, 0.2), 0, rand(0.3, 0.6), 0, 0.05, 0.02, 0.4, [0.9, 0.97, 1], 0.9, 4, -0.5);
   return true;
 };
@@ -25166,6 +25226,7 @@ SEA_DRAW.pcapt = e => {
     const S = OC.ship, face = Math.atan2(S.x - e.x, S.z - e.z), tn = e.tint;
     pushEnemy('pcapt', false, e.x, bob + deck, e.z, e.ai.state === 'charge' ? e.yaw : face, clip.row + Math.floor(u * clip.frames), e.scale, e.squash, dead, e.flash > 0 ? 0.85 : 0, 0, tn[0], tn[1], tn[2], e.ghost ? 0.35 : 0);
   }
+  seaShadow(e.x, e.z, e.ride === 'raft' ? 1.25 : 0.75, e.ride === 'raft' ? 1.6 : 2.1, -e.yaw, (e.ghost ? 0.3 : 0.6) * (1 - dead));
   pushDecal(e.x, e.z, e.radius * 1.6, e.radius * 1.6, 0, 3, 0, 0.5, 1, 1, 1, 0.4, true);
   emitMiniCrown({ ...e, y: deck + bob });
   if (Math.hypot(e.vx, e.vz) > 1 && Math.random() < 0.4) pushDecal(e.x - e.vx * 0.12, e.z - e.vz * 0.12, 0.5, 0.4, 0, 0, Math.random() * 10, 0, 0.95, 0.99, 1, 0.4);
@@ -25488,10 +25549,13 @@ function emitSeaBossHazards() {
       const by = Math.sin(t * 2 + h.x) * 0.05 - 0.15;
       if (h.keg && R.enemyDraw.sbarrel) pushEnemy('sbarrel', false, h.x, by, h.z, h.x, MODELS.defs.sbarrel.clips.still.row, 1.1, 1, 0, 0, 0, 1, 1, 1);
       else pushImp(h.x, 0.25, h.z, 0.45, 0, 1, 0, 1, 31, 1.6, 0.4 + 0.3 * Math.sin(t * 8), t, 0, 0, 0, 1);
+      seaShadow(h.x, h.z, 0.6, 0.6, h.x, 0.5);
       pushDecal(h.x, h.z, 0.7, 0.7, 0, 3, 0, 0.5, 1, 0.5, 0.4, 0.4, true);
     } else if (h.k === 'tent') {
       const u = clamp(h.t / h.dur, 0, 1);
       pushDecal(h.x, h.z, h.r, h.r, 0, 4, 0, u, 1, 0.22, 0.18, 0.9);
+      // the tentacle's dark bulk rising under the circle
+      seaShadow(h.x, h.z, h.r * 0.8, h.r * 0.8, h.x, 0.55 * u);
       if (h.hit) {
         // a tentacle tip rearing out of the water
         const up = clamp((h.t - h.dur) * 4, 0, 1) * clamp((h.dur + 1 - h.t) * 3, 0, 1);
@@ -25517,6 +25581,8 @@ function seaBossDraw(e) {
     pushEnemy('pcapt', false, e.x, bob + B.deck * k, e.z, face, clip.row + Math.floor(u * clip.frames), B.rs * k, 1, dead, e.flash > 0 ? 0.85 : 0, 0, e.tint[0], e.tint[1], e.tint[2], fade);
   }
   if (!e.portrait) {
+    seaShadow(e.x, e.z, (B.wid || B.len * 0.42) * 1.6, B.len * 0.8, -e.yaw, 0.45 * (1 - fade) * (1 - dead), 0.2);
+    seaShadow(e.x, e.z, (B.wid || B.len * 0.42) * 1.15, B.len * 0.64, -e.yaw, 0.85 * (1 - fade) * (1 - dead));
     pushDecal(e.x, e.z, B.len * 0.55, B.len * 0.55, 0, 3, 0, 0.5, 1, 1, 1, 0.35 * (1 - fade), true);
     if (B.ride === 'blava' && Math.random() < 0.3) FX.smoke(e.x, 3.2, e.z, 0.7, [0.35, 0.33, 0.35], 1.4, 1.2);
     if (B.ghost && Math.random() < 0.2) FX.part(e.x + rand(-2, 2), rand(0.5, 2), e.z + rand(-2, 2), 0, 0.4, 0, 0.3, 0.6, 1.2, [0.6, 1, 0.9], 0.3, 2, 0, 0.5);

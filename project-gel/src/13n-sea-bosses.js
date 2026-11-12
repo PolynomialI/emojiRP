@@ -313,10 +313,13 @@ function emitSeaBossHazards() {
       const by = Math.sin(t * 2 + h.x) * 0.05 - 0.15;
       if (h.keg && R.enemyDraw.sbarrel) pushEnemy('sbarrel', false, h.x, by, h.z, h.x, MODELS.defs.sbarrel.clips.still.row, 1.1, 1, 0, 0, 0, 1, 1, 1);
       else pushImp(h.x, 0.25, h.z, 0.45, 0, 1, 0, 1, 31, 1.6, 0.4 + 0.3 * Math.sin(t * 8), t, 0, 0, 0, 1);
+      seaShadow(h.x, h.z, 0.6, 0.6, h.x, 0.5);
       pushDecal(h.x, h.z, 0.7, 0.7, 0, 3, 0, 0.5, 1, 0.5, 0.4, 0.4, true);
     } else if (h.k === 'tent') {
       const u = clamp(h.t / h.dur, 0, 1);
       pushDecal(h.x, h.z, h.r, h.r, 0, 4, 0, u, 1, 0.22, 0.18, 0.9);
+      // the tentacle's dark bulk rising under the circle
+      seaShadow(h.x, h.z, h.r * 0.8, h.r * 0.8, h.x, 0.55 * u);
       if (h.hit) {
         // a tentacle tip rearing out of the water
         const up = clamp((h.t - h.dur) * 4, 0, 1) * clamp((h.dur + 1 - h.t) * 3, 0, 1);
@@ -342,6 +345,8 @@ function seaBossDraw(e) {
     pushEnemy('pcapt', false, e.x, bob + B.deck * k, e.z, face, clip.row + Math.floor(u * clip.frames), B.rs * k, 1, dead, e.flash > 0 ? 0.85 : 0, 0, e.tint[0], e.tint[1], e.tint[2], fade);
   }
   if (!e.portrait) {
+    seaShadow(e.x, e.z, (B.wid || B.len * 0.42) * 1.6, B.len * 0.8, -e.yaw, 0.45 * (1 - fade) * (1 - dead), 0.2);
+    seaShadow(e.x, e.z, (B.wid || B.len * 0.42) * 1.15, B.len * 0.64, -e.yaw, 0.85 * (1 - fade) * (1 - dead));
     pushDecal(e.x, e.z, B.len * 0.55, B.len * 0.55, 0, 3, 0, 0.5, 1, 1, 1, 0.35 * (1 - fade), true);
     if (B.ride === 'blava' && Math.random() < 0.3) FX.smoke(e.x, 3.2, e.z, 0.7, [0.35, 0.33, 0.35], 1.4, 1.2);
     if (B.ghost && Math.random() < 0.2) FX.part(e.x + rand(-2, 2), rand(0.5, 2), e.z + rand(-2, 2), 0, 0.4, 0, 0.3, 0.6, 1.2, [0.6, 1, 0.9], 0.3, 2, 0, 0.5);

@@ -201,6 +201,10 @@ vec3 voro(vec2 p) {
 }
 
 // the open sea's swell: a few long crossing waves and a slow noise drift (height in about -amp..amp)
+// a sea of clouds' height: three layers of drifting billows
+float cloudH(vec2 p) {
+  return texture(uNoise, p * 0.045).r * 0.55 + texture(uNoise, p * 0.12 + 1.7).g * 0.3 + texture(uNoise, p * 0.31 + 4.1).b * 0.15;
+}
 float seaH(vec2 p, float amp) {
   float t = uTime;
   float h = sin(dot(p, vec2(0.36, 0.12)) + t * 1.1) * 0.5 + sin(dot(p, vec2(-0.18, 0.31)) + t * 0.9) * 0.35
@@ -535,6 +539,38 @@ void main() {
     float gh = hash12(gc), tw = max(0.0, sin(uTime * 3.0 + gh * 40.0));
     emis = vec3(1.0) * step(0.94, gh) * (1.0 - smoothstep(0.02, 0.08, length(gf))) * tw * tw * 0.7 * (1.0 - storm * 0.8);
     gloss = 0.4; sharp = 60.0;
+    // the later chapters' seas (uSea.z): 1 glowing night water, 2 fizzy soda, 3 a sea of clouds, 4 the underworld's
+    // ghost-lit water, 5 golden water at the edge of the world
+    int vt = int(uSea.z + 0.5);
+    if (vt == 1) {
+      // the light lines glow, and specks of plankton drift and pulse
+      emis = uGrout * (line * mask * 0.85 + line * 0.12);
+      vec2 pq = p * 3.0 + vec2(uTime * 0.15, uTime * 0.06), pc = floor(pq), pf = fract(pq) - 0.5;
+      float ph = hash12(pc);
+      emis += uGrout * step(0.88, ph) * (1.0 - smoothstep(0.02, 0.1, length(pf))) * (0.45 + 0.55 * sin(uTime * 2.3 + ph * 50.0)) * 1.3;
+      gloss = 0.55; sharp = 70.0;
+    } else if (vt == 2) {
+      // bubbles rise, swell and pop all over the soda
+      vec2 bq = p * 2.4 + vec2(0.0, uTime * 0.08), bc = floor(bq), bf = fract(bq) - 0.5;
+      float bh = hash12(bc), life = fract(uTime * 0.45 + bh * 7.0), br = 0.05 + 0.14 * life;
+      float ring = (1.0 - smoothstep(0.0, 0.03, abs(length(bf) - br))) * step(0.55, bh) * (1.0 - life * life);
+      alb = mix(alb, vec3(1.0, 0.96, 0.99), ring * 0.75);
+      emis += vec3(1.0, 0.92, 0.96) * ring * 0.2;
+      gloss = 0.7; sharp = 90.0;
+    } else if (vt == 3) {
+      // cloud tops: soft billows drifting, lit from above, no glints or lines
+      vec2 cq = p + vec2(uTime * 0.25, uTime * 0.1);
+      float c0 = cloudH(cq), cx = cloudH(cq + vec2(0.4, 0.0)), cz = cloudH(cq + vec2(0.0, 0.4));
+      N = normalize(vec3(-(cx - c0) * 3.0, 1.0, -(cz - c0) * 3.0));
+      alb = mix(uStoneA, uStoneB, smoothstep(0.35, 0.75, c0));
+      alb = mix(alb, uGrout, smoothstep(0.62, 0.8, c0) * 0.5);
+      emis = vec3(0.0); gloss = 0.03; sharp = 8.0;
+    } else if (vt == 4) {
+      emis = uGrout * line * mask * 0.55 + uGrout * step(0.96, gh) * (1.0 - smoothstep(0.02, 0.1, length(gf))) * tw * 0.6;
+    } else if (vt == 5) {
+      emis *= vec3(1.6, 1.25, 0.55) * 2.2;
+      alb = mix(alb, uGrout, line * mask * 0.25);
+    }
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -1771,6 +1807,15 @@ void main() {
       a = max(a, on * (0.35 + 0.65 * b));
     }
     a *= fC.a;
+  } else if (type == 12) {
+    // the dark mass of something in the water (13k-ocean.js seaShadow): darkest in the middle, its edge wavering
+    // with the water, crossed by faint drifting light ripples
+    float ang = atan(q.y, q.x);
+    float wav = texture(uNoise, vec2(ang * 0.22 + seed, uTime * 0.04 + seed * 0.37)).r - 0.5;
+    float edge = 0.94 + wav * 0.14;
+    float m = 1.0 - smoothstep(edge * 0.45, edge, r);
+    float rip = texture(uNoise, vW.xz * 0.35 + vec2(uTime * 0.05, uTime * 0.03)).g;
+    a = m * (0.85 + 0.25 * (rip - 0.5)) * fC.a;
   } else if (type == 10) {
     // cone telegraph: a pie slice of half-angle seed along +y, filling outward with t
     float ang = abs(atan(q.x, q.y));

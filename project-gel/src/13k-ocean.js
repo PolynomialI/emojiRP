@@ -64,7 +64,8 @@ function seaLook(n) {
   f.floorStyle = 21; f.stoneA = hexToRgb(C.deep); f.stoneB = hexToRgb(C.shallow); f.grout = hexToRgb(C.lines); f.accent = [1, 1, 1];
   f.fogCol = hexToRgb(C.fog); f.skyCol = [0.8, 0.93, 1.0]; f.groundCol = hexToRgb(C.deep).map(v => v * 0.8); f.lightCol = [1.0, 0.97, 0.9];
   f.spotMin = 1; f.shadowTint = [0.2, 0.35, 0.55];
-  f.sea[0] = C.rough; f.sea[1] = C.storm >= 1 ? 1 : 0;
+  f.sea[0] = C.rough; f.sea[1] = C.storm >= 1 ? 1 : 0; f.sea[2] = C.vt || 0;
+  const dp = hexToRgb(C.deep); for (let i = 0; i < 3; i++) SEA_SH[i] = dp[i] * 0.1;
 }
 
 // ---------- starting and leaving ----------
@@ -572,6 +573,13 @@ function seaCamera(dt, snap) {
 
 // ---------- drawing ----------
 const SEA_WHITE = [1, 1, 1];
+// the dark mass under the surface of anything in the water: a soft shape (sx across, sz along rot, the decal's
+// rotation) a little down-light of it, in the chapter's deep water darkened, so it reads as solid and heavy
+const SEA_SH = [0.02, 0.05, 0.1];
+function seaShadow(x, z, sx, sz, rot, a, off = 0.12) {
+  const k = Math.max(sx, sz) * off;
+  pushDecal(x + 0.55 * k, z - 0.45 * k, sx, sz, rot, 12, (x * 0.37 + z * 0.11) % 7, 0, SEA_SH[0], SEA_SH[1], SEA_SH[2], a);
+}
 function emitSea() {
   const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
   const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
@@ -580,7 +588,8 @@ function emitSea() {
   // the ship (or its pieces)
   if (OC.sink) {
     for (const P of OC.sink.pieces) {
-      const m = MODELS.defs[P.m];
+      const m = MODELS.defs[P.m], Dk = shipDef();
+      seaShadow(P.x, P.z, Dk.wid * 0.5, Dk.len * 0.24, -P.yaw, 0.5 * clamp(1 + P.y * 0.6, 0.3, 1));
       if (m && R.enemyDraw[P.m]) pushEnemy(P.m, false, P.x, P.y, P.z, P.yaw, m.clips.tilt.row + Math.min(15, Math.floor(P.tilt * 15.99)), 1, 1, 0, 0, 0, 1, 1, 1);
     }
     const rg = shipDef().model + '_rig', mid = OC.sink.pieces[1];
@@ -604,7 +613,8 @@ function emitSea() {
   // islands
   for (const I of OC.isles) {
     if (!onScreen(I.x, I.z, I.r + 4)) continue;
-    // shallow light water and a foam ring that breathes
+    // the rock going down into deep water, shallow light water over it, and a foam ring that breathes
+    seaShadow(I.x, I.z, I.r * 3.0, I.r * 3.0, I.yaw, 0.75, 0.05);
     pushDecal(I.x, I.z, I.r * 1.7, I.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, 0.38, true);
     const br = 1.06 + 0.04 * Math.sin(t * 1.4 + I.x);
     pushDecal(I.x, I.z, I.r * br, I.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
@@ -621,6 +631,7 @@ function emitSea() {
     const y = (e.grab ? -0.32 : -SEA.sink) * e.scale * (M.top || 1) * 0.9 + bob - dead * 0.6 * e.scale;
     const row = e.act && M.clips[e.act.clip] ? M.clips[e.act.clip].row + Math.floor(clamp(e.act.u, 0, 0.999) * M.clips[e.act.clip].frames) : M.clips.paddle.row + Math.floor((e.phase - Math.floor(e.phase)) * M.clips.paddle.frames);
     const tn = e.tint;
+    seaShadow(e.x, e.z, e.radius * 1.5, e.radius * 2.0, -e.yaw, (e.def.ghost ? 0.35 : 0.75) * (1 - dead) * clamp(appear, 0, 1));
     pushEnemy(e.model, e.elite, e.x, y, e.z, e.yaw, row, e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? 0.85 : 0, e.auraTint || 0, tn[0], tn[1], tn[2], e.def.ghost ? 0.35 : 0);
     const rr = e.radius * 1.15 * (1 + 0.05 * Math.sin(t * 3 + e.bobPh));
     pushDecal(e.x, e.z, rr, rr, 0, 3, 0, 0.5, 1, 1, 1, 0.42 * (1 - dead), true);
@@ -638,6 +649,8 @@ function seaDrawShip(x, y, z, yaw, stage, t, flash) {
   const model = D.model, M = MODELS.defs[model];
   if (!M || !R.enemyDraw[model]) return;
   const c = M.clips.rock, row = c.row + Math.floor(((t * 0.18) % 1) * c.frames);
+  seaShadow(x, z, D.wid * 1.35, D.len * 0.8, -yaw, 0.45, 0.2);
+  seaShadow(x, z, D.wid * 0.92, D.len * 0.64, -yaw, 0.85);
   pushEnemy(model, false, x, y, z, yaw, row, 1, 1, 0, flash, 0, 1, 1, 1);
   const rg = model + '_rig';
   if (R.enemyDraw[rg]) {
