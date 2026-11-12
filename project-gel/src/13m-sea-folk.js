@@ -179,7 +179,7 @@ const SEA_HZ_LIVE = ['snare', 'mine', 'tent', 'ink'];
 function emitSeaHazards() {
   for (const h of OC.hz) {
     if (SEA_HZ_LIVE.includes(h.k)) continue;
-    if (h.k === 'ball') { if (h.pearl) pushImp(h.x, h.y, h.z, 0.24, 0, 1, 0, 1, 27, 4, 0.5, OC.t, 0, 0, 0, 1); else pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
+    if (h.k === 'ball') { if (h.trident) continue; if (h.pearl) pushImp(h.x, h.y, h.z, 0.24, 0, 1, 0, 1, 27, 4, 0.5, OC.t, 0, 0, 0, 1); else pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
     if (h.t < 0) continue;
     const u = clamp(h.t / h.dur, 0, 1);
     pushDecal(h.tx ?? h.x, h.tz ?? h.z, h.r, h.r, 0, 4, 0, u, 1, h.k === 'zap' ? 0.9 : 0.22, h.k === 'zap' ? 0.95 : 0.18, 0.9);

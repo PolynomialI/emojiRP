@@ -131,23 +131,42 @@ function seaBossModels(defs) {
       ...[-1, 1].flatMap(sx => [-2.2, -1.0, 0.2, 1.4].map(z => ({ s: 'sph', c: [sx * 1.62 * Math.sqrt(Math.max(0, 1 - ((z + 0.2) / 3.9) ** 2)), 0.75, z], r: 0.07, col: C('#c8d0da'), k: 0 }))),
     ]);
   }
-  // 9. the Kraken: a great purple head with big eyes and eight tentacles (bones 3-10), the rider on top
+  // 9. the Kraken: a great mottled purple mantle, a pale underbelly, angry yellow eyes under heavy brows, a hooked
+  // beak, and eight tentacles (bones 3-10) that rise and curl at the tips, lined with suckers; the rider on top
   {
-    const pur = C('#8a4ab8'), purL = C('#c890f0'), suck = C('#f0c8ff');
+    const pur = C('#6a2a98'), purD = C('#4a1a70'), purL = C('#9a52d0'), under = C('#e2a8f0'), suck = C('#ffd8f0'), eyeY = C('#ffd34a');
     const parts = [
-      { s: 'ell', c: [0, 0.4, 0], rr: [2.0, 1.4, 1.9], col: pur, k: 0 },
-      { s: 'ell', c: [0, 1.5, -0.4], rr: [1.4, 1.2, 1.3], col: pur, k: 0.5 },
-      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.85, 1.0, 1.55], r: 0.42, col: white, k: 0 }, { s: 'sph', c: [sx * 0.85, 1.0, 1.9], r: 0.2, col: dark, k: 0 }]),
-      { s: 'ell', c: [0, 0.35, 1.75], rr: [0.6, 0.12, 0.18], col: C('#5a1a40'), k: 0.03 },
-      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 1.2, 1.6 + Math.sin(a) * 0.3, -0.4 + Math.sin(a) * 1.0], r: 0.14, col: purL, k: 0 }; }),
+      { s: 'ell', c: [0, 0.4, 0], rr: [2.0, 1.3, 1.9], col: pur, k: 0 },
+      { s: 'ell', c: [0, 1.6, -0.5], rr: [1.5, 1.5, 1.45], col: pur, k: 0.5 },
+      { s: 'ell', c: [0, 2.7, -1.1], rr: [1.05, 1.0, 1.05], col: purL, k: 0.6 },
+      { s: 'ell', c: [0, 0.15, 0.6], rr: [1.55, 0.42, 1.3], col: under, k: 0.35 },
+      // mottled spots on the mantle
+      ...Array.from({ length: 11 }, (_, i) => { const a = i * 2.3, h = 1.2 + (i % 4) * 0.45, rr = 1.45 - (h - 1.2) * 0.25; return { s: 'sph', c: [Math.cos(a) * rr, h, -0.5 + Math.sin(a) * rr * 0.95], r: 0.12 + (i % 3) * 0.05, col: purD, k: 0.05 }; }),
+      // heavy brows, big yellow eyes with slit pupils
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.35, 1.55, 1.45], b: [sx * 1.25, 1.35, 1.3], r: 0.2, col: purD, k: 0.15 },
+        { s: 'sph', c: [sx * 0.82, 1.02, 1.55], r: 0.42, col: white, k: 0 },
+        { s: 'sph', c: [sx * 0.84, 1.02, 1.78], r: 0.27, col: eyeY, k: 0 },
+        { s: 'ell', c: [sx * 0.85, 1.02, 1.98], rr: [0.05, 0.2, 0.06], col: dark, k: 0 },
+        { s: 'sph', c: [sx * 0.74, 1.14, 1.92], r: 0.06, col: white, k: 0 }]),
+      // the beak
+      { s: 'cap', a: [0, 0.55, 1.75], b: [0, 0.25, 2.1], r: 0.2, r2: 0.05, col: C('#3a3040'), k: 0.03 },
+      { s: 'cap', a: [0, 0.2, 1.8], b: [0, 0.3, 2.05], r: 0.13, r2: 0.04, col: C('#2a2030'), k: 0.03 },
     ];
     const piv = [];
     for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * TAU + 0.2, bx = Math.cos(a) * 1.7, bz = Math.sin(a) * 1.6, b = 3 + i, ex = Math.cos(a) * 4.0, ez = Math.sin(a) * 3.8;
-      piv.push([b, [bx, 0.1, bz]]);
-      parts.push({ s: 'cap', a: [bx, 0.1, bz], b: [(bx + ex) / 2, 0.6, (bz + ez) / 2], r: 0.42, r2: 0.3, col: pur, bone: b, k: 0.15 });
-      parts.push({ s: 'cap', a: [(bx + ex) / 2, 0.6, (bz + ez) / 2], b: [ex, 1.4, ez], r: 0.3, r2: 0.1, col: pur, bone: b, k: 0.1 });
-      parts.push({ s: 'sph', c: [(bx + ex) / 2, 0.42, (bz + ez) / 2], r: 0.12, col: suck, bone: b, k: 0 });
+      const a = (i / 8) * TAU + 0.2, b = 3 + i, ca = Math.cos(a), sa = Math.sin(a);
+      const p0 = [ca * 1.7, 0.1, sa * 1.6], p1 = [ca * 2.9, 0.55, sa * 2.75], p2 = [ca * 3.9, 1.5, sa * 3.7], p3 = [ca * 3.7 - sa * 0.5, 2.2, sa * 3.5 + ca * 0.5];
+      piv.push([b, p0]);
+      parts.push({ s: 'cap', a: p0, b: p1, r: 0.46, r2: 0.34, col: pur, bone: b, k: 0.15 });
+      parts.push({ s: 'cap', a: p1, b: p2, r: 0.34, r2: 0.2, col: pur, bone: b, k: 0.1 });
+      parts.push({ s: 'cap', a: p2, b: p3, r: 0.2, r2: 0.07, col: purL, bone: b, k: 0.08 });
+      // suckers along the inner side, biggest near the body
+      for (let j = 0; j < 4; j++) {
+        const u = (j + 0.5) / 4, A = j < 2 ? p0 : p1, B = j < 2 ? p1 : p2, v = (u * 4) % 2 / 2 + 0.25;
+        const c = [A[0] + (B[0] - A[0]) * v, A[1] + (B[1] - A[1]) * v - 0.22 + j * 0.03, A[2] + (B[2] - A[2]) * v];
+        parts.push({ s: 'sph', c, r: 0.13 - j * 0.02, col: suck, bone: b, k: 0 });
+      }
     }
     const m = P('bkraken', parts);
     for (const [b, p] of piv) m.bones[b].p = p;

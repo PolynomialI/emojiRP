@@ -192,9 +192,58 @@ function seaModels(defs) {
       for (const sx of [1, -1]) m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.065, hd[1] + 0.12, hd[2] + 0.12], R: 0.04, r: 0.014, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
       m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.1, hd[2]], R: 0.17, r: 0.01, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
     }
+    if (o.weed) {
+      // a weed-tangled swimmer: kelp hanging off the shoulders and round the head (not over the face), barnacles
+      for (const [s2, b] of [['L', 3], ['R', 5]]) { const a = J['sh' + s2]; m.parts.push({ s: 'cap', a: [a[0], a[1] + 0.03, a[2]], b: [a[0] * 1.35, a[1] - 0.24, a[2] - 0.05], r: 0.045, r2: 0.018, col: C('#3a7a2a'), bone: 1, k: 0.02 }); }
+      [0.9, 1.2, 1.5, 1.8, 2.1].forEach((u, i) => { const a = u * Math.PI; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.12, hd[1] + 0.12, hd[2] + Math.sin(a) * 0.12], b: [hd[0] + Math.cos(a) * 0.21, hd[1] - 0.12 - (i % 2) * 0.07, hd[2] + Math.sin(a) * 0.21], r: 0.035, r2: 0.014, col: i % 2 ? C('#4a8a3a') : C('#2e6a2a'), bone: 2, k: 0.02 }); });
+      for (const [x, y, z] of [[0.06, 0.62, 0.1], [-0.08, 0.7, 0.09], [0.02, 0.56, -0.1]]) m.parts.push({ s: 'sph', c: [x, y, z], r: 0.024, col: C('#d8d0c0'), bone: 1, k: 0 });
+    }
+    if (o.mer) {
+      // a merfolk soldier: a teal scale tunic, fin ears, a spiked golden crown, a trident in the left hand
+      const teal = C('#2ab8a8'), tealD = C('#178a80'), goldC = C('#e8b84a');
+      m.parts = m.parts.filter(p => !(p.bone === 1 && p.col === stripe) && p.col !== shirt);
+      m.parts.push({ s: 'cap', a: [0, STICK.hipY + 0.04, 0], b: [0, STICK.shY - 0.01, 0], r: 0.11, r2: 0.118, col: teal, bone: 1, k: 0.02 });
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 5; j++) { const a = j * 1.26 + i * 0.63; m.parts.push({ s: 'sph', c: [Math.sin(a) * 0.112, STICK.hipY + 0.1 + i * 0.07, Math.cos(a) * 0.112], r: 0.024, col: tealD, bone: 1, k: 0.01 }); }
+      for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.17, hd[1], hd[2] - 0.02], rr: [0.02, 0.09, 0.07], col: teal, bone: 2, k: 0.02 });
+      m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.12, hd[2]], R: 0.14, r: 0.025, a0: -Math.PI, a1: Math.PI, col: goldC, bone: 2, k: 0 });
+      for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.14, hd[1] + 0.12, hd[2] + Math.sin(a) * 0.14], b: [hd[0] + Math.cos(a) * 0.15, hd[1] + 0.23, hd[2] + Math.sin(a) * 0.15], r: 0.022, r2: 0.005, col: goldC, bone: 2, k: 0 }); }
+      const hl = J.haL;
+      m.parts.push({ s: 'cap', a: [hl[0], hl[1] - 0.25, hl[2] - 0.05], b: [hl[0], hl[1] + 0.5, hl[2] + 0.1], r: 0.017, col: goldC, bone: 4, k: 0 });
+      m.parts.push({ s: 'cap', a: [hl[0] - 0.07, hl[1] + 0.48, hl[2] + 0.1], b: [hl[0] + 0.07, hl[1] + 0.48, hl[2] + 0.1], r: 0.013, col: goldC, bone: 4, k: 0 });
+      for (const dx of [-0.07, 0, 0.07]) m.parts.push({ s: 'cap', a: [hl[0] + dx, hl[1] + 0.48, hl[2] + 0.1], b: [hl[0] + dx * 1.15, hl[1] + 0.68, hl[2] + 0.13], r: 0.013, r2: 0.003, col: C('#ffd34a'), bone: 4, k: 0 });
+    }
+    if (o.hat === 'pilot') {
+      // a lost pilot: an old leather flying cap (tint) with ear flaps, goggles up on the brow, a long white scarf
+      m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.045, hd[2] - 0.01], rr: [0.178, 0.135, 0.18], bone: 2, k: 0.01 });
+      for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.16, hd[1] - 0.06, hd[2] - 0.01], rr: [0.04, 0.09, 0.07], bone: 2, k: 0.01 });
+      for (const sx of [1, -1]) { m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.07, hd[1] + 0.1, hd[2] + 0.13], R: 0.045, r: 0.016, a0: -Math.PI, a1: Math.PI, col: C('#c8a050'), bone: 2, k: 0 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.07, hd[1] + 0.1, hd[2] + 0.13], r: 0.035, col: C('#9fe6ff'), bone: 2, k: 0 }); }
+      m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.shY + 0.02, 0.01], R: 0.1, r: 0.04, a0: -Math.PI, a1: Math.PI, col: C('#f8f4ec'), bone: 1, k: 0.02 });
+      m.parts.push({ s: 'cap', a: [0.05, STICK.shY + 0.01, -0.08], b: [0.15, STICK.shY - 0.25, -0.24], r: 0.04, r2: 0.03, col: C('#f8f4ec'), bone: 1, k: 0.02 });
+    }
+    if (o.skel) {
+      // a skeleton pirate: bone white, dark eye sockets with a green glint, a toothy jaw, ribs through a torn shirt
+      const boneC = C('#efe8d4'), hole = C('#14101a');
+      for (const p of m.parts) if (p.col === skin) p.col = boneC;
+      m.parts = m.parts.filter(p => !(p.bone === 2 && p.c && p.c[2] > hd[2] + 0.12) && !(p.s === 'tor' && p.ax === 'z' && p.col === patch) && !(p.bone === 1 && p.col === stripe));
+      for (const sx of [1, -1]) { m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.062, hd[1] + 0.01, hd[2] + 0.12], r: 0.05, col: hole, bone: 2, k: 0.01 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.062, hd[1] + 0.01, hd[2] + 0.155], r: 0.018, col: C('#7affa8'), bone: 2, k: 0 }); }
+      m.parts.push({ s: 'sph', c: [hd[0], hd[1] - 0.045, hd[2] + 0.15], r: 0.022, col: hole, bone: 2, k: 0 });
+      m.parts.push({ s: 'box', c: [hd[0], hd[1] - 0.1, hd[2] + 0.13], hs: [0.07, 0.025, 0.02], rd: 0.01, col: hole, bone: 2, k: 0 });
+      for (let i = 0; i < 4; i++) m.parts.push({ s: 'box', c: [hd[0] - 0.045 + i * 0.03, hd[1] - 0.1, hd[2] + 0.148], hs: [0.011, 0.018, 0.006], rd: 0.003, col: boneC, bone: 2, k: 0 });
+      for (const p of m.parts) if (p.bone === 1 && p.col === shirt) p.col = C('#3a3438');
+      for (let i = 0; i < 3; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.hipY + 0.12 + i * 0.065, 0], R: 0.112, r: 0.012, a0: -0.4, a1: Math.PI + 0.4, col: boneC, bone: 1, k: 0 });
+    }
+    if (o.balloon) {
+      // a sky pirate hanging under a big balloon (it takes the tint) by two ropes, arms up holding on
+      const top = STICK.headY + 1.15;
+      m.parts.push({ s: 'sph', c: [0, top + 0.35, 0], r: 0.5, bone: 0, k: 0 });
+      m.parts.push({ s: 'ell', c: [-0.17, top + 0.55, 0.32], rr: [0.11, 0.15, 0.05], col: C('#ffffff'), bone: 0, k: 0.04 });
+      m.parts.push({ s: 'cap', a: [0, top - 0.12, 0], b: [0, top - 0.21, 0], r: 0.06, r2: 0.03, bone: 0, k: 0.02 });
+      for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [sx * 0.14, STICK.headY + 0.42, 0.02], b: [0, top - 0.19, 0], r: 0.008, col: C('#f4ecdc'), bone: 0, k: 0 });
+    }
+    if (o.skin) for (const p of m.parts) if (p.col === skin) p.col = o.skin;
     return m;
   };
-  for (const [name, o] of [['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
+  for (const [name, o] of [['pweed', { weed: true }], ['pmer', { mer: true, hat: 'crown', skin: C('#8ad8d0') }], ['pblink', { hat: 'pilot' }], ['pskel', { skel: true }], ['pballoon', { balloon: true, full: true }], ['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
     ['pbomb', { keg: true }], ['pparka', { hat: 'parka' }], ['pmusket', { hat: 'tricorn', musket: true, full: true }], ['pcapt', { hat: 'tricorn', big: true, coat: true, cutlass: true, full: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
 
   // ---------- the Homing Cannon: an iron barrel with brass bands on a little wheeled carriage, facing +z ----------

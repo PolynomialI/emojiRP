@@ -19,6 +19,9 @@ const SHIPS = [
   { id: 'yacht', name: 'Yacht', model: 'yacht', len: 9.4, wid: 3.0, deck: 1.19, spot: [0, 2.2], heroS: 1.1, speed: 6.8, accel: 5, turn: 1.7, hull: 0.85, ram: 64, grip: 10, zoom: 1.58, wake: 1.9, bob: 0.03 },
   { id: 'cruise', name: 'Cruise Ship', model: 'cruise', len: 12, wid: 3.6, deck: 2.76, spot: [0, -1.0], heroS: 1.25, speed: 6.4, accel: 3.2, turn: 1.3, hull: 1.2, ram: 84, grip: 12, zoom: 1.8, wake: 2.3, bob: 0.02 },
   { id: 'cargo', name: 'Cargo Ship', model: 'cargo', len: 14.5, wid: 3.9, deck: 3.19, spot: [0, 4.4], heroS: 1.4, speed: 6.2, accel: 2.6, turn: 1.05, hull: 1.6, ram: 110, grip: 14, zoom: 2.0, wake: 2.6, bob: 0.015 },
+  { id: 'battleship', name: 'Battleship', model: 'battleship', len: 16.5, wid: 3.7, deck: 2.87, spot: [0, 4.05], heroS: 1.5, speed: 6.5, accel: 2.8, turn: 1.0, hull: 2.1, ram: 140, grip: 16, zoom: 2.2, wake: 2.9, bob: 0.012 },
+  { id: 'carrier', name: 'Aircraft Carrier', model: 'carrier', len: 19, wid: 4.6, deck: 2.88, spot: [0.6, 4.2], heroS: 1.65, speed: 6.3, accel: 2.4, turn: 0.92, hull: 2.7, ram: 175, grip: 18, zoom: 2.45, wake: 3.2, bob: 0.01 },
+  { id: 'ark', name: 'Golden Ark', model: 'ark', len: 21, wid: 5.6, deck: 2.035, spot: [0, 3.2], heroS: 1.8, speed: 6.8, accel: 2.7, turn: 0.95, hull: 3.4, ram: 220, grip: 20, zoom: 2.65, wake: 3.5, bob: 0.01 },
 ];
 // The ten sea chapters. rough: swell (0 calm .. 1 rough); storm: a storm blows from the start (1), or comes in with
 // the boss (0.5); deep/shallow/lines: the water's colors; isle: the islands' look; mix: [enemy, from second, weight]
@@ -34,6 +37,18 @@ const SEA_CHAPTERS = [
   { name: 'Thunder Sea', rough: 0.65, storm: 1, deep: '#163650', shallow: '#2a5a7a', lines: '#c8e0f0', fog: '#6a8494', isle: 'palm', mix: null },
   { name: 'Kraken Deep', rough: 0.75, storm: 0.5, deep: '#102a48', shallow: '#22506e', lines: '#b8daf0', fog: '#5a7890', isle: 'palm', mix: null },
   { name: 'Pirate Fortress', rough: 0.85, storm: 1, deep: '#14304a', shallow: '#285670', lines: '#c8dcea', fog: '#62788a', isle: 'palm', mix: null },
+  // the ten after the Pirate King (13o-sea-deep.js gives each its crowd, islands, mechanic, miniboss and boss).
+  // vt: the water's variant (05-glsl.js); light/sky: the light's color and the sky's (night, underworld, sunset)
+  { name: 'Glowtide Lagoon', rough: 0.3, storm: 0, deep: '#03101c', shallow: '#082a3a', lines: '#5affd8', fog: '#071826', vt: 1, light: [0.42, 0.52, 0.78], sky: [0.12, 0.2, 0.36], mix: null },
+  { name: 'Sargasso Snarl', rough: 0.25, storm: 0, deep: '#13301e', shallow: '#2e5030', lines: '#cfe8a0', fog: '#6a8a62', light: [0.95, 0.95, 0.82], mix: null },
+  { name: 'Maelstrom Reach', rough: 0.8, storm: 0.5, deep: '#12303a', shallow: '#2a5a62', lines: '#d0f0f0', fog: '#5a7a80', mix: null },
+  { name: 'Sunken Atlantis', rough: 0.2, storm: 0, deep: '#06607e', shallow: '#18b4cc', lines: '#e8fff8', fog: '#8adcea', light: [1.02, 1.0, 0.94], mix: null },
+  { name: 'Soda Sea', rough: 0.3, storm: 0, deep: '#a8306a', shallow: '#ec72ae', lines: '#ffe8f4', fog: '#f2a8cc', vt: 2, light: [1.05, 0.93, 0.98], sky: [1.0, 0.85, 0.95], mix: null },
+  { name: 'Bermuda Triangle', rough: 0.5, storm: 0.5, deep: '#0c3634', shallow: '#1c6656', lines: '#a8ffd8', fog: '#46766a', light: [0.8, 0.95, 0.88], mix: null },
+  { name: 'Sky Sea', rough: 0, storm: 0, deep: '#b8cce8', shallow: '#f6f8ff', lines: '#ffe8f4', fog: '#d8e8ff', vt: 3, light: [1.08, 1.05, 1.0], sky: [0.92, 0.96, 1.0], mix: null },
+  { name: 'Leviathan Trench', rough: 0.7, storm: 0.5, deep: '#040c1a', shallow: '#0c263c', lines: '#7ab8e0', fog: '#0c1a2c', light: [0.55, 0.65, 0.82], sky: [0.2, 0.28, 0.42], mix: null },
+  { name: "Davy Jones' Locker", rough: 0.55, storm: 0, deep: '#08180f', shallow: '#183626', lines: '#6affa8', fog: '#14281e', vt: 4, light: [0.5, 0.78, 0.6], sky: [0.16, 0.3, 0.22], mix: null },
+  { name: "World's Edge", rough: 0.6, storm: 0, deep: '#1a3a6a', shallow: '#3a7ab8', lines: '#ffe8a8', fog: '#f0c890', vt: 5, light: [1.18, 0.92, 0.66], sky: [1.0, 0.78, 0.55], mix: null },
 ];
 const SEA_COUNT = SEA_CHAPTERS.length;
 const SEA = {
@@ -48,11 +63,13 @@ const OC = { ship: null, wake: [], isles: [], chunks: new Map(), balls: [], shot
 
 function seaInfo(n) {
   const k = clamp(n, 1, SEA_COUNT) - 1, C = SEA_CHAPTERS[k];
+  // (oceans 11-20 are for those who beat the Pirate King: a little steeper on top of the climb)
+  const deep = Math.max(0, k - 9);
   return {
     n, sea: true, arenaName: C.name, bosses: [C.boss],
     // every run starts on a raft, so the chapters climb gently (their crowds, islands and bosses do the rest)
-    hpMul: 1 + 0.08 * k + 0.006 * k * k, dmgMul: 1 + 0.045 * k, rateMul: 0.7 + 0.05 * k, speedMul: 1 + 0.01 * k,
-    bossHpMul: Math.pow(1.12, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
+    hpMul: (1 + 0.08 * k + 0.006 * k * k) * (1 + 0.03 * deep), dmgMul: (1 + 0.045 * k) * (1 + 0.03 * deep), rateMul: 0.7 + 0.05 * k + 0.02 * deep, speedMul: 1 + 0.01 * k + 0.005 * deep,
+    bossHpMul: Math.pow(1.12, k) * (1 + 0.04 * deep), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
   };
 }
 const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
@@ -62,7 +79,7 @@ const seaUnlocked = () => !!(G.save && G.save.cleared[CHAPTER_COUNT]);
 function seaLook(n) {
   const C = SEA_CHAPTERS[clamp(n, 1, SEA_COUNT) - 1], f = R.frame;
   f.floorStyle = 21; f.stoneA = hexToRgb(C.deep); f.stoneB = hexToRgb(C.shallow); f.grout = hexToRgb(C.lines); f.accent = [1, 1, 1];
-  f.fogCol = hexToRgb(C.fog); f.skyCol = [0.8, 0.93, 1.0]; f.groundCol = hexToRgb(C.deep).map(v => v * 0.8); f.lightCol = [1.0, 0.97, 0.9];
+  f.fogCol = hexToRgb(C.fog); f.skyCol = C.sky ? C.sky.slice() : [0.8, 0.93, 1.0]; f.groundCol = hexToRgb(C.deep).map(v => v * 0.8); f.lightCol = C.light ? C.light.slice() : [1.0, 0.97, 0.9];
   f.spotMin = 1; f.shadowTint = [0.2, 0.35, 0.55];
   f.sea[0] = C.rough; f.sea[1] = C.storm >= 1 ? 1 : 0; f.sea[2] = C.vt || 0;
   const dp = hexToRgb(C.deep); for (let i = 0; i < 3; i++) SEA_SH[i] = dp[i] * 0.1;
@@ -187,6 +204,7 @@ function updateOcean(dt) {
   updateSeaHazards(dt);
   seaBossHazards(dt);
   seaWeather(dt);
+  seaDeepTick(dt);
   updateProjectiles(dt);
   updateEnemyShots(dt);
   updatePickups(dt);
@@ -405,6 +423,7 @@ function seaFoes(dt) {
     if (touch) {
       const vn = -(S.vx * n[0] + S.vz * n[1]);   // how fast the hull closes on it
       if (vn > SEA.ramMin && e.ramCd <= 0) seaRam(e, n, vn, top);
+      else if (e.def.onTouch) { e.def.onTouch(e); continue; }
       // (a ship under full sail can't be climbed: they bounce off it)
       else if (!e.boss && e.stun <= 0 && !(e.netT > 0) && boarders < D.grip && e.spawnT <= 0 && S.speed < top * 0.6) { seaBoard(e); boarders++; }
       else { e.x += n[0] * (e.radius * 0.6 - d2); e.z += n[1] * (e.radius * 0.6 - d2); }
@@ -618,7 +637,7 @@ function emitSea() {
     pushDecal(I.x, I.z, I.r * 1.7, I.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, 0.38, true);
     const br = 1.06 + 0.04 * Math.sin(t * 1.4 + I.x);
     pushDecal(I.x, I.z, I.r * br, I.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
-    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1);
+    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, I.rise !== undefined ? -2.6 * I.r / 4 * (1 - easeOutBack(clamp(I.rise, 0, 1))) : 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1);
     for (const o of I.deco) if (R.enemyDraw[o.m]) pushEnemy(o.m, false, o.x, (o.y || 0) + I.r * 0.145, o.z, o.yaw, MODELS.defs[o.m].clips.still.row, o.s, 1, 0, 0, 0, PROP_WHITE[0], PROP_WHITE[1], PROP_WHITE[2]);
   }
   // swimmers: only head and shoulders above the water, with a little foam ring
@@ -641,6 +660,7 @@ function emitSea() {
   emitSeaShots();
   emitSeaHazards();
   emitSeaBossHazards();
+  emitSeaDeep();
 }
 // a ship and everything mounted on it
 function seaDrawShip(x, y, z, yaw, stage, t, flash) {

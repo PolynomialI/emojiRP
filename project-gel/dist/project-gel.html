@@ -1468,6 +1468,7 @@ function modelDefs() {
   shipModels(defs);
   mountModels(defs);
   seaBossModels(defs);
+  seaDeepModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -4585,9 +4586,58 @@ function seaModels(defs) {
       for (const sx of [1, -1]) m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.065, hd[1] + 0.12, hd[2] + 0.12], R: 0.04, r: 0.014, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
       m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.1, hd[2]], R: 0.17, r: 0.01, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
     }
+    if (o.weed) {
+      // a weed-tangled swimmer: kelp hanging off the shoulders and round the head (not over the face), barnacles
+      for (const [s2, b] of [['L', 3], ['R', 5]]) { const a = J['sh' + s2]; m.parts.push({ s: 'cap', a: [a[0], a[1] + 0.03, a[2]], b: [a[0] * 1.35, a[1] - 0.24, a[2] - 0.05], r: 0.045, r2: 0.018, col: C('#3a7a2a'), bone: 1, k: 0.02 }); }
+      [0.9, 1.2, 1.5, 1.8, 2.1].forEach((u, i) => { const a = u * Math.PI; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.12, hd[1] + 0.12, hd[2] + Math.sin(a) * 0.12], b: [hd[0] + Math.cos(a) * 0.21, hd[1] - 0.12 - (i % 2) * 0.07, hd[2] + Math.sin(a) * 0.21], r: 0.035, r2: 0.014, col: i % 2 ? C('#4a8a3a') : C('#2e6a2a'), bone: 2, k: 0.02 }); });
+      for (const [x, y, z] of [[0.06, 0.62, 0.1], [-0.08, 0.7, 0.09], [0.02, 0.56, -0.1]]) m.parts.push({ s: 'sph', c: [x, y, z], r: 0.024, col: C('#d8d0c0'), bone: 1, k: 0 });
+    }
+    if (o.mer) {
+      // a merfolk soldier: a teal scale tunic, fin ears, a spiked golden crown, a trident in the left hand
+      const teal = C('#2ab8a8'), tealD = C('#178a80'), goldC = C('#e8b84a');
+      m.parts = m.parts.filter(p => !(p.bone === 1 && p.col === stripe) && p.col !== shirt);
+      m.parts.push({ s: 'cap', a: [0, STICK.hipY + 0.04, 0], b: [0, STICK.shY - 0.01, 0], r: 0.11, r2: 0.118, col: teal, bone: 1, k: 0.02 });
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 5; j++) { const a = j * 1.26 + i * 0.63; m.parts.push({ s: 'sph', c: [Math.sin(a) * 0.112, STICK.hipY + 0.1 + i * 0.07, Math.cos(a) * 0.112], r: 0.024, col: tealD, bone: 1, k: 0.01 }); }
+      for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.17, hd[1], hd[2] - 0.02], rr: [0.02, 0.09, 0.07], col: teal, bone: 2, k: 0.02 });
+      m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.12, hd[2]], R: 0.14, r: 0.025, a0: -Math.PI, a1: Math.PI, col: goldC, bone: 2, k: 0 });
+      for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.14, hd[1] + 0.12, hd[2] + Math.sin(a) * 0.14], b: [hd[0] + Math.cos(a) * 0.15, hd[1] + 0.23, hd[2] + Math.sin(a) * 0.15], r: 0.022, r2: 0.005, col: goldC, bone: 2, k: 0 }); }
+      const hl = J.haL;
+      m.parts.push({ s: 'cap', a: [hl[0], hl[1] - 0.25, hl[2] - 0.05], b: [hl[0], hl[1] + 0.5, hl[2] + 0.1], r: 0.017, col: goldC, bone: 4, k: 0 });
+      m.parts.push({ s: 'cap', a: [hl[0] - 0.07, hl[1] + 0.48, hl[2] + 0.1], b: [hl[0] + 0.07, hl[1] + 0.48, hl[2] + 0.1], r: 0.013, col: goldC, bone: 4, k: 0 });
+      for (const dx of [-0.07, 0, 0.07]) m.parts.push({ s: 'cap', a: [hl[0] + dx, hl[1] + 0.48, hl[2] + 0.1], b: [hl[0] + dx * 1.15, hl[1] + 0.68, hl[2] + 0.13], r: 0.013, r2: 0.003, col: C('#ffd34a'), bone: 4, k: 0 });
+    }
+    if (o.hat === 'pilot') {
+      // a lost pilot: an old leather flying cap (tint) with ear flaps, goggles up on the brow, a long white scarf
+      m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.045, hd[2] - 0.01], rr: [0.178, 0.135, 0.18], bone: 2, k: 0.01 });
+      for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.16, hd[1] - 0.06, hd[2] - 0.01], rr: [0.04, 0.09, 0.07], bone: 2, k: 0.01 });
+      for (const sx of [1, -1]) { m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.07, hd[1] + 0.1, hd[2] + 0.13], R: 0.045, r: 0.016, a0: -Math.PI, a1: Math.PI, col: C('#c8a050'), bone: 2, k: 0 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.07, hd[1] + 0.1, hd[2] + 0.13], r: 0.035, col: C('#9fe6ff'), bone: 2, k: 0 }); }
+      m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.shY + 0.02, 0.01], R: 0.1, r: 0.04, a0: -Math.PI, a1: Math.PI, col: C('#f8f4ec'), bone: 1, k: 0.02 });
+      m.parts.push({ s: 'cap', a: [0.05, STICK.shY + 0.01, -0.08], b: [0.15, STICK.shY - 0.25, -0.24], r: 0.04, r2: 0.03, col: C('#f8f4ec'), bone: 1, k: 0.02 });
+    }
+    if (o.skel) {
+      // a skeleton pirate: bone white, dark eye sockets with a green glint, a toothy jaw, ribs through a torn shirt
+      const boneC = C('#efe8d4'), hole = C('#14101a');
+      for (const p of m.parts) if (p.col === skin) p.col = boneC;
+      m.parts = m.parts.filter(p => !(p.bone === 2 && p.c && p.c[2] > hd[2] + 0.12) && !(p.s === 'tor' && p.ax === 'z' && p.col === patch) && !(p.bone === 1 && p.col === stripe));
+      for (const sx of [1, -1]) { m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.062, hd[1] + 0.01, hd[2] + 0.12], r: 0.05, col: hole, bone: 2, k: 0.01 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.062, hd[1] + 0.01, hd[2] + 0.155], r: 0.018, col: C('#7affa8'), bone: 2, k: 0 }); }
+      m.parts.push({ s: 'sph', c: [hd[0], hd[1] - 0.045, hd[2] + 0.15], r: 0.022, col: hole, bone: 2, k: 0 });
+      m.parts.push({ s: 'box', c: [hd[0], hd[1] - 0.1, hd[2] + 0.13], hs: [0.07, 0.025, 0.02], rd: 0.01, col: hole, bone: 2, k: 0 });
+      for (let i = 0; i < 4; i++) m.parts.push({ s: 'box', c: [hd[0] - 0.045 + i * 0.03, hd[1] - 0.1, hd[2] + 0.148], hs: [0.011, 0.018, 0.006], rd: 0.003, col: boneC, bone: 2, k: 0 });
+      for (const p of m.parts) if (p.bone === 1 && p.col === shirt) p.col = C('#3a3438');
+      for (let i = 0; i < 3; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.hipY + 0.12 + i * 0.065, 0], R: 0.112, r: 0.012, a0: -0.4, a1: Math.PI + 0.4, col: boneC, bone: 1, k: 0 });
+    }
+    if (o.balloon) {
+      // a sky pirate hanging under a big balloon (it takes the tint) by two ropes, arms up holding on
+      const top = STICK.headY + 1.15;
+      m.parts.push({ s: 'sph', c: [0, top + 0.35, 0], r: 0.5, bone: 0, k: 0 });
+      m.parts.push({ s: 'ell', c: [-0.17, top + 0.55, 0.32], rr: [0.11, 0.15, 0.05], col: C('#ffffff'), bone: 0, k: 0.04 });
+      m.parts.push({ s: 'cap', a: [0, top - 0.12, 0], b: [0, top - 0.21, 0], r: 0.06, r2: 0.03, bone: 0, k: 0.02 });
+      for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [sx * 0.14, STICK.headY + 0.42, 0.02], b: [0, top - 0.19, 0], r: 0.008, col: C('#f4ecdc'), bone: 0, k: 0 });
+    }
+    if (o.skin) for (const p of m.parts) if (p.col === skin) p.col = o.skin;
     return m;
   };
-  for (const [name, o] of [['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
+  for (const [name, o] of [['pweed', { weed: true }], ['pmer', { mer: true, hat: 'crown', skin: C('#8ad8d0') }], ['pblink', { hat: 'pilot' }], ['pskel', { skel: true }], ['pballoon', { balloon: true, full: true }], ['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
     ['pbomb', { keg: true }], ['pparka', { hat: 'parka' }], ['pmusket', { hat: 'tricorn', musket: true, full: true }], ['pcapt', { hat: 'tricorn', big: true, coat: true, cutlass: true, full: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
 
   // ---------- the Homing Cannon: an iron barrel with brass bands on a little wheeled carriage, facing +z ----------
@@ -4739,14 +4789,14 @@ function seaModels(defs) {
 }
 
 // ============================================================
-// The six ships after the raft (see SHIPS in 13k-ocean.js), at world scale: +z the bow, y = 0 the waterline.
+// The nine ships after the raft (see SHIPS in 13k-ocean.js), at world scale: +z the bow, y = 0 the waterline.
 // Each has a hull mesh (rocking clip), three pieces it breaks into when it sinks (carved from the same parts),
 // and the tall pirate ships keep their masts and sails in a separate rig mesh, so it can fade while it stands
 // between the camera and the blob.
 // ============================================================
-const SHIP_IDS = ['canoe', 'sloop', 'galleon', 'yacht', 'cruise', 'cargo'];
-const SHIP_RIGS = ['sloop', 'galleon'];
-const SHIP_CELL = { canoe: 0.026, sloop: 0.036, galleon: 0.042, yacht: 0.05, cruise: 0.062, cargo: 0.068 };
+const SHIP_IDS = ['canoe', 'sloop', 'galleon', 'yacht', 'cruise', 'cargo', 'battleship', 'carrier', 'ark'];
+const SHIP_RIGS = ['sloop', 'galleon', 'ark'];
+const SHIP_CELL = { canoe: 0.026, sloop: 0.036, galleon: 0.042, yacht: 0.05, cruise: 0.062, cargo: 0.068, battleship: 0.072, carrier: 0.08, ark: 0.078 };
 for (const id of SHIP_IDS) {
   THEME_CLIPS[id] = ['rock'];
   THEME_CELLS[id] = SHIP_CELL[id];
@@ -4789,7 +4839,8 @@ function shipModels(defs) {
         { s: 'ell', c: [0, y, L * 0.32], rr: [W * 0.74 * f2 + 0.015, h, L * 0.68 * f2 + 0.015], col, k: 0 }]; }),
       { s: 'box', c: [0, o.top + 3, 0], hs: [W + 2, 3, L + 2], sub: true, k: 0 },
       { s: 'ell', c: [0, o.top, -L * 0.1], rr: [W - 0.06, 0.035, L * 0.9 - 0.06], col: o.deck, k: 0 },
-      { s: 'ell', c: [0, o.top, L * 0.32], rr: [W * 0.74 - 0.06, 0.035, L * 0.68 - 0.06], col: o.deck, k: W * 0.3 },
+      // (no blend: thin flat shapes have a poor distance estimate off their plane, and a blend smears them out wide)
+      { s: 'ell', c: [0, o.top, L * 0.32], rr: [W * 0.74 - 0.06, 0.035, L * 0.68 - 0.06], col: o.deck, k: 0 },
     ];
     return p;
   };
@@ -5027,6 +5078,120 @@ function shipModels(defs) {
       ...[-0.6, 0.6].map(x => ({ s: 'cyl', ax: 'y', c: [x, 1.55, 6.2], r: 0.12, hh: 0.15, rd: 0.04, col: C('#1e2230'), k: 0 })),
     ];
     ship('cargo', p, 7.25, -2.4, 2.4, { piv: 1.0, ao: 0.4 });
+  }
+
+  // ---------- the battleship: a long grey hull with a red waterline, three twin-gun turrets (the second raised to
+  // fire over the first), a stepped bridge tower with a radar mast, a funnel, and little guns along the sides ----------
+  {
+    const o = { len: 16.5, wid: 3.7, top: 1.5, bot: -0.3, col: C('#7a8494'), deck: C('#b0956a'), bands: [[0.1, 0.25, C('#a8282c')], [1.3, 0.05, C('#5a6270')]] };
+    const grey = C('#8a94a4'), greyD = C('#5a6270'), greyL = C('#b4bcc8');
+    const turret = (z, y, back) => { const d = back ? -1 : 1; return [
+      { s: 'cyl', ax: 'y', c: [0, y + 0.12, z], r: 0.95, hh: 0.14, rd: 0.05, col: greyD, k: 0 },
+      { s: 'box', c: [0, y + 0.5, z - d * 0.15], hs: [0.85, 0.32, 0.95], rd: 0.3, col: grey, k: 0 },
+      { s: 'box', c: [0, y + 0.82, z - d * 0.15], hs: [0.7, 0.04, 0.75], rd: 0.04, col: greyL, k: 0 },
+      ...[-0.32, 0.32].map(x => ({ s: 'cap', a: [x, y + 0.55, z + d * 0.7], b: [x, y + 0.62, z + d * 2.6], r: 0.11, r2: 0.09, col: greyD, k: 0 }))]; };
+    const p = [
+      ...hull(o),
+      ...rail(o, 1.5, 0.2, 0.04, C('#d8dce2'), false),
+      // teak planking lines down the deck
+      ...[-1.2, -0.6, 0.6, 1.2].map(x => ({ s: 'box', c: [x, 1.53, -0.3], hs: [0.012, 0.008, 6.2], rd: 0.005, col: C('#8a7048'), k: 0 })),
+      ...turret(6.0, 1.5, false), ...turret(4.3, 2.0, false), { s: 'box', c: [0, 1.75, 4.3], hs: [1.0, 0.25, 1.0], rd: 0.15, col: grey, k: 0 },
+      ...turret(-5.4, 1.5, true),
+      // the bridge: three stepped blocks, a window band, the radar mast and its dishes
+      { s: 'box', c: [0, 2.15, 0.6], hs: [1.5, 0.65, 1.5], rd: 0.18, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.15, 0.4], hs: [1.15, 0.4, 1.1], rd: 0.15, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.75, 0.5], hs: [0.85, 0.24, 0.75], rd: 0.12, col: greyL, k: 0 },
+      { s: 'box', c: [0, 3.8, 1.25], hs: [0.78, 0.08, 0.02], rd: 0.02, col: C('#1a2638'), k: 0 },
+      { s: 'cap', a: [0, 4.0, 0.2], b: [0, 6.2, 0.2], r: 0.1, r2: 0.06, col: greyD, k: 0 },
+      { s: 'cap', a: [-0.7, 5.4, 0.2], b: [0.7, 5.4, 0.2], r: 0.05, col: greyD, k: 0 },
+      { s: 'ell', c: [0, 5.85, 0.35], rr: [0.45, 0.25, 0.08], col: greyL, k: 0 },
+      { s: 'sph', c: [0, 6.3, 0.2], r: 0.12, col: C('#ff4a3a'), k: 0 },
+      // the funnel
+      { s: 'box', c: [0, 2.8, -1.8], hs: [0.6, 1.1, 0.75], rd: 0.3, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.95, -1.85], hs: [0.55, 0.12, 0.7], rd: 0.12, col: C('#2a2e38'), k: 0 },
+      // small guns down each side, lifeboats, the anchor chain and a flag at the stern
+      ...[-1, 1].flatMap(sx => [-3.2, -2.4, 2.4].map(z => ({ s: 'cap', a: [sx * 1.4, 1.75, z], b: [sx * 1.75, 1.9, z + 0.5], r: 0.06, col: greyD, k: 0 }))),
+      ...[-1, 1].map(sx => ({ s: 'cap', a: [sx * 1.25, 2.95, -0.6], b: [sx * 1.25, 2.95, 0.8], r: 0.2, col: C('#e8ecf0'), k: 0 })),
+      { s: 'cap', a: [0, 1.6, -7.6], b: [0, 2.8, -7.6], r: 0.04, col: greyD, k: 0 }, { s: 'box', c: [0, 2.6, -7.95], hs: [0.02, 0.18, 0.32], rd: 0.01, col: C('#2a5ad8'), k: 0 },
+    ];
+    ship('battleship', p, 8.25, -2.7, 2.7, { piv: 1.0, ao: 0.4 });
+  }
+
+  // ---------- the aircraft carrier: a wide grey flight deck with runway markings, the island tower to starboard,
+  // jets parked along the edge and a helicopter on its pad ----------
+  {
+    const o = { len: 19, wid: 4.6, top: 2.2, bot: -0.3, col: C('#6a7280'), deck: C('#4a4e56'), bands: [[0.1, 0.3, C('#a8282c')]] };
+    const deckC = C('#4a4e56'), line = C('#f4f4f0'), yel = C('#ffd34a'), grey = C('#8a94a4'), greyD = C('#5a6270');
+    const jet = (x, z, yaw) => { const c = Math.cos(yaw), s2 = Math.sin(yaw), at = (u, v, h) => [x + c * u + s2 * v, 3.0 + h, z - s2 * u + c * v]; return [
+      { s: 'cap', a: at(0, -0.9, 0.18), b: at(0, 0.9, 0.18), r: 0.17, r2: 0.1, col: C('#9aa6b8'), k: 0 },
+      { s: 'cap', a: at(-1.0, -0.2, 0.15), b: at(1.0, -0.2, 0.15), r: 0.06, col: C('#8a96a8'), k: 0.05 },
+      { s: 'cap', a: at(-0.45, -0.85, 0.2), b: at(0.45, -0.85, 0.2), r: 0.04, col: C('#8a96a8'), k: 0.03 },
+      { s: 'cap', a: at(0, -0.85, 0.2), b: at(0, -0.75, 0.6), r: 0.05, r2: 0.03, col: C('#8a96a8'), k: 0.03 },
+      { s: 'ell', c: at(0, 0.45, 0.3), rr: [0.1, 0.08, 0.22], col: C('#2a4a7a'), k: 0 }]; };
+    const p = [
+      ...hull(o),
+      // the flight deck: an overhanging slab, angled at the front, edged in white, with a dashed center line
+      { s: 'box', c: [0.3, 2.65, 0], hs: [2.9, 0.22, 9.4], rd: 0.15, col: deckC, k: 0 },
+      { s: 'box', c: [0, 2.65, 9.4], hs: [2.0, 0.22, 0.8], rd: 0.4, col: deckC, k: 0 },
+      ...[-1, 1].map(sx => ({ s: 'box', c: [0.3 + sx * 2.75, 2.88, 0], hs: [0.05, 0.01, 9.2], rd: 0.01, col: line, k: 0 })),
+      ...Array.from({ length: 9 }, (_, i) => ({ s: 'box', c: [0.6, 2.88, -8 + i * 2], hs: [0.06, 0.01, 0.55], rd: 0.01, col: line, k: 0 })),
+      { s: 'box', c: [0.6, 2.88, 8.6], hs: [0.9, 0.01, 0.06], rd: 0.01, col: yel, k: 0 },
+      // the island tower to starboard (-x): a block, a bridge with windows, a mast with radar
+      { s: 'box', c: [-2.35, 4.0, -2.0], hs: [0.6, 1.2, 1.9], rd: 0.15, col: grey, k: 0 },
+      { s: 'box', c: [-2.35, 5.35, -1.8], hs: [0.55, 0.3, 1.3], rd: 0.12, col: grey, k: 0 },
+      { s: 'box', c: [-1.78, 5.4, -1.8], hs: [0.02, 0.09, 1.1], rd: 0.02, col: C('#1a2638'), k: 0 },
+      { s: 'cap', a: [-2.35, 5.6, -1.6], b: [-2.35, 7.3, -1.6], r: 0.09, r2: 0.05, col: greyD, k: 0 },
+      { s: 'ell', c: [-2.35, 6.9, -1.5], rr: [0.5, 0.22, 0.08], col: C('#c8d0da'), k: 0 },
+      { s: 'box', c: [-2.35, 4.4, -0.05], hs: [0.5, 0.06, 0.02], rd: 0.01, col: C('#ffffff'), k: 0 },
+      // jets parked along the port edge and at the stern; a helicopter on a marked pad
+      ...jet(2.2, 5.5, -2.3), ...jet(2.2, 2.8, -2.3), ...jet(2.2, 0.1, -2.3), ...jet(0.6, -6.8, 3.14), ...jet(-1.2, -7.4, 3.14),
+      { s: 'tor', ax: 'y', c: [1.6, 2.88, -3.6], R: 0.8, r: 0.04, a0: -Math.PI, a1: Math.PI, col: yel, k: 0 },
+      { s: 'ell', c: [1.6, 3.35, -3.6], rr: [0.35, 0.3, 0.55], col: C('#3a5a3a'), k: 0 },
+      { s: 'cap', a: [1.6, 3.35, -4.1], b: [1.6, 3.5, -5.0], r: 0.08, r2: 0.04, col: C('#3a5a3a'), k: 0 },
+      { s: 'cap', a: [0.5, 3.75, -3.6], b: [2.7, 3.75, -3.6], r: 0.03, col: C('#2a2e38'), k: 0 },
+      { s: 'cap', a: [1.6, 3.75, -4.7], b: [1.6, 3.75, -2.5], r: 0.03, col: C('#2a2e38'), k: 0 },
+    ];
+    ship('carrier', p, 9.5, -3.1, 3.1, { piv: 1.2, ao: 0.35 });
+  }
+
+  // ---------- the Golden Ark: a great ivory-and-gold ship of legend: gilded bands, a temple cabin with columns
+  // and a golden dome, gem lanterns, an angel figurehead; three masts with white and gold sails (rig mesh) ----------
+  {
+    const o = { len: 21, wid: 5.6, top: 2.0, bot: -0.3, col: C('#f4ecd6'), deck: C('#d8b878'), bands: [[1.75, 0.09, gold], [1.1, 0.16, C('#e0a830')], [0.3, 0.12, C('#2a8ad8')]] };
+    const ivory = C('#f8f0dc'), gem = C('#3ad8f0'), gemR = C('#ff4a7a');
+    const p = [
+      ...hull(o),
+      ...rail(o, 2.0, 0.32, 0.07, gold),
+      // the temple cabin at the stern: a plinth, columns, a frieze and a golden dome with a spire
+      { s: 'box', c: [0, 2.3, -5.6], hs: [2.0, 0.3, 2.4], rd: 0.12, col: ivory, k: 0 },
+      ...[-1.6, -0.55, 0.55, 1.6].flatMap(x => [-7.6, -3.6].map(z => ({ s: 'cyl', ax: 'y', c: [x, 3.35, z], r: 0.2, hh: 0.8, rd: 0.05, col: ivory, k: 0 }))),
+      { s: 'box', c: [0, 3.0, -5.6], hs: [1.5, 0.7, 1.7], rd: 0.1, col: C('#f0e4c4'), k: 0 },
+      { s: 'box', c: [0, 4.25, -5.6], hs: [2.0, 0.18, 2.3], rd: 0.06, col: gold, k: 0 },
+      { s: 'sph', c: [0, 4.6, -5.6], r: 1.35, col: C('#f2c440'), k: 0 }, { s: 'box', c: [0, 3.8, -5.6], hs: [2, 0.6, 2], sub: true, k: 0 },
+      { s: 'cap', a: [0, 5.8, -5.6], b: [0, 6.8, -5.6], r: 0.08, r2: 0.03, col: gold, k: 0 }, { s: 'sph', c: [0, 6.9, -5.6], r: 0.16, col: gem, k: 0 },
+      // gem lanterns down both rails, a golden prow and the angel figurehead with spread wings
+      ...[-1, 1].flatMap(sx => [-2, 1.5, 5].flatMap(z => { const w = 2.75 * Math.sqrt(Math.max(0, 1 - ((z + 1.0) / 9.5) ** 2)); return [
+        { s: 'cap', a: [sx * w * 0.95, 2.0, z], b: [sx * w * 0.95, 2.7, z], r: 0.05, col: gold, k: 0 }, { s: 'sph', c: [sx * w * 0.95, 2.8, z], r: 0.14, col: sx > 0 ? gem : gemR, k: 0 }]; })),
+      { s: 'cap', a: [0, 1.9, 9.6], b: [0, 2.7, 11.1], r: 0.22, r2: 0.12, col: gold, k: 0 },
+      { s: 'sph', c: [0, 2.95, 11.0], r: 0.24, col: C('#fff4dc'), k: 0 },
+      { s: 'cap', a: [0, 2.7, 10.85], b: [0, 2.1, 10.5], r: 0.22, r2: 0.3, col: C('#fff4dc'), k: 0.1 },
+      ...[-1, 1].map(sx => ({ s: 'ell', c: [sx * 0.55, 2.75, 10.4], rr: [0.6, 0.35, 0.12], col: gold, k: 0.05 })),
+      { s: 'tor', ax: 'y', c: [0, 3.3, 11.0], R: 0.2, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#ffe86a'), k: 0 },
+    ];
+    ship('ark', p, 10.5, -3.4, 3.4, { piv: 1.0, ao: 0.4 });
+    const sailW = C('#fffaf0'), mastG = C('#c8962a');
+    const sail = (z, y, w, h) => [
+      { s: 'cap', a: [-w - 0.15, y + h + 0.12, z], b: [w + 0.15, y + h + 0.12, z], r: 0.07, col: mastG, k: 0 },
+      { s: 'ell', c: [0, y, z], rr: [w, h, 0.4], col: sailW, k: 0 }, { s: 'ell', c: [0, y, z - 0.06], rr: [w, h, 0.36], sub: true, k: 0 },
+      { s: 'box', c: [0, y, z - 0.4], hs: [4, 4, 0.4], sub: true, k: 0 },
+      { s: 'ell', c: [0, y + h * 0.1, z + 0.36], rr: [w * 0.32, w * 0.32, 0.06], col: C('#f2c440'), k: 0 }];
+    rigMesh('ark_rig', [
+      ...[[5.2, 7.2], [0.8, 8.4], [-2.4, 6.8]].flatMap(([z, h]) => [{ s: 'cap', a: [0, 2.0, z], b: [0, h, z], r: 0.16, r2: 0.1, col: mastG, k: 0 }, { s: 'sph', c: [0, h + 0.1, z], r: 0.2, col: gold, k: 0 }]),
+      ...sail(5.2, 4.6, 1.9, 1.5), ...sail(0.8, 5.4, 2.3, 1.9), ...sail(-2.4, 4.4, 1.8, 1.4),
+      { s: 'box', c: [0, 8.6, 0.45], hs: [0.03, 0.3, 0.55], rd: 0.02, col: C('#2a8ad8'), k: 0 },
+      { s: 'cap', a: [0, 8.3, 0.8], b: [0, 2.6, 10.6], r: 0.05, col: gold, k: 0 },
+      { s: 'cap', a: [0, 8.3, 0.8], b: [0, 4.5, -7.6], r: 0.05, col: gold, k: 0 },
+    ], 10.5);
   }
 }
 
@@ -5372,26 +5537,285 @@ function seaBossModels(defs) {
       ...[-1, 1].flatMap(sx => [-2.2, -1.0, 0.2, 1.4].map(z => ({ s: 'sph', c: [sx * 1.62 * Math.sqrt(Math.max(0, 1 - ((z + 0.2) / 3.9) ** 2)), 0.75, z], r: 0.07, col: C('#c8d0da'), k: 0 }))),
     ]);
   }
-  // 9. the Kraken: a great purple head with big eyes and eight tentacles (bones 3-10), the rider on top
+  // 9. the Kraken: a great mottled purple mantle, a pale underbelly, angry yellow eyes under heavy brows, a hooked
+  // beak, and eight tentacles (bones 3-10) that rise and curl at the tips, lined with suckers; the rider on top
   {
-    const pur = C('#8a4ab8'), purL = C('#c890f0'), suck = C('#f0c8ff');
+    const pur = C('#6a2a98'), purD = C('#4a1a70'), purL = C('#9a52d0'), under = C('#e2a8f0'), suck = C('#ffd8f0'), eyeY = C('#ffd34a');
     const parts = [
-      { s: 'ell', c: [0, 0.4, 0], rr: [2.0, 1.4, 1.9], col: pur, k: 0 },
-      { s: 'ell', c: [0, 1.5, -0.4], rr: [1.4, 1.2, 1.3], col: pur, k: 0.5 },
-      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.85, 1.0, 1.55], r: 0.42, col: white, k: 0 }, { s: 'sph', c: [sx * 0.85, 1.0, 1.9], r: 0.2, col: dark, k: 0 }]),
-      { s: 'ell', c: [0, 0.35, 1.75], rr: [0.6, 0.12, 0.18], col: C('#5a1a40'), k: 0.03 },
-      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 1.2, 1.6 + Math.sin(a) * 0.3, -0.4 + Math.sin(a) * 1.0], r: 0.14, col: purL, k: 0 }; }),
+      { s: 'ell', c: [0, 0.4, 0], rr: [2.0, 1.3, 1.9], col: pur, k: 0 },
+      { s: 'ell', c: [0, 1.6, -0.5], rr: [1.5, 1.5, 1.45], col: pur, k: 0.5 },
+      { s: 'ell', c: [0, 2.7, -1.1], rr: [1.05, 1.0, 1.05], col: purL, k: 0.6 },
+      { s: 'ell', c: [0, 0.15, 0.6], rr: [1.55, 0.42, 1.3], col: under, k: 0.35 },
+      // mottled spots on the mantle
+      ...Array.from({ length: 11 }, (_, i) => { const a = i * 2.3, h = 1.2 + (i % 4) * 0.45, rr = 1.45 - (h - 1.2) * 0.25; return { s: 'sph', c: [Math.cos(a) * rr, h, -0.5 + Math.sin(a) * rr * 0.95], r: 0.12 + (i % 3) * 0.05, col: purD, k: 0.05 }; }),
+      // heavy brows, big yellow eyes with slit pupils
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.35, 1.55, 1.45], b: [sx * 1.25, 1.35, 1.3], r: 0.2, col: purD, k: 0.15 },
+        { s: 'sph', c: [sx * 0.82, 1.02, 1.55], r: 0.42, col: white, k: 0 },
+        { s: 'sph', c: [sx * 0.84, 1.02, 1.78], r: 0.27, col: eyeY, k: 0 },
+        { s: 'ell', c: [sx * 0.85, 1.02, 1.98], rr: [0.05, 0.2, 0.06], col: dark, k: 0 },
+        { s: 'sph', c: [sx * 0.74, 1.14, 1.92], r: 0.06, col: white, k: 0 }]),
+      // the beak
+      { s: 'cap', a: [0, 0.55, 1.75], b: [0, 0.25, 2.1], r: 0.2, r2: 0.05, col: C('#3a3040'), k: 0.03 },
+      { s: 'cap', a: [0, 0.2, 1.8], b: [0, 0.3, 2.05], r: 0.13, r2: 0.04, col: C('#2a2030'), k: 0.03 },
     ];
     const piv = [];
     for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * TAU + 0.2, bx = Math.cos(a) * 1.7, bz = Math.sin(a) * 1.6, b = 3 + i, ex = Math.cos(a) * 4.0, ez = Math.sin(a) * 3.8;
-      piv.push([b, [bx, 0.1, bz]]);
-      parts.push({ s: 'cap', a: [bx, 0.1, bz], b: [(bx + ex) / 2, 0.6, (bz + ez) / 2], r: 0.42, r2: 0.3, col: pur, bone: b, k: 0.15 });
-      parts.push({ s: 'cap', a: [(bx + ex) / 2, 0.6, (bz + ez) / 2], b: [ex, 1.4, ez], r: 0.3, r2: 0.1, col: pur, bone: b, k: 0.1 });
-      parts.push({ s: 'sph', c: [(bx + ex) / 2, 0.42, (bz + ez) / 2], r: 0.12, col: suck, bone: b, k: 0 });
+      const a = (i / 8) * TAU + 0.2, b = 3 + i, ca = Math.cos(a), sa = Math.sin(a);
+      const p0 = [ca * 1.7, 0.1, sa * 1.6], p1 = [ca * 2.9, 0.55, sa * 2.75], p2 = [ca * 3.9, 1.5, sa * 3.7], p3 = [ca * 3.7 - sa * 0.5, 2.2, sa * 3.5 + ca * 0.5];
+      piv.push([b, p0]);
+      parts.push({ s: 'cap', a: p0, b: p1, r: 0.46, r2: 0.34, col: pur, bone: b, k: 0.15 });
+      parts.push({ s: 'cap', a: p1, b: p2, r: 0.34, r2: 0.2, col: pur, bone: b, k: 0.1 });
+      parts.push({ s: 'cap', a: p2, b: p3, r: 0.2, r2: 0.07, col: purL, bone: b, k: 0.08 });
+      // suckers along the inner side, biggest near the body
+      for (let j = 0; j < 4; j++) {
+        const u = (j + 0.5) / 4, A = j < 2 ? p0 : p1, B = j < 2 ? p1 : p2, v = (u * 4) % 2 / 2 + 0.25;
+        const c = [A[0] + (B[0] - A[0]) * v, A[1] + (B[1] - A[1]) * v - 0.22 + j * 0.03, A[2] + (B[2] - A[2]) * v];
+        parts.push({ s: 'sph', c, r: 0.13 - j * 0.02, col: suck, bone: b, k: 0 });
+      }
     }
     const m = P('bkraken', parts);
     for (const [b, p] of piv) m.bones[b].p = p;
+  }
+}
+
+// ============================================================
+// Ocean chapters 11-20 (13o-sea-deep.js): the new swimmers that are not goo pirates (glowing jellyfish, gummy
+// bears, anglerfish), and the ten new islands plus the Atlantis column that bursts up out of the sea.
+// The goo-pirate variants (weed-tangled, merfolk, lost pilots, skeletons, balloon pirates) are in 04k's pirate().
+// Islands are radius 4 at scale 1 and drawn at radius / 4, like the others.
+// ============================================================
+const SEA_DEEP_FOLK = ['pweed', 'pmer', 'pblink', 'pskel', 'pballoon', 'pjelly', 'pgummy', 'pangler'];
+const SEA_DEEP_ISLES = ['iglow', 'iweed', 'istack', 'iruin', 'icandy', 'itri', 'isky', 'ibones', 'ilocker', 'iedge', 'icol'];
+Object.assign(THEME_CLIPS, { pweed: ['paddle', 'hack'], pmer: ['paddle', 'hack', 'throw'], pblink: ['paddle', 'hack'], pskel: ['paddle', 'hack'], pballoon: ['hang'], pjelly: ['jpulse'], pgummy: ['gbob'], pangler: ['aswim'] });
+for (const id of SEA_DEEP_FOLK) THEME_CELLS[id] = 0.017;
+for (const id of SEA_DEEP_ISLES) { THEME_CLIPS[id] = ['still']; THEME_CELLS[id] = 0.1; }
+MESH_ORDER.push(...SEA_DEEP_FOLK, ...SEA_DEEP_ISLES);
+
+// hanging from a balloon: arms up on the ropes, legs dangling and swinging a little
+CLIPS.hang = { frames: 32, fn(t) {
+  const a = t * TAU, s = Math.sin(a), c = Math.cos(a);
+  return { root: [0, 0.04 * Math.sin(2 * a), 0], rot: [
+    [0.1 * s, 0, 0.06 * c], [0.05, 0, 0], [-0.15, 0, 0],
+    [-2.85, 0, 0.35], [-0.2, 0, 0], [-2.85, 0, -0.35], [-0.2, 0, 0],
+    [0.25 * s, 0, 0.08], [0.4 + 0.2 * c, 0, 0], [-0.25 * s, 0, -0.08], [0.4 - 0.2 * c, 0, 0],
+  ] };
+} };
+// a jellyfish: the bell bobs while the tentacles (bones 3-8) trail and sway
+CLIPS.jpulse = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0.05 * Math.sin(a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b >= 3 && b <= 8 ? [0.3 * Math.sin(a + b * 1.1), 0, 0.22 * Math.cos(a + b * 0.7)] : [0, 0, 0])) };
+} };
+// a gummy bear treading water: a bounce, the arms (bones 3, 5) paddling
+CLIPS.gbob = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0.04 * Math.sin(2 * a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 3 ? [-0.6 + 0.5 * Math.sin(a), 0, 0] : b === 5 ? [-0.6 - 0.5 * Math.sin(a), 0, 0] : b === 0 ? [0, 0, 0.08 * Math.sin(a)] : [0, 0, 0])) };
+} };
+// an anglerfish swimming: the tail (bone 3) sweeps, the lure (bone 4) bobs
+CLIPS.aswim = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0.03 * Math.sin(a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 3 ? [0, 0.55 * Math.sin(a), 0] : b === 4 ? [0.15 * Math.sin(2 * a), 0, 0.1 * Math.cos(a)] : b === 0 ? [0, 0.08 * Math.sin(a + 1), 0] : [0, 0, 0])) };
+} };
+
+function seaDeepModels(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const white = C('#fbf6ee'), dark = C('#16101a');
+
+  // ---------- the glowing jellyfish: a domed bell (it takes the tint), a bright core, a frilled rim, trailing
+  // tentacles (bones 3-8) and four frilly oral arms ----------
+  {
+    const parts = [
+      { s: 'ell', c: [0, 0.42, 0], rr: [0.46, 0.34, 0.46], k: 0 }, { s: 'ell', c: [0, 0.3, 0], rr: [0.38, 0.22, 0.38], sub: true, k: 0.02 },
+      { s: 'ell', c: [0, 0.5, 0], rr: [0.22, 0.17, 0.22], col: C('#f0fff8'), k: 0.08 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = i / 10 * TAU; return { s: 'sph', c: [Math.cos(a) * 0.43, 0.24, Math.sin(a) * 0.43], r: 0.065, col: C('#c8fff0'), k: 0.03 }; }),
+      ...Array.from({ length: 6 }, (_, i) => { const a = i / 6 * TAU + 0.3, b = 3 + i; return { s: 'cap', a: [Math.cos(a) * 0.32, 0.22, Math.sin(a) * 0.32], b: [Math.cos(a) * 0.38, -0.55, Math.sin(a) * 0.38], r: 0.025, r2: 0.01, col: C('#b8fff0'), bone: b, k: 0 }; }),
+      ...Array.from({ length: 4 }, (_, i) => { const a = i / 4 * TAU; return { s: 'cap', a: [Math.cos(a) * 0.08, 0.25, Math.sin(a) * 0.08], b: [Math.cos(a) * 0.15, -0.3, Math.sin(a) * 0.15], r: 0.05, r2: 0.025, col: C('#e8fff8'), k: 0.03 }; }),
+    ];
+    const m = P('pjelly', parts, { ao: 0.3 });
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + 0.3; m.bones[3 + i].p = [Math.cos(a) * 0.32, 0.22, Math.sin(a) * 0.32]; }
+  }
+  // ---------- the gummy bear: a chunky translucent-candy bear (it takes the tint) with round ears, a muzzle,
+  // dot eyes and stubby arms (bones 3, 5) ----------
+  {
+    const parts = [
+      { s: 'ell', c: [0, 0.45, 0], rr: [0.3, 0.36, 0.26], k: 0 },
+      { s: 'ell', c: [0, 0.42, 0.18], rr: [0.18, 0.2, 0.1], k: 0.08 },
+      { s: 'sph', c: [0, 0.93, 0], r: 0.25, k: 0.08 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.17, 1.13, -0.02], r: 0.09, k: 0.04 })),
+      { s: 'ell', c: [0, 0.86, 0.2], rr: [0.11, 0.08, 0.08], k: 0.04 },
+      { s: 'sph', c: [0, 0.89, 0.27], r: 0.035, col: dark, k: 0 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.09, 0.98, 0.21], r: 0.032, col: dark, k: 0 })),
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.08, 1.0, 0.235], r: 0.01, col: white, k: 0 })),
+      { s: 'cap', a: [0.26, 0.6, 0.02], b: [0.36, 0.42, 0.18], r: 0.08, bone: 3, k: 0.04 },
+      { s: 'cap', a: [-0.26, 0.6, 0.02], b: [-0.36, 0.42, 0.18], r: 0.08, bone: 5, k: 0.04 },
+    ];
+    const m = P('pgummy', parts, { ao: 0.25 });
+    m.bones[3].p = [0.26, 0.6, 0.02]; m.bones[5].p = [-0.26, 0.6, 0.02];
+  }
+  // ---------- the anglerfish: a dark lumpy body (it takes the tint), a huge underbite full of needle teeth,
+  // little yellow eyes, fins, a sweeping tail (bone 3) and a glowing lure on a stalk (bone 4) ----------
+  {
+    const teeth = C('#f4f0e0'), lure = C('#e8ff7a');
+    const parts = [
+      { s: 'ell', c: [0, 0.32, 0], rr: [0.42, 0.38, 0.55], k: 0 },
+      { s: 'ell', c: [0, 0.3, 0.42], rr: [0.36, 0.3, 0.2], col: C('#1a1424'), sub: true, k: 0.04 },
+      { s: 'ell', c: [0, 0.16, 0.44], rr: [0.38, 0.16, 0.24], k: 0.06 },
+      ...Array.from({ length: 7 }, (_, i) => { const x = -0.27 + i * 0.09; return { s: 'cap', a: [x, 0.2, 0.55], b: [x * 1.05, 0.38, 0.6], r: 0.02, r2: 0.004, col: teeth, k: 0 }; }),
+      ...Array.from({ length: 6 }, (_, i) => { const x = -0.22 + i * 0.09; return { s: 'cap', a: [x, 0.46, 0.5], b: [x, 0.33, 0.55], r: 0.017, r2: 0.004, col: teeth, k: 0 }; }),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.2, 0.55, 0.32], r: 0.065, col: C('#ffd34a'), k: 0 }, { s: 'sph', c: [sx * 0.21, 0.56, 0.38], r: 0.03, col: dark, k: 0 }]),
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.42, 0.25, 0.05], rr: [0.04, 0.12, 0.18], k: 0.04 })),
+      { s: 'ell', c: [0, 0.68, -0.15], rr: [0.03, 0.12, 0.22], k: 0.05 },
+      { s: 'cap', a: [0, 0.3, -0.5], b: [0, 0.32, -0.78], r: 0.12, r2: 0.05, bone: 3, k: 0.06 },
+      { s: 'ell', c: [0, 0.32, -0.88], rr: [0.03, 0.2, 0.12], bone: 3, k: 0.03 },
+      { s: 'cap', a: [0, 0.66, 0.15], b: [0, 1.0, 0.4], r: 0.022, col: C('#3a3448'), bone: 4, k: 0.02 },
+      { s: 'cap', a: [0, 1.0, 0.4], b: [0, 0.92, 0.66], r: 0.018, col: C('#3a3448'), bone: 4, k: 0.02 },
+      { s: 'sph', c: [0, 0.86, 0.7], r: 0.085, col: lure, bone: 4, k: 0 },
+    ];
+    const m = P('pangler', parts, { ao: 0.4 });
+    m.bones[3].p = [0, 0.3, -0.5]; m.bones[4].p = [0, 0.66, 0.15];
+  }
+
+  // ---------- islands ----------
+  const rockMass = (seed, R, H, col, col2, bump = 0.05) => {
+    const out = [{ s: 'rock', c: [0, H - R * 1.05, 0], r: R * 1.05, bump, col, k: 0.6 }];
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * TAU + seed, d = R * (0.95 + 0.25 * ((i * 7 + seed) % 3) / 2), r = R * (0.5 + 0.15 * ((i * 5 + seed) % 4) / 3);
+      out.push({ s: 'rock', c: [Math.cos(a) * d, H * 0.55 - r * 0.9, Math.sin(a) * d], r, bump: bump * 1.2, col: i % 2 ? col2 : col, k: 0.55 });
+    }
+    return out;
+  };
+  const shore = (col, h = 0.5) => ({ s: 'ell', c: [0, -0.2, 0], rr: [3.9, h, 3.9], col, k: 0.3 });
+  const pebbles = (n, R, col, seed) => Array.from({ length: n }, (_, i) => { const a = i / n * TAU + seed * 0.7, d = R * (0.85 + 0.15 * (i % 2)); return { s: 'crag', c: [Math.cos(a) * d, 0.05, Math.sin(a) * d], r: 0.32 + 0.12 * ((i + seed) % 3), seed: seed * 10 + i, n: 8, col, k: 0.08 }; });
+
+  // Glowtide Lagoon: a dark reef of rock under giant glowing mushrooms and coral fans, dots of light
+  {
+    const caps = [C('#5affe0'), C('#ff6ae0'), C('#c8ff5a'), C('#6ab8ff')];
+    const shroom = (x, z, h, r, col) => [{ s: 'cap', a: [x, 0.5, z], b: [x * 1.05, h, z * 1.05], r: r * 0.28, r2: r * 0.22, col: C('#e8f4f0'), k: 0.1 },
+      { s: 'ell', c: [x * 1.05, h + r * 0.15, z * 1.05], rr: [r, r * 0.45, r], col, k: 0.05 }, { s: 'ell', c: [x * 1.05, h - r * 0.05, z * 1.05], rr: [r * 0.9, r * 0.22, r * 0.9], col: C('#1a2a3a'), k: 0.02 }];
+    P('iglow', [shore(C('#1e2a38')), ...rockMass(31, 2.0, 0.9, C('#26323e'), C('#1e2832')),
+      ...shroom(0.3, -0.4, 3.0, 1.2, caps[0]), ...shroom(-1.6, 0.9, 2.0, 0.85, caps[1]), ...shroom(1.6, 1.2, 1.7, 0.7, caps[2]), ...shroom(-0.6, -2.0, 1.5, 0.6, caps[3]),
+      ...[[2.4, -1.2, caps[1]], [-2.6, -0.6, caps[0]], [0.4, 2.6, caps[3]]].map(([x, z, col]) => ({ s: 'ell', c: [x, 0.9, z], rr: [0.6, 0.65, 0.12], col, k: 0.05 })),
+      ...Array.from({ length: 14 }, (_, i) => { const a = i * 2.39, d = 1.2 + (i % 4) * 0.55; return { s: 'sph', c: [Math.cos(a) * d, 0.75 + (i % 3) * 0.12, Math.sin(a) * d], r: 0.09, col: caps[i % 4], k: 0 }; }),
+      ...pebbles(5, 3.2, C('#26323e'), 31)], { ao: 0.4 });
+  }
+  // Sargasso Snarl: a low sandbar smothered in mats of brown and green weed, a rotting hulk half sunk in it
+  {
+    const weedA = C('#5a6a2a'), weedB = C('#3a5a2a'), weedC = C('#7a6a3a'), rot = C('#4a3a28');
+    P('iweed', [shore(C('#6a6a4a'), 0.45),
+      ...[[0, 0, 3.2, 3.0, weedA], [1.2, -0.8, 2.0, 1.8, weedB], [-1.4, 1.0, 1.9, 1.6, weedC], [0.6, 1.8, 1.4, 1.2, weedB]].map(([x, z, rx, rz, col], i) => ({ s: 'ell', c: [x, 0.18 + i * 0.05, z], rr: [rx, 0.28, rz], col, k: 0.06 })),
+      ...Array.from({ length: 16 }, (_, i) => { const a = i * 2.39, d = 0.8 + (i % 5) * 0.55; return { s: 'cap', a: [Math.cos(a) * d, 0.35, Math.sin(a) * d], b: [Math.cos(a) * d + 0.3, 0.55 + (i % 3) * 0.15, Math.sin(a) * d - 0.2], r: 0.09, r2: 0.04, col: i % 2 ? weedB : weedA, k: 0.06 }; }),
+      // the hulk: a tilted hull with ribs, a snapped mast trailing weed
+      { s: 'ell', c: [-0.4, 0.5, -0.3], rr: [0.9, 0.7, 2.2], col: rot, k: 0 }, { s: 'box', c: [-0.4, 1.4, -0.3], hs: [2, 0.8, 3], sub: true, k: 0 },
+      { s: 'ell', c: [-0.4, 0.9, -0.3], rr: [0.7, 0.55, 1.9], sub: true, k: 0 },
+      ...[-1.2, -0.4, 0.4].map(z => ({ s: 'tor', ax: 'z', c: [-0.4, 0.6, -0.3 + z], R: 0.8, r: 0.06, a0: 0.25, a1: Math.PI - 0.25, col: C('#5a4630'), k: 0 })),
+      { s: 'cap', a: [-0.3, 0.7, 0.4], b: [0.6, 2.3, 1.0], r: 0.1, col: rot, k: 0 }, { s: 'cap', a: [0.6, 2.3, 1.0], b: [0.75, 1.4, 1.2], r: 0.05, col: weedB, k: 0.02 }], { ao: 0.45 });
+  }
+  // Maelstrom Reach: three tall sea stacks of banded sandstone with grassy tops, a natural arch between two
+  {
+    const sA = C('#b8865a'), sB = C('#9a6a48'), sC = C('#d4a476'), grass = C('#6aa84a');
+    const stack = (x, z, h, r) => [...Array.from({ length: Math.round(h / 0.8) }, (_, i) => ({ s: 'rock', c: [x + Math.sin(i * 1.7) * 0.08, 0.4 + i * 0.8, z + Math.cos(i * 1.3) * 0.08], r: r * (1 - i * 0.05), bump: 0.04, col: [sA, sB, sC][i % 3], k: 0.35 })),
+      { s: 'ell', c: [x, 0.4 + h, z], rr: [r * 0.8, 0.22, r * 0.8], col: grass, k: 0.15 }];
+    P('istack', [shore(C('#7a6a5a'), 0.4), ...stack(-1.3, -0.6, 4.4, 1.1), ...stack(1.4, -0.3, 3.2, 0.95), ...stack(0.1, 1.7, 2.3, 0.85),
+      { s: 'tor', ax: 'z', c: [0.05, 1.2, -0.45], R: 1.35, r: 0.32, a0: 0.1, a1: Math.PI - 0.1, col: sB, k: 0.2 },
+      { s: 'tor', ax: 'y', c: [-1.3, 4.75, -0.6], R: 0.2, r: 0.07, a0: -Math.PI, a1: Math.PI, col: C('#c8a060'), k: 0 },
+      ...[[-1.25, 4.8, -0.55], [-1.38, 4.8, -0.62]].map(c => ({ s: 'sph', c, r: 0.07, col: C('#f4f0e4'), k: 0 })),
+      ...pebbles(6, 3.2, sB, 11)], { ao: 0.45 });
+  }
+  // Sunken Atlantis: a marble platform half drowned: steps, standing and toppled columns, an arch, a broken gold
+  // dome and a great stone head lying on its side, gilded and grown over with coral
+  {
+    const marble = C('#f2eee6'), marbleD = C('#d8d2c4'), gold = C('#e8b84a'), coral = C('#ff7a9a');
+    const col = (x, z, h) => [{ s: 'cyl', ax: 'y', c: [x, 0.5 + h / 2, z], r: 0.32, hh: h / 2, rd: 0.05, col: marble, k: 0 }, { s: 'box', c: [x, 0.55 + h, z], hs: [0.42, 0.1, 0.42], rd: 0.03, col: gold, k: 0 }];
+    P('iruin', [shore(C('#c8d8d0'), 0.45),
+      { s: 'cyl', ax: 'y', c: [0, 0.25, 0], r: 3.0, hh: 0.25, rd: 0.06, col: marbleD, k: 0 }, { s: 'cyl', ax: 'y', c: [0, 0.55, 0], r: 2.4, hh: 0.12, rd: 0.04, col: marble, k: 0 },
+      ...col(-1.5, -1.2, 2.6), ...col(1.5, -1.2, 1.4), ...col(-1.5, 1.2, 1.9), ...col(1.6, 1.4, 2.9),
+      { s: 'box', c: [0, 3.25, -1.2], hs: [1.95, 0.18, 0.4], rd: 0.04, col: marble, k: 0 }, ...col(1.5, -1.2, 2.6).slice(0, 1),
+      { s: 'cyl', ax: 'x', c: [0.2, 0.92, 0.3], r: 0.3, hh: 1.0, rd: 0.05, col: marbleD, k: 0 },
+      { s: 'sph', c: [-0.2, 0.7, 1.9], r: 1.0, col: gold, k: 0 }, { s: 'box', c: [-0.2, 0.0, 1.9], hs: [1.2, 0.7, 1.2], sub: true, k: 0 },
+      { s: 'sph', c: [2.3, 0.95, -0.4], r: 0.62, col: marbleD, k: 0 }, { s: 'cap', a: [2.55, 1.0, 0.05], b: [2.7, 1.05, 0.2], r: 0.13, col: marbleD, k: 0.05 },
+      { s: 'box', c: [2.3, 1.55, -0.4], hs: [0.5, 0.08, 0.5], rd: 0.04, col: gold, k: 0 },
+      ...[[-2.4, 0.2], [0.8, -2.5], [-0.8, 2.6]].flatMap(([x, z], i) => [0, 1, 2].map(j => { const a = j * 2.1 + i; return { s: 'cap', a: [x, 0.4, z], b: [x + Math.cos(a) * 0.35, 1.0 + j * 0.1, z + Math.sin(a) * 0.35], r: 0.1, r2: 0.05, col: coral, k: 0.06 }; }))], { ao: 0.4 });
+  }
+  // the Atlantis column that bursts up from the sea (drawn small, as an islet)
+  {
+    const marble = C('#f2eee6'), gold = C('#e8b84a');
+    P('icol', [{ s: 'cyl', ax: 'y', c: [0, 2.6, 0], r: 2.6, hh: 3.2, rd: 0.3, col: marble, k: 0 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = i / 10 * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 2.6, 2.6, Math.sin(a) * 2.6], r: 0.28, hh: 3.0, rd: 0.1, sub: true, k: 0.1 }; }),
+      { s: 'box', c: [0, 6.1, 0], hs: [3.2, 0.45, 3.2], rd: 0.12, col: gold, k: 0 }, { s: 'cyl', ax: 'y', c: [0, 6.75, 0], r: 2.2, hh: 0.25, rd: 0.08, col: marble, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.3, 0], R: 2.7, r: 0.35, a0: -Math.PI, a1: Math.PI, col: C('#5affe0'), k: 0 }], { ao: 0.35 });
+  }
+  // the Soda Sea: gumdrop hills sugared with sprinkles on pink frosting, candy canes, swirl lollipops, chocolate rocks
+  {
+    const drops = [C('#ff4a6a'), C('#4ad86a'), C('#ffd34a'), C('#a86aff'), C('#ff8a2a')];
+    const cane = (x, z, h) => [...Array.from({ length: 6 }, (_, i) => ({ s: 'cap', a: [x, 0.5 + i * h / 6, z], b: [x, 0.5 + (i + 1) * h / 6, z], r: 0.15, col: i % 2 ? C('#ffffff') : C('#e8283c'), k: 0 })),
+      { s: 'tor', ax: 'z', c: [x + 0.35, 0.5 + h, z], R: 0.35, r: 0.15, a0: 0, a1: Math.PI, col: C('#e8283c'), k: 0 }];
+    const lolly = (x, z, h, c1) => [{ s: 'cap', a: [x, 0.5, z], b: [x, 0.5 + h, z], r: 0.06, col: C('#ffffff'), k: 0 },
+      { s: 'cyl', ax: 'z', c: [x, 0.5 + h + 0.5, z], r: 0.55, hh: 0.08, rd: 0.06, col: c1, k: 0 }, { s: 'tor', ax: 'z', c: [x, 0.5 + h + 0.5, z + 0.04], R: 0.3, r: 0.07, a0: -Math.PI, a1: Math.PI * 0.6, col: C('#ffffff'), k: 0 }];
+    P('icandy', [shore(C('#ffb8d8'), 0.5), { s: 'ell', c: [0, 0.15, 0], rr: [3.2, 0.4, 3.0], col: C('#ff9ac8'), k: 0.3 },
+      ...[[0, 0, 1.6], [1.6, -1.2, 1.0], [-1.7, -0.6, 1.1], [-0.6, 1.8, 0.9], [1.5, 1.4, 0.8]].map(([x, z, r], i) => ({ s: 'sph', c: [x, 0.3, z], r, col: drops[i], k: 0.15 })),
+      ...Array.from({ length: 22 }, (_, i) => { const a = i * 2.39, d = 0.3 + (i % 6) * 0.45; return { s: 'cap', a: [Math.cos(a) * d, 1.2 + (i % 3) * 0.2 - d * 0.3, Math.sin(a) * d], b: [Math.cos(a) * d + 0.08, 1.24 + (i % 3) * 0.2 - d * 0.3, Math.sin(a) * d + 0.05], r: 0.04, col: drops[(i + 2) % 5], k: 0 }; }),
+      ...cane(2.4, 0.2, 2.2), ...cane(-2.2, 1.6, 1.8), ...lolly(-0.6, -2.3, 1.6, C('#5ac8ff')), ...lolly(2.6, -1.9, 1.2, C('#ffd34a')),
+      ...[[2.8, 1.4], [-2.8, -1.2]].map(([x, z]) => ({ s: 'box', c: [x, 0.4, z], hs: [0.4, 0.3, 0.4], rd: 0.08, col: C('#6a3a1e'), k: 0 }))], { ao: 0.35 });
+  }
+  // the Bermuda Triangle: a sandbar with a crashed propeller plane, a broken striped lighthouse and a buoy
+  {
+    const sand = C('#e8d4a0'), planeC = C('#c8ccd4'), rust = C('#a85a2a');
+    P('itri', [shore(sand, 0.5), { s: 'ell', c: [0.4, 0.15, 0.2], rr: [2.4, 0.35, 2.0], col: C('#d8c48a'), k: 0.4 },
+      { s: 'cap', a: [-1.4, 0.55, -0.4], b: [1.2, 0.9, 0.6], r: 0.42, r2: 0.3, col: planeC, k: 0 },
+      { s: 'box', c: [0.0, 0.75, 0.1], hs: [0.25, 0.06, 2.0], rd: 0.05, col: planeC, k: 0 },
+      { s: 'box', c: [-1.3, 1.0, -0.35], hs: [0.15, 0.4, 0.06], rd: 0.04, col: rust, k: 0 }, { s: 'box', c: [-1.35, 0.95, -0.35], hs: [0.1, 0.04, 0.6], rd: 0.03, col: planeC, k: 0 },
+      { s: 'sph', c: [1.3, 0.95, 0.65], r: 0.2, col: C('#5a5a64'), k: 0 },
+      ...[0, 1, 2].map(i => { const a = i / 3 * TAU; return { s: 'cap', a: [1.42, 0.95, 0.68], b: [1.45, 0.95 + Math.cos(a) * 0.5, 0.68 + Math.sin(a) * 0.5], r: 0.05, col: C('#3a3a44'), k: 0 }; }),
+      { s: 'ell', c: [0.4, 1.05, 0.3], rr: [0.18, 0.12, 0.3], col: C('#5ad0ff'), k: 0 },
+      ...[0, 1, 2, 3].map(i => ({ s: 'cyl', ax: 'y', c: [-1.8, 0.7 + i * 0.5, 1.6], r: 0.55 - i * 0.04, hh: 0.25, rd: 0.04, col: i % 2 ? C('#ffffff') : C('#e8283c'), k: 0 })),
+      { s: 'box', c: [-1.75, 2.75, 1.65], hs: [0.5, 0.2, 0.5], rd: 0.06, col: C('#3a3a44'), sub: false, k: 0 },
+      { s: 'cap', a: [2.6, 0.2, -1.6], b: [2.6, 1.2, -1.6], r: 0.25, r2: 0.15, col: C('#ff8a2a'), k: 0 }, { s: 'sph', c: [2.6, 1.3, -1.6], r: 0.12, col: C('#7affc8'), k: 0 }], { ao: 0.4 });
+  }
+  // the Sky Sea: a cloud island: billowing white puffs, a little temple of white columns with a gold roof, a rainbow
+  {
+    const cloud = C('#ffffff'), cloudS = C('#e8eef8'), rb = ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff', '#a86aff'].map(C);
+    P('isky', [...Array.from({ length: 9 }, (_, i) => { const a = i / 9 * TAU, d = i % 2 ? 2.6 : 2.0; return { s: 'sph', c: [Math.cos(a) * d, 0.3 + (i % 3) * 0.15, Math.sin(a) * d], r: 1.0 + (i % 3) * 0.2, col: i % 3 ? cloud : cloudS, k: 0.5 }; }),
+      { s: 'sph', c: [0, -0.2, 0], r: 2.6, col: cloud, k: 0.6 },
+      ...[[-0.6, -0.6], [0.6, -0.6], [-0.6, 0.6], [0.6, 0.6]].map(([x, z]) => ({ s: 'cyl', ax: 'y', c: [x, 2.45, z], r: 0.12, hh: 0.6, rd: 0.03, col: C('#f8f4ee'), k: 0 })),
+      { s: 'cyl', ax: 'y', c: [0, 1.8, 0], r: 1.0, hh: 0.08, rd: 0.03, col: C('#f8f4ee'), k: 0 },
+      { s: 'cap', a: [0, 3.05, 0], b: [0, 3.7, 0], r: 1.0, r2: 0.05, col: C('#f2c440'), k: 0 },
+      ...rb.map((c, i) => ({ s: 'tor', ax: 'z', c: [0, 0.4, -1.6], R: 3.4 - i * 0.14, r: 0.075, a0: 0.15, a1: Math.PI - 0.15, col: c, k: 0 }))], { ao: 0.25 });
+  }
+  // Leviathan Trench: a dark sandbar with a giant ribcage arching out of it, its spine, and a great skull
+  {
+    const boneC = C('#e8e0c8'), boneD = C('#c8bea0');
+    P('ibones', [shore(C('#3a3a44'), 0.45), ...rockMass(41, 1.6, 0.4, C('#3a3a44'), C('#2e2e38')),
+      { s: 'cap', a: [0, 0.6, -2.6], b: [0, 0.75, 1.6], r: 0.2, col: boneD, k: 0.05 },
+      ...[-2.0, -1.2, -0.4, 0.4, 1.2].map((z, i) => ({ s: 'tor', ax: 'z', c: [0, 0.4, z], R: 1.7 - i * 0.12, r: 0.13, a0: 0.05, a1: Math.PI - 0.05, col: boneC, k: 0.03 })),
+      { s: 'sph', c: [0.3, 0.9, 2.45], r: 0.95, col: boneC, k: 0 }, { s: 'ell', c: [0.3, 0.55, 3.0], rr: [0.65, 0.35, 0.55], col: boneC, k: 0.2 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [0.3 + sx * 0.38, 1.05, 3.15], r: 0.26, col: C('#14101a'), k: 0.02 })),
+      ...Array.from({ length: 5 }, (_, i) => ({ s: 'cap', a: [0.3 - 0.4 + i * 0.2, 0.45, 3.4], b: [0.3 - 0.4 + i * 0.2, 0.25, 3.45], r: 0.06, r2: 0.02, col: boneC, k: 0 })),
+      ...pebbles(5, 3.2, C('#3a3a44'), 41)], { ao: 0.45 });
+  }
+  // Davy Jones' Locker: a black-green rock shaped like a huge skull with cave eyes, chests and ghost lanterns
+  {
+    const rockK = C('#26302a'), rockK2 = C('#1c2620'), ghostG = C('#7affa8');
+    P('ilocker', [shore(C('#1c2620'), 0.45), ...rockMass(51, 1.8, 0.7, rockK, rockK2),
+      { s: 'rock', c: [0, 1.6, -0.3], r: 1.6, bump: 0.05, col: C('#3a4438'), k: 0.5 }, { s: 'ell', c: [0, 0.9, 0.9], rr: [1.1, 0.7, 0.8], col: C('#3a4438'), k: 0.4 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.58, 1.75, 1.0], r: 0.42, col: C('#0a100c'), k: 0.08 })),
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.58, 1.7, 1.25], r: 0.11, col: ghostG, k: 0 })),
+      { s: 'ell', c: [0, 1.15, 1.45], rr: [0.18, 0.22, 0.14], col: C('#0a100c'), k: 0.04 },
+      ...[[1.9, 1.2], [-2.0, 0.6]].flatMap(([x, z]) => [{ s: 'box', c: [x, 0.62, z], hs: [0.42, 0.26, 0.3], rd: 0.04, col: C('#6a3a1e'), k: 0 }, { s: 'cyl', ax: 'x', c: [x, 0.88, z], r: 0.3, hh: 0.42, rd: 0.04, col: C('#7a4a26'), k: 0 },
+        { s: 'box', c: [x, 0.8, z + 0.31], hs: [0.08, 0.1, 0.02], rd: 0.01, col: C('#e8b84a'), k: 0 }]),
+      ...[[1.2, -1.8], [-1.4, -1.6], [2.3, -0.3]].flatMap(([x, z]) => [{ s: 'cap', a: [x, 0.5, z], b: [x, 1.6, z], r: 0.05, col: C('#2a2a2a'), k: 0 }, { s: 'sph', c: [x, 1.72, z], r: 0.16, col: ghostG, k: 0 }])], { ao: 0.45 });
+  }
+  // World's Edge: a golden-sand island with a round marble temple under a gold dome, a giant gold trident, coins
+  {
+    const sand = C('#f4d48a'), marble = C('#f8f4ec'), gold = C('#f2c440'), goldD = C('#c8962a');
+    P('iedge', [shore(sand, 0.5), { s: 'ell', c: [0, 0.2, 0], rr: [3.0, 0.4, 2.8], col: C('#e8c070'), k: 0.4 },
+      { s: 'cyl', ax: 'y', c: [0, 0.65, 0], r: 1.7, hh: 0.15, rd: 0.05, col: marble, k: 0 },
+      ...Array.from({ length: 8 }, (_, i) => { const a = i / 8 * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 1.4, 1.6, Math.sin(a) * 1.4], r: 0.14, hh: 0.8, rd: 0.03, col: marble, k: 0 }; }),
+      { s: 'cyl', ax: 'y', c: [0, 2.5, 0], r: 1.65, hh: 0.12, rd: 0.04, col: gold, k: 0 },
+      { s: 'sph', c: [0, 2.6, 0], r: 1.3, col: gold, k: 0 }, { s: 'box', c: [0, 1.6, 0], hs: [2, 1, 2], sub: true, k: 0 }, { s: 'sph', c: [0, 4.0, 0], r: 0.2, col: C('#5ad8ff'), k: 0 },
+      { s: 'cap', a: [2.3, 0.4, -1.4], b: [2.3, 4.2, -1.4], r: 0.1, col: goldD, k: 0 },
+      { s: 'cap', a: [1.85, 3.8, -1.4], b: [2.75, 3.8, -1.4], r: 0.09, col: gold, k: 0 },
+      ...[-0.45, 0, 0.45].map(dx => ({ s: 'cap', a: [2.3 + dx, 3.8, -1.4], b: [2.3 + dx * 1.1, 4.8, -1.4], r: 0.08, r2: 0.02, col: gold, k: 0 })),
+      ...Array.from({ length: 14 }, (_, i) => { const a = i * 2.39, d = 2.0 + (i % 3) * 0.35; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * d, 0.55 + (i % 2) * 0.07, Math.sin(a) * d], r: 0.14, hh: 0.03, rd: 0.01, col: gold, k: 0 }; })], { ao: 0.4 });
   }
 }
 </script>
@@ -6351,6 +6775,7 @@ function modelDefs() {
   shipModels(defs);
   mountModels(defs);
   seaBossModels(defs);
+  seaDeepModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -9479,9 +9904,58 @@ function seaModels(defs) {
       for (const sx of [1, -1]) m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.065, hd[1] + 0.12, hd[2] + 0.12], R: 0.04, r: 0.014, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
       m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.1, hd[2]], R: 0.17, r: 0.01, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
     }
+    if (o.weed) {
+      // a weed-tangled swimmer: kelp hanging off the shoulders and round the head (not over the face), barnacles
+      for (const [s2, b] of [['L', 3], ['R', 5]]) { const a = J['sh' + s2]; m.parts.push({ s: 'cap', a: [a[0], a[1] + 0.03, a[2]], b: [a[0] * 1.35, a[1] - 0.24, a[2] - 0.05], r: 0.045, r2: 0.018, col: C('#3a7a2a'), bone: 1, k: 0.02 }); }
+      [0.9, 1.2, 1.5, 1.8, 2.1].forEach((u, i) => { const a = u * Math.PI; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.12, hd[1] + 0.12, hd[2] + Math.sin(a) * 0.12], b: [hd[0] + Math.cos(a) * 0.21, hd[1] - 0.12 - (i % 2) * 0.07, hd[2] + Math.sin(a) * 0.21], r: 0.035, r2: 0.014, col: i % 2 ? C('#4a8a3a') : C('#2e6a2a'), bone: 2, k: 0.02 }); });
+      for (const [x, y, z] of [[0.06, 0.62, 0.1], [-0.08, 0.7, 0.09], [0.02, 0.56, -0.1]]) m.parts.push({ s: 'sph', c: [x, y, z], r: 0.024, col: C('#d8d0c0'), bone: 1, k: 0 });
+    }
+    if (o.mer) {
+      // a merfolk soldier: a teal scale tunic, fin ears, a spiked golden crown, a trident in the left hand
+      const teal = C('#2ab8a8'), tealD = C('#178a80'), goldC = C('#e8b84a');
+      m.parts = m.parts.filter(p => !(p.bone === 1 && p.col === stripe) && p.col !== shirt);
+      m.parts.push({ s: 'cap', a: [0, STICK.hipY + 0.04, 0], b: [0, STICK.shY - 0.01, 0], r: 0.11, r2: 0.118, col: teal, bone: 1, k: 0.02 });
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 5; j++) { const a = j * 1.26 + i * 0.63; m.parts.push({ s: 'sph', c: [Math.sin(a) * 0.112, STICK.hipY + 0.1 + i * 0.07, Math.cos(a) * 0.112], r: 0.024, col: tealD, bone: 1, k: 0.01 }); }
+      for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.17, hd[1], hd[2] - 0.02], rr: [0.02, 0.09, 0.07], col: teal, bone: 2, k: 0.02 });
+      m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.12, hd[2]], R: 0.14, r: 0.025, a0: -Math.PI, a1: Math.PI, col: goldC, bone: 2, k: 0 });
+      for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.14, hd[1] + 0.12, hd[2] + Math.sin(a) * 0.14], b: [hd[0] + Math.cos(a) * 0.15, hd[1] + 0.23, hd[2] + Math.sin(a) * 0.15], r: 0.022, r2: 0.005, col: goldC, bone: 2, k: 0 }); }
+      const hl = J.haL;
+      m.parts.push({ s: 'cap', a: [hl[0], hl[1] - 0.25, hl[2] - 0.05], b: [hl[0], hl[1] + 0.5, hl[2] + 0.1], r: 0.017, col: goldC, bone: 4, k: 0 });
+      m.parts.push({ s: 'cap', a: [hl[0] - 0.07, hl[1] + 0.48, hl[2] + 0.1], b: [hl[0] + 0.07, hl[1] + 0.48, hl[2] + 0.1], r: 0.013, col: goldC, bone: 4, k: 0 });
+      for (const dx of [-0.07, 0, 0.07]) m.parts.push({ s: 'cap', a: [hl[0] + dx, hl[1] + 0.48, hl[2] + 0.1], b: [hl[0] + dx * 1.15, hl[1] + 0.68, hl[2] + 0.13], r: 0.013, r2: 0.003, col: C('#ffd34a'), bone: 4, k: 0 });
+    }
+    if (o.hat === 'pilot') {
+      // a lost pilot: an old leather flying cap (tint) with ear flaps, goggles up on the brow, a long white scarf
+      m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.045, hd[2] - 0.01], rr: [0.178, 0.135, 0.18], bone: 2, k: 0.01 });
+      for (const sx of [1, -1]) m.parts.push({ s: 'ell', c: [hd[0] + sx * 0.16, hd[1] - 0.06, hd[2] - 0.01], rr: [0.04, 0.09, 0.07], bone: 2, k: 0.01 });
+      for (const sx of [1, -1]) { m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.07, hd[1] + 0.1, hd[2] + 0.13], R: 0.045, r: 0.016, a0: -Math.PI, a1: Math.PI, col: C('#c8a050'), bone: 2, k: 0 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.07, hd[1] + 0.1, hd[2] + 0.13], r: 0.035, col: C('#9fe6ff'), bone: 2, k: 0 }); }
+      m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.shY + 0.02, 0.01], R: 0.1, r: 0.04, a0: -Math.PI, a1: Math.PI, col: C('#f8f4ec'), bone: 1, k: 0.02 });
+      m.parts.push({ s: 'cap', a: [0.05, STICK.shY + 0.01, -0.08], b: [0.15, STICK.shY - 0.25, -0.24], r: 0.04, r2: 0.03, col: C('#f8f4ec'), bone: 1, k: 0.02 });
+    }
+    if (o.skel) {
+      // a skeleton pirate: bone white, dark eye sockets with a green glint, a toothy jaw, ribs through a torn shirt
+      const boneC = C('#efe8d4'), hole = C('#14101a');
+      for (const p of m.parts) if (p.col === skin) p.col = boneC;
+      m.parts = m.parts.filter(p => !(p.bone === 2 && p.c && p.c[2] > hd[2] + 0.12) && !(p.s === 'tor' && p.ax === 'z' && p.col === patch) && !(p.bone === 1 && p.col === stripe));
+      for (const sx of [1, -1]) { m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.062, hd[1] + 0.01, hd[2] + 0.12], r: 0.05, col: hole, bone: 2, k: 0.01 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.062, hd[1] + 0.01, hd[2] + 0.155], r: 0.018, col: C('#7affa8'), bone: 2, k: 0 }); }
+      m.parts.push({ s: 'sph', c: [hd[0], hd[1] - 0.045, hd[2] + 0.15], r: 0.022, col: hole, bone: 2, k: 0 });
+      m.parts.push({ s: 'box', c: [hd[0], hd[1] - 0.1, hd[2] + 0.13], hs: [0.07, 0.025, 0.02], rd: 0.01, col: hole, bone: 2, k: 0 });
+      for (let i = 0; i < 4; i++) m.parts.push({ s: 'box', c: [hd[0] - 0.045 + i * 0.03, hd[1] - 0.1, hd[2] + 0.148], hs: [0.011, 0.018, 0.006], rd: 0.003, col: boneC, bone: 2, k: 0 });
+      for (const p of m.parts) if (p.bone === 1 && p.col === shirt) p.col = C('#3a3438');
+      for (let i = 0; i < 3; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.hipY + 0.12 + i * 0.065, 0], R: 0.112, r: 0.012, a0: -0.4, a1: Math.PI + 0.4, col: boneC, bone: 1, k: 0 });
+    }
+    if (o.balloon) {
+      // a sky pirate hanging under a big balloon (it takes the tint) by two ropes, arms up holding on
+      const top = STICK.headY + 1.15;
+      m.parts.push({ s: 'sph', c: [0, top + 0.35, 0], r: 0.5, bone: 0, k: 0 });
+      m.parts.push({ s: 'ell', c: [-0.17, top + 0.55, 0.32], rr: [0.11, 0.15, 0.05], col: C('#ffffff'), bone: 0, k: 0.04 });
+      m.parts.push({ s: 'cap', a: [0, top - 0.12, 0], b: [0, top - 0.21, 0], r: 0.06, r2: 0.03, bone: 0, k: 0.02 });
+      for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [sx * 0.14, STICK.headY + 0.42, 0.02], b: [0, top - 0.19, 0], r: 0.008, col: C('#f4ecdc'), bone: 0, k: 0 });
+    }
+    if (o.skin) for (const p of m.parts) if (p.col === skin) p.col = o.skin;
     return m;
   };
-  for (const [name, o] of [['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
+  for (const [name, o] of [['pweed', { weed: true }], ['pmer', { mer: true, hat: 'crown', skin: C('#8ad8d0') }], ['pblink', { hat: 'pilot' }], ['pskel', { skel: true }], ['pballoon', { balloon: true, full: true }], ['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
     ['pbomb', { keg: true }], ['pparka', { hat: 'parka' }], ['pmusket', { hat: 'tricorn', musket: true, full: true }], ['pcapt', { hat: 'tricorn', big: true, coat: true, cutlass: true, full: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
 
   // ---------- the Homing Cannon: an iron barrel with brass bands on a little wheeled carriage, facing +z ----------
@@ -9634,14 +10108,14 @@ function seaModels(defs) {
 
 // ---- 04l-ship-models.js ----
 // ============================================================
-// The six ships after the raft (see SHIPS in 13k-ocean.js), at world scale: +z the bow, y = 0 the waterline.
+// The nine ships after the raft (see SHIPS in 13k-ocean.js), at world scale: +z the bow, y = 0 the waterline.
 // Each has a hull mesh (rocking clip), three pieces it breaks into when it sinks (carved from the same parts),
 // and the tall pirate ships keep their masts and sails in a separate rig mesh, so it can fade while it stands
 // between the camera and the blob.
 // ============================================================
-const SHIP_IDS = ['canoe', 'sloop', 'galleon', 'yacht', 'cruise', 'cargo'];
-const SHIP_RIGS = ['sloop', 'galleon'];
-const SHIP_CELL = { canoe: 0.026, sloop: 0.036, galleon: 0.042, yacht: 0.05, cruise: 0.062, cargo: 0.068 };
+const SHIP_IDS = ['canoe', 'sloop', 'galleon', 'yacht', 'cruise', 'cargo', 'battleship', 'carrier', 'ark'];
+const SHIP_RIGS = ['sloop', 'galleon', 'ark'];
+const SHIP_CELL = { canoe: 0.026, sloop: 0.036, galleon: 0.042, yacht: 0.05, cruise: 0.062, cargo: 0.068, battleship: 0.072, carrier: 0.08, ark: 0.078 };
 for (const id of SHIP_IDS) {
   THEME_CLIPS[id] = ['rock'];
   THEME_CELLS[id] = SHIP_CELL[id];
@@ -9684,7 +10158,8 @@ function shipModels(defs) {
         { s: 'ell', c: [0, y, L * 0.32], rr: [W * 0.74 * f2 + 0.015, h, L * 0.68 * f2 + 0.015], col, k: 0 }]; }),
       { s: 'box', c: [0, o.top + 3, 0], hs: [W + 2, 3, L + 2], sub: true, k: 0 },
       { s: 'ell', c: [0, o.top, -L * 0.1], rr: [W - 0.06, 0.035, L * 0.9 - 0.06], col: o.deck, k: 0 },
-      { s: 'ell', c: [0, o.top, L * 0.32], rr: [W * 0.74 - 0.06, 0.035, L * 0.68 - 0.06], col: o.deck, k: W * 0.3 },
+      // (no blend: thin flat shapes have a poor distance estimate off their plane, and a blend smears them out wide)
+      { s: 'ell', c: [0, o.top, L * 0.32], rr: [W * 0.74 - 0.06, 0.035, L * 0.68 - 0.06], col: o.deck, k: 0 },
     ];
     return p;
   };
@@ -9922,6 +10397,120 @@ function shipModels(defs) {
       ...[-0.6, 0.6].map(x => ({ s: 'cyl', ax: 'y', c: [x, 1.55, 6.2], r: 0.12, hh: 0.15, rd: 0.04, col: C('#1e2230'), k: 0 })),
     ];
     ship('cargo', p, 7.25, -2.4, 2.4, { piv: 1.0, ao: 0.4 });
+  }
+
+  // ---------- the battleship: a long grey hull with a red waterline, three twin-gun turrets (the second raised to
+  // fire over the first), a stepped bridge tower with a radar mast, a funnel, and little guns along the sides ----------
+  {
+    const o = { len: 16.5, wid: 3.7, top: 1.5, bot: -0.3, col: C('#7a8494'), deck: C('#b0956a'), bands: [[0.1, 0.25, C('#a8282c')], [1.3, 0.05, C('#5a6270')]] };
+    const grey = C('#8a94a4'), greyD = C('#5a6270'), greyL = C('#b4bcc8');
+    const turret = (z, y, back) => { const d = back ? -1 : 1; return [
+      { s: 'cyl', ax: 'y', c: [0, y + 0.12, z], r: 0.95, hh: 0.14, rd: 0.05, col: greyD, k: 0 },
+      { s: 'box', c: [0, y + 0.5, z - d * 0.15], hs: [0.85, 0.32, 0.95], rd: 0.3, col: grey, k: 0 },
+      { s: 'box', c: [0, y + 0.82, z - d * 0.15], hs: [0.7, 0.04, 0.75], rd: 0.04, col: greyL, k: 0 },
+      ...[-0.32, 0.32].map(x => ({ s: 'cap', a: [x, y + 0.55, z + d * 0.7], b: [x, y + 0.62, z + d * 2.6], r: 0.11, r2: 0.09, col: greyD, k: 0 }))]; };
+    const p = [
+      ...hull(o),
+      ...rail(o, 1.5, 0.2, 0.04, C('#d8dce2'), false),
+      // teak planking lines down the deck
+      ...[-1.2, -0.6, 0.6, 1.2].map(x => ({ s: 'box', c: [x, 1.53, -0.3], hs: [0.012, 0.008, 6.2], rd: 0.005, col: C('#8a7048'), k: 0 })),
+      ...turret(6.0, 1.5, false), ...turret(4.3, 2.0, false), { s: 'box', c: [0, 1.75, 4.3], hs: [1.0, 0.25, 1.0], rd: 0.15, col: grey, k: 0 },
+      ...turret(-5.4, 1.5, true),
+      // the bridge: three stepped blocks, a window band, the radar mast and its dishes
+      { s: 'box', c: [0, 2.15, 0.6], hs: [1.5, 0.65, 1.5], rd: 0.18, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.15, 0.4], hs: [1.15, 0.4, 1.1], rd: 0.15, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.75, 0.5], hs: [0.85, 0.24, 0.75], rd: 0.12, col: greyL, k: 0 },
+      { s: 'box', c: [0, 3.8, 1.25], hs: [0.78, 0.08, 0.02], rd: 0.02, col: C('#1a2638'), k: 0 },
+      { s: 'cap', a: [0, 4.0, 0.2], b: [0, 6.2, 0.2], r: 0.1, r2: 0.06, col: greyD, k: 0 },
+      { s: 'cap', a: [-0.7, 5.4, 0.2], b: [0.7, 5.4, 0.2], r: 0.05, col: greyD, k: 0 },
+      { s: 'ell', c: [0, 5.85, 0.35], rr: [0.45, 0.25, 0.08], col: greyL, k: 0 },
+      { s: 'sph', c: [0, 6.3, 0.2], r: 0.12, col: C('#ff4a3a'), k: 0 },
+      // the funnel
+      { s: 'box', c: [0, 2.8, -1.8], hs: [0.6, 1.1, 0.75], rd: 0.3, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.95, -1.85], hs: [0.55, 0.12, 0.7], rd: 0.12, col: C('#2a2e38'), k: 0 },
+      // small guns down each side, lifeboats, the anchor chain and a flag at the stern
+      ...[-1, 1].flatMap(sx => [-3.2, -2.4, 2.4].map(z => ({ s: 'cap', a: [sx * 1.4, 1.75, z], b: [sx * 1.75, 1.9, z + 0.5], r: 0.06, col: greyD, k: 0 }))),
+      ...[-1, 1].map(sx => ({ s: 'cap', a: [sx * 1.25, 2.95, -0.6], b: [sx * 1.25, 2.95, 0.8], r: 0.2, col: C('#e8ecf0'), k: 0 })),
+      { s: 'cap', a: [0, 1.6, -7.6], b: [0, 2.8, -7.6], r: 0.04, col: greyD, k: 0 }, { s: 'box', c: [0, 2.6, -7.95], hs: [0.02, 0.18, 0.32], rd: 0.01, col: C('#2a5ad8'), k: 0 },
+    ];
+    ship('battleship', p, 8.25, -2.7, 2.7, { piv: 1.0, ao: 0.4 });
+  }
+
+  // ---------- the aircraft carrier: a wide grey flight deck with runway markings, the island tower to starboard,
+  // jets parked along the edge and a helicopter on its pad ----------
+  {
+    const o = { len: 19, wid: 4.6, top: 2.2, bot: -0.3, col: C('#6a7280'), deck: C('#4a4e56'), bands: [[0.1, 0.3, C('#a8282c')]] };
+    const deckC = C('#4a4e56'), line = C('#f4f4f0'), yel = C('#ffd34a'), grey = C('#8a94a4'), greyD = C('#5a6270');
+    const jet = (x, z, yaw) => { const c = Math.cos(yaw), s2 = Math.sin(yaw), at = (u, v, h) => [x + c * u + s2 * v, 3.0 + h, z - s2 * u + c * v]; return [
+      { s: 'cap', a: at(0, -0.9, 0.18), b: at(0, 0.9, 0.18), r: 0.17, r2: 0.1, col: C('#9aa6b8'), k: 0 },
+      { s: 'cap', a: at(-1.0, -0.2, 0.15), b: at(1.0, -0.2, 0.15), r: 0.06, col: C('#8a96a8'), k: 0.05 },
+      { s: 'cap', a: at(-0.45, -0.85, 0.2), b: at(0.45, -0.85, 0.2), r: 0.04, col: C('#8a96a8'), k: 0.03 },
+      { s: 'cap', a: at(0, -0.85, 0.2), b: at(0, -0.75, 0.6), r: 0.05, r2: 0.03, col: C('#8a96a8'), k: 0.03 },
+      { s: 'ell', c: at(0, 0.45, 0.3), rr: [0.1, 0.08, 0.22], col: C('#2a4a7a'), k: 0 }]; };
+    const p = [
+      ...hull(o),
+      // the flight deck: an overhanging slab, angled at the front, edged in white, with a dashed center line
+      { s: 'box', c: [0.3, 2.65, 0], hs: [2.9, 0.22, 9.4], rd: 0.15, col: deckC, k: 0 },
+      { s: 'box', c: [0, 2.65, 9.4], hs: [2.0, 0.22, 0.8], rd: 0.4, col: deckC, k: 0 },
+      ...[-1, 1].map(sx => ({ s: 'box', c: [0.3 + sx * 2.75, 2.88, 0], hs: [0.05, 0.01, 9.2], rd: 0.01, col: line, k: 0 })),
+      ...Array.from({ length: 9 }, (_, i) => ({ s: 'box', c: [0.6, 2.88, -8 + i * 2], hs: [0.06, 0.01, 0.55], rd: 0.01, col: line, k: 0 })),
+      { s: 'box', c: [0.6, 2.88, 8.6], hs: [0.9, 0.01, 0.06], rd: 0.01, col: yel, k: 0 },
+      // the island tower to starboard (-x): a block, a bridge with windows, a mast with radar
+      { s: 'box', c: [-2.35, 4.0, -2.0], hs: [0.6, 1.2, 1.9], rd: 0.15, col: grey, k: 0 },
+      { s: 'box', c: [-2.35, 5.35, -1.8], hs: [0.55, 0.3, 1.3], rd: 0.12, col: grey, k: 0 },
+      { s: 'box', c: [-1.78, 5.4, -1.8], hs: [0.02, 0.09, 1.1], rd: 0.02, col: C('#1a2638'), k: 0 },
+      { s: 'cap', a: [-2.35, 5.6, -1.6], b: [-2.35, 7.3, -1.6], r: 0.09, r2: 0.05, col: greyD, k: 0 },
+      { s: 'ell', c: [-2.35, 6.9, -1.5], rr: [0.5, 0.22, 0.08], col: C('#c8d0da'), k: 0 },
+      { s: 'box', c: [-2.35, 4.4, -0.05], hs: [0.5, 0.06, 0.02], rd: 0.01, col: C('#ffffff'), k: 0 },
+      // jets parked along the port edge and at the stern; a helicopter on a marked pad
+      ...jet(2.2, 5.5, -2.3), ...jet(2.2, 2.8, -2.3), ...jet(2.2, 0.1, -2.3), ...jet(0.6, -6.8, 3.14), ...jet(-1.2, -7.4, 3.14),
+      { s: 'tor', ax: 'y', c: [1.6, 2.88, -3.6], R: 0.8, r: 0.04, a0: -Math.PI, a1: Math.PI, col: yel, k: 0 },
+      { s: 'ell', c: [1.6, 3.35, -3.6], rr: [0.35, 0.3, 0.55], col: C('#3a5a3a'), k: 0 },
+      { s: 'cap', a: [1.6, 3.35, -4.1], b: [1.6, 3.5, -5.0], r: 0.08, r2: 0.04, col: C('#3a5a3a'), k: 0 },
+      { s: 'cap', a: [0.5, 3.75, -3.6], b: [2.7, 3.75, -3.6], r: 0.03, col: C('#2a2e38'), k: 0 },
+      { s: 'cap', a: [1.6, 3.75, -4.7], b: [1.6, 3.75, -2.5], r: 0.03, col: C('#2a2e38'), k: 0 },
+    ];
+    ship('carrier', p, 9.5, -3.1, 3.1, { piv: 1.2, ao: 0.35 });
+  }
+
+  // ---------- the Golden Ark: a great ivory-and-gold ship of legend: gilded bands, a temple cabin with columns
+  // and a golden dome, gem lanterns, an angel figurehead; three masts with white and gold sails (rig mesh) ----------
+  {
+    const o = { len: 21, wid: 5.6, top: 2.0, bot: -0.3, col: C('#f4ecd6'), deck: C('#d8b878'), bands: [[1.75, 0.09, gold], [1.1, 0.16, C('#e0a830')], [0.3, 0.12, C('#2a8ad8')]] };
+    const ivory = C('#f8f0dc'), gem = C('#3ad8f0'), gemR = C('#ff4a7a');
+    const p = [
+      ...hull(o),
+      ...rail(o, 2.0, 0.32, 0.07, gold),
+      // the temple cabin at the stern: a plinth, columns, a frieze and a golden dome with a spire
+      { s: 'box', c: [0, 2.3, -5.6], hs: [2.0, 0.3, 2.4], rd: 0.12, col: ivory, k: 0 },
+      ...[-1.6, -0.55, 0.55, 1.6].flatMap(x => [-7.6, -3.6].map(z => ({ s: 'cyl', ax: 'y', c: [x, 3.35, z], r: 0.2, hh: 0.8, rd: 0.05, col: ivory, k: 0 }))),
+      { s: 'box', c: [0, 3.0, -5.6], hs: [1.5, 0.7, 1.7], rd: 0.1, col: C('#f0e4c4'), k: 0 },
+      { s: 'box', c: [0, 4.25, -5.6], hs: [2.0, 0.18, 2.3], rd: 0.06, col: gold, k: 0 },
+      { s: 'sph', c: [0, 4.6, -5.6], r: 1.35, col: C('#f2c440'), k: 0 }, { s: 'box', c: [0, 3.8, -5.6], hs: [2, 0.6, 2], sub: true, k: 0 },
+      { s: 'cap', a: [0, 5.8, -5.6], b: [0, 6.8, -5.6], r: 0.08, r2: 0.03, col: gold, k: 0 }, { s: 'sph', c: [0, 6.9, -5.6], r: 0.16, col: gem, k: 0 },
+      // gem lanterns down both rails, a golden prow and the angel figurehead with spread wings
+      ...[-1, 1].flatMap(sx => [-2, 1.5, 5].flatMap(z => { const w = 2.75 * Math.sqrt(Math.max(0, 1 - ((z + 1.0) / 9.5) ** 2)); return [
+        { s: 'cap', a: [sx * w * 0.95, 2.0, z], b: [sx * w * 0.95, 2.7, z], r: 0.05, col: gold, k: 0 }, { s: 'sph', c: [sx * w * 0.95, 2.8, z], r: 0.14, col: sx > 0 ? gem : gemR, k: 0 }]; })),
+      { s: 'cap', a: [0, 1.9, 9.6], b: [0, 2.7, 11.1], r: 0.22, r2: 0.12, col: gold, k: 0 },
+      { s: 'sph', c: [0, 2.95, 11.0], r: 0.24, col: C('#fff4dc'), k: 0 },
+      { s: 'cap', a: [0, 2.7, 10.85], b: [0, 2.1, 10.5], r: 0.22, r2: 0.3, col: C('#fff4dc'), k: 0.1 },
+      ...[-1, 1].map(sx => ({ s: 'ell', c: [sx * 0.55, 2.75, 10.4], rr: [0.6, 0.35, 0.12], col: gold, k: 0.05 })),
+      { s: 'tor', ax: 'y', c: [0, 3.3, 11.0], R: 0.2, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#ffe86a'), k: 0 },
+    ];
+    ship('ark', p, 10.5, -3.4, 3.4, { piv: 1.0, ao: 0.4 });
+    const sailW = C('#fffaf0'), mastG = C('#c8962a');
+    const sail = (z, y, w, h) => [
+      { s: 'cap', a: [-w - 0.15, y + h + 0.12, z], b: [w + 0.15, y + h + 0.12, z], r: 0.07, col: mastG, k: 0 },
+      { s: 'ell', c: [0, y, z], rr: [w, h, 0.4], col: sailW, k: 0 }, { s: 'ell', c: [0, y, z - 0.06], rr: [w, h, 0.36], sub: true, k: 0 },
+      { s: 'box', c: [0, y, z - 0.4], hs: [4, 4, 0.4], sub: true, k: 0 },
+      { s: 'ell', c: [0, y + h * 0.1, z + 0.36], rr: [w * 0.32, w * 0.32, 0.06], col: C('#f2c440'), k: 0 }];
+    rigMesh('ark_rig', [
+      ...[[5.2, 7.2], [0.8, 8.4], [-2.4, 6.8]].flatMap(([z, h]) => [{ s: 'cap', a: [0, 2.0, z], b: [0, h, z], r: 0.16, r2: 0.1, col: mastG, k: 0 }, { s: 'sph', c: [0, h + 0.1, z], r: 0.2, col: gold, k: 0 }]),
+      ...sail(5.2, 4.6, 1.9, 1.5), ...sail(0.8, 5.4, 2.3, 1.9), ...sail(-2.4, 4.4, 1.8, 1.4),
+      { s: 'box', c: [0, 8.6, 0.45], hs: [0.03, 0.3, 0.55], rd: 0.02, col: C('#2a8ad8'), k: 0 },
+      { s: 'cap', a: [0, 8.3, 0.8], b: [0, 2.6, 10.6], r: 0.05, col: gold, k: 0 },
+      { s: 'cap', a: [0, 8.3, 0.8], b: [0, 4.5, -7.6], r: 0.05, col: gold, k: 0 },
+    ], 10.5);
   }
 }
 
@@ -10269,26 +10858,286 @@ function seaBossModels(defs) {
       ...[-1, 1].flatMap(sx => [-2.2, -1.0, 0.2, 1.4].map(z => ({ s: 'sph', c: [sx * 1.62 * Math.sqrt(Math.max(0, 1 - ((z + 0.2) / 3.9) ** 2)), 0.75, z], r: 0.07, col: C('#c8d0da'), k: 0 }))),
     ]);
   }
-  // 9. the Kraken: a great purple head with big eyes and eight tentacles (bones 3-10), the rider on top
+  // 9. the Kraken: a great mottled purple mantle, a pale underbelly, angry yellow eyes under heavy brows, a hooked
+  // beak, and eight tentacles (bones 3-10) that rise and curl at the tips, lined with suckers; the rider on top
   {
-    const pur = C('#8a4ab8'), purL = C('#c890f0'), suck = C('#f0c8ff');
+    const pur = C('#6a2a98'), purD = C('#4a1a70'), purL = C('#9a52d0'), under = C('#e2a8f0'), suck = C('#ffd8f0'), eyeY = C('#ffd34a');
     const parts = [
-      { s: 'ell', c: [0, 0.4, 0], rr: [2.0, 1.4, 1.9], col: pur, k: 0 },
-      { s: 'ell', c: [0, 1.5, -0.4], rr: [1.4, 1.2, 1.3], col: pur, k: 0.5 },
-      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.85, 1.0, 1.55], r: 0.42, col: white, k: 0 }, { s: 'sph', c: [sx * 0.85, 1.0, 1.9], r: 0.2, col: dark, k: 0 }]),
-      { s: 'ell', c: [0, 0.35, 1.75], rr: [0.6, 0.12, 0.18], col: C('#5a1a40'), k: 0.03 },
-      ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6) * TAU; return { s: 'sph', c: [Math.cos(a) * 1.2, 1.6 + Math.sin(a) * 0.3, -0.4 + Math.sin(a) * 1.0], r: 0.14, col: purL, k: 0 }; }),
+      { s: 'ell', c: [0, 0.4, 0], rr: [2.0, 1.3, 1.9], col: pur, k: 0 },
+      { s: 'ell', c: [0, 1.6, -0.5], rr: [1.5, 1.5, 1.45], col: pur, k: 0.5 },
+      { s: 'ell', c: [0, 2.7, -1.1], rr: [1.05, 1.0, 1.05], col: purL, k: 0.6 },
+      { s: 'ell', c: [0, 0.15, 0.6], rr: [1.55, 0.42, 1.3], col: under, k: 0.35 },
+      // mottled spots on the mantle
+      ...Array.from({ length: 11 }, (_, i) => { const a = i * 2.3, h = 1.2 + (i % 4) * 0.45, rr = 1.45 - (h - 1.2) * 0.25; return { s: 'sph', c: [Math.cos(a) * rr, h, -0.5 + Math.sin(a) * rr * 0.95], r: 0.12 + (i % 3) * 0.05, col: purD, k: 0.05 }; }),
+      // heavy brows, big yellow eyes with slit pupils
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.35, 1.55, 1.45], b: [sx * 1.25, 1.35, 1.3], r: 0.2, col: purD, k: 0.15 },
+        { s: 'sph', c: [sx * 0.82, 1.02, 1.55], r: 0.42, col: white, k: 0 },
+        { s: 'sph', c: [sx * 0.84, 1.02, 1.78], r: 0.27, col: eyeY, k: 0 },
+        { s: 'ell', c: [sx * 0.85, 1.02, 1.98], rr: [0.05, 0.2, 0.06], col: dark, k: 0 },
+        { s: 'sph', c: [sx * 0.74, 1.14, 1.92], r: 0.06, col: white, k: 0 }]),
+      // the beak
+      { s: 'cap', a: [0, 0.55, 1.75], b: [0, 0.25, 2.1], r: 0.2, r2: 0.05, col: C('#3a3040'), k: 0.03 },
+      { s: 'cap', a: [0, 0.2, 1.8], b: [0, 0.3, 2.05], r: 0.13, r2: 0.04, col: C('#2a2030'), k: 0.03 },
     ];
     const piv = [];
     for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * TAU + 0.2, bx = Math.cos(a) * 1.7, bz = Math.sin(a) * 1.6, b = 3 + i, ex = Math.cos(a) * 4.0, ez = Math.sin(a) * 3.8;
-      piv.push([b, [bx, 0.1, bz]]);
-      parts.push({ s: 'cap', a: [bx, 0.1, bz], b: [(bx + ex) / 2, 0.6, (bz + ez) / 2], r: 0.42, r2: 0.3, col: pur, bone: b, k: 0.15 });
-      parts.push({ s: 'cap', a: [(bx + ex) / 2, 0.6, (bz + ez) / 2], b: [ex, 1.4, ez], r: 0.3, r2: 0.1, col: pur, bone: b, k: 0.1 });
-      parts.push({ s: 'sph', c: [(bx + ex) / 2, 0.42, (bz + ez) / 2], r: 0.12, col: suck, bone: b, k: 0 });
+      const a = (i / 8) * TAU + 0.2, b = 3 + i, ca = Math.cos(a), sa = Math.sin(a);
+      const p0 = [ca * 1.7, 0.1, sa * 1.6], p1 = [ca * 2.9, 0.55, sa * 2.75], p2 = [ca * 3.9, 1.5, sa * 3.7], p3 = [ca * 3.7 - sa * 0.5, 2.2, sa * 3.5 + ca * 0.5];
+      piv.push([b, p0]);
+      parts.push({ s: 'cap', a: p0, b: p1, r: 0.46, r2: 0.34, col: pur, bone: b, k: 0.15 });
+      parts.push({ s: 'cap', a: p1, b: p2, r: 0.34, r2: 0.2, col: pur, bone: b, k: 0.1 });
+      parts.push({ s: 'cap', a: p2, b: p3, r: 0.2, r2: 0.07, col: purL, bone: b, k: 0.08 });
+      // suckers along the inner side, biggest near the body
+      for (let j = 0; j < 4; j++) {
+        const u = (j + 0.5) / 4, A = j < 2 ? p0 : p1, B = j < 2 ? p1 : p2, v = (u * 4) % 2 / 2 + 0.25;
+        const c = [A[0] + (B[0] - A[0]) * v, A[1] + (B[1] - A[1]) * v - 0.22 + j * 0.03, A[2] + (B[2] - A[2]) * v];
+        parts.push({ s: 'sph', c, r: 0.13 - j * 0.02, col: suck, bone: b, k: 0 });
+      }
     }
     const m = P('bkraken', parts);
     for (const [b, p] of piv) m.bones[b].p = p;
+  }
+}
+
+// ---- 04o-sea-deep-models.js ----
+// ============================================================
+// Ocean chapters 11-20 (13o-sea-deep.js): the new swimmers that are not goo pirates (glowing jellyfish, gummy
+// bears, anglerfish), and the ten new islands plus the Atlantis column that bursts up out of the sea.
+// The goo-pirate variants (weed-tangled, merfolk, lost pilots, skeletons, balloon pirates) are in 04k's pirate().
+// Islands are radius 4 at scale 1 and drawn at radius / 4, like the others.
+// ============================================================
+const SEA_DEEP_FOLK = ['pweed', 'pmer', 'pblink', 'pskel', 'pballoon', 'pjelly', 'pgummy', 'pangler'];
+const SEA_DEEP_ISLES = ['iglow', 'iweed', 'istack', 'iruin', 'icandy', 'itri', 'isky', 'ibones', 'ilocker', 'iedge', 'icol'];
+Object.assign(THEME_CLIPS, { pweed: ['paddle', 'hack'], pmer: ['paddle', 'hack', 'throw'], pblink: ['paddle', 'hack'], pskel: ['paddle', 'hack'], pballoon: ['hang'], pjelly: ['jpulse'], pgummy: ['gbob'], pangler: ['aswim'] });
+for (const id of SEA_DEEP_FOLK) THEME_CELLS[id] = 0.017;
+for (const id of SEA_DEEP_ISLES) { THEME_CLIPS[id] = ['still']; THEME_CELLS[id] = 0.1; }
+MESH_ORDER.push(...SEA_DEEP_FOLK, ...SEA_DEEP_ISLES);
+
+// hanging from a balloon: arms up on the ropes, legs dangling and swinging a little
+CLIPS.hang = { frames: 32, fn(t) {
+  const a = t * TAU, s = Math.sin(a), c = Math.cos(a);
+  return { root: [0, 0.04 * Math.sin(2 * a), 0], rot: [
+    [0.1 * s, 0, 0.06 * c], [0.05, 0, 0], [-0.15, 0, 0],
+    [-2.85, 0, 0.35], [-0.2, 0, 0], [-2.85, 0, -0.35], [-0.2, 0, 0],
+    [0.25 * s, 0, 0.08], [0.4 + 0.2 * c, 0, 0], [-0.25 * s, 0, -0.08], [0.4 - 0.2 * c, 0, 0],
+  ] };
+} };
+// a jellyfish: the bell bobs while the tentacles (bones 3-8) trail and sway
+CLIPS.jpulse = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0.05 * Math.sin(a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b >= 3 && b <= 8 ? [0.3 * Math.sin(a + b * 1.1), 0, 0.22 * Math.cos(a + b * 0.7)] : [0, 0, 0])) };
+} };
+// a gummy bear treading water: a bounce, the arms (bones 3, 5) paddling
+CLIPS.gbob = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0.04 * Math.sin(2 * a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 3 ? [-0.6 + 0.5 * Math.sin(a), 0, 0] : b === 5 ? [-0.6 - 0.5 * Math.sin(a), 0, 0] : b === 0 ? [0, 0, 0.08 * Math.sin(a)] : [0, 0, 0])) };
+} };
+// an anglerfish swimming: the tail (bone 3) sweeps, the lure (bone 4) bobs
+CLIPS.aswim = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0.03 * Math.sin(a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 3 ? [0, 0.55 * Math.sin(a), 0] : b === 4 ? [0.15 * Math.sin(2 * a), 0, 0.1 * Math.cos(a)] : b === 0 ? [0, 0.08 * Math.sin(a + 1), 0] : [0, 0, 0])) };
+} };
+
+function seaDeepModels(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const white = C('#fbf6ee'), dark = C('#16101a');
+
+  // ---------- the glowing jellyfish: a domed bell (it takes the tint), a bright core, a frilled rim, trailing
+  // tentacles (bones 3-8) and four frilly oral arms ----------
+  {
+    const parts = [
+      { s: 'ell', c: [0, 0.42, 0], rr: [0.46, 0.34, 0.46], k: 0 }, { s: 'ell', c: [0, 0.3, 0], rr: [0.38, 0.22, 0.38], sub: true, k: 0.02 },
+      { s: 'ell', c: [0, 0.5, 0], rr: [0.22, 0.17, 0.22], col: C('#f0fff8'), k: 0.08 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = i / 10 * TAU; return { s: 'sph', c: [Math.cos(a) * 0.43, 0.24, Math.sin(a) * 0.43], r: 0.065, col: C('#c8fff0'), k: 0.03 }; }),
+      ...Array.from({ length: 6 }, (_, i) => { const a = i / 6 * TAU + 0.3, b = 3 + i; return { s: 'cap', a: [Math.cos(a) * 0.32, 0.22, Math.sin(a) * 0.32], b: [Math.cos(a) * 0.38, -0.55, Math.sin(a) * 0.38], r: 0.025, r2: 0.01, col: C('#b8fff0'), bone: b, k: 0 }; }),
+      ...Array.from({ length: 4 }, (_, i) => { const a = i / 4 * TAU; return { s: 'cap', a: [Math.cos(a) * 0.08, 0.25, Math.sin(a) * 0.08], b: [Math.cos(a) * 0.15, -0.3, Math.sin(a) * 0.15], r: 0.05, r2: 0.025, col: C('#e8fff8'), k: 0.03 }; }),
+    ];
+    const m = P('pjelly', parts, { ao: 0.3 });
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + 0.3; m.bones[3 + i].p = [Math.cos(a) * 0.32, 0.22, Math.sin(a) * 0.32]; }
+  }
+  // ---------- the gummy bear: a chunky translucent-candy bear (it takes the tint) with round ears, a muzzle,
+  // dot eyes and stubby arms (bones 3, 5) ----------
+  {
+    const parts = [
+      { s: 'ell', c: [0, 0.45, 0], rr: [0.3, 0.36, 0.26], k: 0 },
+      { s: 'ell', c: [0, 0.42, 0.18], rr: [0.18, 0.2, 0.1], k: 0.08 },
+      { s: 'sph', c: [0, 0.93, 0], r: 0.25, k: 0.08 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.17, 1.13, -0.02], r: 0.09, k: 0.04 })),
+      { s: 'ell', c: [0, 0.86, 0.2], rr: [0.11, 0.08, 0.08], k: 0.04 },
+      { s: 'sph', c: [0, 0.89, 0.27], r: 0.035, col: dark, k: 0 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.09, 0.98, 0.21], r: 0.032, col: dark, k: 0 })),
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.08, 1.0, 0.235], r: 0.01, col: white, k: 0 })),
+      { s: 'cap', a: [0.26, 0.6, 0.02], b: [0.36, 0.42, 0.18], r: 0.08, bone: 3, k: 0.04 },
+      { s: 'cap', a: [-0.26, 0.6, 0.02], b: [-0.36, 0.42, 0.18], r: 0.08, bone: 5, k: 0.04 },
+    ];
+    const m = P('pgummy', parts, { ao: 0.25 });
+    m.bones[3].p = [0.26, 0.6, 0.02]; m.bones[5].p = [-0.26, 0.6, 0.02];
+  }
+  // ---------- the anglerfish: a dark lumpy body (it takes the tint), a huge underbite full of needle teeth,
+  // little yellow eyes, fins, a sweeping tail (bone 3) and a glowing lure on a stalk (bone 4) ----------
+  {
+    const teeth = C('#f4f0e0'), lure = C('#e8ff7a');
+    const parts = [
+      { s: 'ell', c: [0, 0.32, 0], rr: [0.42, 0.38, 0.55], k: 0 },
+      { s: 'ell', c: [0, 0.3, 0.42], rr: [0.36, 0.3, 0.2], col: C('#1a1424'), sub: true, k: 0.04 },
+      { s: 'ell', c: [0, 0.16, 0.44], rr: [0.38, 0.16, 0.24], k: 0.06 },
+      ...Array.from({ length: 7 }, (_, i) => { const x = -0.27 + i * 0.09; return { s: 'cap', a: [x, 0.2, 0.55], b: [x * 1.05, 0.38, 0.6], r: 0.02, r2: 0.004, col: teeth, k: 0 }; }),
+      ...Array.from({ length: 6 }, (_, i) => { const x = -0.22 + i * 0.09; return { s: 'cap', a: [x, 0.46, 0.5], b: [x, 0.33, 0.55], r: 0.017, r2: 0.004, col: teeth, k: 0 }; }),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.2, 0.55, 0.32], r: 0.065, col: C('#ffd34a'), k: 0 }, { s: 'sph', c: [sx * 0.21, 0.56, 0.38], r: 0.03, col: dark, k: 0 }]),
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.42, 0.25, 0.05], rr: [0.04, 0.12, 0.18], k: 0.04 })),
+      { s: 'ell', c: [0, 0.68, -0.15], rr: [0.03, 0.12, 0.22], k: 0.05 },
+      { s: 'cap', a: [0, 0.3, -0.5], b: [0, 0.32, -0.78], r: 0.12, r2: 0.05, bone: 3, k: 0.06 },
+      { s: 'ell', c: [0, 0.32, -0.88], rr: [0.03, 0.2, 0.12], bone: 3, k: 0.03 },
+      { s: 'cap', a: [0, 0.66, 0.15], b: [0, 1.0, 0.4], r: 0.022, col: C('#3a3448'), bone: 4, k: 0.02 },
+      { s: 'cap', a: [0, 1.0, 0.4], b: [0, 0.92, 0.66], r: 0.018, col: C('#3a3448'), bone: 4, k: 0.02 },
+      { s: 'sph', c: [0, 0.86, 0.7], r: 0.085, col: lure, bone: 4, k: 0 },
+    ];
+    const m = P('pangler', parts, { ao: 0.4 });
+    m.bones[3].p = [0, 0.3, -0.5]; m.bones[4].p = [0, 0.66, 0.15];
+  }
+
+  // ---------- islands ----------
+  const rockMass = (seed, R, H, col, col2, bump = 0.05) => {
+    const out = [{ s: 'rock', c: [0, H - R * 1.05, 0], r: R * 1.05, bump, col, k: 0.6 }];
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * TAU + seed, d = R * (0.95 + 0.25 * ((i * 7 + seed) % 3) / 2), r = R * (0.5 + 0.15 * ((i * 5 + seed) % 4) / 3);
+      out.push({ s: 'rock', c: [Math.cos(a) * d, H * 0.55 - r * 0.9, Math.sin(a) * d], r, bump: bump * 1.2, col: i % 2 ? col2 : col, k: 0.55 });
+    }
+    return out;
+  };
+  const shore = (col, h = 0.5) => ({ s: 'ell', c: [0, -0.2, 0], rr: [3.9, h, 3.9], col, k: 0.3 });
+  const pebbles = (n, R, col, seed) => Array.from({ length: n }, (_, i) => { const a = i / n * TAU + seed * 0.7, d = R * (0.85 + 0.15 * (i % 2)); return { s: 'crag', c: [Math.cos(a) * d, 0.05, Math.sin(a) * d], r: 0.32 + 0.12 * ((i + seed) % 3), seed: seed * 10 + i, n: 8, col, k: 0.08 }; });
+
+  // Glowtide Lagoon: a dark reef of rock under giant glowing mushrooms and coral fans, dots of light
+  {
+    const caps = [C('#5affe0'), C('#ff6ae0'), C('#c8ff5a'), C('#6ab8ff')];
+    const shroom = (x, z, h, r, col) => [{ s: 'cap', a: [x, 0.5, z], b: [x * 1.05, h, z * 1.05], r: r * 0.28, r2: r * 0.22, col: C('#e8f4f0'), k: 0.1 },
+      { s: 'ell', c: [x * 1.05, h + r * 0.15, z * 1.05], rr: [r, r * 0.45, r], col, k: 0.05 }, { s: 'ell', c: [x * 1.05, h - r * 0.05, z * 1.05], rr: [r * 0.9, r * 0.22, r * 0.9], col: C('#1a2a3a'), k: 0.02 }];
+    P('iglow', [shore(C('#1e2a38')), ...rockMass(31, 2.0, 0.9, C('#26323e'), C('#1e2832')),
+      ...shroom(0.3, -0.4, 3.0, 1.2, caps[0]), ...shroom(-1.6, 0.9, 2.0, 0.85, caps[1]), ...shroom(1.6, 1.2, 1.7, 0.7, caps[2]), ...shroom(-0.6, -2.0, 1.5, 0.6, caps[3]),
+      ...[[2.4, -1.2, caps[1]], [-2.6, -0.6, caps[0]], [0.4, 2.6, caps[3]]].map(([x, z, col]) => ({ s: 'ell', c: [x, 0.9, z], rr: [0.6, 0.65, 0.12], col, k: 0.05 })),
+      ...Array.from({ length: 14 }, (_, i) => { const a = i * 2.39, d = 1.2 + (i % 4) * 0.55; return { s: 'sph', c: [Math.cos(a) * d, 0.75 + (i % 3) * 0.12, Math.sin(a) * d], r: 0.09, col: caps[i % 4], k: 0 }; }),
+      ...pebbles(5, 3.2, C('#26323e'), 31)], { ao: 0.4 });
+  }
+  // Sargasso Snarl: a low sandbar smothered in mats of brown and green weed, a rotting hulk half sunk in it
+  {
+    const weedA = C('#5a6a2a'), weedB = C('#3a5a2a'), weedC = C('#7a6a3a'), rot = C('#4a3a28');
+    P('iweed', [shore(C('#6a6a4a'), 0.45),
+      ...[[0, 0, 3.2, 3.0, weedA], [1.2, -0.8, 2.0, 1.8, weedB], [-1.4, 1.0, 1.9, 1.6, weedC], [0.6, 1.8, 1.4, 1.2, weedB]].map(([x, z, rx, rz, col], i) => ({ s: 'ell', c: [x, 0.18 + i * 0.05, z], rr: [rx, 0.28, rz], col, k: 0.06 })),
+      ...Array.from({ length: 16 }, (_, i) => { const a = i * 2.39, d = 0.8 + (i % 5) * 0.55; return { s: 'cap', a: [Math.cos(a) * d, 0.35, Math.sin(a) * d], b: [Math.cos(a) * d + 0.3, 0.55 + (i % 3) * 0.15, Math.sin(a) * d - 0.2], r: 0.09, r2: 0.04, col: i % 2 ? weedB : weedA, k: 0.06 }; }),
+      // the hulk: a tilted hull with ribs, a snapped mast trailing weed
+      { s: 'ell', c: [-0.4, 0.5, -0.3], rr: [0.9, 0.7, 2.2], col: rot, k: 0 }, { s: 'box', c: [-0.4, 1.4, -0.3], hs: [2, 0.8, 3], sub: true, k: 0 },
+      { s: 'ell', c: [-0.4, 0.9, -0.3], rr: [0.7, 0.55, 1.9], sub: true, k: 0 },
+      ...[-1.2, -0.4, 0.4].map(z => ({ s: 'tor', ax: 'z', c: [-0.4, 0.6, -0.3 + z], R: 0.8, r: 0.06, a0: 0.25, a1: Math.PI - 0.25, col: C('#5a4630'), k: 0 })),
+      { s: 'cap', a: [-0.3, 0.7, 0.4], b: [0.6, 2.3, 1.0], r: 0.1, col: rot, k: 0 }, { s: 'cap', a: [0.6, 2.3, 1.0], b: [0.75, 1.4, 1.2], r: 0.05, col: weedB, k: 0.02 }], { ao: 0.45 });
+  }
+  // Maelstrom Reach: three tall sea stacks of banded sandstone with grassy tops, a natural arch between two
+  {
+    const sA = C('#b8865a'), sB = C('#9a6a48'), sC = C('#d4a476'), grass = C('#6aa84a');
+    const stack = (x, z, h, r) => [...Array.from({ length: Math.round(h / 0.8) }, (_, i) => ({ s: 'rock', c: [x + Math.sin(i * 1.7) * 0.08, 0.4 + i * 0.8, z + Math.cos(i * 1.3) * 0.08], r: r * (1 - i * 0.05), bump: 0.04, col: [sA, sB, sC][i % 3], k: 0.35 })),
+      { s: 'ell', c: [x, 0.4 + h, z], rr: [r * 0.8, 0.22, r * 0.8], col: grass, k: 0.15 }];
+    P('istack', [shore(C('#7a6a5a'), 0.4), ...stack(-1.3, -0.6, 4.4, 1.1), ...stack(1.4, -0.3, 3.2, 0.95), ...stack(0.1, 1.7, 2.3, 0.85),
+      { s: 'tor', ax: 'z', c: [0.05, 1.2, -0.45], R: 1.35, r: 0.32, a0: 0.1, a1: Math.PI - 0.1, col: sB, k: 0.2 },
+      { s: 'tor', ax: 'y', c: [-1.3, 4.75, -0.6], R: 0.2, r: 0.07, a0: -Math.PI, a1: Math.PI, col: C('#c8a060'), k: 0 },
+      ...[[-1.25, 4.8, -0.55], [-1.38, 4.8, -0.62]].map(c => ({ s: 'sph', c, r: 0.07, col: C('#f4f0e4'), k: 0 })),
+      ...pebbles(6, 3.2, sB, 11)], { ao: 0.45 });
+  }
+  // Sunken Atlantis: a marble platform half drowned: steps, standing and toppled columns, an arch, a broken gold
+  // dome and a great stone head lying on its side, gilded and grown over with coral
+  {
+    const marble = C('#f2eee6'), marbleD = C('#d8d2c4'), gold = C('#e8b84a'), coral = C('#ff7a9a');
+    const col = (x, z, h) => [{ s: 'cyl', ax: 'y', c: [x, 0.5 + h / 2, z], r: 0.32, hh: h / 2, rd: 0.05, col: marble, k: 0 }, { s: 'box', c: [x, 0.55 + h, z], hs: [0.42, 0.1, 0.42], rd: 0.03, col: gold, k: 0 }];
+    P('iruin', [shore(C('#c8d8d0'), 0.45),
+      { s: 'cyl', ax: 'y', c: [0, 0.25, 0], r: 3.0, hh: 0.25, rd: 0.06, col: marbleD, k: 0 }, { s: 'cyl', ax: 'y', c: [0, 0.55, 0], r: 2.4, hh: 0.12, rd: 0.04, col: marble, k: 0 },
+      ...col(-1.5, -1.2, 2.6), ...col(1.5, -1.2, 1.4), ...col(-1.5, 1.2, 1.9), ...col(1.6, 1.4, 2.9),
+      { s: 'box', c: [0, 3.25, -1.2], hs: [1.95, 0.18, 0.4], rd: 0.04, col: marble, k: 0 }, ...col(1.5, -1.2, 2.6).slice(0, 1),
+      { s: 'cyl', ax: 'x', c: [0.2, 0.92, 0.3], r: 0.3, hh: 1.0, rd: 0.05, col: marbleD, k: 0 },
+      { s: 'sph', c: [-0.2, 0.7, 1.9], r: 1.0, col: gold, k: 0 }, { s: 'box', c: [-0.2, 0.0, 1.9], hs: [1.2, 0.7, 1.2], sub: true, k: 0 },
+      { s: 'sph', c: [2.3, 0.95, -0.4], r: 0.62, col: marbleD, k: 0 }, { s: 'cap', a: [2.55, 1.0, 0.05], b: [2.7, 1.05, 0.2], r: 0.13, col: marbleD, k: 0.05 },
+      { s: 'box', c: [2.3, 1.55, -0.4], hs: [0.5, 0.08, 0.5], rd: 0.04, col: gold, k: 0 },
+      ...[[-2.4, 0.2], [0.8, -2.5], [-0.8, 2.6]].flatMap(([x, z], i) => [0, 1, 2].map(j => { const a = j * 2.1 + i; return { s: 'cap', a: [x, 0.4, z], b: [x + Math.cos(a) * 0.35, 1.0 + j * 0.1, z + Math.sin(a) * 0.35], r: 0.1, r2: 0.05, col: coral, k: 0.06 }; }))], { ao: 0.4 });
+  }
+  // the Atlantis column that bursts up from the sea (drawn small, as an islet)
+  {
+    const marble = C('#f2eee6'), gold = C('#e8b84a');
+    P('icol', [{ s: 'cyl', ax: 'y', c: [0, 2.6, 0], r: 2.6, hh: 3.2, rd: 0.3, col: marble, k: 0 },
+      ...Array.from({ length: 10 }, (_, i) => { const a = i / 10 * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 2.6, 2.6, Math.sin(a) * 2.6], r: 0.28, hh: 3.0, rd: 0.1, sub: true, k: 0.1 }; }),
+      { s: 'box', c: [0, 6.1, 0], hs: [3.2, 0.45, 3.2], rd: 0.12, col: gold, k: 0 }, { s: 'cyl', ax: 'y', c: [0, 6.75, 0], r: 2.2, hh: 0.25, rd: 0.08, col: marble, k: 0 },
+      { s: 'tor', ax: 'y', c: [0, 0.3, 0], R: 2.7, r: 0.35, a0: -Math.PI, a1: Math.PI, col: C('#5affe0'), k: 0 }], { ao: 0.35 });
+  }
+  // the Soda Sea: gumdrop hills sugared with sprinkles on pink frosting, candy canes, swirl lollipops, chocolate rocks
+  {
+    const drops = [C('#ff4a6a'), C('#4ad86a'), C('#ffd34a'), C('#a86aff'), C('#ff8a2a')];
+    const cane = (x, z, h) => [...Array.from({ length: 6 }, (_, i) => ({ s: 'cap', a: [x, 0.5 + i * h / 6, z], b: [x, 0.5 + (i + 1) * h / 6, z], r: 0.15, col: i % 2 ? C('#ffffff') : C('#e8283c'), k: 0 })),
+      { s: 'tor', ax: 'z', c: [x + 0.35, 0.5 + h, z], R: 0.35, r: 0.15, a0: 0, a1: Math.PI, col: C('#e8283c'), k: 0 }];
+    const lolly = (x, z, h, c1) => [{ s: 'cap', a: [x, 0.5, z], b: [x, 0.5 + h, z], r: 0.06, col: C('#ffffff'), k: 0 },
+      { s: 'cyl', ax: 'z', c: [x, 0.5 + h + 0.5, z], r: 0.55, hh: 0.08, rd: 0.06, col: c1, k: 0 }, { s: 'tor', ax: 'z', c: [x, 0.5 + h + 0.5, z + 0.04], R: 0.3, r: 0.07, a0: -Math.PI, a1: Math.PI * 0.6, col: C('#ffffff'), k: 0 }];
+    P('icandy', [shore(C('#ffb8d8'), 0.5), { s: 'ell', c: [0, 0.15, 0], rr: [3.2, 0.4, 3.0], col: C('#ff9ac8'), k: 0.3 },
+      ...[[0, 0, 1.6], [1.6, -1.2, 1.0], [-1.7, -0.6, 1.1], [-0.6, 1.8, 0.9], [1.5, 1.4, 0.8]].map(([x, z, r], i) => ({ s: 'sph', c: [x, 0.3, z], r, col: drops[i], k: 0.15 })),
+      ...Array.from({ length: 22 }, (_, i) => { const a = i * 2.39, d = 0.3 + (i % 6) * 0.45; return { s: 'cap', a: [Math.cos(a) * d, 1.2 + (i % 3) * 0.2 - d * 0.3, Math.sin(a) * d], b: [Math.cos(a) * d + 0.08, 1.24 + (i % 3) * 0.2 - d * 0.3, Math.sin(a) * d + 0.05], r: 0.04, col: drops[(i + 2) % 5], k: 0 }; }),
+      ...cane(2.4, 0.2, 2.2), ...cane(-2.2, 1.6, 1.8), ...lolly(-0.6, -2.3, 1.6, C('#5ac8ff')), ...lolly(2.6, -1.9, 1.2, C('#ffd34a')),
+      ...[[2.8, 1.4], [-2.8, -1.2]].map(([x, z]) => ({ s: 'box', c: [x, 0.4, z], hs: [0.4, 0.3, 0.4], rd: 0.08, col: C('#6a3a1e'), k: 0 }))], { ao: 0.35 });
+  }
+  // the Bermuda Triangle: a sandbar with a crashed propeller plane, a broken striped lighthouse and a buoy
+  {
+    const sand = C('#e8d4a0'), planeC = C('#c8ccd4'), rust = C('#a85a2a');
+    P('itri', [shore(sand, 0.5), { s: 'ell', c: [0.4, 0.15, 0.2], rr: [2.4, 0.35, 2.0], col: C('#d8c48a'), k: 0.4 },
+      { s: 'cap', a: [-1.4, 0.55, -0.4], b: [1.2, 0.9, 0.6], r: 0.42, r2: 0.3, col: planeC, k: 0 },
+      { s: 'box', c: [0.0, 0.75, 0.1], hs: [0.25, 0.06, 2.0], rd: 0.05, col: planeC, k: 0 },
+      { s: 'box', c: [-1.3, 1.0, -0.35], hs: [0.15, 0.4, 0.06], rd: 0.04, col: rust, k: 0 }, { s: 'box', c: [-1.35, 0.95, -0.35], hs: [0.1, 0.04, 0.6], rd: 0.03, col: planeC, k: 0 },
+      { s: 'sph', c: [1.3, 0.95, 0.65], r: 0.2, col: C('#5a5a64'), k: 0 },
+      ...[0, 1, 2].map(i => { const a = i / 3 * TAU; return { s: 'cap', a: [1.42, 0.95, 0.68], b: [1.45, 0.95 + Math.cos(a) * 0.5, 0.68 + Math.sin(a) * 0.5], r: 0.05, col: C('#3a3a44'), k: 0 }; }),
+      { s: 'ell', c: [0.4, 1.05, 0.3], rr: [0.18, 0.12, 0.3], col: C('#5ad0ff'), k: 0 },
+      ...[0, 1, 2, 3].map(i => ({ s: 'cyl', ax: 'y', c: [-1.8, 0.7 + i * 0.5, 1.6], r: 0.55 - i * 0.04, hh: 0.25, rd: 0.04, col: i % 2 ? C('#ffffff') : C('#e8283c'), k: 0 })),
+      { s: 'box', c: [-1.75, 2.75, 1.65], hs: [0.5, 0.2, 0.5], rd: 0.06, col: C('#3a3a44'), sub: false, k: 0 },
+      { s: 'cap', a: [2.6, 0.2, -1.6], b: [2.6, 1.2, -1.6], r: 0.25, r2: 0.15, col: C('#ff8a2a'), k: 0 }, { s: 'sph', c: [2.6, 1.3, -1.6], r: 0.12, col: C('#7affc8'), k: 0 }], { ao: 0.4 });
+  }
+  // the Sky Sea: a cloud island: billowing white puffs, a little temple of white columns with a gold roof, a rainbow
+  {
+    const cloud = C('#ffffff'), cloudS = C('#e8eef8'), rb = ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff', '#a86aff'].map(C);
+    P('isky', [...Array.from({ length: 9 }, (_, i) => { const a = i / 9 * TAU, d = i % 2 ? 2.6 : 2.0; return { s: 'sph', c: [Math.cos(a) * d, 0.3 + (i % 3) * 0.15, Math.sin(a) * d], r: 1.0 + (i % 3) * 0.2, col: i % 3 ? cloud : cloudS, k: 0.5 }; }),
+      { s: 'sph', c: [0, -0.2, 0], r: 2.6, col: cloud, k: 0.6 },
+      ...[[-0.6, -0.6], [0.6, -0.6], [-0.6, 0.6], [0.6, 0.6]].map(([x, z]) => ({ s: 'cyl', ax: 'y', c: [x, 2.45, z], r: 0.12, hh: 0.6, rd: 0.03, col: C('#f8f4ee'), k: 0 })),
+      { s: 'cyl', ax: 'y', c: [0, 1.8, 0], r: 1.0, hh: 0.08, rd: 0.03, col: C('#f8f4ee'), k: 0 },
+      { s: 'cap', a: [0, 3.05, 0], b: [0, 3.7, 0], r: 1.0, r2: 0.05, col: C('#f2c440'), k: 0 },
+      ...rb.map((c, i) => ({ s: 'tor', ax: 'z', c: [0, 0.4, -1.6], R: 3.4 - i * 0.14, r: 0.075, a0: 0.15, a1: Math.PI - 0.15, col: c, k: 0 }))], { ao: 0.25 });
+  }
+  // Leviathan Trench: a dark sandbar with a giant ribcage arching out of it, its spine, and a great skull
+  {
+    const boneC = C('#e8e0c8'), boneD = C('#c8bea0');
+    P('ibones', [shore(C('#3a3a44'), 0.45), ...rockMass(41, 1.6, 0.4, C('#3a3a44'), C('#2e2e38')),
+      { s: 'cap', a: [0, 0.6, -2.6], b: [0, 0.75, 1.6], r: 0.2, col: boneD, k: 0.05 },
+      ...[-2.0, -1.2, -0.4, 0.4, 1.2].map((z, i) => ({ s: 'tor', ax: 'z', c: [0, 0.4, z], R: 1.7 - i * 0.12, r: 0.13, a0: 0.05, a1: Math.PI - 0.05, col: boneC, k: 0.03 })),
+      { s: 'sph', c: [0.3, 0.9, 2.45], r: 0.95, col: boneC, k: 0 }, { s: 'ell', c: [0.3, 0.55, 3.0], rr: [0.65, 0.35, 0.55], col: boneC, k: 0.2 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [0.3 + sx * 0.38, 1.05, 3.15], r: 0.26, col: C('#14101a'), k: 0.02 })),
+      ...Array.from({ length: 5 }, (_, i) => ({ s: 'cap', a: [0.3 - 0.4 + i * 0.2, 0.45, 3.4], b: [0.3 - 0.4 + i * 0.2, 0.25, 3.45], r: 0.06, r2: 0.02, col: boneC, k: 0 })),
+      ...pebbles(5, 3.2, C('#3a3a44'), 41)], { ao: 0.45 });
+  }
+  // Davy Jones' Locker: a black-green rock shaped like a huge skull with cave eyes, chests and ghost lanterns
+  {
+    const rockK = C('#26302a'), rockK2 = C('#1c2620'), ghostG = C('#7affa8');
+    P('ilocker', [shore(C('#1c2620'), 0.45), ...rockMass(51, 1.8, 0.7, rockK, rockK2),
+      { s: 'rock', c: [0, 1.6, -0.3], r: 1.6, bump: 0.05, col: C('#3a4438'), k: 0.5 }, { s: 'ell', c: [0, 0.9, 0.9], rr: [1.1, 0.7, 0.8], col: C('#3a4438'), k: 0.4 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.58, 1.75, 1.0], r: 0.42, col: C('#0a100c'), k: 0.08 })),
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.58, 1.7, 1.25], r: 0.11, col: ghostG, k: 0 })),
+      { s: 'ell', c: [0, 1.15, 1.45], rr: [0.18, 0.22, 0.14], col: C('#0a100c'), k: 0.04 },
+      ...[[1.9, 1.2], [-2.0, 0.6]].flatMap(([x, z]) => [{ s: 'box', c: [x, 0.62, z], hs: [0.42, 0.26, 0.3], rd: 0.04, col: C('#6a3a1e'), k: 0 }, { s: 'cyl', ax: 'x', c: [x, 0.88, z], r: 0.3, hh: 0.42, rd: 0.04, col: C('#7a4a26'), k: 0 },
+        { s: 'box', c: [x, 0.8, z + 0.31], hs: [0.08, 0.1, 0.02], rd: 0.01, col: C('#e8b84a'), k: 0 }]),
+      ...[[1.2, -1.8], [-1.4, -1.6], [2.3, -0.3]].flatMap(([x, z]) => [{ s: 'cap', a: [x, 0.5, z], b: [x, 1.6, z], r: 0.05, col: C('#2a2a2a'), k: 0 }, { s: 'sph', c: [x, 1.72, z], r: 0.16, col: ghostG, k: 0 }])], { ao: 0.45 });
+  }
+  // World's Edge: a golden-sand island with a round marble temple under a gold dome, a giant gold trident, coins
+  {
+    const sand = C('#f4d48a'), marble = C('#f8f4ec'), gold = C('#f2c440'), goldD = C('#c8962a');
+    P('iedge', [shore(sand, 0.5), { s: 'ell', c: [0, 0.2, 0], rr: [3.0, 0.4, 2.8], col: C('#e8c070'), k: 0.4 },
+      { s: 'cyl', ax: 'y', c: [0, 0.65, 0], r: 1.7, hh: 0.15, rd: 0.05, col: marble, k: 0 },
+      ...Array.from({ length: 8 }, (_, i) => { const a = i / 8 * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 1.4, 1.6, Math.sin(a) * 1.4], r: 0.14, hh: 0.8, rd: 0.03, col: marble, k: 0 }; }),
+      { s: 'cyl', ax: 'y', c: [0, 2.5, 0], r: 1.65, hh: 0.12, rd: 0.04, col: gold, k: 0 },
+      { s: 'sph', c: [0, 2.6, 0], r: 1.3, col: gold, k: 0 }, { s: 'box', c: [0, 1.6, 0], hs: [2, 1, 2], sub: true, k: 0 }, { s: 'sph', c: [0, 4.0, 0], r: 0.2, col: C('#5ad8ff'), k: 0 },
+      { s: 'cap', a: [2.3, 0.4, -1.4], b: [2.3, 4.2, -1.4], r: 0.1, col: goldD, k: 0 },
+      { s: 'cap', a: [1.85, 3.8, -1.4], b: [2.75, 3.8, -1.4], r: 0.09, col: gold, k: 0 },
+      ...[-0.45, 0, 0.45].map(dx => ({ s: 'cap', a: [2.3 + dx, 3.8, -1.4], b: [2.3 + dx * 1.1, 4.8, -1.4], r: 0.08, r2: 0.02, col: gold, k: 0 })),
+      ...Array.from({ length: 14 }, (_, i) => { const a = i * 2.39, d = 2.0 + (i % 3) * 0.35; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * d, 0.55 + (i % 2) * 0.07, Math.sin(a) * d], r: 0.14, hh: 0.03, rd: 0.01, col: gold, k: 0 }; })], { ao: 0.4 });
   }
 }
 
@@ -10839,7 +11688,7 @@ void main() {
     int vt = int(uSea.z + 0.5);
     if (vt == 1) {
       // the light lines glow, and specks of plankton drift and pulse
-      emis = uGrout * (line * mask * 0.85 + line * 0.12);
+      emis = uGrout * (line * mask * 0.55 + line * 0.06);
       vec2 pq = p * 3.0 + vec2(uTime * 0.15, uTime * 0.06), pc = floor(pq), pf = fract(pq) - 0.5;
       float ph = hash12(pc);
       emis += uGrout * step(0.88, ph) * (1.0 - smoothstep(0.02, 0.1, length(pf))) * (0.45 + 0.55 * sin(uTime * 2.3 + ph * 50.0)) * 1.3;
@@ -12111,6 +12960,26 @@ void main() {
     float m = 1.0 - smoothstep(edge * 0.45, edge, r);
     float rip = texture(uNoise, vW.xz * 0.35 + vec2(uTime * 0.05, uTime * 0.03)).g;
     a = m * (0.85 + 0.25 * (rip - 0.5)) * fC.a;
+  } else if (type == 13) {
+    // a whirlpool: foam arms spiralling in to a dark middle (13o-sea-deep.js)
+    float ang = atan(q.y, q.x);
+    float arms = sin(ang * 3.0 + log(max(r, 0.02)) * 7.0 + uTime * 4.0 + seed);
+    float foam = smoothstep(0.45, 0.95, arms) * (1.0 - smoothstep(0.75, 1.0, r)) * smoothstep(0.06, 0.3, r);
+    float dark = (1.0 - smoothstep(0.0, 0.65, r)) * 0.75;
+    col = mix(fC.rgb, vec3(0.92, 0.97, 1.0), smoothstep(0.0, 0.25, foam - dark * 0.4));
+    a = max(foam * 0.85, dark) * fC.a;
+  } else if (type == 14) {
+    // a warp rift: a glowing triangle outline turning slowly, a shimmer inside (13o-sea-deep.js)
+    float ang = uTime * 0.6 + seed;
+    vec2 p2 = vec2(cos(ang) * q.x - sin(ang) * q.y, sin(ang) * q.x + cos(ang) * q.y) / 0.8;
+    const float k3 = 1.7320508;
+    p2.x = abs(p2.x) - 1.0; p2.y = p2.y + 1.0 / k3;
+    if (p2.x + k3 * p2.y > 0.0) p2 = vec2(p2.x - k3 * p2.y, -k3 * p2.x - p2.y) / 2.0;
+    p2.x -= clamp(p2.x, -2.0, 0.0);
+    float d = -length(p2) * sign(p2.y) * 0.8;
+    float edge = 1.0 - smoothstep(0.0, 0.07, abs(d));
+    float inner = (1.0 - smoothstep(-0.3, 0.0, d)) * (0.22 + 0.18 * sin(uTime * 6.0 + r * 14.0));
+    a = clamp(edge + inner, 0.0, 1.0) * fC.a;
   } else if (type == 10) {
     // cone telegraph: a pie slice of half-angle seed along +y, filling outward with t
     float ang = abs(atan(q.x, q.y));
@@ -23573,6 +24442,9 @@ const SHIPS = [
   { id: 'yacht', name: 'Yacht', model: 'yacht', len: 9.4, wid: 3.0, deck: 1.19, spot: [0, 2.2], heroS: 1.1, speed: 6.8, accel: 5, turn: 1.7, hull: 0.85, ram: 64, grip: 10, zoom: 1.58, wake: 1.9, bob: 0.03 },
   { id: 'cruise', name: 'Cruise Ship', model: 'cruise', len: 12, wid: 3.6, deck: 2.76, spot: [0, -1.0], heroS: 1.25, speed: 6.4, accel: 3.2, turn: 1.3, hull: 1.2, ram: 84, grip: 12, zoom: 1.8, wake: 2.3, bob: 0.02 },
   { id: 'cargo', name: 'Cargo Ship', model: 'cargo', len: 14.5, wid: 3.9, deck: 3.19, spot: [0, 4.4], heroS: 1.4, speed: 6.2, accel: 2.6, turn: 1.05, hull: 1.6, ram: 110, grip: 14, zoom: 2.0, wake: 2.6, bob: 0.015 },
+  { id: 'battleship', name: 'Battleship', model: 'battleship', len: 16.5, wid: 3.7, deck: 2.87, spot: [0, 4.05], heroS: 1.5, speed: 6.5, accel: 2.8, turn: 1.0, hull: 2.1, ram: 140, grip: 16, zoom: 2.2, wake: 2.9, bob: 0.012 },
+  { id: 'carrier', name: 'Aircraft Carrier', model: 'carrier', len: 19, wid: 4.6, deck: 2.88, spot: [0.6, 4.2], heroS: 1.65, speed: 6.3, accel: 2.4, turn: 0.92, hull: 2.7, ram: 175, grip: 18, zoom: 2.45, wake: 3.2, bob: 0.01 },
+  { id: 'ark', name: 'Golden Ark', model: 'ark', len: 21, wid: 5.6, deck: 2.035, spot: [0, 3.2], heroS: 1.8, speed: 6.8, accel: 2.7, turn: 0.95, hull: 3.4, ram: 220, grip: 20, zoom: 2.65, wake: 3.5, bob: 0.01 },
 ];
 // The ten sea chapters. rough: swell (0 calm .. 1 rough); storm: a storm blows from the start (1), or comes in with
 // the boss (0.5); deep/shallow/lines: the water's colors; isle: the islands' look; mix: [enemy, from second, weight]
@@ -23588,6 +24460,18 @@ const SEA_CHAPTERS = [
   { name: 'Thunder Sea', rough: 0.65, storm: 1, deep: '#163650', shallow: '#2a5a7a', lines: '#c8e0f0', fog: '#6a8494', isle: 'palm', mix: null },
   { name: 'Kraken Deep', rough: 0.75, storm: 0.5, deep: '#102a48', shallow: '#22506e', lines: '#b8daf0', fog: '#5a7890', isle: 'palm', mix: null },
   { name: 'Pirate Fortress', rough: 0.85, storm: 1, deep: '#14304a', shallow: '#285670', lines: '#c8dcea', fog: '#62788a', isle: 'palm', mix: null },
+  // the ten after the Pirate King (13o-sea-deep.js gives each its crowd, islands, mechanic, miniboss and boss).
+  // vt: the water's variant (05-glsl.js); light/sky: the light's color and the sky's (night, underworld, sunset)
+  { name: 'Glowtide Lagoon', rough: 0.3, storm: 0, deep: '#03101c', shallow: '#082a3a', lines: '#5affd8', fog: '#071826', vt: 1, light: [0.42, 0.52, 0.78], sky: [0.12, 0.2, 0.36], mix: null },
+  { name: 'Sargasso Snarl', rough: 0.25, storm: 0, deep: '#13301e', shallow: '#2e5030', lines: '#cfe8a0', fog: '#6a8a62', light: [0.95, 0.95, 0.82], mix: null },
+  { name: 'Maelstrom Reach', rough: 0.8, storm: 0.5, deep: '#12303a', shallow: '#2a5a62', lines: '#d0f0f0', fog: '#5a7a80', mix: null },
+  { name: 'Sunken Atlantis', rough: 0.2, storm: 0, deep: '#06607e', shallow: '#18b4cc', lines: '#e8fff8', fog: '#8adcea', light: [1.02, 1.0, 0.94], mix: null },
+  { name: 'Soda Sea', rough: 0.3, storm: 0, deep: '#a8306a', shallow: '#ec72ae', lines: '#ffe8f4', fog: '#f2a8cc', vt: 2, light: [1.05, 0.93, 0.98], sky: [1.0, 0.85, 0.95], mix: null },
+  { name: 'Bermuda Triangle', rough: 0.5, storm: 0.5, deep: '#0c3634', shallow: '#1c6656', lines: '#a8ffd8', fog: '#46766a', light: [0.8, 0.95, 0.88], mix: null },
+  { name: 'Sky Sea', rough: 0, storm: 0, deep: '#b8cce8', shallow: '#f6f8ff', lines: '#ffe8f4', fog: '#d8e8ff', vt: 3, light: [1.08, 1.05, 1.0], sky: [0.92, 0.96, 1.0], mix: null },
+  { name: 'Leviathan Trench', rough: 0.7, storm: 0.5, deep: '#040c1a', shallow: '#0c263c', lines: '#7ab8e0', fog: '#0c1a2c', light: [0.55, 0.65, 0.82], sky: [0.2, 0.28, 0.42], mix: null },
+  { name: "Davy Jones' Locker", rough: 0.55, storm: 0, deep: '#08180f', shallow: '#183626', lines: '#6affa8', fog: '#14281e', vt: 4, light: [0.5, 0.78, 0.6], sky: [0.16, 0.3, 0.22], mix: null },
+  { name: "World's Edge", rough: 0.6, storm: 0, deep: '#1a3a6a', shallow: '#3a7ab8', lines: '#ffe8a8', fog: '#f0c890', vt: 5, light: [1.18, 0.92, 0.66], sky: [1.0, 0.78, 0.55], mix: null },
 ];
 const SEA_COUNT = SEA_CHAPTERS.length;
 const SEA = {
@@ -23602,11 +24486,13 @@ const OC = { ship: null, wake: [], isles: [], chunks: new Map(), balls: [], shot
 
 function seaInfo(n) {
   const k = clamp(n, 1, SEA_COUNT) - 1, C = SEA_CHAPTERS[k];
+  // (oceans 11-20 are for those who beat the Pirate King: a little steeper on top of the climb)
+  const deep = Math.max(0, k - 9);
   return {
     n, sea: true, arenaName: C.name, bosses: [C.boss],
     // every run starts on a raft, so the chapters climb gently (their crowds, islands and bosses do the rest)
-    hpMul: 1 + 0.08 * k + 0.006 * k * k, dmgMul: 1 + 0.045 * k, rateMul: 0.7 + 0.05 * k, speedMul: 1 + 0.01 * k,
-    bossHpMul: Math.pow(1.12, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
+    hpMul: (1 + 0.08 * k + 0.006 * k * k) * (1 + 0.03 * deep), dmgMul: (1 + 0.045 * k) * (1 + 0.03 * deep), rateMul: 0.7 + 0.05 * k + 0.02 * deep, speedMul: 1 + 0.01 * k + 0.005 * deep,
+    bossHpMul: Math.pow(1.12, k) * (1 + 0.04 * deep), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
   };
 }
 const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
@@ -23616,7 +24502,7 @@ const seaUnlocked = () => !!(G.save && G.save.cleared[CHAPTER_COUNT]);
 function seaLook(n) {
   const C = SEA_CHAPTERS[clamp(n, 1, SEA_COUNT) - 1], f = R.frame;
   f.floorStyle = 21; f.stoneA = hexToRgb(C.deep); f.stoneB = hexToRgb(C.shallow); f.grout = hexToRgb(C.lines); f.accent = [1, 1, 1];
-  f.fogCol = hexToRgb(C.fog); f.skyCol = [0.8, 0.93, 1.0]; f.groundCol = hexToRgb(C.deep).map(v => v * 0.8); f.lightCol = [1.0, 0.97, 0.9];
+  f.fogCol = hexToRgb(C.fog); f.skyCol = C.sky ? C.sky.slice() : [0.8, 0.93, 1.0]; f.groundCol = hexToRgb(C.deep).map(v => v * 0.8); f.lightCol = C.light ? C.light.slice() : [1.0, 0.97, 0.9];
   f.spotMin = 1; f.shadowTint = [0.2, 0.35, 0.55];
   f.sea[0] = C.rough; f.sea[1] = C.storm >= 1 ? 1 : 0; f.sea[2] = C.vt || 0;
   const dp = hexToRgb(C.deep); for (let i = 0; i < 3; i++) SEA_SH[i] = dp[i] * 0.1;
@@ -23741,6 +24627,7 @@ function updateOcean(dt) {
   updateSeaHazards(dt);
   seaBossHazards(dt);
   seaWeather(dt);
+  seaDeepTick(dt);
   updateProjectiles(dt);
   updateEnemyShots(dt);
   updatePickups(dt);
@@ -23959,6 +24846,7 @@ function seaFoes(dt) {
     if (touch) {
       const vn = -(S.vx * n[0] + S.vz * n[1]);   // how fast the hull closes on it
       if (vn > SEA.ramMin && e.ramCd <= 0) seaRam(e, n, vn, top);
+      else if (e.def.onTouch) { e.def.onTouch(e); continue; }
       // (a ship under full sail can't be climbed: they bounce off it)
       else if (!e.boss && e.stun <= 0 && !(e.netT > 0) && boarders < D.grip && e.spawnT <= 0 && S.speed < top * 0.6) { seaBoard(e); boarders++; }
       else { e.x += n[0] * (e.radius * 0.6 - d2); e.z += n[1] * (e.radius * 0.6 - d2); }
@@ -24172,7 +25060,7 @@ function emitSea() {
     pushDecal(I.x, I.z, I.r * 1.7, I.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, 0.38, true);
     const br = 1.06 + 0.04 * Math.sin(t * 1.4 + I.x);
     pushDecal(I.x, I.z, I.r * br, I.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
-    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1);
+    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, I.rise !== undefined ? -2.6 * I.r / 4 * (1 - easeOutBack(clamp(I.rise, 0, 1))) : 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1);
     for (const o of I.deco) if (R.enemyDraw[o.m]) pushEnemy(o.m, false, o.x, (o.y || 0) + I.r * 0.145, o.z, o.yaw, MODELS.defs[o.m].clips.still.row, o.s, 1, 0, 0, 0, PROP_WHITE[0], PROP_WHITE[1], PROP_WHITE[2]);
   }
   // swimmers: only head and shoulders above the water, with a little foam ring
@@ -24195,6 +25083,7 @@ function emitSea() {
   emitSeaShots();
   emitSeaHazards();
   emitSeaBossHazards();
+  emitSeaDeep();
 }
 // a ship and everything mounted on it
 function seaDrawShip(x, y, z, yaw, stage, t, flash) {
@@ -24288,12 +25177,21 @@ const SHIP_MOUNTS = {
   cargo: { ms: 1.5, rim: 1.2, guns: [[1.1, 1.9, 3.19], [-1.1, 1.9, 3.19], [1.1, -3.1, 3.19], [-1.1, -3.1, 3.19]],
     bow: [0.9, 6.0, 1.435], fig: [0, 7.45, 1.25], turret: [0, -0.6, 3.19], pile: [0, 1.9, 3.19], hose: [-0.9, 6.0, 1.435], lamp: [1.2, -5.6, 4.11],
     net: [-1.2, -5.6, 4.11], mast: [0, -5.25, 4.11], stern: [0, -7.35, 0.6], anchor: [1.2, 6.4, 1.6], crew: [[1.1, -3.1], [1.1, 1.9], [-1.1, 1.9], [-1.1, -3.1]].map(p => p) },
+  battleship: { ms: 1.6, rim: 1.3, guns: [[1.3, 2.6, 1.535], [-1.3, 2.6, 1.535], [1.25, -3.4, 1.535], [-1.25, -3.4, 1.535]],
+    bow: [1.0, 7.4, 1.535], fig: [0, 8.45, 1.3], turret: [0, -3.0, 1.535], pile: [-1.35, -0.9, 1.535], hose: [1.35, -0.9, 1.535], lamp: [0.8, 0.7, 3.99],
+    net: [-0.8, 0.7, 3.99], mast: [0, -1.0, 3.99], stern: [0, -8.4, 0.6], anchor: [1.2, 7.2, 1.7], crew: [[1.35, 1.6], [1.35, -3.8], [-1.35, -3.8], [-1.35, 1.6]] },
+  carrier: { ms: 1.75, rim: 1.9, guns: [[2.6, 7.4, 2.88], [-1.9, 7.4, 2.88], [2.6, -8.2, 2.88], [-1.9, -8.2, 2.88]],
+    bow: [-1.2, 9.4, 2.88], fig: [0, 9.95, 2.0], turret: [-0.6, 6.0, 2.88], pile: [-1.2, 1.0, 2.88], hose: [2.6, -2.0, 2.88], lamp: [-2.35, -0.5, 5.65],
+    net: [-2.35, -3.0, 5.65], mast: [-2.35, -2.4, 5.65], stern: [0, -9.6, 0.7], anchor: [2.2, 9.0, 2.4], crew: [[2.4, 3.0], [2.4, -5.0], [-1.4, -5.0], [-1.4, 3.0]] },
+  ark: { ms: 1.9, rim: 1.7, guns: [[2.1, 6.0, 2.035], [-2.1, 6.0, 2.035], [2.2, -2.6, 2.035], [-2.2, -2.6, 2.035]],
+    bow: [0.9, 8.6, 2.035], fig: [0, 11.5, 2.2], turret: [0, 6.6, 2.035], pile: [-1.6, 1.4, 2.035], hose: [1.6, 1.4, 2.035], lamp: [1.3, -5.6, 4.43],
+    net: [-1.3, -5.6, 4.43], mast: [0, -4.4, 4.43], stern: [0, -10.4, 0.6], anchor: [1.9, 9.0, 2.3], crew: [[2.0, 4.2], [2.0, -1.6], [-2.0, -1.6], [-2.0, 4.2]] },
 };
 const mountsOf = D => SHIP_MOUNTS[D.id] || SHIP_MOUNTS.raft;
 // a mount spot in the world: [x, y, z] (riding the swell with the ship)
 function mountW(spot, out = [0, 0, 0]) { const p = shipW(spot[0], spot[1]); out[0] = p[0]; out[1] = OC.ship.y + spot[2]; out[2] = p[1]; return out; }
 // the deck height under the crew's walk (the cargo ship's crew walks the container tops)
-const crewY = (M, D) => (D.id === 'cargo' ? 3.19 : D.id === 'cruise' ? 2.76 : M.guns[0][2]);
+const crewY = (M, D) => (D.id === 'cargo' ? 3.19 : D.id === 'cruise' ? 2.76 : M.guns[0][2]);  // (the others walk their main deck)
 
 // ---------- the upgrades ----------
 const SEA_POWER = 1;
@@ -25197,7 +26095,7 @@ const SEA_HZ_LIVE = ['snare', 'mine', 'tent', 'ink'];
 function emitSeaHazards() {
   for (const h of OC.hz) {
     if (SEA_HZ_LIVE.includes(h.k)) continue;
-    if (h.k === 'ball') { if (h.pearl) pushImp(h.x, h.y, h.z, 0.24, 0, 1, 0, 1, 27, 4, 0.5, OC.t, 0, 0, 0, 1); else pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
+    if (h.k === 'ball') { if (h.trident) continue; if (h.pearl) pushImp(h.x, h.y, h.z, 0.24, 0, 1, 0, 1, 27, 4, 0.5, OC.t, 0, 0, 0, 1); else pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
     if (h.t < 0) continue;
     const u = clamp(h.t / h.dur, 0, 1);
     pushDecal(h.tx ?? h.x, h.tz ?? h.z, h.r, h.r, 0, 4, 0, u, 1, h.k === 'zap' ? 0.9 : 0.22, h.k === 'zap' ? 0.95 : 0.18, 0.9);
@@ -25684,6 +26582,341 @@ function seaBossDraw(e) {
     pushDecal(e.x, e.z, B.len * 0.55, B.len * 0.55, 0, 3, 0, 0.5, 1, 1, 1, 0.35 * (1 - fade), true);
     if (B.ride === 'blava' && Math.random() < 0.3) FX.smoke(e.x, 3.2, e.z, 0.7, [0.35, 0.33, 0.35], 1.4, 1.2);
     if (B.ghost && Math.random() < 0.2) FX.part(e.x + rand(-2, 2), rand(0.5, 2), e.z + rand(-2, 2), 0, 0.4, 0, 0.3, 0.6, 1.2, [0.6, 1, 0.9], 0.3, 2, 0, 0.5);
+  }
+}
+
+// ---- 13o-sea-deep.js ----
+// ============================================================
+// Ocean chapters 11-20, after the Pirate King: myths and wonders. Each has its own crowd (new swimmers below),
+// islands (04o-sea-deep-models.js), weather and light (SEA_CHAPTERS in 13k-ocean.js), a miniboss, a boss
+// (13p-sea-deep-bosses.js), and a mechanic of its own that runs through the whole chapter:
+//   11 Glowtide Lagoon   night water that glows; glowing jellyfish sting the hull
+//   12 Sargasso Snarl    drifting weed mats grip the ship; weed-tangled boarders weigh it down
+//   13 Maelstrom Reach   whirlpools drag the ship round and in
+//   14 Sunken Atlantis   marble columns burst up out of the sea; merfolk throw tridents
+//   15 Soda Sea          fizz geysers erupt; gummy bears split in two
+//   16 Bermuda Triangle  warp rifts throw the ship elsewhere; lost pilots blink about
+//   17 Sky Sea           wind lanes shove the ship; balloon pirates drop bombs from above
+//   18 Leviathan Trench  a vast shadow passes beneath and breaches; anglerfish lunge
+//   19 Davy Jones' Locker cursed ghost-fire burns on the water; skeletons pull themselves back together
+//   20 World's Edge      a bit of everything, and a current toward the edge of the world
+// ============================================================
+Object.assign(ENEMY_TYPES, {
+  pjelly: { model: 'pjelly', hp: 14, speed: 1.3, dmg: 7, xp: 2, radius: 0.5, scale: 1.3, tint: '#5affd8', mass: 0.8, sea: true, onTouch: e => seaJellySting(e) },
+  pweed: { model: 'pweed', hp: 20, speed: 1.8, dmg: 5, xp: 2, radius: 0.46, scale: 1.3, tint: '#4a7a2a', mass: 1.4, sea: true, weedy: true },
+  pmer: { model: 'pmer', hp: 18, speed: 2.4, dmg: 6, xp: 3, radius: 0.45, scale: 1.3, tint: '#2ac8b0', mass: 1.2, sea: true },
+  pgummy: { model: 'pgummy', hp: 16, speed: 2.0, dmg: 5, xp: 2, radius: 0.48, scale: 1.3, tint: '#ff4a7a', mass: 1.1, sea: true, onKill: e => seaGummySplit(e) },
+  pblink: { model: 'pblink', hp: 14, speed: 2.2, dmg: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#7a5a3a', mass: 1, sea: true },
+  pballoon: { model: 'pballoon', hp: 16, speed: 2.1, dmg: 8, xp: 3, radius: 0.5, scale: 1.3, tint: '#ff8a3a', mass: 1, sea: true },
+  pangler: { model: 'pangler', hp: 13, speed: 2.5, dmg: 6, xp: 2, radius: 0.5, scale: 1.4, tint: '#2a3a5a', mass: 1, sea: true },
+  pskel: { model: 'pskel', hp: 14, speed: 2.1, dmg: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#9a2a2a', mass: 1, sea: true, onKill: e => seaSkelCollapse(e) },
+});
+
+// crowds, islands, mechanic and miniboss for oceans 11-20 (mix: [type, from second, weight])
+const SEA_DEEP_THEMES = [
+  { mech: 'glow', isles: ['iglow'], fogK: 0.8, mix: [['pjelly', 0, 1], ['pswim', 0, 0.7], ['pdiver', 30, 0.45], ['phat', 60, 0.35], ['pangler', 110, 0.3]],
+    mini: { name: 'Lantern Lou', ride: 'canoe', tint: '#3affd0', atk: ['ram', 'volley', 'call'] } },
+  { mech: 'weed', isles: ['iweed'], current: 0.25, mix: [['pweed', 0, 1], ['pswim', 0, 0.6], ['phat', 30, 0.35], ['pbomb', 70, 0.25], ['ptube', 110, 0.3]],
+    mini: { name: 'Bogwater Bess', ride: 'raft', tint: '#6a8a3a', atk: ['bombs', 'ram', 'call'] } },
+  { mech: 'whirl', isles: ['istack'], current: 0.6, mix: [['pswim', 0, 1], ['phat', 0, 0.45], ['pfloat', 30, 0.35], ['pbomb', 60, 0.3], ['pdiver', 90, 0.35]],
+    mini: { name: 'Captain Spindrift', ride: 'canoe', tint: '#4a8a9a', atk: ['ram', 'volley', 'bombs'] } },
+  { mech: 'pillar', isles: ['iruin'], mix: [['pmer', 0, 1], ['pswim', 0, 0.7], ['pdiver', 30, 0.45], ['phat', 60, 0.35], ['ptube', 90, 0.3]],
+    mini: { name: 'Sentinel Thalos', ride: 'canoe', tint: '#e8b84a', atk: ['volley', 'ram', 'call'] } },
+  { mech: 'fizz', isles: ['icandy'], mix: [['pgummy', 0, 1], ['pswim', 0, 0.6], ['pfloat', 30, 0.4], ['pbomb', 60, 0.3], ['ptube', 90, 0.4]],
+    mini: { name: 'Licorice Lars', ride: 'raft', tint: '#ff5aa8', atk: ['bombs', 'call', 'ram'] } },
+  { mech: 'rift', isles: ['itri'], fogK: 0.65, current: 0.4, mix: [['pblink', 0, 1], ['pswim', 0, 0.7], ['phat', 30, 0.4], ['pdiver', 60, 0.4], ['pbomb', 90, 0.3]],
+    mini: { name: 'Navigator Null', ride: 'canoe', tint: '#3affa8', ghost: true, atk: ['ram', 'call', 'volley'] } },
+  { mech: 'gust', isles: ['isky'], mix: [['pballoon', 0, 1], ['pswim', 0, 0.7], ['pfloat', 20, 0.4], ['phat', 60, 0.35], ['ptube', 90, 0.3]],
+    mini: { name: 'Sky Admiral Zephyr', ride: 'canoe', tint: '#8ab8ff', atk: ['bombs', 'volley', 'ram'] } },
+  { mech: 'shadow', isles: ['ibones'], fogK: 0.72, current: 0.5, mix: [['pangler', 0, 1], ['pswim', 0, 0.7], ['pdiver', 0, 0.5], ['phat', 40, 0.4], ['pbomb', 80, 0.3]],
+    mini: { name: 'Abyssal Ahab', ride: 'canoe', tint: '#2a4a8a', atk: ['ram', 'call', 'bombs'] } },
+  { mech: 'gfire', isles: ['ilocker'], fogK: 0.6, mix: [['pskel', 0, 1], ['pghost', 0, 0.6], ['phat', 20, 0.4], ['pdiver', 50, 0.4], ['pbomb', 80, 0.3]],
+    mini: { name: 'Bosun Bones', ride: 'raft', tint: '#d8d8c0', ghost: true, atk: ['call', 'ram', 'volley'] } },
+  { mech: 'edge', isles: ['iedge', 'iruin'], current: 0.7, zap: true, mix: [['phat', 0, 1], ['pmer', 0, 0.6], ['pskel', 20, 0.5], ['pjelly', 40, 0.4], ['pgummy', 60, 0.35], ['pangler', 80, 0.4], ['pballoon', 100, 0.35], ['pweed', 120, 0.3]],
+    mini: { name: 'Herald Triton', ride: 'canoe', tint: '#ffd34a', atk: ['volley', 'ram', 'bombs', 'call'] } },
+];
+SEA_DEEP_THEMES.forEach((T, i) => Object.assign(SEA_CHAPTERS[10 + i], T));
+// (the bosses come from 13p-sea-deep-bosses.js; until then, borrow)
+SEA_CHAPTERS.forEach(C => { if (!C.boss) C.boss = 'sking'; });
+// the hazards this file runs and draws (the generic hazard code leaves them alone)
+SEA_HZ_LIVE.push('whirl', 'pillar', 'geyser', 'rift', 'gust', 'lev', 'breach', 'gfire', 'bones');
+const seaDmg = k => k * G.run.info.dmgMul;
+
+// ---------- the new swimmers ----------
+// glowing jellyfish drift in and sting the hull, then burst (rammed hard, they just burst)
+function seaJellySting(e) {
+  if (e.dying || OC.sink) return;
+  hurtHero(e.dmg, e.x, e.z);
+  addBolt(e.x, 0.6, e.z, OC.ship.x, 0.8, OC.ship.z, 0.08, [0.5, 1, 0.9]);
+  FX.burst(e.x, 0.4, e.z, 14, [0.5, 1, 0.9], 4, 0.08, 0.4, 1, 1); AUDIO.play('zap', 1.2);
+  e.hp = 0; killEnemy(e);
+}
+SEA_AI.pjelly = (e, dt) => { e.sp0 = e.sp0 ?? e.speed; e.speed = e.sp0 * (0.7 + 0.5 * Math.max(0, Math.sin(OC.t * 2.2 + e.bobPh))); return false; };
+SEA_DRAW.pjelly = e => seaDrawOwn(e, 'jpulse', -0.12, 0.6, [0.35, 1, 0.85]);
+// weed-tangled swimmers: aboard, they weigh the ship down (counted in seaDeepTick)
+// merfolk hold off at a throwing range and hurl golden tridents
+SEA_AI.pmer = (e, dt) => {
+  if (e.grab) return false;
+  const S = OC.ship, d = hullDist(e.x, e.z);
+  e.throwT = (e.throwT ?? rand(0.6, 2)) - dt; e.actT = (e.actT || 0) - dt;
+  if (d > 9.5 || d < 3.2 || e.stun > 0 || e.netT > 0) { if (e.actT <= 0) e.act = null; return false; }
+  e.vx *= 0.9; e.vz *= 0.9; e.x += (e.vx + e.kx) * dt; e.z += (e.vz + e.kz) * dt; e.kx *= 0.9; e.kz *= 0.9;
+  e.yaw = angleLerp(e.yaw, Math.atan2(S.x - e.x, S.z - e.z), Math.min(1, dt * 5));
+  e.phase += dt * 0.6;
+  if (e.throwT <= 0 && !OC.sink) {
+    e.throwT = rand(2.8, 3.8); e.actT = 0.5;
+    const tx = S.x + S.vx * 0.5, tz = S.z + S.vz * 0.5, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
+    OC.hz.push({ k: 'ball', trident: true, x: e.x, y: 0.9, z: e.z, vx: dx / l * 11, vz: dz / l * 11, life: 1.6, dmg: e.dmg });
+    AUDIO.play('throw');
+  }
+  e.act = e.actT > 0 ? { clip: 'throw', u: clamp(1 - e.actT / 0.5, 0, 0.999) } : null;
+  return true;
+};
+// gummy bears split in two when sunk (the halves don't)
+function seaGummySplit(e) {
+  if (e.half || !G.run || !G.run.sea) return;
+  for (const s of [-1, 1]) {
+    const o = seaFoe('pgummy', e.x + s * 0.5, e.z - s * 0.3);
+    o.half = true; o.scale *= 0.68; o.radius *= 0.7; o.hp = o.maxHp = e.maxHp * 0.4; o.xp = 1; o.tint = e.tint.slice(); o.spawnT = 0.25;
+    o.kx = s * 3; o.kz = -s * 2;
+  }
+  FX.burst(e.x, 0.6, e.z, 12, e.tint, 4, 0.1, 0.4, 1, 1); AUDIO.play('boing');
+}
+SEA_DRAW.pgummy = e => seaDrawOwn(e, 'gbob', -0.36, 0);
+// lost pilots blink: every few seconds they vanish and reappear a few metres closer
+SEA_AI.pblink = (e, dt) => {
+  if (e.grab) return false;
+  e.blinkT = (e.blinkT ?? rand(1.5, 3.5)) - dt;
+  if (e.blinkT <= 0) {
+    e.blinkT = rand(2.6, 4);
+    const d = hullDist(e.x, e.z);
+    if (d > 3.5 && d < 22) {
+      const S = OC.ship, dx = S.x - e.x, dz = S.z - e.z, l = Math.hypot(dx, dz) || 1, j = Math.min(4.5, d - 2.2);
+      FX.ring(e.x, e.z, 0.8, [0.5, 1, 0.8], 0.3, 0.6); FX.burst(e.x, 0.5, e.z, 8, [0.5, 1, 0.8], 3, 0.06, 0.3, 1, 1);
+      e.x += dx / l * j + rand(-1, 1); e.z += dz / l * j + rand(-1, 1);
+      FX.ring(e.x, e.z, 0.8, [0.5, 1, 0.8], 0.3, 0.6); AUDIO.play('ghost', 1.6);
+    }
+  }
+  return false;
+};
+// balloon pirates float over the water: they hang off to the side of the ship and drop bombs on it; only shot down
+SEA_AI.pballoon = (e, dt) => {
+  const S = OC.ship, D = shipDef();
+  e.y = 2.3 + Math.sin(OC.t * 1.3 + e.bobPh) * 0.15;
+  e.side = e.side ?? (Math.random() < 0.5 ? -1 : 1);
+  const a = Math.atan2(e.x - S.x, e.z - S.z) + e.side * 0.25 * dt, r = D.len * 0.5 + 3.2;
+  const tx = S.x + Math.sin(a) * r, tz = S.z + Math.cos(a) * r, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1, sp = Math.min(e.speed * e.slowMul, l * 2);
+  e.vx += (dx / l * sp - e.vx) * Math.min(1, dt * 1.5); e.vz += (dz / l * sp - e.vz) * Math.min(1, dt * 1.5);
+  e.x += (e.vx + e.kx) * dt; e.z += (e.vz + e.kz) * dt; e.kx *= 0.95; e.kz *= 0.95;
+  e.yaw = angleLerp(e.yaw, Math.atan2(S.x - e.x, S.z - e.z), Math.min(1, dt * 2));
+  e.phase += dt * 0.5;
+  e.bombT = (e.bombT ?? rand(2, 4)) - dt;
+  if (e.bombT <= 0 && l < 4 && !OC.sink) {
+    e.bombT = rand(3.2, 4.5);
+    OC.hz.push({ k: 'lob', sx: e.x, sy: e.y - 0.3, sz: e.z, tx: S.x + S.vx * 0.9, tz: S.z + S.vz * 0.9, x: e.x, y: e.y, z: e.z, t: 0, dur: 1.0, r: 1.3, dmg: e.dmg, col: [1, 0.6, 0.25] });
+    AUDIO.play('throw', 0.8);
+  }
+  return true;
+};
+SEA_DRAW.pballoon = e => {
+  if (!R.enemyDraw.pballoon) return true;
+  const M = MODELS.defs.pballoon, c = M.clips.hang, dead = e.dying ? clamp(e.dying, 0, 1) : 0, appear = e.spawnT > 0 ? 1 - e.spawnT / 0.5 : 1;
+  const y = (e.y || 2.3) - dead * 2.3;
+  pushEnemy('pballoon', e.elite, e.x, y, e.z, e.yaw, c.row + Math.floor((e.phase % 1) * c.frames), e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? 0.85 : 0, e.auraTint || 0, e.tint[0], e.tint[1], e.tint[2]);
+  pushDecal(e.x + 0.25, e.z - 0.2, 0.55, 0.55, 0, 1, 0, 0, SEA_SH[0], SEA_SH[1], SEA_SH[2], 0.45 * (1 - dead));
+  return true;
+};
+// anglerfish swim in and every so often lunge at the hull, bite and bounce off
+SEA_AI.pangler = (e, dt) => {
+  if (e.lungeT > 0) {
+    e.lungeT -= dt;
+    e.x += e.vx * dt; e.z += e.vz * dt;
+    const n = [0, 0];
+    if (hullDist(e.x, e.z, n) < e.radius * 0.6) {
+      if (!OC.sink) { hurtHero(e.dmg * 1.3, e.x, e.z); AUDIO.play('chop'); FX.burst(e.x, 0.5, e.z, 8, [0.85, 0.95, 1], 3, 0.08, 0.35, 2, 1); }
+      e.lungeT = 0; e.vx = n[0] * 5; e.vz = n[1] * 5; e.stun = 0.8;
+    }
+    return true;
+  }
+  e.lungeCd = (e.lungeCd ?? rand(1, 3)) - dt;
+  const d = hullDist(e.x, e.z);
+  if (e.lungeCd <= 0 && d < 6 && d > 1.2 && !e.grab && e.stun <= 0) {
+    e.lungeCd = rand(2.6, 3.6); e.lungeT = 0.45;
+    const S = OC.ship, dx = S.x - e.x, dz = S.z - e.z, l = Math.hypot(dx, dz) || 1;
+    e.vx = dx / l * 13; e.vz = dz / l * 13; e.yaw = Math.atan2(dx, dz);
+    seaSplash(e.x, e.z, 0.5); AUDIO.play('splash', 1.3);
+    return true;
+  }
+  return false;
+};
+SEA_DRAW.pangler = e => {
+  const r = seaDrawOwn(e, 'aswim', -0.28, 0.55, [0.9, 1, 0.5]);
+  if (e.lungeT > 0 && Math.random() < 0.7) pushDecal(e.x - e.vx * 0.05, e.z - e.vz * 0.05, 0.5, 0.4, 0, 0, Math.random() * 10, 0, 0.95, 0.99, 1, 0.45);
+  return r;
+};
+// skeletons collapse into a pile of bones and pull themselves back together once
+function seaSkelCollapse(e) {
+  if (e.rebuilt || !G.run || !G.run.sea || OC.sink) return;
+  OC.hz.push({ k: 'bones', x: e.x, z: e.z, t: 0, dur: 2.4, hp: e.maxHp * 0.6, tint: e.tint.slice(), elite: e.elite });
+  FX.burst(e.x, 0.5, e.z, 14, [0.95, 0.92, 0.85], 4, 0.07, 0.4, 1, 1); AUDIO.play('crumble', 1.3);
+}
+// a swimmer drawn with its own clip (not the goo pirates' paddle): y its height in the water (of its scale),
+// glow: a light under it in the water (col)
+function seaDrawOwn(e, clip, y, glow, col) {
+  if (!R.enemyDraw[e.model]) return true;
+  const M = MODELS.defs[e.model], c = M.clips[clip], t = OC.t, dead = e.dying ? clamp(e.dying, 0, 1) : 0, appear = e.spawnT > 0 ? 1 - e.spawnT / 0.5 : 1;
+  const bob = Math.sin(t * 2.4 + e.bobPh) * 0.04 * e.scale, sc = e.scale * clamp(appear, 0.2, 1);
+  seaShadow(e.x, e.z, e.radius * 1.4, e.radius * 1.8, -e.yaw, 0.6 * (1 - dead) * clamp(appear, 0, 1));
+  pushEnemy(e.model, e.elite, e.x, y * e.scale + bob - dead * 0.6 * e.scale, e.z, e.yaw, c.row + Math.floor((e.phase - Math.floor(e.phase)) * c.frames), sc, e.squash, dead, e.flash > 0 ? 0.85 : 0, e.auraTint || 0, e.tint[0], e.tint[1], e.tint[2]);
+  if (glow) pushDecal(e.x, e.z, e.radius * 2.2, e.radius * 2.2, 0, 1, 0, 0, col[0], col[1], col[2], glow * (1 - dead) * (0.75 + 0.25 * Math.sin(t * 3 + e.bobPh)), true);
+  const rr = e.radius * 1.15 * (1 + 0.05 * Math.sin(t * 3 + e.bobPh));
+  pushDecal(e.x, e.z, rr, rr, 0, 3, 0, 0.5, 1, 1, 1, 0.42 * (1 - dead), true);
+  return true;
+}
+
+// ---------- each chapter's mechanic ----------
+// (ahead of the ship: where its hazards land, so you have to steer round them)
+function seaAhead(dist, spread) {
+  const S = OC.ship, sp = Math.hypot(S.vx, S.vz), a = sp > 1 ? Math.atan2(S.vx, S.vz) + rand(-spread, spread) : rand(0, TAU), d = (sp > 1 ? dist : dist * 0.5) + rand(-2, 2);
+  return [S.x + Math.sin(a) * d, S.z + Math.cos(a) * d];
+}
+const DEEP_SPAWN = {
+  weed() { for (let i = 0; i < 2; i++) { const [x, z] = seaAhead(9, 0.9); if (!inIsle(x, z, 2)) OC.hz.push({ k: 'snare', weed: true, x, z, t: 0, life: 13, r: rand(2.0, 2.8) }); } return rand(4.5, 7); },
+  whirl() { const [x, z] = seaAhead(11, 0.7); if (!inIsle(x, z, 4)) { OC.hz.push({ k: 'whirl', x, z, t: 0, life: 15, r: 4.2, tick: 0 }); AUDIO.play('wind', 0.6); } return rand(8, 12); },
+  pillar() { const [x, z] = seaAhead(7, 0.8); if (!inIsle(x, z, 2)) OC.hz.push({ k: 'pillar', x, z, t: 0, dur: 1.5, r: 1.7 }); return rand(3.5, 5.5); },
+  fizz() { for (let i = 0; i < 2; i++) { const [x, z] = seaAhead(6 + i * 3, 1.0); OC.hz.push({ k: 'geyser', x, z, t: -i * 0.4, dur: 1.3, r: 1.9 }); } return rand(3.5, 5); },
+  rift() { const n = OC.hz.filter(h => h.k === 'rift').length; if (n < 3) { const [x, z] = seaAhead(12, 1.2); if (!inIsle(x, z, 3)) OC.hz.push({ k: 'rift', x, z, t: 0, life: 16, r: 1.7, seed: rand(0, 6) }); } return rand(3, 5); },
+  gust() { const S = OC.ship, a = rand(0, TAU), [x, z] = seaAhead(4, 0.5); OC.hz.push({ k: 'gust', x, z, rot: a, len: 18, w: 4.5, t: 0, tele: 1.1, dur: 3.2 }); return rand(6, 9); },
+  shadow() { const S = OC.ship, a = rand(0, TAU), r = 26; OC.hz.push({ k: 'lev', x: S.x - Math.sin(a) * r, z: S.z - Math.cos(a) * r, vx: Math.sin(a) * 8, vz: Math.cos(a) * 8, t: 0, life: 7, yaw: a, hit: false }); AUDIO.play('rumble', 0.5); return rand(15, 21); },
+  gfire() { for (let i = 0; i < 2; i++) { const [x, z] = seaAhead(8 + i * 3, 1.0); if (!inIsle(x, z, 2)) OC.hz.push({ k: 'gfire', x, z, t: 0, life: 9, r: rand(1.8, 2.4), tick: 0 }); } return rand(4, 6); },
+  edge() { return DEEP_SPAWN[pick(['whirl', 'pillar', 'fizz', 'gust'])]() * 0.7; },
+};
+function seaDeepTick(dt) {
+  const run = G.run, S = OC.ship, C = seaTheme(), D = shipDef();
+  if (!C.mech || OC.sink) return;
+  const live = G.state === 'run';
+  // the chapter's hazards come along every so often (after the first ten seconds)
+  if (live && run.t > 10 && DEEP_SPAWN[C.mech]) { OC.mechT = (OC.mechT ?? 2) - dt; if (OC.mechT <= 0) OC.mechT = DEEP_SPAWN[C.mech](); }
+  // weed-tangled boarders weigh the ship down
+  let weedy = 0;
+  for (const e of run.enemies) if (e.grab && e.def.weedy && !e.dying) weedy++;
+  if (weedy) OC.snared = Math.max(OC.snared || 0, Math.min(0.5, weedy * 0.08));
+  for (const h of OC.hz) {
+    if (h.k === 'whirl') {
+      h.t += dt; if (h.t > h.life) h.dead = true;
+      const grow = clamp(h.t / 1.5, 0, 1) * clamp((h.life - h.t) / 1.5, 0, 1), R2 = h.r * 1.7 * grow;
+      const dx = h.x - S.x, dz = h.z - S.z, d = Math.hypot(dx, dz) || 1;
+      if (d < R2 + D.len * 0.3) {
+        // dragged round and in, and spun
+        const k = (1 - d / (R2 + D.len * 0.3)) * grow;
+        S.vx += (dx / d * 3.2 + dz / d * 4.5) * k * dt; S.vz += (dz / d * 3.2 - dx / d * 4.5) * k * dt;
+        S.yaw += 0.9 * k * dt;
+        if (d < h.r * 0.45 && (h.tick -= dt) <= 0) { h.tick = 0.7; hurtHero(seaDmg(5), h.x, h.z); AUDIO.play('splash', 0.7); }
+      }
+      enemiesInRadius(h.x, h.z, R2, e => { if (!e.boss && !e.grab && !e.y) { const ex = h.x - e.x, ez = h.z - e.z, ed = Math.hypot(ex, ez) || 1; e.kx += (ex / ed * 2 + ez / ed * 3) * dt * 3; e.kz += (ez / ed * 2 - ex / ed * 3) * dt * 3; } });
+      if (Math.random() < dt * 20 * grow) { const a = rand(0, TAU), rr = rand(0.5, R2); FX.part(h.x + Math.cos(a) * rr, 0.1, h.z + Math.sin(a) * rr, -Math.sin(a) * 4, 0.3, Math.cos(a) * 4, 0.12, 0.04, 0.5, [0.92, 0.97, 1], 0.9, 2, 0); }
+    } else if (h.k === 'pillar') {
+      h.t += dt;
+      if (!h.done && h.t >= h.dur) {
+        h.done = true; h.dead = true;
+        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(9), h.x, h.z); const n = [0, 0]; hullDist(h.x, h.z, n); S.vx -= n[0] * 6; S.vz -= n[1] * 6; G.cam.shake = Math.max(G.cam.shake, 0.25); }
+        enemiesInRadius(h.x, h.z, h.r, e => { if (!e.boss) hurtEnemy(e, 60, 0, 0, { sound: false }); });
+        if (hullDist(h.x, h.z) > h.r * 0.6) {
+          const I = { x: h.x, z: h.z, r: h.r, kind: 'icol', yaw: rand(0, TAU), key: 'col' + Math.random(), deco: [], floe: 9, rise: 0, ob: { x: h.x, z: h.z, r: h.r * 0.9, shape: 'circle', shots: false, isle: true } };
+          OC.isles.push(I); ARENA.obstacles = OC.isles.map(J => J.ob);
+        }
+        seaSplash(h.x, h.z, h.r * 1.2); FX.burst(h.x, 1, h.z, 20, [0.95, 0.95, 0.9], 6, 0.12, 0.6, 2, 3); AUDIO.play('crumble'); AUDIO.play('splash');
+      }
+    } else if (h.k === 'geyser') {
+      h.t += dt;
+      if (h.t >= 0 && !h.done && h.t >= h.dur) {
+        h.done = true; h.end = h.t + 0.9;
+        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(8), h.x, h.z); S.speed *= 0.3; G.cam.shake = Math.max(G.cam.shake, 0.2); }
+        enemiesInRadius(h.x, h.z, h.r, e => { if (!e.boss) hurtEnemy(e, 40, 0, 0, { sound: false }); });
+        AUDIO.play('splash'); AUDIO.play('pop', 0.7);
+      }
+      if (h.done) {
+        for (let i = 0; i < 3; i++) FX.part(h.x + rand(-0.5, 0.5), rand(0.2, 1), h.z + rand(-0.5, 0.5), rand(-1.5, 1.5), rand(6, 11), rand(-1.5, 1.5), rand(0.12, 0.25), 0.05, 0.9, i % 2 ? [1, 0.75, 0.9] : [1, 0.97, 1], 0.95, 2, -9);
+        if (h.t > h.end) h.dead = true;
+      }
+    } else if (h.k === 'rift') {
+      h.t += dt; if (h.t > h.life) h.dead = true;
+      const S2 = OC.ship;
+      if (h.t > 0.6 && Math.hypot(S2.x - h.x, S2.z - h.z) < h.r + 0.6) {
+        // through the rift: thrown some way off, wherever is clear
+        h.dead = true;
+        let nx = S2.x, nz = S2.z;
+        for (let i = 0; i < 10; i++) { const a = rand(0, TAU), d = rand(12, 18), x = S2.x + Math.sin(a) * d, z = S2.z + Math.cos(a) * d; if (!inIsle(x, z, D.len * 0.6 + 1)) { nx = x; nz = z; break; } }
+        FX.ring(S2.x, S2.z, D.len, [0.5, 1, 0.8], 0.5, 1); FX.burst(S2.x, 1, S2.z, 24, [0.5, 1, 0.8], 6, 0.1, 0.5, 1, 2);
+        S2.x = nx; S2.z = nz; G.cam.x = nx; G.cam.z = nz;
+        FX.ring(nx, nz, D.len, [0.5, 1, 0.8], 0.5, 1); R.frame.flashW = Math.max(R.frame.flashW, 0.4); AUDIO.play('ghost'); AUDIO.play('zap', 0.6);
+      }
+    } else if (h.k === 'gust') {
+      h.t += dt; if (h.t > h.tele + h.dur) h.dead = true;
+      if (h.t > h.tele) {
+        const fx = Math.sin(h.rot), fz = Math.cos(h.rot), on = (x, z) => { const ox = x - h.x, oz = z - h.z, al = ox * fx + oz * fz; return Math.abs(al) < h.len / 2 && Math.abs(ox * fz - oz * fx) < h.w / 2; };
+        if (on(S.x, S.z)) { S.vx += fx * 9 * dt; S.vz += fz * 9 * dt; }
+        for (const e of run.enemies) if (!e.boss && !e.grab && on(e.x, e.z)) { e.kx += fx * 12 * dt; e.kz += fz * 12 * dt; }
+        if (Math.random() < 0.8) { const u = rand(-0.5, 0.5) * h.len, v = rand(-0.5, 0.5) * h.w; FX.part(h.x + fx * u + fz * v, rand(0.3, 1.6), h.z + fz * u - fx * v, fx * 14, 0, fz * 14, 0.05, 0.4, 0.35, [1, 1, 1], 0.6, 1, 0, 0); }
+      }
+    } else if (h.k === 'lev') {
+      // the leviathan's shadow glides under; when it is under the ship it marks a circle and breaches
+      h.t += dt; h.x += h.vx * dt; h.z += h.vz * dt; if (h.t > h.life) h.dead = true;
+      if (!h.hit && Math.hypot(h.x - S.x, h.z - S.z) < 4) { h.hit = true; OC.hz.push({ k: 'breach', x: S.x + S.vx * 0.6, z: S.z + S.vz * 0.6, t: 0, dur: 1.3, r: 3.2 }); AUDIO.play('rumble'); }
+    } else if (h.k === 'breach') {
+      h.t += dt;
+      if (!h.done && h.t >= h.dur) {
+        h.done = true; h.end = h.t + 1.2;
+        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(14), h.x, h.z); S.speed *= 0.4; G.cam.shake = Math.max(G.cam.shake, 0.45); }
+        enemiesInRadius(h.x, h.z, h.r, e => { if (!e.boss) hurtEnemy(e, 80, 0, 0, { sound: false }); });
+        seaSplash(h.x, h.z, h.r * 1.4); FX.ring(h.x, h.z, h.r * 1.6, [0.85, 0.95, 1], 0.6, 1); AUDIO.play('splash'); AUDIO.play('roar', 0.6);
+      }
+      if (h.done && h.t > h.end) h.dead = true;
+    } else if (h.k === 'gfire') {
+      h.t += dt; if (h.t > h.life) h.dead = true;
+      if (hullDist(h.x, h.z) < h.r * 0.8 && (h.tick -= dt) <= 0) { h.tick = 0.6; hurtHero(seaDmg(3.5), h.x, h.z); }
+      if (Math.random() < 0.6) FX.part(h.x + rand(-h.r, h.r) * 0.7, 0.15, h.z + rand(-h.r, h.r) * 0.7, 0, rand(1.5, 3), 0, rand(0.15, 0.3), 0.05, 0.6, [0.4, 1, 0.55], 1, 0);
+    } else if (h.k === 'bones') {
+      h.t += dt;
+      if (h.t >= h.dur) { h.dead = true; const o = seaFoe('pskel', h.x, h.z, { elite: h.elite }); o.rebuilt = true; o.hp = o.maxHp = h.hp; o.tint = h.tint; o.spawnT = 0.4; FX.burst(h.x, 0.5, h.z, 10, [0.95, 0.92, 0.85], 3, 0.07, 0.35, 1, 1); AUDIO.play('crumble', 1.6); }
+    }
+  }
+  // the Atlantis columns rise and sink again
+  for (const I of OC.isles) if (I.rise !== undefined) I.rise = I.floe < 1 ? Math.max(0, I.floe) : Math.min(1, I.rise + dt * 2.5);
+  // the World's Edge pulls toward the edge (north-east), whatever the weather
+  if (C.mech === 'edge') { S.x += 0.35 * dt; S.z -= 0.35 * dt; }
+}
+function emitSeaDeep() {
+  const C = seaTheme(), t = OC.t;
+  if (!C.mech) return;
+  // glowing water: the wake and everything moving through it lights up
+  if (C.vt === 1) for (const w of OC.wake) { const u = w.t / 1.7, r = (0.5 + u * 0.6) * w.w; pushDecal(w.x, w.z, r, r, w.seed, 1, 0, 0, 0.25, 1, 0.8, (1 - u) * 0.35 * w.k, true); }
+  for (const h of OC.hz) {
+    if (h.k === 'whirl') { const grow = clamp(h.t / 1.5, 0, 1) * clamp((h.life - h.t) / 1.5, 0, 1); pushDecal(h.x, h.z, h.r * 1.7 * grow, h.r * 1.7 * grow, 0, 13, h.x, 0, SEA_SH[0] * 2, SEA_SH[1] * 2, SEA_SH[2] * 2, 0.95); }
+    else if (h.k === 'pillar') pushDecal(h.x, h.z, h.r, h.r, 0, 4, 0, clamp(h.t / h.dur, 0, 1), 1, 0.85, 0.4, 0.9);
+    else if (h.k === 'geyser') { if (h.t >= 0 && !h.done) pushDecal(h.x, h.z, h.r, h.r, 0, 4, 0, clamp(h.t / h.dur, 0, 1), 1, 0.45, 0.75, 0.9); if (h.done) pushDecal(h.x, h.z, h.r * 1.2, h.r * 1.2, 0, 3, 0, clamp((h.t - h.dur) / 0.9, 0, 1), 1, 0.85, 0.95, 0.6, true); }
+    else if (h.k === 'rift') { const a = clamp(Math.min(h.t * 2, h.life - h.t), 0, 1); pushDecal(h.x, h.z, h.r, h.r, 0, 14, h.seed, 0, 0.45, 1, 0.75, a, true); if (Math.random() < 0.3) FX.part(h.x + rand(-1, 1), 0.2, h.z + rand(-1, 1), 0, rand(0.6, 1.4), 0, 0.08, 0.03, 0.6, [0.5, 1, 0.8], 1, 3); }
+    else if (h.k === 'gust') { const a = h.t < h.tele ? 0.5 + 0.4 * Math.sin(h.t * 18) : 0.8 * clamp((h.tele + h.dur - h.t) * 2, 0, 1); pushDecal(h.x, h.z, h.w / 2, h.len / 2, -h.rot, 11, 0, 0, 0.92, 0.97, 1, a, true); }
+    else if (h.k === 'lev') { const a = clamp(Math.min(h.t, h.life - h.t), 0, 1); seaShadow(h.x, h.z, 3.2, 13, -h.yaw, 0.75 * a, 0.02); seaShadow(h.x - Math.sin(h.yaw) * 9, h.z - Math.cos(h.yaw) * 9, 1.4, 5, -h.yaw, 0.6 * a, 0.02); }
+    else if (h.k === 'breach') {
+      if (!h.done) { pushDecal(h.x, h.z, h.r, h.r, 0, 4, 0, clamp(h.t / h.dur, 0, 1), 1, 0.22, 0.18, 0.9); seaShadow(h.x, h.z, h.r * 0.9, h.r * 0.9, 0, 0.7 * clamp(h.t / h.dur, 0, 1)); }
+      else {
+        // the leviathan's head bursting up through the water and sinking back
+        const up = clamp((h.t - h.dur) * 3, 0, 1) * clamp((h.end - h.t) * 2, 0, 1), pts = [];
+        for (let i = 0; i < 6; i++) { const v = i / 5; pts.push(h.x + v * 0.6, -0.6 + v * 5 * up, h.z + Math.sin(v * 2) * 0.4); }
+        R.ribStrip(pts, 6, h.r * 0.8, [0.18, 0.24, 0.34, 1], 1, 0, 1, u2 => 1 - u2 * 0.55);
+      }
+    }
+    else if (h.k === 'gfire') { const a = clamp(Math.min(h.t * 2, h.life - h.t), 0, 1); pushDecal(h.x, h.z, h.r, h.r, h.t * 0.2, 2, h.x, 0, 0.3, 1, 0.5, 0.55 * a, true); }
+    else if (h.k === 'bones') { pushDecal(h.x, h.z, 0.7, 0.7, 0, 3, 0, h.t / h.dur % 1, 0.95, 0.92, 0.85, 0.6, true); }
+    else if (h.k === 'ball' && h.trident) { const l = Math.hypot(h.vx, h.vz) || 1, ux = h.vx / l, uz = h.vz / l; R.ribStrip([h.x - ux * 0.5, h.y, h.z - uz * 0.5, h.x + ux * 0.4, h.y, h.z + uz * 0.4], 2, 0.06, [1, 0.82, 0.3, 1], 1, 0, 1); FX.glow(h.x, h.y, h.z, 0.4, [1, 0.85, 0.4], 0.04, 0.5); }
+  }
+  // the islands' own light: glowing mushrooms, ghost lanterns, the lighthouse
+  for (const I of OC.isles) {
+    if (!onScreen(I.x, I.z, I.r + 2)) continue;
+    if (I.kind === 'iglow') pushDecal(I.x, I.z, I.r * 1.5, I.r * 1.5, 0, 1, 0, 0, 0.3, 1, 0.85, 0.22 + 0.05 * Math.sin(t * 1.5 + I.x), true);
+    else if (I.kind === 'ilocker') pushDecal(I.x, I.z, I.r * 1.4, I.r * 1.4, 0, 1, 0, 0, 0.35, 1, 0.5, 0.16, true);
+    else if (I.kind === 'iedge' && Math.random() < 0.2) FX.part(I.x + rand(-I.r, I.r), rand(0.5, 2.5), I.z + rand(-I.r, I.r), 0, 0.5, 0, 0.08, 0.03, 0.9, [1, 0.9, 0.5], 1, 3);
   }
 }
 

@@ -1,12 +1,12 @@
 // ============================================================
-// The six ships after the raft (see SHIPS in 13k-ocean.js), at world scale: +z the bow, y = 0 the waterline.
+// The nine ships after the raft (see SHIPS in 13k-ocean.js), at world scale: +z the bow, y = 0 the waterline.
 // Each has a hull mesh (rocking clip), three pieces it breaks into when it sinks (carved from the same parts),
 // and the tall pirate ships keep their masts and sails in a separate rig mesh, so it can fade while it stands
 // between the camera and the blob.
 // ============================================================
-const SHIP_IDS = ['canoe', 'sloop', 'galleon', 'yacht', 'cruise', 'cargo'];
-const SHIP_RIGS = ['sloop', 'galleon'];
-const SHIP_CELL = { canoe: 0.026, sloop: 0.036, galleon: 0.042, yacht: 0.05, cruise: 0.062, cargo: 0.068 };
+const SHIP_IDS = ['canoe', 'sloop', 'galleon', 'yacht', 'cruise', 'cargo', 'battleship', 'carrier', 'ark'];
+const SHIP_RIGS = ['sloop', 'galleon', 'ark'];
+const SHIP_CELL = { canoe: 0.026, sloop: 0.036, galleon: 0.042, yacht: 0.05, cruise: 0.062, cargo: 0.068, battleship: 0.072, carrier: 0.08, ark: 0.078 };
 for (const id of SHIP_IDS) {
   THEME_CLIPS[id] = ['rock'];
   THEME_CELLS[id] = SHIP_CELL[id];
@@ -49,7 +49,8 @@ function shipModels(defs) {
         { s: 'ell', c: [0, y, L * 0.32], rr: [W * 0.74 * f2 + 0.015, h, L * 0.68 * f2 + 0.015], col, k: 0 }]; }),
       { s: 'box', c: [0, o.top + 3, 0], hs: [W + 2, 3, L + 2], sub: true, k: 0 },
       { s: 'ell', c: [0, o.top, -L * 0.1], rr: [W - 0.06, 0.035, L * 0.9 - 0.06], col: o.deck, k: 0 },
-      { s: 'ell', c: [0, o.top, L * 0.32], rr: [W * 0.74 - 0.06, 0.035, L * 0.68 - 0.06], col: o.deck, k: W * 0.3 },
+      // (no blend: thin flat shapes have a poor distance estimate off their plane, and a blend smears them out wide)
+      { s: 'ell', c: [0, o.top, L * 0.32], rr: [W * 0.74 - 0.06, 0.035, L * 0.68 - 0.06], col: o.deck, k: 0 },
     ];
     return p;
   };
@@ -287,5 +288,119 @@ function shipModels(defs) {
       ...[-0.6, 0.6].map(x => ({ s: 'cyl', ax: 'y', c: [x, 1.55, 6.2], r: 0.12, hh: 0.15, rd: 0.04, col: C('#1e2230'), k: 0 })),
     ];
     ship('cargo', p, 7.25, -2.4, 2.4, { piv: 1.0, ao: 0.4 });
+  }
+
+  // ---------- the battleship: a long grey hull with a red waterline, three twin-gun turrets (the second raised to
+  // fire over the first), a stepped bridge tower with a radar mast, a funnel, and little guns along the sides ----------
+  {
+    const o = { len: 16.5, wid: 3.7, top: 1.5, bot: -0.3, col: C('#7a8494'), deck: C('#b0956a'), bands: [[0.1, 0.25, C('#a8282c')], [1.3, 0.05, C('#5a6270')]] };
+    const grey = C('#8a94a4'), greyD = C('#5a6270'), greyL = C('#b4bcc8');
+    const turret = (z, y, back) => { const d = back ? -1 : 1; return [
+      { s: 'cyl', ax: 'y', c: [0, y + 0.12, z], r: 0.95, hh: 0.14, rd: 0.05, col: greyD, k: 0 },
+      { s: 'box', c: [0, y + 0.5, z - d * 0.15], hs: [0.85, 0.32, 0.95], rd: 0.3, col: grey, k: 0 },
+      { s: 'box', c: [0, y + 0.82, z - d * 0.15], hs: [0.7, 0.04, 0.75], rd: 0.04, col: greyL, k: 0 },
+      ...[-0.32, 0.32].map(x => ({ s: 'cap', a: [x, y + 0.55, z + d * 0.7], b: [x, y + 0.62, z + d * 2.6], r: 0.11, r2: 0.09, col: greyD, k: 0 }))]; };
+    const p = [
+      ...hull(o),
+      ...rail(o, 1.5, 0.2, 0.04, C('#d8dce2'), false),
+      // teak planking lines down the deck
+      ...[-1.2, -0.6, 0.6, 1.2].map(x => ({ s: 'box', c: [x, 1.53, -0.3], hs: [0.012, 0.008, 6.2], rd: 0.005, col: C('#8a7048'), k: 0 })),
+      ...turret(6.0, 1.5, false), ...turret(4.3, 2.0, false), { s: 'box', c: [0, 1.75, 4.3], hs: [1.0, 0.25, 1.0], rd: 0.15, col: grey, k: 0 },
+      ...turret(-5.4, 1.5, true),
+      // the bridge: three stepped blocks, a window band, the radar mast and its dishes
+      { s: 'box', c: [0, 2.15, 0.6], hs: [1.5, 0.65, 1.5], rd: 0.18, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.15, 0.4], hs: [1.15, 0.4, 1.1], rd: 0.15, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.75, 0.5], hs: [0.85, 0.24, 0.75], rd: 0.12, col: greyL, k: 0 },
+      { s: 'box', c: [0, 3.8, 1.25], hs: [0.78, 0.08, 0.02], rd: 0.02, col: C('#1a2638'), k: 0 },
+      { s: 'cap', a: [0, 4.0, 0.2], b: [0, 6.2, 0.2], r: 0.1, r2: 0.06, col: greyD, k: 0 },
+      { s: 'cap', a: [-0.7, 5.4, 0.2], b: [0.7, 5.4, 0.2], r: 0.05, col: greyD, k: 0 },
+      { s: 'ell', c: [0, 5.85, 0.35], rr: [0.45, 0.25, 0.08], col: greyL, k: 0 },
+      { s: 'sph', c: [0, 6.3, 0.2], r: 0.12, col: C('#ff4a3a'), k: 0 },
+      // the funnel
+      { s: 'box', c: [0, 2.8, -1.8], hs: [0.6, 1.1, 0.75], rd: 0.3, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.95, -1.85], hs: [0.55, 0.12, 0.7], rd: 0.12, col: C('#2a2e38'), k: 0 },
+      // small guns down each side, lifeboats, the anchor chain and a flag at the stern
+      ...[-1, 1].flatMap(sx => [-3.2, -2.4, 2.4].map(z => ({ s: 'cap', a: [sx * 1.4, 1.75, z], b: [sx * 1.75, 1.9, z + 0.5], r: 0.06, col: greyD, k: 0 }))),
+      ...[-1, 1].map(sx => ({ s: 'cap', a: [sx * 1.25, 2.95, -0.6], b: [sx * 1.25, 2.95, 0.8], r: 0.2, col: C('#e8ecf0'), k: 0 })),
+      { s: 'cap', a: [0, 1.6, -7.6], b: [0, 2.8, -7.6], r: 0.04, col: greyD, k: 0 }, { s: 'box', c: [0, 2.6, -7.95], hs: [0.02, 0.18, 0.32], rd: 0.01, col: C('#2a5ad8'), k: 0 },
+    ];
+    ship('battleship', p, 8.25, -2.7, 2.7, { piv: 1.0, ao: 0.4 });
+  }
+
+  // ---------- the aircraft carrier: a wide grey flight deck with runway markings, the island tower to starboard,
+  // jets parked along the edge and a helicopter on its pad ----------
+  {
+    const o = { len: 19, wid: 4.6, top: 2.2, bot: -0.3, col: C('#6a7280'), deck: C('#4a4e56'), bands: [[0.1, 0.3, C('#a8282c')]] };
+    const deckC = C('#4a4e56'), line = C('#f4f4f0'), yel = C('#ffd34a'), grey = C('#8a94a4'), greyD = C('#5a6270');
+    const jet = (x, z, yaw) => { const c = Math.cos(yaw), s2 = Math.sin(yaw), at = (u, v, h) => [x + c * u + s2 * v, 3.0 + h, z - s2 * u + c * v]; return [
+      { s: 'cap', a: at(0, -0.9, 0.18), b: at(0, 0.9, 0.18), r: 0.17, r2: 0.1, col: C('#9aa6b8'), k: 0 },
+      { s: 'cap', a: at(-1.0, -0.2, 0.15), b: at(1.0, -0.2, 0.15), r: 0.06, col: C('#8a96a8'), k: 0.05 },
+      { s: 'cap', a: at(-0.45, -0.85, 0.2), b: at(0.45, -0.85, 0.2), r: 0.04, col: C('#8a96a8'), k: 0.03 },
+      { s: 'cap', a: at(0, -0.85, 0.2), b: at(0, -0.75, 0.6), r: 0.05, r2: 0.03, col: C('#8a96a8'), k: 0.03 },
+      { s: 'ell', c: at(0, 0.45, 0.3), rr: [0.1, 0.08, 0.22], col: C('#2a4a7a'), k: 0 }]; };
+    const p = [
+      ...hull(o),
+      // the flight deck: an overhanging slab, angled at the front, edged in white, with a dashed center line
+      { s: 'box', c: [0.3, 2.65, 0], hs: [2.9, 0.22, 9.4], rd: 0.15, col: deckC, k: 0 },
+      { s: 'box', c: [0, 2.65, 9.4], hs: [2.0, 0.22, 0.8], rd: 0.4, col: deckC, k: 0 },
+      ...[-1, 1].map(sx => ({ s: 'box', c: [0.3 + sx * 2.75, 2.88, 0], hs: [0.05, 0.01, 9.2], rd: 0.01, col: line, k: 0 })),
+      ...Array.from({ length: 9 }, (_, i) => ({ s: 'box', c: [0.6, 2.88, -8 + i * 2], hs: [0.06, 0.01, 0.55], rd: 0.01, col: line, k: 0 })),
+      { s: 'box', c: [0.6, 2.88, 8.6], hs: [0.9, 0.01, 0.06], rd: 0.01, col: yel, k: 0 },
+      // the island tower to starboard (-x): a block, a bridge with windows, a mast with radar
+      { s: 'box', c: [-2.35, 4.0, -2.0], hs: [0.6, 1.2, 1.9], rd: 0.15, col: grey, k: 0 },
+      { s: 'box', c: [-2.35, 5.35, -1.8], hs: [0.55, 0.3, 1.3], rd: 0.12, col: grey, k: 0 },
+      { s: 'box', c: [-1.78, 5.4, -1.8], hs: [0.02, 0.09, 1.1], rd: 0.02, col: C('#1a2638'), k: 0 },
+      { s: 'cap', a: [-2.35, 5.6, -1.6], b: [-2.35, 7.3, -1.6], r: 0.09, r2: 0.05, col: greyD, k: 0 },
+      { s: 'ell', c: [-2.35, 6.9, -1.5], rr: [0.5, 0.22, 0.08], col: C('#c8d0da'), k: 0 },
+      { s: 'box', c: [-2.35, 4.4, -0.05], hs: [0.5, 0.06, 0.02], rd: 0.01, col: C('#ffffff'), k: 0 },
+      // jets parked along the port edge and at the stern; a helicopter on a marked pad
+      ...jet(2.2, 5.5, -2.3), ...jet(2.2, 2.8, -2.3), ...jet(2.2, 0.1, -2.3), ...jet(0.6, -6.8, 3.14), ...jet(-1.2, -7.4, 3.14),
+      { s: 'tor', ax: 'y', c: [1.6, 2.88, -3.6], R: 0.8, r: 0.04, a0: -Math.PI, a1: Math.PI, col: yel, k: 0 },
+      { s: 'ell', c: [1.6, 3.35, -3.6], rr: [0.35, 0.3, 0.55], col: C('#3a5a3a'), k: 0 },
+      { s: 'cap', a: [1.6, 3.35, -4.1], b: [1.6, 3.5, -5.0], r: 0.08, r2: 0.04, col: C('#3a5a3a'), k: 0 },
+      { s: 'cap', a: [0.5, 3.75, -3.6], b: [2.7, 3.75, -3.6], r: 0.03, col: C('#2a2e38'), k: 0 },
+      { s: 'cap', a: [1.6, 3.75, -4.7], b: [1.6, 3.75, -2.5], r: 0.03, col: C('#2a2e38'), k: 0 },
+    ];
+    ship('carrier', p, 9.5, -3.1, 3.1, { piv: 1.2, ao: 0.35 });
+  }
+
+  // ---------- the Golden Ark: a great ivory-and-gold ship of legend: gilded bands, a temple cabin with columns
+  // and a golden dome, gem lanterns, an angel figurehead; three masts with white and gold sails (rig mesh) ----------
+  {
+    const o = { len: 21, wid: 5.6, top: 2.0, bot: -0.3, col: C('#f4ecd6'), deck: C('#d8b878'), bands: [[1.75, 0.09, gold], [1.1, 0.16, C('#e0a830')], [0.3, 0.12, C('#2a8ad8')]] };
+    const ivory = C('#f8f0dc'), gem = C('#3ad8f0'), gemR = C('#ff4a7a');
+    const p = [
+      ...hull(o),
+      ...rail(o, 2.0, 0.32, 0.07, gold),
+      // the temple cabin at the stern: a plinth, columns, a frieze and a golden dome with a spire
+      { s: 'box', c: [0, 2.3, -5.6], hs: [2.0, 0.3, 2.4], rd: 0.12, col: ivory, k: 0 },
+      ...[-1.6, -0.55, 0.55, 1.6].flatMap(x => [-7.6, -3.6].map(z => ({ s: 'cyl', ax: 'y', c: [x, 3.35, z], r: 0.2, hh: 0.8, rd: 0.05, col: ivory, k: 0 }))),
+      { s: 'box', c: [0, 3.0, -5.6], hs: [1.5, 0.7, 1.7], rd: 0.1, col: C('#f0e4c4'), k: 0 },
+      { s: 'box', c: [0, 4.25, -5.6], hs: [2.0, 0.18, 2.3], rd: 0.06, col: gold, k: 0 },
+      { s: 'sph', c: [0, 4.6, -5.6], r: 1.35, col: C('#f2c440'), k: 0 }, { s: 'box', c: [0, 3.8, -5.6], hs: [2, 0.6, 2], sub: true, k: 0 },
+      { s: 'cap', a: [0, 5.8, -5.6], b: [0, 6.8, -5.6], r: 0.08, r2: 0.03, col: gold, k: 0 }, { s: 'sph', c: [0, 6.9, -5.6], r: 0.16, col: gem, k: 0 },
+      // gem lanterns down both rails, a golden prow and the angel figurehead with spread wings
+      ...[-1, 1].flatMap(sx => [-2, 1.5, 5].flatMap(z => { const w = 2.75 * Math.sqrt(Math.max(0, 1 - ((z + 1.0) / 9.5) ** 2)); return [
+        { s: 'cap', a: [sx * w * 0.95, 2.0, z], b: [sx * w * 0.95, 2.7, z], r: 0.05, col: gold, k: 0 }, { s: 'sph', c: [sx * w * 0.95, 2.8, z], r: 0.14, col: sx > 0 ? gem : gemR, k: 0 }]; })),
+      { s: 'cap', a: [0, 1.9, 9.6], b: [0, 2.7, 11.1], r: 0.22, r2: 0.12, col: gold, k: 0 },
+      { s: 'sph', c: [0, 2.95, 11.0], r: 0.24, col: C('#fff4dc'), k: 0 },
+      { s: 'cap', a: [0, 2.7, 10.85], b: [0, 2.1, 10.5], r: 0.22, r2: 0.3, col: C('#fff4dc'), k: 0.1 },
+      ...[-1, 1].map(sx => ({ s: 'ell', c: [sx * 0.55, 2.75, 10.4], rr: [0.6, 0.35, 0.12], col: gold, k: 0.05 })),
+      { s: 'tor', ax: 'y', c: [0, 3.3, 11.0], R: 0.2, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#ffe86a'), k: 0 },
+    ];
+    ship('ark', p, 10.5, -3.4, 3.4, { piv: 1.0, ao: 0.4 });
+    const sailW = C('#fffaf0'), mastG = C('#c8962a');
+    const sail = (z, y, w, h) => [
+      { s: 'cap', a: [-w - 0.15, y + h + 0.12, z], b: [w + 0.15, y + h + 0.12, z], r: 0.07, col: mastG, k: 0 },
+      { s: 'ell', c: [0, y, z], rr: [w, h, 0.4], col: sailW, k: 0 }, { s: 'ell', c: [0, y, z - 0.06], rr: [w, h, 0.36], sub: true, k: 0 },
+      { s: 'box', c: [0, y, z - 0.4], hs: [4, 4, 0.4], sub: true, k: 0 },
+      { s: 'ell', c: [0, y + h * 0.1, z + 0.36], rr: [w * 0.32, w * 0.32, 0.06], col: C('#f2c440'), k: 0 }];
+    rigMesh('ark_rig', [
+      ...[[5.2, 7.2], [0.8, 8.4], [-2.4, 6.8]].flatMap(([z, h]) => [{ s: 'cap', a: [0, 2.0, z], b: [0, h, z], r: 0.16, r2: 0.1, col: mastG, k: 0 }, { s: 'sph', c: [0, h + 0.1, z], r: 0.2, col: gold, k: 0 }]),
+      ...sail(5.2, 4.6, 1.9, 1.5), ...sail(0.8, 5.4, 2.3, 1.9), ...sail(-2.4, 4.4, 1.8, 1.4),
+      { s: 'box', c: [0, 8.6, 0.45], hs: [0.03, 0.3, 0.55], rd: 0.02, col: C('#2a8ad8'), k: 0 },
+      { s: 'cap', a: [0, 8.3, 0.8], b: [0, 2.6, 10.6], r: 0.05, col: gold, k: 0 },
+      { s: 'cap', a: [0, 8.3, 0.8], b: [0, 4.5, -7.6], r: 0.05, col: gold, k: 0 },
+    ], 10.5);
   }
 }

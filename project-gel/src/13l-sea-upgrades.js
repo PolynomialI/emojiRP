@@ -35,12 +35,21 @@ const SHIP_MOUNTS = {
   cargo: { ms: 1.5, rim: 1.2, guns: [[1.1, 1.9, 3.19], [-1.1, 1.9, 3.19], [1.1, -3.1, 3.19], [-1.1, -3.1, 3.19]],
     bow: [0.9, 6.0, 1.435], fig: [0, 7.45, 1.25], turret: [0, -0.6, 3.19], pile: [0, 1.9, 3.19], hose: [-0.9, 6.0, 1.435], lamp: [1.2, -5.6, 4.11],
     net: [-1.2, -5.6, 4.11], mast: [0, -5.25, 4.11], stern: [0, -7.35, 0.6], anchor: [1.2, 6.4, 1.6], crew: [[1.1, -3.1], [1.1, 1.9], [-1.1, 1.9], [-1.1, -3.1]].map(p => p) },
+  battleship: { ms: 1.6, rim: 1.3, guns: [[1.3, 2.6, 1.535], [-1.3, 2.6, 1.535], [1.25, -3.4, 1.535], [-1.25, -3.4, 1.535]],
+    bow: [1.0, 7.4, 1.535], fig: [0, 8.45, 1.3], turret: [0, -3.0, 1.535], pile: [-1.35, -0.9, 1.535], hose: [1.35, -0.9, 1.535], lamp: [0.8, 0.7, 3.99],
+    net: [-0.8, 0.7, 3.99], mast: [0, -1.0, 3.99], stern: [0, -8.4, 0.6], anchor: [1.2, 7.2, 1.7], crew: [[1.35, 1.6], [1.35, -3.8], [-1.35, -3.8], [-1.35, 1.6]] },
+  carrier: { ms: 1.75, rim: 1.9, guns: [[2.6, 7.4, 2.88], [-1.9, 7.4, 2.88], [2.6, -8.2, 2.88], [-1.9, -8.2, 2.88]],
+    bow: [-1.2, 9.4, 2.88], fig: [0, 9.95, 2.0], turret: [-0.6, 6.0, 2.88], pile: [-1.2, 1.0, 2.88], hose: [2.6, -2.0, 2.88], lamp: [-2.35, -0.5, 5.65],
+    net: [-2.35, -3.0, 5.65], mast: [-2.35, -2.4, 5.65], stern: [0, -9.6, 0.7], anchor: [2.2, 9.0, 2.4], crew: [[2.4, 3.0], [2.4, -5.0], [-1.4, -5.0], [-1.4, 3.0]] },
+  ark: { ms: 1.9, rim: 1.7, guns: [[2.1, 6.0, 2.035], [-2.1, 6.0, 2.035], [2.2, -2.6, 2.035], [-2.2, -2.6, 2.035]],
+    bow: [0.9, 8.6, 2.035], fig: [0, 11.5, 2.2], turret: [0, 6.6, 2.035], pile: [-1.6, 1.4, 2.035], hose: [1.6, 1.4, 2.035], lamp: [1.3, -5.6, 4.43],
+    net: [-1.3, -5.6, 4.43], mast: [0, -4.4, 4.43], stern: [0, -10.4, 0.6], anchor: [1.9, 9.0, 2.3], crew: [[2.0, 4.2], [2.0, -1.6], [-2.0, -1.6], [-2.0, 4.2]] },
 };
 const mountsOf = D => SHIP_MOUNTS[D.id] || SHIP_MOUNTS.raft;
 // a mount spot in the world: [x, y, z] (riding the swell with the ship)
 function mountW(spot, out = [0, 0, 0]) { const p = shipW(spot[0], spot[1]); out[0] = p[0]; out[1] = OC.ship.y + spot[2]; out[2] = p[1]; return out; }
 // the deck height under the crew's walk (the cargo ship's crew walks the container tops)
-const crewY = (M, D) => (D.id === 'cargo' ? 3.19 : D.id === 'cruise' ? 2.76 : M.guns[0][2]);
+const crewY = (M, D) => (D.id === 'cargo' ? 3.19 : D.id === 'cruise' ? 2.76 : M.guns[0][2]);  // (the others walk their main deck)
 
 // ---------- the upgrades ----------
 const SEA_POWER = 1;

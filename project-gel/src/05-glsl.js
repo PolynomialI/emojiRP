@@ -544,7 +544,7 @@ void main() {
     int vt = int(uSea.z + 0.5);
     if (vt == 1) {
       // the light lines glow, and specks of plankton drift and pulse
-      emis = uGrout * (line * mask * 0.85 + line * 0.12);
+      emis = uGrout * (line * mask * 0.55 + line * 0.06);
       vec2 pq = p * 3.0 + vec2(uTime * 0.15, uTime * 0.06), pc = floor(pq), pf = fract(pq) - 0.5;
       float ph = hash12(pc);
       emis += uGrout * step(0.88, ph) * (1.0 - smoothstep(0.02, 0.1, length(pf))) * (0.45 + 0.55 * sin(uTime * 2.3 + ph * 50.0)) * 1.3;
@@ -1816,6 +1816,26 @@ void main() {
     float m = 1.0 - smoothstep(edge * 0.45, edge, r);
     float rip = texture(uNoise, vW.xz * 0.35 + vec2(uTime * 0.05, uTime * 0.03)).g;
     a = m * (0.85 + 0.25 * (rip - 0.5)) * fC.a;
+  } else if (type == 13) {
+    // a whirlpool: foam arms spiralling in to a dark middle (13o-sea-deep.js)
+    float ang = atan(q.y, q.x);
+    float arms = sin(ang * 3.0 + log(max(r, 0.02)) * 7.0 + uTime * 4.0 + seed);
+    float foam = smoothstep(0.45, 0.95, arms) * (1.0 - smoothstep(0.75, 1.0, r)) * smoothstep(0.06, 0.3, r);
+    float dark = (1.0 - smoothstep(0.0, 0.65, r)) * 0.75;
+    col = mix(fC.rgb, vec3(0.92, 0.97, 1.0), smoothstep(0.0, 0.25, foam - dark * 0.4));
+    a = max(foam * 0.85, dark) * fC.a;
+  } else if (type == 14) {
+    // a warp rift: a glowing triangle outline turning slowly, a shimmer inside (13o-sea-deep.js)
+    float ang = uTime * 0.6 + seed;
+    vec2 p2 = vec2(cos(ang) * q.x - sin(ang) * q.y, sin(ang) * q.x + cos(ang) * q.y) / 0.8;
+    const float k3 = 1.7320508;
+    p2.x = abs(p2.x) - 1.0; p2.y = p2.y + 1.0 / k3;
+    if (p2.x + k3 * p2.y > 0.0) p2 = vec2(p2.x - k3 * p2.y, -k3 * p2.x - p2.y) / 2.0;
+    p2.x -= clamp(p2.x, -2.0, 0.0);
+    float d = -length(p2) * sign(p2.y) * 0.8;
+    float edge = 1.0 - smoothstep(0.0, 0.07, abs(d));
+    float inner = (1.0 - smoothstep(-0.3, 0.0, d)) * (0.22 + 0.18 * sin(uTime * 6.0 + r * 14.0));
+    a = clamp(edge + inner, 0.0, 1.0) * fC.a;
   } else if (type == 10) {
     // cone telegraph: a pie slice of half-angle seed along +y, filling outward with t
     float ang = abs(atan(q.x, q.y));
