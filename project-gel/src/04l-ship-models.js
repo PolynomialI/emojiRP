@@ -256,7 +256,7 @@ function shipModels(defs) {
   // ---------- the cargo ship: a navy hull with a red waterline, stacks of colorful containers, yellow cranes,
   // a white bridge tower at the stern and a red funnel ----------
   {
-    const o = { len: 14.5, wid: 3.9, top: 1.4, bot: -0.3, col: C('#244a7a'), deck: C('#6a7a6a'), bands: [[0.12, 0.25, C('#b8382c')], [1.15, 0.05, C('#f4f4f4')]] };
+    const o = { len: 14.5, wid: 3.9, top: 1.4, bot: -0.3, col: C('#244a7a'), deck: C('#9a4a32'), bands: [[0.12, 0.25, C('#b8382c')], [1.15, 0.05, C('#f4f4f4')]] };
     const cols = ['#d8322c', '#2f6fd8', '#2fae6a', '#ff8a2a', '#ffd34a', '#2fc4c0', '#8a5ad8'].map(C);
     const conts = [];
     const bays = [-3.1, -0.6, 1.9, 4.4];

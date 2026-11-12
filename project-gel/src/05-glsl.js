@@ -526,9 +526,10 @@ void main() {
     float mask = smoothstep(0.42, 0.62, texture(uNoise, p * 0.022 - fl * 0.6 + 5.7).g);
     alb = mix(alb, uGrout, line * mask * 0.42 * (1.0 - storm * 0.5));
     // foam caps on the crests: a few in rough water, many in a storm
-    float cap = smoothstep(0.78 - 0.32 * rough - 0.3 * storm, 0.95, hn * 0.5 + 0.5 + (fine - 0.5) * 0.35);
-    cap *= smoothstep(0.45, 0.62, texture(uNoise, p * 0.2 + fl * 3.0).r) * clamp(rough * 1.5 + storm, 0.0, 1.0);
-    alb = mix(alb, vec3(0.94, 0.98, 1.0), cap * 0.7);
+    // (small, scattered caps even in a storm: rough water, not a white-out)
+    float cap = smoothstep(0.84 - 0.12 * rough - 0.1 * storm, 0.97, hn * 0.5 + 0.5 + (fine - 0.5) * 0.35);
+    cap *= smoothstep(0.55, 0.66, texture(uNoise, p * 0.38 + fl * 3.0).r) * clamp(rough * 1.2 + storm * 0.6, 0.0, 1.0);
+    alb = mix(alb, vec3(0.94, 0.98, 1.0), cap * 0.5);
     alb = mix(alb, dot(alb, vec3(0.33)) * vec3(0.62, 0.7, 0.8), storm * 0.5);
     vec2 gc = floor(p * 1.6), gf = fract(p * 1.6) - 0.5;
     float gh = hash12(gc), tw = max(0.0, sin(uTime * 3.0 + gh * 40.0));
