@@ -372,6 +372,27 @@ void main() {
     emis = vec3(0.55, 0.95, 1.0) * pow(1.0 - abs(ca - 1.0), 7.0) * 0.6;
     N = normalize(vec3(cos(p.x * 1.6) * 0.05, 1.0, 0.0));
     gloss = 0.08;
+  } else if (style == 15) {
+    // clockwork factory: big riveted steel plates with a diamond tread, a yellow-and-black hazard band along the
+    // 24 m bay lines, and dark oil stains
+    vec2 g = p / 3.0, f = fract(g) - 0.5, cell = floor(g);
+    float h = hash12(cell);
+    float seam = 1.0 - smoothstep(0.0, 0.03, 0.5 - max(abs(f.x), abs(f.y)));
+    float rivet = 1.0 - smoothstep(0.022, 0.036, length(abs(f) - 0.43));
+    vec2 tq = p * 2.4, tc = floor(tq), tf = fract(tq) - 0.5;
+    vec2 lz = mod(tc.x + tc.y, 2.0) > 0.5 ? tf : tf.yx;
+    float bump = 1.0 - smoothstep(0.1, 0.16, length(vec2(lz.x + lz.y, (lz.x - lz.y) * 3.2)) * 0.5);
+    alb = mix(uStoneA, uStoneB, h * 0.7 + mott * 0.3) * (0.9 + 0.1 * fine) * (0.94 + 0.14 * bump) * (1.0 - 0.45 * seam);
+    alb = mix(alb, vec3(0.78, 0.8, 0.84), rivet * 0.75);
+    vec2 gb = abs(p - 24.0 * floor(p / 24.0 + 0.5));
+    float band = step(min(gb.x, gb.y), 0.7) * (1.0 - seam);
+    float stripe = step(0.5, fract((p.x + p.y) * 0.45));
+    alb = mix(alb, mix(vec3(0.95, 0.72, 0.1), vec3(0.08, 0.08, 0.1), stripe) * (0.85 + 0.15 * fine), band * 0.9);
+    float oil = smoothstep(0.62, 0.7, texture(uNoise, p * 0.06 + 1.7).r);
+    alb = mix(alb, vec3(0.06, 0.06, 0.08), oil * 0.4);
+    N = normalize(vec3(tf.x * bump * 0.5 * (1.0 - band), 1.0, tf.y * bump * 0.5 * (1.0 - band)));
+    ao = 1.0 - 0.3 * seam - 0.2 * rivet;
+    gloss = 0.3 + oil * 0.4; sharp = 50.0;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -427,7 +448,7 @@ void main() {
   float ang = atan(vUV.y, vUV.x);
   if (uStyle > 0.5) {
     // ice and quicksand: solid patches with their own surface instead of rippling liquid
-    float edge = 0.88 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 5.0 - uSeed * 2.0);
+    float edge = uStyle > 2.5 ? 0.94 : 0.88 + 0.05 * sin(ang * 3.0 + uSeed) + 0.04 * sin(ang * 5.0 - uSeed * 2.0);
     float m = 1.0 - smoothstep(edge - 0.02, edge + 0.01, r);
     if (m < 0.003) discard;
     vec2 q = vW.xz;
@@ -442,6 +463,20 @@ void main() {
       col = mix(uPoolCol * 0.85, uPoolCol * 1.15, smoothstep(edge, 0.0, r)) + envColor(reflect(-v, n)) * (0.18 + F * 0.5);
       col += uLightCol * pow(max(dot(n, normalize(uLightDir + v)), 0.0), 140.0) * 1.4;
       col = mix(col, vec3(1.0), crack * 0.5 + smoothstep(edge - 0.08, edge - 0.01, r) * 0.35);
+    } else if (uStyle > 2.5) {
+      // turntable: a steel disc turning, with spokes, a brass hub and a hazard-striped rim sunk in a dark slot
+      float sp = ang - uTime * 1.5 + uSeed, rr = r / edge;
+      float ring = step(0.8, rr);
+      float hz = step(0.5, fract(sp * 16.0 / 6.2832));
+      float spoke = 1.0 - smoothstep(0.03, 0.06, abs(fract(sp * 6.0 / 6.2832 + 0.5) - 0.5) * 6.2832 / 6.0 * rr);
+      float hub = 1.0 - smoothstep(0.14, 0.17, rr);
+      vec3 steel = uPoolCol * (0.85 + 0.2 * texture(uNoise, q * 0.8).g);
+      col = mix(steel, steel * 0.62, spoke * step(0.17, rr) * (1.0 - ring));
+      col = mix(col, mix(vec3(0.95, 0.72, 0.1), vec3(0.09), hz), ring);
+      col = mix(col, vec3(0.86, 0.64, 0.26), hub);
+      col *= 0.6 + 0.55 * max(uLightDir.y, 0.0);
+      col += uLightCol * 0.2 * pow(max(dot(normalize(uLightDir + v), vec3(0.0, 1.0, 0.0)), 0.0), 40.0) * (1.0 - ring);
+      col *= 1.0 - 0.75 * smoothstep(0.95, 1.0, rr);
     } else {
       // quicksand: a slow swirl sinking toward the middle
       float swirl = sin(ang * 3.0 + r * 9.0 - uTime * 1.2 + uSeed) * 0.5 + 0.5;
@@ -1023,6 +1058,24 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (eye < d) { d = eye; m = length(e - vec3(-0.02, 0.0, 0.11)) < 0.085 ? 12.0 : 7.0; }
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
+  if (type == 48) {
+    // clockwork turret: a brass cog base, a steel dome and a barrel along +z; P1.x > 0.5: a golden gatling with three barrels
+    vec3 q = p - vec3(0.0, -0.45, 0.0);
+    float ga = atan(q.z, q.x), gr = length(q.xz);
+    float base = max(gr - 0.6 - 0.07 * smoothstep(-0.3, 0.3, sin(ga * 12.0)), abs(q.y) - 0.12);
+    float dome = length(p - vec3(0.0, -0.2, 0.0)) - 0.4;
+    float barrel;
+    if (P1.x > 0.5) {
+      vec2 bp = rot2(ph * 25.0) * p.xy - vec2(0.0, -0.05);
+      barrel = 1e9;
+      for (int i = 0; i < 3; i++) { vec2 o = rot2(float(i) * 2.094) * vec2(0.0, 0.11); barrel = min(barrel, sdCapsule(vec3(bp - o, p.z), vec3(0.0, 0.0, 0.15), vec3(0.0, 0.0, 0.95), 0.07)); }
+    } else barrel = sdCapsule(p, vec3(0.0, -0.05, 0.15), vec3(0.0, -0.02, 0.9), 0.1);
+    float key = sdCapsule(p, vec3(0.0, 0.15, -0.25), vec3(0.0, 0.42, -0.35), 0.05);
+    float d = min(min(base, dome), min(barrel, key));
+    float m = base <= d + 1e-4 || key <= d + 1e-4 ? 2.0 : 8.0;
+    if (P1.x > 0.5 && barrel <= d + 1e-4) m = 2.0;
     return vec2(d, m);
   }
   if (type == 47) {

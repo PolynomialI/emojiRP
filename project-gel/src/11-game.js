@@ -442,6 +442,8 @@ function updateRun(dt) {
   run.vel[0] += (G.input.x * top - run.vel[0]) * k;
   run.vel[2] += (G.input.z * top - run.vel[2]) * k;
   h[0] += run.vel[0] * dt; h[2] += run.vel[2] * dt;
+  // a turntable carries you round with it
+  if (Z && Z.spin) zoneCarry(zone, Z, h, 0, 2, dt);
   HERO_PT.x = h[0]; HERO_PT.z = h[2];
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
   hero.update(dt, run.vel, true);
@@ -543,6 +545,7 @@ function updateEnemies(dt) {
     if (ARENA.zones.length && !e.boss && (e.id + fr) % 3 === 0) {
       const z = zoneAt(e.x, e.z), Z = z && ZONE_KINDS[z.kind];
       if (Z && Z.slow) { e.slowMul = Math.min(e.slowMul, Z.slow); e.slowT = Math.max(e.slowT, 0.12); }
+      if (Z && Z.spin) zoneCarry(z, Z, e, 'x', 'z', dt * 3);
     }
     e.spawnT = Math.max(0, e.spawnT - dt);
     e.auraTint = Math.max(0, e.auraTint - dt * 2);
@@ -603,6 +606,11 @@ function updateEnemies(dt) {
   run.enemies = run.enemies.filter(e => !(e.dying >= 1));
 }
 
+// move a point (o[ix], o[iz]) round a turntable zone: rim speed Z.spin, slower toward the middle
+function zoneCarry(zone, Z, o, ix, iz, dt) {
+  const rx = o[ix] - zone.x, rz = o[iz] - zone.z, r = Math.hypot(rx, rz) || 1, v = Z.spin * Math.min(1, r / zone.r) / r;
+  o[ix] += -rz * v * dt; o[iz] += rx * v * dt;
+}
 const STEER = [0, 0];
 function updateEnemyAI(e, dt) {
   if (e.def.flee) { fleeAI(e, dt); return; }

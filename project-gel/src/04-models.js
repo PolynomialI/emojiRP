@@ -235,6 +235,7 @@ function modelDefs() {
   themeModels2(defs);
   themeModels3(defs);
   westModels(defs);
+  factoryModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -268,6 +269,7 @@ const CLIPS = {
   run: { frames: 32, fn(t, m) {
     if (m.quad) return quadRun(t, m);
     if (m.snake) return snakeRun(t);
+    if (m.roll) return CLIPS.roll.fn(t);
     const ph = t * TAU, s = Math.sin(ph), c = Math.cos(ph), A = m.runAmp || 1, lean = m.lean || 0.14;
     const armL = m.shieldArm ? 0.15 : 1;
     return { root: [0, 0.028 * Math.cos(2 * ph) - 0.01, 0], rot: [

@@ -128,6 +128,11 @@ const SKILLS = {
     fields: [['dmg', 'Pop damage'], ['count', 'Bubbles'], ['hold', 'Holds for', 's'], ['radius', 'Pop radius', 'm']],
     levels: L10({ dmg: [20, 22, 25, 28, 31, 35, 39, 44, 50, 56], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], hold: [1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.6], radius: [1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.4], cd: [2.4, 2.35, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.65, 1.5] }),
   },
+  turret: {
+    name: 'Clockwork Turret', from: 16, intro: 'Every few seconds a little brass turret unfolds beside you and peppers the nearest enemies with bolts until it winds down.', icon: { type: 48, colw: 0 },
+    fields: [['dmg', 'Damage per bolt'], ['count', 'Turrets at once'], ['rate', 'Shots per second'], ['life', 'Winds down after', 's']],
+    levels: L10({ dmg: [8, 9, 10, 11, 12, 13, 15, 17, 19, 22], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], rate: [2, 2.2, 2.4, 2.4, 2.6, 2.8, 3, 3.2, 3.5, 3.8], life: [6, 6.5, 7, 7, 7.5, 8, 8.5, 9, 9.5, 10], cd: [6, 6, 5.8, 5.6, 5.4, 5.2, 5, 4.8, 4.5, 4.2] }),
+  },
   frostnova: {
     name: 'Frost Nova', from: 6, intro: 'Every few seconds a ring of frost bursts out of you, hurting and freezing everything it touches.', icon: { type: 38, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Radius', 'm'], ['freeze', 'Freeze', 's'], ['cd', 'Cooldown', 's']],
@@ -191,6 +196,7 @@ const EVOLUTIONS = {
   prism: { with: 'reach', name: 'Rainbow Cannon', desc: 'The beam splits two more times and is a little wider.', boost: L => ({ bounces: L.bounces + 2, width: +(L.width * 1.2).toFixed(2) }) },
   gale: { with: 'multishot', name: 'Tempest', desc: 'One more crescent, a little bigger.', boost: L => ({ count: L.count + 1, size: +(L.size * 1.15).toFixed(2) }) },
   yoyo: { with: 'sugar', name: 'Double Loop', desc: 'One more golden yo-yo with a little more reach.', boost: L => ({ count: L.count + 1, range: +(L.range * 1.1).toFixed(1) }) },
+  turret: { with: 'multishot', name: 'Gatling Turret', desc: 'One more turret, and every turret spins up a gatling barrel that fires twice as fast.', boost: L => ({ count: L.count + 1, rate: +(L.rate * 2).toFixed(1) }) },
   bubble: { with: 'haste', name: 'Bubble Storm', desc: 'One more golden bubble with a slightly bigger pop.', boost: L => ({ count: L.count + 1, radius: +(L.radius * 1.15).toFixed(1) }) },
 };
 function featuredPowerup(chapter) {
@@ -248,6 +254,9 @@ const ENEMY_TYPES = {
   toysoldier: { model: 'spear', hp: 20, speed: 2.2, dmg: 5, xp: 2, radius: 0.4, scale: 1.35, tint: '#e8444e', mass: 1.1, ai: 'lunge', hit: 10 },
   teddy: { model: 'teddy', hp: 62, speed: 1.7, dmg: 9, xp: 4, radius: 0.6, scale: 1.6, tint: '#b9834f', mass: 3, ai: 'chop', hit: 14, wind: 0.8, reach: 1.3 },
   crabling: { model: 'crabling', hp: 20, speed: 2.6, dmg: 4, xp: 2, radius: 0.4, scale: 1.25, tint: '#ff6a4a', mass: 0.9, weave: 1.1 },
+  // chapter 16, the Clockwork Factory: gearlings roll at you, cogbots wind up and lunge
+  cogbot: { model: 'cogbot', hp: 34, speed: 2.4, dmg: 6, xp: 3, radius: 0.44, scale: 1.4, tint: '#5aa0d8', mass: 1.6, ai: 'lunge', hit: 12 },
+  gearling: { model: 'gearling', hp: 22, speed: 3.8, dmg: 5, xp: 2, radius: 0.42, scale: 1.35, tint: '#d8a440', mass: 1.2, weave: 0.5 },
   puffer: { model: 'puffer', hp: 14, speed: 2.6, dmg: 4, xp: 2, radius: 0.42, scale: 1.3, tint: '#ffb84a', mass: 0.9, ai: 'bomb', hit: 18, float: 0.3 },
 };
 // Extra enemy types that only show up on one map: [seconds into the run, spawn weight]
@@ -267,6 +276,7 @@ const THEME_ENEMIES = {
   sky: { cloudling: [35, 0.24] },
   toys: { toysoldier: [20, 0.2], teddy: [90, 0.12] },
   reef: { crabling: [20, 0.26], puffer: [75, 0.14] },
+  factory: { gearling: [15, 0.28], cogbot: [35, 0.3] },
 };
 // When each type starts showing up: [first chapter, seconds into the run, spawn weight]
 const ENEMY_MIX = {
@@ -288,6 +298,7 @@ BOSS_TYPES.pumpking = { name: 'Pumpkin King', model: 'pumpking', meshes: ['pumpk
 BOSS_TYPES.geode = { name: 'Geode Titan', model: 'geode', meshes: ['geode', 'icespike'], hp: 4500, speed: 1.9, dmg: 20, scale: 3.0, radius: 1.3, tint: '#6a5a8a', mass: 60, portraitTop: 1.08 };
 BOSS_TYPES.storm = { name: 'Storm King', model: 'stormcloud', meshes: ['stormcloud'], hp: 4400, speed: 2.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#7c86a0', mass: 60, portraitTop: 1.3 };
 BOSS_TYPES.jack = { name: 'Jack-in-the-Box', model: 'jackbox', meshes: ['jackbox', 'jackhead', 'toyblock'], hp: 4600, speed: 2.2, dmg: 20, scale: 2.3, radius: 1.3, tint: '#e83a4a', mass: 60, portraitTop: 2.0 };
+BOSS_TYPES.colossus = { name: 'Clockwork Colossus', model: 'colossus', meshes: ['colossus', 'sawblade'], hp: 4900, speed: 1.8, dmg: 22, scale: 3.0, radius: 1.35, tint: '#d8a440', mass: 60, portraitTop: 1.15 };
 BOSS_TYPES.kraken = { name: 'Kraken', model: 'kraken', meshes: ['kraken'], hp: 4800, speed: 1.5, dmg: 20, scale: 2.6, radius: 1.6, tint: '#8a4ab0', mass: 60, portraitTop: 1.45 };
 BOSS_TYPES.outlaw = { name: 'The Outlaw', model: 'outlaw', meshes: ['outlaw', 'dynamite', 'bison'], hp: 4200, speed: 2.7, dmg: 20, scale: 2.6, radius: 1.0, tint: '#8f5bd8', mass: 60, portraitTop: 1.15 };
 BOSS_TYPES.crab = { name: 'Captain Crab', model: 'crab', meshes: ['crab', 'crabclaw', 'crableg'], hp: 4100, speed: 3.2, dmg: 20, scale: 2.6, radius: 1.7, tint: '#ff5a3a', mass: 60, portraitTop: 0.95 };
@@ -310,6 +321,7 @@ const BOSS_HINTS = {
   pumpking: 'Pumpkin bombs, ghost rings and pounces from the mist.', geode: 'Crystal shards, spike walls and sweeping lasers.',
   storm: 'Lightning, gusts of wind and twisters.', jack: 'Spring punches, pounces and tumbling toy blocks.',
   kraken: 'Tentacle slams, ink puddles and a whirlpool.',
+  colossus: 'Saw blades that fly back, piston punches and steam vents.',
 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
@@ -351,6 +363,8 @@ const ARENAS = [
     props: [['toyblock', 8, 0.65, 0.85], ['blockstack', 3, 0.55, 0.65], ['drum', 3, 0.55, 0.65]], zones: [['slime', 3, 1.8, 2.8]], wall: 'blockwall', kinds: ['toycar'] },
   { id: 'reef', name: 'Coral Reef', floor: 14, stoneA: '#c8d8bc', stoneB: '#a4b89c', grout: '#6a7a60', accent: '#5ae8ff', fog: '#06304e', sky: '#5ab4e0', ground: '#1a5a7a', light: '#d8f2ff', spotMin: 0.55, shadowTint: '#062a48', rock: '#5a7a8a', pool: '#2f8a5a', poolGlow: 0.05,
     props: [['coral', 8, 0.75, 1.0], ['kelp', 6, 0.6, 0.75], ['clam', 2.5, 0.7, 0.9], ['rock', 3, 0.8, 1.2]], zones: [['kelpbed', 3, 2.0, 3.0]], wall: 'reefwall' },
+  { id: 'factory', name: 'Clockwork Factory', floor: 15, stoneA: '#8e96a2', stoneB: '#747c88', grout: '#2a2e36', accent: '#ffc21f', fog: '#14161c', sky: '#c8ccd4', ground: '#3a404a', light: '#fff2dc', spotMin: 0.55, shadowTint: '#141a26', rock: '#6a707c', pool: '#7a828e', poolGlow: 0,
+    props: [['gearstack', 4.5, 0.9, 1.15], ['press', 3.5, 1.0, 1.2], ['boiler', 3.5, 0.95, 1.1], ['pipes', 6, 0.8, 1.0]], zones: [['turntable', 2.2, 2.4, 3.3]], wall: 'factwall', kinds: ['piston'] },
 ];
 // Static scenery. models: mesh names (one picked at random); unit: footprint radius at scale 1;
 // tint: hex, or 'rock' for the arena's rock color; block: stops movement; shots: also stops enemy shots
@@ -433,6 +447,12 @@ const PROP_KINDS = {
   coral: { models: ['coral'], unit: 0.4, block: true, shots: true, tints: ['#ff6a8a', '#ff9a4a', '#c86aff', '#ff5ac8'], tall: 1.6 },
   kelp: { models: ['kelp'], unit: 0.3, block: false, tall: 2.4 },
   clam: { models: ['clam'], unit: 0.5, block: true, shots: true },
+  gearstack: { models: ['gearstack'], unit: 0.5, block: true, shots: true, tall: 2 },
+  press: { models: ['press'], unit: 0.5, block: true, shots: true, tall: 2.6 },
+  piston: { models: ['piston'], unit: 0.5, block: false, shadow: false },
+  boiler: { models: ['boiler'], unit: 0.42, block: true, shots: true, tall: 2.4 },
+  pipes: { models: ['pipes'], unit: 0.5, block: true, shots: true },
+  factwall: { models: ['factwall'], unit: 0.5, block: true, shots: true, shadow: false, wallStep: 1.7, wallR: [0.9, 0.9], faceIn: true },
   reefwall: { models: ['rock0', 'rock1', 'rock2'], unit: 0.45, block: true, shots: true, tints: ['#5a8a94', '#6a7a9a', '#4a7a7a'], wallR: [1.0, 1.4] },
 };
 // Ground patches. block: impassable like a pool; slow: speed factor; slide: icy steering; burn: damage per second
@@ -454,10 +474,12 @@ const ZONE_KINDS = {
   slime: { slow: 0.6, col: '#7aff5a', glow: 0.15 },
   kelpbed: { slow: 0.65, col: '#2f8a5a', glow: 0.05 },
   ink: { slow: 0.55, col: '#1a1428', glow: 0 },
+  // a spinning steel turntable that carries everything on it round (spin: speed at the rim)
+  turntable: { spin: 2.4, col: '#8a929e', glow: 0, style: 3 },
 };
 
 // Each chapter of the cycle (one per entry in CHAPTER_BOSSES) has its own boss; every 5th chapter adds one of the original guests
-const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken'];
+const CHAPTER_BOSSES = ['stomper', 'sandworm', 'wreckbot', 'bigbounce', 'jellyqueen', 'yeti', 'magma', 'hydra', 'crab', 'outlaw', 'pumpking', 'geode', 'storm', 'jack', 'kraken', 'colossus'];
 const GUEST_BOSSES = ['hurler', 'charger', 'twins', 'conductor'];
 // every chapter is unique: the game ends after the last one (no repeats with stronger stats)
 const CHAPTER_COUNT = ARENAS.length;
