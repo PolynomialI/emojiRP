@@ -5,6 +5,8 @@
 // health it is enraged and its pauses get shorter. It can be rammed like anything else, though it barely budges.
 // ============================================================
 const SEA_BOSS_IDS = ['sflamingo', 'sclam', 'skelp', 'ssmuggler', 'sfrost', 'smagma', 'sphantom', 'sthunder', 'skraken', 'sking'];
+// the later bosses' attacks by name (13p-sea-deep-bosses.js fills it): fn(e, dt, ai, ctx)
+const SEA_BOSS_ATK = {};
 // ride: the vehicle; rig: its masts; len: its length; deck: where the captain stands; rs: the captain's size;
 // tint: the captain's coat; atk: the attack cycle (the signature move is its own name); pk: portrait size
 Object.assign(BOSS_TYPES, {
@@ -257,6 +259,12 @@ function seaBossAI(e, dt) {
       if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
       break;
     }
+    default: {
+      // the later bosses' own moves (13p-sea-deep-bosses.js)
+      const f = SEA_BOSS_ATK[ai.state];
+      if (f) f(e, dt, ai, { S, D, B, dx, dz, d, lead, lob, hz, steer });
+      else { ai.state = 'circle'; ai.t = 2; }
+    }
   }
   if (ai.state !== 'charge') { const sp = Math.hypot(e.vx, e.vz); if (sp > 0.5) e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 1.5)); }
   else e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 5));
@@ -325,7 +333,7 @@ function emitSeaBossHazards() {
         const up = clamp((h.t - h.dur) * 4, 0, 1) * clamp((h.dur + 1 - h.t) * 3, 0, 1);
         const n = 6, pts = [];
         for (let i = 0; i < n; i++) { const v = i / (n - 1); pts.push(h.x + Math.sin(v * 2 + h.x) * 0.4 * v, -0.4 + v * 3.2 * up, h.z + Math.cos(v * 2) * 0.3 * v); }
-        R.ribStrip(pts, n, 0.5, [0.55, 0.3, 0.75, 1], 1, 0, 1, u2 => 1 - u2 * 0.75);
+        R.ribStrip(pts, n, h.w || 0.5, h.col || [0.55, 0.3, 0.75, 1], 1, 0, 1, u2 => 1 - u2 * 0.75);
       }
     } else if (h.k === 'ink') { const a = clamp(Math.min(h.t * 2, (h.life - h.t)), 0, 1); pushDecal(h.x, h.z, h.r, h.r, h.t * 0.1, 1, 0, 0, 0.04, 0.02, 0.08, 0.75 * a); }
   }
@@ -338,7 +346,7 @@ function seaBossDraw(e) {
   const V = MODELS.defs[B.ride];
   if (V && R.enemyDraw[B.ride]) { const c = V.clips[V.clipNames[0]]; pushEnemy(B.ride, false, e.x, bob, e.z, e.yaw, c.row + Math.floor(((t * 0.2) % 1) * c.frames), k, 1, dead, flash, 0, 1, 1, 1, fade); }
   if (B.rig && R.enemyDraw[B.rig]) { const c = MODELS.defs[B.rig].clips.rock; pushEnemy(B.rig, false, e.x, bob, e.z, e.yaw, c.row + Math.floor(((t * 0.2) % 1) * c.frames), k, 1, dead, flash, 0, 1, 1, 1, Math.max(fade, e.portrait ? 0 : 0.25)); }
-  if (R.enemyDraw.pcapt) {
+  if (R.enemyDraw.pcapt && !B.noRider) {
     const M = MODELS.defs.pcapt, S = OC.ship, face = e.portrait || !S ? e.yaw + 0.3 : Math.atan2(S.x - e.x, S.z - e.z);
     const busy = ['broadside', 'barrage', 'lava', 'storm', 'summon', 'squirt', 'pearls', 'tentacles'].includes(e.ai.state);
     const clip = busy ? M.clips.throw : M.clips.idle, u = busy ? clamp(1 - (e.ai.t || 0) / 0.6, 0, 0.999) : (e.phase || 0) % 1;

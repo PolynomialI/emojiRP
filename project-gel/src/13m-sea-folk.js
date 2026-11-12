@@ -162,6 +162,7 @@ function updateSeaHazards(dt) {
     if (h.k === 'lob') { h.x = lerp(h.sx, h.tx, u); h.z = lerp(h.sz, h.tz, u); h.y = lerp(h.sy, 0, u) + Math.sin(u * Math.PI) * 4; }
     if (u >= 1) {
       h.dead = true;
+      if (h.onLand) h.onLand(h);
       if (h.k === 'zap') {
         addBolt(h.x, 14, h.z, h.x, 0, h.z, 0.4, [0.8, 0.9, 1]);
         R.frame.flashW = Math.max(R.frame.flashW, 0.5); AUDIO.play('thunder');

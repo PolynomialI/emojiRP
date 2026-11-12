@@ -22,7 +22,9 @@ const GOAL_VALUE = {
   rarity: sv => Math.max(0, ...Object.keys(sv.gear.items).map(k => artParse(k).r + 1)),
   runs: sv => sv.stats.runs || 0,
   coins: sv => sv.stats.coinsEarned || 0,
+  // (oceans 11-20: has that ocean's boss been sunk; filled in below)
 };
+for (let n = 11; n <= 20; n++) GOAL_VALUE['sea' + n] = sv => (sv.sea && sv.sea.cleared[n] ? 1 : 0);
 // group: icon color and order on the screen. desc: {n} is the target.
 const GOALS = [
   { id: 'kills1', group: 'fight', name: 'Goo Getter', desc: 'Defeat {n} foes', stat: 'kills', n: 500, coins: 150 },
@@ -57,8 +59,13 @@ const GOALS = [
   { id: 'runs1', group: 'play', name: 'Regular', desc: 'Play {n} runs', stat: 'runs', n: 25, coins: 500 },
   { id: 'runs2', group: 'play', name: 'Veteran', desc: 'Play {n} runs', stat: 'runs', n: 150, coins: 2500, scrolls: 2 },
   { id: 'coins', group: 'play', name: 'Rich Blob', desc: 'Earn {n} coins in all', stat: 'coins', n: 50000, coins: 1500 },
+  // the deeper oceans: each boss gives its trophy (a hat or costume that cannot be bought, 10b-sea-cosmetics.js)
+  ...[['sea11', 'Lights Out', 'The Lantern Angler', 'anglerhood'], ['sea12', 'Weed Whacker', 'The Weed Witch', 'witchhat'], ['sea13', 'Serpent Slayer', 'The Whirl Wyrm', 'wyrmhorns'],
+    ['sea14', 'Titan Toppler', 'The Trident Titan', 'titanhelm'], ['sea15', 'Sugar Crash', 'Captain Sugarbeard', 'cakehat'], ['sea16', 'Close Encounter', 'The Triangle Saucer', 'ufohat'],
+    ['sea17', 'Head in the Clouds', 'The Cloud Whale', 'cloudhat'], ['sea18', 'Leviathan Hunter', 'The Leviathan', 'levihood'], ['sea19', "Locker Picker", 'Davy Jones', 'jonesbeard'],
+    ['sea20', 'Ruler of the Waves', 'Neptune', 'neptunecrown']].map(([id, name, boss, costume], i) => ({ id, group: 'ocean', name, desc: `Sink ${boss}`, stat: id, n: 1, coins: 1500 + i * 300, scrolls: 1 + Math.floor(i / 4), costume })),
 ];
-const GOAL_GROUPS = { fight: '#ff5f8f', chapter: '#8f6bff', mode: '#ff8a1f', collect: '#33c6f2', gear: '#ffc23a', play: '#4cd964' };
+const GOAL_GROUPS = { fight: '#ff5f8f', chapter: '#8f6bff', mode: '#ff8a1f', collect: '#33c6f2', gear: '#ffc23a', play: '#4cd964', ocean: '#2fa8e0' };
 
 const goalProgress = (g, sv = G.save) => Math.min(g.n, GOAL_VALUE[g.stat](sv));
 const goalReached = (g, sv = G.save) => GOAL_VALUE[g.stat](sv) >= g.n;
@@ -113,6 +120,10 @@ Object.assign(UI, {
         const s = SKINS.find(k => k.id === g.skin);
         rew.insertAdjacentHTML('beforeend', `<span class="gskin"><i style="background:linear-gradient(180deg, ${s.top || s.base}, ${s.base})"></i>${s.name} color</span>`);
       }
+      if (g.costume) {
+        const c = COSTUMES.find(k => k.id === g.costume);
+        rew.insertAdjacentHTML('beforeend', `<span class="gskin"><i style="background:linear-gradient(180deg, ${c.pal[1] || c.pal[0]}, ${c.pal[0]})"></i>${c.name}</span>`);
+      }
       const b = row.querySelector('button');
       if (claimed) { b.textContent = '✓'; b.disabled = true; }
       else if (ready) { b.textContent = 'Claim'; b.className = 'jelly gold'; b.addEventListener('click', () => this.claimGoal(g)); }
@@ -127,9 +138,10 @@ Object.assign(UI, {
     sv.coins += g.coins || 0;
     sv.scrolls = (sv.scrolls || 0) + (g.scrolls || 0);
     if (g.skin && !sv.skins.includes(g.skin)) sv.skins.push(g.skin);
+    if (g.costume && !sv.costumes.includes(g.costume)) sv.costumes.push(g.costume);
     saveGame();
     AUDIO.play('coin'); AUDIO.play('levelup');
-    const parts = [g.coins && `${fmtNum(g.coins)} coins`, g.scrolls && `${g.scrolls} scroll${g.scrolls > 1 ? 's' : ''}`, g.skin && `the ${SKINS.find(k => k.id === g.skin).name} color`].filter(Boolean);
+    const parts = [g.coins && `${fmtNum(g.coins)} coins`, g.scrolls && `${g.scrolls} scroll${g.scrolls > 1 ? 's' : ''}`, g.skin && `the ${SKINS.find(k => k.id === g.skin).name} color`, g.costume && COSTUMES.find(k => k.id === g.costume).name].filter(Boolean);
     this.toast(`${g.name}: ${parts.join(', ')}`, 2.5);
     G.hero.impulse(2);
     this.renderGoals();

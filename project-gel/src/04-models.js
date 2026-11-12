@@ -246,6 +246,7 @@ function modelDefs() {
   mountModels(defs);
   seaBossModels(defs);
   seaDeepModels(defs);
+  seaDeepBossModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)

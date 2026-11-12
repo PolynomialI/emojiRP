@@ -1469,6 +1469,7 @@ function modelDefs() {
   mountModels(defs);
   seaBossModels(defs);
   seaDeepModels(defs);
+  seaDeepBossModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -5818,6 +5819,249 @@ function seaDeepModels(defs) {
       ...Array.from({ length: 14 }, (_, i) => { const a = i * 2.39, d = 2.0 + (i % 3) * 0.35; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * d, 0.55 + (i % 2) * 0.07, Math.sin(a) * d], r: 0.14, hh: 0.03, rd: 0.01, col: gold, k: 0 }; })], { ao: 0.4 });
   }
 }
+
+// ============================================================
+// The bosses of oceans 11-20 (13p-sea-deep-bosses.js). World scale, +z the front, y = 0 the waterline. Some ride
+// a vehicle with the captain on deck (the pcapt model); the creatures are the boss themselves (no rider).
+// Creatures use the 'cswim' clip: a bob, the jaw (bone 3), the tail (bone 4) and two fins (bones 5, 6).
+// ============================================================
+const SEA_DEEP_BOSS_MESHES = ['bangler', 'bbarge', 'bwyrm', 'btitan', 'bcake', 'bufo', 'bwhale', 'blevi', 'bjones', 'bjones_rig', 'bneptune'];
+for (const id of SEA_DEEP_BOSS_MESHES) { THEME_CLIPS[id] = ['rock']; THEME_CELLS[id] = 0.05; }
+for (const id of ['bangler', 'bwyrm', 'btitan', 'bwhale', 'blevi', 'bneptune']) THEME_CLIPS[id] = ['cswim'];
+Object.assign(THEME_CELLS, { bufo: 0.045, bcake: 0.045, btitan: 0.045 });
+MESH_ORDER.push(...SEA_DEEP_BOSS_MESHES);
+CLIPS.cswim = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0.08 * Math.sin(a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 3 ? [0.16 + 0.16 * Math.sin(a * 2), 0, 0] : b === 4 ? [0, 0.32 * Math.sin(a), 0] : b === 5 ? [0, 0, 0.25 * Math.sin(a + 1)] : b === 6 ? [0, 0, -0.25 * Math.sin(a + 1)] : b === 0 ? [0.03 * Math.sin(a + 0.5), 0, 0.02 * Math.sin(a)] : [0, 0, 0])) };
+} };
+
+function seaDeepBossModels(defs) {
+  const C = hexToRgb;
+  const P = (name, parts, o) => { const m = prop(defs, name, parts, o || { ao: 0.5 }); rig(m, { 0: [0, 0.3, 0] }); m.rockAmp = 0.012; return m; };
+  const bonesAt = (m, at) => { for (const [b, p] of Object.entries(at)) m.bones[b].p = p; };
+  const white = C('#fbf8f2'), dark = C('#16101a'), gold = C('#e8b84a'), teeth = C('#f4f0e0');
+
+  // 11. the Lantern Angler: a vast dark anglerfish, its jaw (bone 3) hung open on rows of needle teeth, little
+  // yellow eyes, glowing spots down its flanks, and its lure (on the head) blazing in the dark
+  {
+    const body = C('#1e2a44'), belly = C('#3a4a66'), glow = C('#7affe0'), lure = C('#e8ff7a');
+    const parts = [
+      { s: 'ell', c: [0, 0.7, 0], rr: [2.0, 1.7, 2.7], col: body, k: 0 },
+      { s: 'ell', c: [0, 0.2, 0.3], rr: [1.7, 0.9, 2.3], col: belly, k: 0.5 },
+      { s: 'ell', c: [0, 1.0, 2.2], rr: [1.6, 1.0, 0.8], col: dark, sub: true, k: 0.1 },
+      ...Array.from({ length: 8 }, (_, i) => { const x = -1.2 + i * 0.34; return { s: 'cap', a: [x, 1.65, 2.25], b: [x * 1.03, 1.1, 2.4], r: 0.07, r2: 0.012, col: teeth, k: 0 }; }),
+      // the jaw: an underbite with its own teeth
+      { s: 'ell', c: [0, 0.35, 2.3], rr: [1.7, 0.45, 0.85], col: body, bone: 3, k: 0.1 },
+      ...Array.from({ length: 9 }, (_, i) => { const x = -1.3 + i * 0.33; return { s: 'cap', a: [x, 0.6, 2.75], b: [x * 1.04, 1.25, 2.85], r: 0.075, r2: 0.012, col: teeth, bone: 3, k: 0 }; }),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.95, 1.95, 1.6], r: 0.26, col: C('#ffd34a'), k: 0 }, { s: 'sph', c: [sx * 1.0, 1.98, 1.82], r: 0.11, col: dark, k: 0 }]),
+      ...Array.from({ length: 12 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -1.8 + Math.floor(i / 2) * 0.65; return { s: 'sph', c: [sx * 1.85 * Math.sqrt(Math.max(0.1, 1 - (z / 2.8) ** 2)), 0.9, z], r: 0.12, col: glow, k: 0 }; }),
+      ...[0, 1, 2, 3].map(i => ({ s: 'cap', a: [0, 2.2, -0.4 - i * 0.55], b: [0, 2.9 - i * 0.12, -0.7 - i * 0.55], r: 0.07, r2: 0.02, col: belly, k: 0.05 })),
+      { s: 'ell', c: [0, 0.6, -2.9], rr: [0.15, 0.9, 0.7], col: body, bone: 4, k: 0.1 },
+      ...[1, -1].map((sx, j) => ({ s: 'ell', c: [sx * 2.1, 0.5, 0.2], rr: [0.15, 0.6, 0.9], col: belly, bone: 5 + j, k: 0.1 })),
+      { s: 'cap', a: [0, 2.3, 1.0], b: [0, 3.8, 2.0], r: 0.1, r2: 0.07, col: C('#3a3448'), k: 0.05 },
+      { s: 'cap', a: [0, 3.8, 2.0], b: [0, 3.4, 3.2], r: 0.07, r2: 0.05, col: C('#3a3448'), k: 0.05 },
+      { s: 'sph', c: [0, 3.2, 3.35], r: 0.42, col: lure, k: 0 },
+    ];
+    bonesAt(P('bangler', parts), { 3: [0, 0.6, 1.6], 4: [0, 0.6, -2.4], 5: [1.9, 0.5, 0.2], 6: [-1.9, 0.5, 0.2] });
+  }
+  // 12. the Weed Witch's swamp barge: a mossy log barge, a crooked thatched hut, a black cauldron bubbling green,
+  // skull totems and green lanterns, weed trailing off the sides
+  {
+    const log = C('#5a4028'), moss = C('#4a6a2a'), thatch = C('#8a7a3a'), green = C('#7aff5a');
+    P('bbarge', [
+      ...Array.from({ length: 6 }, (_, i) => ({ s: 'cap', a: [-1.5 + i * 0.6, 0.25, -3.1], b: [-1.5 + i * 0.6, 0.25, 3.1], r: 0.3, col: i % 2 ? log : C('#6a4a2e'), k: 0 })),
+      ...[-2.4, 0, 2.4].map(z => ({ s: 'cap', a: [-1.9, 0.5, z], b: [1.9, 0.5, z], r: 0.12, col: C('#3a2a1a'), k: 0 })),
+      ...[[-1.0, -1.5], [1.2, 0.8], [-0.4, 2.2], [1.4, -2.2]].map(([x, z]) => ({ s: 'ell', c: [x, 0.52, z], rr: [0.7, 0.14, 0.6], col: moss, k: 0.05 })),
+      // the hut at the back: crooked walls, a thatched roof, a glowing window
+      { s: 'box', c: [0, 1.25, -1.9], hs: [1.1, 0.75, 0.95], rd: 0.08, col: C('#6a5a3a'), k: 0 },
+      { s: 'gable', c: [0, 2.0, -1.9], w: 1.45, h: 1.1, hh: 1.15, ax: 'x', col: thatch, k: 0 },
+      { s: 'box', c: [0.6, 1.4, -0.92], hs: [0.22, 0.2, 0.03], rd: 0.03, col: green, k: 0 },
+      { s: 'cap', a: [-0.6, 2.6, -2.2], b: [-0.7, 3.4, -2.3], r: 0.1, col: C('#4a4040'), k: 0 },
+      // the cauldron, bubbling
+      { s: 'sph', c: [0, 1.15, 1.4], r: 0.75, col: C('#2a2a30'), k: 0 }, { s: 'cyl', ax: 'y', c: [0, 1.75, 1.4], r: 0.62, hh: 0.3, rd: 0.05, sub: true, k: 0.02 },
+      { s: 'tor', ax: 'y', c: [0, 1.75, 1.4], R: 0.62, r: 0.08, a0: -Math.PI, a1: Math.PI, col: C('#3a3a42'), k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.62, 1.4], r: 0.6, hh: 0.05, rd: 0.03, col: green, k: 0 },
+      ...[[0.15, 1.3], [-0.2, 1.55], [0.25, 1.6]].map(([x, z]) => ({ s: 'sph', c: [x, 1.7, z], r: 0.12, col: C('#b8ff8a'), k: 0 })),
+      // skull totems and lanterns at the corners, weed hanging off the edges
+      ...[[1.7, 2.8], [-1.7, 2.8]].flatMap(([x, z]) => [{ s: 'cap', a: [x, 0.5, z], b: [x, 2.2, z], r: 0.07, col: C('#3a2a1a'), k: 0 }, { s: 'sph', c: [x, 2.3, z], r: 0.22, col: C('#efe8d4'), k: 0 },
+        ...[1, -1].map(sx => ({ s: 'sph', c: [x + sx * 0.08, 2.32, z + 0.18], r: 0.06, col: dark, k: 0 }))]),
+      ...[[1.7, -2.8], [-1.7, -2.8]].flatMap(([x, z]) => [{ s: 'cap', a: [x, 0.5, z], b: [x, 1.8, z], r: 0.05, col: C('#2a2a2a'), k: 0 }, { s: 'sph', c: [x, 1.9, z], r: 0.18, col: green, k: 0 }]),
+      ...Array.from({ length: 8 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -2.6 + Math.floor(i / 2) * 1.6; return { s: 'cap', a: [sx * 1.8, 0.45, z], b: [sx * 2.1, -0.1, z + 0.3], r: 0.08, r2: 0.04, col: moss, k: 0.03 }; }),
+    ]);
+  }
+  // 13. the Whirl Wyrm: a sea serpent: a horned, frilled head with fangs rearing up at the front, its body looping
+  // out of the water in great coils behind, fins along its back, a tail fin at the end
+  {
+    const scale = C('#2a8a7a'), scaleD = C('#1a5a54'), belly = C('#bfe8a8'), frill = C('#ff7a5a');
+    const parts = [
+      // the neck rising to the head
+      { s: 'cap', a: [0, -0.4, 1.0], b: [0, 2.2, 2.4], r: 0.75, r2: 0.62, col: scale, k: 0.15 },
+      { s: 'ell', c: [0, 2.6, 2.9], rr: [0.8, 0.7, 1.1], col: scale, k: 0.3 },
+      { s: 'ell', c: [0, 2.35, 3.6], rr: [0.6, 0.45, 0.65], col: scale, k: 0.25 },
+      { s: 'ell', c: [0, 2.05, 3.7], rr: [0.52, 0.18, 0.55], col: C('#5a1a20'), k: 0.03 },
+      ...Array.from({ length: 4 }, (_, i) => ({ s: 'cap', a: [-0.3 + i * 0.2, 2.25, 4.05], b: [-0.3 + i * 0.2, 1.95, 4.1], r: 0.05, r2: 0.01, col: teeth, k: 0 })),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.5, 2.85, 3.3], r: 0.17, col: C('#ffd34a'), k: 0 }, { s: 'ell', c: [sx * 0.55, 2.86, 3.43], rr: [0.03, 0.12, 0.04], col: dark, k: 0 },
+        { s: 'cap', a: [sx * 0.4, 3.1, 2.7], b: [sx * 0.8, 3.9, 2.1], r: 0.1, r2: 0.02, col: C('#e8e0c8'), k: 0.03 },
+        { s: 'ell', c: [sx * 0.85, 2.6, 2.5], rr: [0.08, 0.5, 0.4], col: frill, k: 0.05 }]),
+      { s: 'ell', c: [0, 1.6, 2.3], rr: [0.5, 0.6, 0.6], col: belly, k: 0.3 },
+      // the coils: half rings standing up out of the water, getting smaller toward the tail
+      ...[[-0.6, 1.25, 0.6], [-3.2, 1.05, 0.52], [-5.6, 0.85, 0.42]].flatMap(([z, R2, r]) => [
+        { s: 'tor', ax: 'x', c: [0, 0, z], R: R2, r, a0: 0.05, a1: Math.PI - 0.05, col: scale, k: 0.1 },
+        ...[0.6, 1.2, 1.8, 2.4].map(a => ({ s: 'ell', c: [0, Math.sin(a) * (R2 + r * 0.8), z + Math.cos(a) * (R2 + r * 0.8)], rr: [0.05, 0.25, 0.18], col: scaleD, k: 0.04 }))]),
+      { s: 'ell', c: [0, 0.6, -7.4], rr: [0.08, 0.8, 0.6], col: frill, bone: 4, k: 0.05 },
+    ];
+    bonesAt(P('bwyrm', parts), { 4: [0, 0.4, -6.8] });
+  }
+  // 14. the Trident Titan: a bronze giant waist-deep in the sea, green with age: a crested helmet, a sea-white
+  // beard, a breastplate, one hand raising a great golden trident
+  {
+    const bronze = C('#c08a4a'), patina = C('#5ab8a0'), beard = C('#e8f4f0'), plume = C('#d83a3a');
+    P('btitan', [
+      { s: 'cap', a: [0, -0.5, 0], b: [0, 3.0, 0], r: 1.35, r2: 1.55, col: patina, k: 0 },
+      { s: 'ell', c: [0, 2.4, 0.5], rr: [1.4, 1.0, 0.7], col: bronze, k: 0.2 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 1.7, 3.1, 0], r: 0.75, col: bronze, k: 0.3 })),
+      { s: 'cap', a: [0, 3.6, 0], b: [0, 4.3, 0.1], r: 0.55, col: patina, k: 0.2 },
+      { s: 'sph', c: [0, 4.6, 0.15], r: 0.8, col: patina, k: 0.2 },
+      { s: 'ell', c: [0, 4.0, 0.7], rr: [0.6, 0.7, 0.4], col: beard, k: 0.15 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.28, 4.75, 0.8], r: 0.12, col: C('#ffe86a'), k: 0 })),
+      // the helmet and its crest
+      { s: 'ell', c: [0, 5.0, 0.05], rr: [0.88, 0.62, 0.9], col: bronze, k: 0.05 },
+      { s: 'box', c: [0, 4.75, 0.85], hs: [0.5, 0.15, 0.08], rd: 0.05, col: bronze, k: 0 },
+      ...Array.from({ length: 6 }, (_, i) => { const a = 0.4 + i * 0.4; return { s: 'sph', c: [0, 5.2 + Math.sin(a) * 0.7, 0.05 - Math.cos(a) * 0.9], r: 0.22, col: plume, k: 0.15 }; }),
+      // arms: the left reaching forward, the right raising the trident
+      { s: 'cap', a: [1.8, 3.0, 0], b: [2.2, 1.8, 1.3], r: 0.45, r2: 0.38, col: patina, k: 0.15 }, { s: 'sph', c: [2.25, 1.65, 1.45], r: 0.42, col: bronze, k: 0.1 },
+      { s: 'cap', a: [-1.8, 3.1, 0], b: [-2.3, 4.6, 0.4], r: 0.45, r2: 0.38, col: patina, k: 0.15 }, { s: 'sph', c: [-2.35, 4.8, 0.45], r: 0.42, col: bronze, k: 0.1 },
+      { s: 'cap', a: [-2.35, 0.5, 0.45], b: [-2.35, 7.8, 0.45], r: 0.13, col: gold, k: 0 },
+      { s: 'cap', a: [-3.0, 7.8, 0.45], b: [-1.7, 7.8, 0.45], r: 0.12, col: gold, k: 0 },
+      ...[-0.65, 0, 0.65].map(dx => ({ s: 'cap', a: [-2.35 + dx, 7.8, 0.45], b: [-2.35 + dx * 1.1, 9.0, 0.45], r: 0.12, r2: 0.03, col: C('#ffd34a'), k: 0 })),
+      ...[[0.8, 1.6], [-0.9, 1.2], [0.2, 0.8]].map(([x, y]) => ({ s: 'sph', c: [x, y, 1.45], r: 0.15, col: C('#ff7a9a'), k: 0.05 })),
+    ]);
+  }
+  // 15. Captain Sugarbeard's cake ship: three tiers of sponge and frosting on a wafer hull, frosting drips,
+  // candles burning on top, a giant cherry, sugar pearls round the rims
+  {
+    const sponge = C('#f2c890'), frost = C('#ff9ac8'), cream = C('#fff4f8'), choc = C('#6a3a1e'), cherry = C('#e8283c');
+    P('bcake', [
+      { s: 'ell', c: [0, 0.3, 0], rr: [2.3, 0.6, 3.2], col: C('#d8a868'), k: 0 },
+      ...[[0.85, 2.1, 0.45, sponge], [1.55, 1.6, 0.35, choc], [2.15, 1.1, 0.3, sponge]].map(([y, r, h, col]) => ({ s: 'cyl', ax: 'y', c: [0, y, -0.4], r, hh: h, rd: 0.12, col, k: 0 })),
+      ...[[1.3, 2.12], [1.9, 1.62], [2.45, 1.12]].map(([y, r]) => ({ s: 'cyl', ax: 'y', c: [0, y, -0.4], r, hh: 0.08, rd: 0.06, col: frost, k: 0 })),
+      ...Array.from({ length: 14 }, (_, i) => { const a = i / 14 * TAU; return { s: 'cap', a: [Math.cos(a) * 2.13, 1.3, -0.4 + Math.sin(a) * 2.13], b: [Math.cos(a) * 2.13, 1.0 - (i % 3) * 0.12, -0.4 + Math.sin(a) * 2.13], r: 0.09, r2: 0.07, col: frost, k: 0.03 }; }),
+      ...Array.from({ length: 16 }, (_, i) => { const a = i / 16 * TAU; return { s: 'sph', c: [Math.cos(a) * 1.62, 1.97, -0.4 + Math.sin(a) * 1.62], r: 0.08, col: cream, k: 0 }; }),
+      ...Array.from({ length: 6 }, (_, i) => { const a = i / 6 * TAU + 0.3; return [{ s: 'cap', a: [Math.cos(a) * 0.8, 2.5, -0.4 + Math.sin(a) * 0.8], b: [Math.cos(a) * 0.8, 3.1, -0.4 + Math.sin(a) * 0.8], r: 0.07, col: i % 2 ? C('#5ac8ff') : C('#ffd34a'), k: 0 },
+        { s: 'sph', c: [Math.cos(a) * 0.8, 3.2, -0.4 + Math.sin(a) * 0.8], r: 0.09, col: C('#ffb02a'), k: 0 }]; }).flat(),
+      { s: 'sph', c: [0, 2.95, -0.4], r: 0.45, col: cherry, k: 0 }, { s: 'cap', a: [0, 3.35, -0.4], b: [0.25, 3.8, -0.6], r: 0.04, col: C('#3a6a2a'), k: 0 },
+      { s: 'cap', a: [0, 0.8, 2.6], b: [0, 1.2, 3.5], r: 0.25, r2: 0.1, col: C('#d8a868'), k: 0 },
+      ...[-1, 1].map(sx => ({ s: 'cap', a: [sx * 0.6, 0.85, 2.2], b: [sx * 1.2, 1.0, 2.8], r: 0.12, col: C('#ffffff'), k: 0 })),
+    ]);
+  }
+  // 16. the Triangle Saucer: a silver flying saucer hovering over the waves: a glass dome with a little green
+  // pilot, a ring of lights round the rim, a glowing beam emitter underneath
+  {
+    const silver = C('#c8d0dc'), silverD = C('#8a94a4'), glass = C('#8ae8ff'), lights = ['#ff4a6a', '#ffd34a', '#4aff8a', '#4ab8ff'].map(C);
+    P('bufo', [
+      { s: 'ell', c: [0, 2.6, 0], rr: [3.0, 0.55, 3.0], col: silver, k: 0 },
+      { s: 'ell', c: [0, 2.45, 0], rr: [2.2, 0.6, 2.2], col: silverD, k: 0.2 },
+      { s: 'sph', c: [0, 3.2, 0], r: 1.15, col: glass, k: 0 },
+      { s: 'sph', c: [0, 3.15, 0.1], r: 0.38, col: C('#7ad86a'), k: 0 },
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.17, 3.2, 0.42], rr: [0.11, 0.15, 0.06], col: dark, k: 0 })),
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.15, 3.45, 0.1], b: [sx * 0.3, 3.8, 0.15], r: 0.03, col: C('#7ad86a'), k: 0 })),
+      ...Array.from({ length: 12 }, (_, i) => { const a = i / 12 * TAU; return { s: 'sph', c: [Math.cos(a) * 2.75, 2.65, Math.sin(a) * 2.75], r: 0.16, col: lights[i % 4], k: 0 }; }),
+      { s: 'cyl', ax: 'y', c: [0, 1.95, 0], r: 0.8, hh: 0.18, rd: 0.08, col: silverD, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.75, 0], r: 0.6, hh: 0.06, rd: 0.04, col: C('#aaffd8'), k: 0 },
+      ...[0, 1, 2].map(i => { const a = i / 3 * TAU; return { s: 'cap', a: [Math.cos(a) * 1.6, 2.3, Math.sin(a) * 1.6], b: [Math.cos(a) * 2.1, 1.3, Math.sin(a) * 2.1], r: 0.08, col: silverD, k: 0 }; }),
+    ]);
+  }
+  // 17. the Cloud Whale: a great sky-blue whale with a white belly, swimming through the clouds: a blowhole,
+  // a smiling mouth, long pectoral fins (bones 5, 6), tail flukes (bone 4), puffs of cloud along its belly
+  {
+    const blue = C('#7aa8e8'), blueL = C('#a8c8ff'), belly = C('#f4f8ff');
+    const parts = [
+      { s: 'ell', c: [0, 1.0, 0.5], rr: [2.2, 1.8, 4.2], col: blue, k: 0 },
+      { s: 'ell', c: [0, 0.4, 0.8], rr: [1.9, 1.0, 3.8], col: belly, k: 0.5 },
+      ...Array.from({ length: 7 }, (_, i) => ({ s: 'cap', a: [-1.4 + i * 0.47, 0.1, 3.4], b: [-1.6 + i * 0.53, 0.3, 0.6], r: 0.06, col: C('#d8e4f4'), k: 0.03 })),
+      { s: 'cap', a: [-1.6, 0.75, 4.3], b: [1.6, 0.75, 4.3], r: 0.06, col: C('#3a4a6a'), k: 0.02 },
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 1.75, 1.35, 2.7], r: 0.22, col: white, k: 0 }, { s: 'sph', c: [sx * 1.88, 1.37, 2.82], r: 0.11, col: dark, k: 0 }]),
+      { s: 'ell', c: [0, 2.75, 1.6], rr: [0.3, 0.12, 0.2], col: C('#3a4a6a'), k: 0.05 },
+      { s: 'ell', c: [0, 2.6, -1.0], rr: [0.12, 0.5, 0.7], col: blueL, k: 0.1 },
+      { s: 'cap', a: [0, 1.0, -3.4], b: [0, 1.4, -5.6], r: 0.9, r2: 0.4, col: blue, k: 0.3 },
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 1.3, 1.5, -6.2], rr: [1.4, 0.15, 0.6], col: blueL, bone: 4, k: 0.1 })),
+      ...[1, -1].map((sx, j) => ({ s: 'ell', c: [sx * 2.6, 0.5, 1.4], rr: [1.4, 0.15, 0.6], col: blueL, bone: 5 + j, k: 0.1 })),
+      ...Array.from({ length: 7 }, (_, i) => { const a = i / 7 * TAU; return { s: 'sph', c: [Math.cos(a) * 2.3, 0.0, 0.4 + Math.sin(a) * 3.6], r: 0.8 + (i % 3) * 0.2, col: C('#ffffff'), k: 0.4 }; }),
+    ];
+    bonesAt(P('bwhale', parts), { 4: [0, 1.3, -5.4], 5: [2.0, 0.6, 1.4], 6: [-2.0, 0.6, 1.4] });
+  }
+  // 18. the Leviathan: a colossal head and neck rising from the deep: armored brow ridges, burning orange eyes,
+  // a jaw (bone 3) full of enormous teeth, spines down its neck and humps of its body behind
+  {
+    const hide = C('#1e3a4a'), hideD = C('#12262f'), plate = C('#3a5a68'), eye = C('#ff8a2a');
+    const parts = [
+      { s: 'cap', a: [0, -1.0, -1.0], b: [0, 3.0, 1.2], r: 1.6, r2: 1.35, col: hide, k: 0.2 },
+      { s: 'ell', c: [0, 3.6, 2.4], rr: [1.7, 1.3, 2.2], col: hide, k: 0.4 },
+      { s: 'ell', c: [0, 3.1, 3.9], rr: [1.4, 0.75, 1.3], col: hide, k: 0.3 },
+      { s: 'ell', c: [0, 2.7, 4.1], rr: [1.2, 0.25, 1.1], col: C('#4a1018'), k: 0.03 },
+      ...Array.from({ length: 7 }, (_, i) => { const x = -1.0 + i * 0.33; return { s: 'cap', a: [x, 3.0, 4.9 - Math.abs(x) * 0.4], b: [x * 1.03, 2.45, 5.0 - Math.abs(x) * 0.4], r: 0.11, r2: 0.02, col: teeth, k: 0 }; }),
+      { s: 'ell', c: [0, 2.2, 3.7], rr: [1.25, 0.4, 1.4], col: hideD, bone: 3, k: 0.15 },
+      ...Array.from({ length: 6 }, (_, i) => { const x = -0.85 + i * 0.34; return { s: 'cap', a: [x, 2.35, 4.8 - Math.abs(x) * 0.4], b: [x * 1.03, 2.95, 4.85 - Math.abs(x) * 0.4], r: 0.1, r2: 0.02, col: teeth, bone: 3, k: 0 }; }),
+      ...[1, -1].flatMap(sx => [{ s: 'cap', a: [sx * 0.5, 4.5, 2.6], b: [sx * 1.4, 4.2, 3.6], r: 0.28, col: plate, k: 0.15 }, { s: 'sph', c: [sx * 1.1, 3.95, 3.5], r: 0.3, col: eye, k: 0 },
+        { s: 'ell', c: [sx * 1.18, 3.95, 3.75], rr: [0.05, 0.22, 0.06], col: dark, k: 0 },
+        { s: 'cap', a: [sx * 0.9, 4.6, 1.6], b: [sx * 1.7, 5.8, 0.6], r: 0.22, r2: 0.04, col: C('#d8d0b8'), k: 0.05 }]),
+      ...Array.from({ length: 6 }, (_, i) => ({ s: 'cap', a: [0, 4.7 - i * 0.7, 1.4 - i * 0.55], b: [0, 5.4 - i * 0.7, 1.0 - i * 0.55], r: 0.16, r2: 0.03, col: plate, k: 0.05 })),
+      ...[[-4.2, 1.3, 0.75], [-7.0, 1.0, 0.6]].map(([z, R2, r]) => ({ s: 'tor', ax: 'x', c: [0, 0, z], R: R2, r, a0: 0.05, a1: Math.PI - 0.05, col: hide, k: 0.1 })),
+      { s: 'ell', c: [0, 0.5, -9.0], rr: [0.12, 1.0, 0.8], col: plate, bone: 4, k: 0.05 },
+    ];
+    bonesAt(P('blevi', parts), { 3: [0, 2.6, 2.6], 4: [0, 0.4, -8.4] });
+  }
+  // 19. Davy Jones' ship: the galleon, rotted green and grown over with coral, barnacles and kelp; tattered
+  // green sails on its rig
+  {
+    const G0 = defs.galleon, G1 = defs.galleon_rig, lum = c => c[0] * 0.3 + c[1] * 0.55 + c[2] * 0.15;
+    const sea = c => { const l = lum(c); return l < 0.25 ? [0.12, 0.26, 0.22] : l < 0.5 ? [0.22, 0.42, 0.36] : [0.55, 0.85, 0.7]; };
+    const coral = [C('#ff7a5a'), C('#ff5aa8'), C('#ffb02a'), C('#c86aff')];
+    const extra = [
+      ...Array.from({ length: 12 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -3 + Math.floor(i / 2) * 1.2; return { s: 'sph', c: [sx * 1.3 * Math.sqrt(Math.max(0.1, 1 - (z / 3.8) ** 2)), 0.35 + (i % 3) * 0.12, z], r: 0.16 + (i % 2) * 0.06, col: coral[i % 4], k: 0.04 }; }),
+      ...Array.from({ length: 8 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -2.6 + Math.floor(i / 2) * 1.6; return { s: 'cap', a: [sx * 1.25, 0.7, z], b: [sx * 1.45, -0.2, z + 0.2], r: 0.07, r2: 0.03, col: C('#3a7a3a'), k: 0.02 }; }),
+      ...[[0.6, 1.5], [-0.5, -1.2]].flatMap(([x, z], i) => [0, 1, 2].map(j => { const a = j * 2.1 + i; return { s: 'cap', a: [x, 0.9, z], b: [x + Math.cos(a) * 0.3, 1.5, z + Math.sin(a) * 0.3], r: 0.08, r2: 0.04, col: coral[(i + j) % 4], k: 0.04 }; })),
+    ];
+    const a = P('bjones', [...G0.parts.map(p => ({ ...p, col: p.col ? sea(p.col) : p.col })), ...extra], { ao: 0.5 });
+    const b = P('bjones_rig', G1.parts.map(p => ({ ...p, col: p.col ? sea(p.col) : p.col })), { ao: 0.4 });
+    a.bones = G0.bones.map(x => ({ ...x })); b.bones = G1.bones.map(x => ({ ...x }));
+  }
+  // 20. Neptune himself, standing in a great scallop-shell chariot of pearl and gold drawn by two seahorses:
+  // sea-green skin, a white beard, a golden crown, his trident raised
+  {
+    const shell = C('#fff0e8'), shellD = C('#f4c8b8'), skin = C('#6ac8b8'), beard = C('#f4f8f8'), horse = C('#2ab8a8'), horseD = C('#178a80');
+    const ribs = Array.from({ length: 9 }, (_, i) => { const a = -1.2 + i * 0.3; return { s: 'cap', a: [0, 0.4, -1.4], b: [Math.sin(a) * 2.2, 2.4, -1.4 - Math.cos(a) * 0.9], r: 0.18, col: i % 2 ? shell : shellD, k: 0.1 }; });
+    const seahorse = sx => [
+      { s: 'cap', a: [sx * 1.0, -0.4, 3.0], b: [sx * 1.0, 1.4, 3.3], r: 0.42, r2: 0.36, col: horse, k: 0.2 },
+      { s: 'cap', a: [sx * 1.0, 1.4, 3.3], b: [sx * 1.0, 2.0, 3.0], r: 0.34, r2: 0.3, col: horse, k: 0.2 },
+      { s: 'ell', c: [sx * 1.0, 2.2, 3.2], rr: [0.3, 0.32, 0.4], col: horse, k: 0.15 },
+      { s: 'cap', a: [sx * 1.0, 2.15, 3.5], b: [sx * 1.0, 2.0, 4.1], r: 0.16, r2: 0.11, col: horse, k: 0.1 },
+      ...Array.from({ length: 5 }, (_, i) => ({ s: 'ell', c: [sx * 1.0, 1.0 + i * 0.3, 2.85 - i * 0.05], rr: [0.05, 0.14, 0.12], col: horseD, k: 0.03 })),
+      { s: 'sph', c: [sx * 1.22, 2.3, 3.35], r: 0.08, col: dark, k: 0 },
+      { s: 'cap', a: [sx * 1.0, 1.6, 3.0], b: [sx * 0.2, 1.4, 1.2], r: 0.03, col: gold, k: 0 }];
+    P('bneptune', [
+      { s: 'ell', c: [0, 0.5, -0.4], rr: [2.2, 0.8, 2.0], col: shell, k: 0 },
+      ...ribs,
+      { s: 'ell', c: [0, 1.0, -0.2], rr: [1.7, 0.5, 1.5], sub: true, k: 0.05 },
+      ...Array.from({ length: 12 }, (_, i) => { const a = i / 12 * TAU; return { s: 'sph', c: [Math.cos(a) * 2.0, 1.05, -0.4 + Math.sin(a) * 1.8], r: 0.13, col: gold, k: 0 }; }),
+      ...seahorse(1), ...seahorse(-1),
+      // Neptune: legs in the shell, a broad torso, arms, the head, the beard, the crown, the trident
+      { s: 'cap', a: [0, 0.8, -0.4], b: [0, 2.9, -0.4], r: 0.7, r2: 0.85, col: skin, k: 0.1 },
+      { s: 'ell', c: [0, 1.4, -0.4], rr: [0.8, 0.45, 0.7], col: C('#2a6ad8'), k: 0.1 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.95, 3.0, -0.4], r: 0.45, col: skin, k: 0.25 })),
+      { s: 'sph', c: [0, 3.75, -0.35], r: 0.55, col: skin, k: 0.15 },
+      { s: 'ell', c: [0, 3.25, 0.0], rr: [0.5, 0.65, 0.35], col: beard, k: 0.15 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.2, 3.9, 0.12], r: 0.09, col: dark, k: 0 })),
+      { s: 'tor', ax: 'y', c: [0, 4.2, -0.35], R: 0.42, r: 0.07, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      ...Array.from({ length: 7 }, (_, i) => { const a = i / 7 * TAU; return { s: 'cap', a: [Math.cos(a) * 0.42, 4.2, -0.35 + Math.sin(a) * 0.42], b: [Math.cos(a) * 0.45, 4.65, -0.35 + Math.sin(a) * 0.45], r: 0.06, r2: 0.01, col: gold, k: 0 }; }),
+      { s: 'cap', a: [1.0, 3.0, -0.4], b: [1.5, 2.0, 0.6], r: 0.3, r2: 0.26, col: skin, k: 0.15 },
+      { s: 'cap', a: [-1.0, 3.0, -0.4], b: [-1.5, 4.2, 0.0], r: 0.3, r2: 0.26, col: skin, k: 0.15 }, { s: 'sph', c: [-1.55, 4.35, 0.05], r: 0.28, col: skin, k: 0.1 },
+      { s: 'cap', a: [-1.55, 1.0, 0.05], b: [-1.55, 6.6, 0.05], r: 0.09, col: gold, k: 0 },
+      { s: 'cap', a: [-2.05, 6.6, 0.05], b: [-1.05, 6.6, 0.05], r: 0.09, col: gold, k: 0 },
+      ...[-0.5, 0, 0.5].map(dx => ({ s: 'cap', a: [-1.55 + dx, 6.6, 0.05], b: [-1.55 + dx * 1.1, 7.5, 0.05], r: 0.09, r2: 0.02, col: C('#ffd34a'), k: 0 })),
+    ]);
+  }
+}
 </script>
 <script>
 // ---- 00-util.js ----
@@ -6776,6 +7020,7 @@ function modelDefs() {
   mountModels(defs);
   seaBossModels(defs);
   seaDeepModels(defs);
+  seaDeepBossModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -11138,6 +11383,250 @@ function seaDeepModels(defs) {
       { s: 'cap', a: [1.85, 3.8, -1.4], b: [2.75, 3.8, -1.4], r: 0.09, col: gold, k: 0 },
       ...[-0.45, 0, 0.45].map(dx => ({ s: 'cap', a: [2.3 + dx, 3.8, -1.4], b: [2.3 + dx * 1.1, 4.8, -1.4], r: 0.08, r2: 0.02, col: gold, k: 0 })),
       ...Array.from({ length: 14 }, (_, i) => { const a = i * 2.39, d = 2.0 + (i % 3) * 0.35; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * d, 0.55 + (i % 2) * 0.07, Math.sin(a) * d], r: 0.14, hh: 0.03, rd: 0.01, col: gold, k: 0 }; })], { ao: 0.4 });
+  }
+}
+
+// ---- 04p-sea-deep-boss-models.js ----
+// ============================================================
+// The bosses of oceans 11-20 (13p-sea-deep-bosses.js). World scale, +z the front, y = 0 the waterline. Some ride
+// a vehicle with the captain on deck (the pcapt model); the creatures are the boss themselves (no rider).
+// Creatures use the 'cswim' clip: a bob, the jaw (bone 3), the tail (bone 4) and two fins (bones 5, 6).
+// ============================================================
+const SEA_DEEP_BOSS_MESHES = ['bangler', 'bbarge', 'bwyrm', 'btitan', 'bcake', 'bufo', 'bwhale', 'blevi', 'bjones', 'bjones_rig', 'bneptune'];
+for (const id of SEA_DEEP_BOSS_MESHES) { THEME_CLIPS[id] = ['rock']; THEME_CELLS[id] = 0.05; }
+for (const id of ['bangler', 'bwyrm', 'btitan', 'bwhale', 'blevi', 'bneptune']) THEME_CLIPS[id] = ['cswim'];
+Object.assign(THEME_CELLS, { bufo: 0.045, bcake: 0.045, btitan: 0.045 });
+MESH_ORDER.push(...SEA_DEEP_BOSS_MESHES);
+CLIPS.cswim = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0.08 * Math.sin(a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 3 ? [0.16 + 0.16 * Math.sin(a * 2), 0, 0] : b === 4 ? [0, 0.32 * Math.sin(a), 0] : b === 5 ? [0, 0, 0.25 * Math.sin(a + 1)] : b === 6 ? [0, 0, -0.25 * Math.sin(a + 1)] : b === 0 ? [0.03 * Math.sin(a + 0.5), 0, 0.02 * Math.sin(a)] : [0, 0, 0])) };
+} };
+
+function seaDeepBossModels(defs) {
+  const C = hexToRgb;
+  const P = (name, parts, o) => { const m = prop(defs, name, parts, o || { ao: 0.5 }); rig(m, { 0: [0, 0.3, 0] }); m.rockAmp = 0.012; return m; };
+  const bonesAt = (m, at) => { for (const [b, p] of Object.entries(at)) m.bones[b].p = p; };
+  const white = C('#fbf8f2'), dark = C('#16101a'), gold = C('#e8b84a'), teeth = C('#f4f0e0');
+
+  // 11. the Lantern Angler: a vast dark anglerfish, its jaw (bone 3) hung open on rows of needle teeth, little
+  // yellow eyes, glowing spots down its flanks, and its lure (on the head) blazing in the dark
+  {
+    const body = C('#1e2a44'), belly = C('#3a4a66'), glow = C('#7affe0'), lure = C('#e8ff7a');
+    const parts = [
+      { s: 'ell', c: [0, 0.7, 0], rr: [2.0, 1.7, 2.7], col: body, k: 0 },
+      { s: 'ell', c: [0, 0.2, 0.3], rr: [1.7, 0.9, 2.3], col: belly, k: 0.5 },
+      { s: 'ell', c: [0, 1.0, 2.2], rr: [1.6, 1.0, 0.8], col: dark, sub: true, k: 0.1 },
+      ...Array.from({ length: 8 }, (_, i) => { const x = -1.2 + i * 0.34; return { s: 'cap', a: [x, 1.65, 2.25], b: [x * 1.03, 1.1, 2.4], r: 0.07, r2: 0.012, col: teeth, k: 0 }; }),
+      // the jaw: an underbite with its own teeth
+      { s: 'ell', c: [0, 0.35, 2.3], rr: [1.7, 0.45, 0.85], col: body, bone: 3, k: 0.1 },
+      ...Array.from({ length: 9 }, (_, i) => { const x = -1.3 + i * 0.33; return { s: 'cap', a: [x, 0.6, 2.75], b: [x * 1.04, 1.25, 2.85], r: 0.075, r2: 0.012, col: teeth, bone: 3, k: 0 }; }),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.95, 1.95, 1.6], r: 0.26, col: C('#ffd34a'), k: 0 }, { s: 'sph', c: [sx * 1.0, 1.98, 1.82], r: 0.11, col: dark, k: 0 }]),
+      ...Array.from({ length: 12 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -1.8 + Math.floor(i / 2) * 0.65; return { s: 'sph', c: [sx * 1.85 * Math.sqrt(Math.max(0.1, 1 - (z / 2.8) ** 2)), 0.9, z], r: 0.12, col: glow, k: 0 }; }),
+      ...[0, 1, 2, 3].map(i => ({ s: 'cap', a: [0, 2.2, -0.4 - i * 0.55], b: [0, 2.9 - i * 0.12, -0.7 - i * 0.55], r: 0.07, r2: 0.02, col: belly, k: 0.05 })),
+      { s: 'ell', c: [0, 0.6, -2.9], rr: [0.15, 0.9, 0.7], col: body, bone: 4, k: 0.1 },
+      ...[1, -1].map((sx, j) => ({ s: 'ell', c: [sx * 2.1, 0.5, 0.2], rr: [0.15, 0.6, 0.9], col: belly, bone: 5 + j, k: 0.1 })),
+      { s: 'cap', a: [0, 2.3, 1.0], b: [0, 3.8, 2.0], r: 0.1, r2: 0.07, col: C('#3a3448'), k: 0.05 },
+      { s: 'cap', a: [0, 3.8, 2.0], b: [0, 3.4, 3.2], r: 0.07, r2: 0.05, col: C('#3a3448'), k: 0.05 },
+      { s: 'sph', c: [0, 3.2, 3.35], r: 0.42, col: lure, k: 0 },
+    ];
+    bonesAt(P('bangler', parts), { 3: [0, 0.6, 1.6], 4: [0, 0.6, -2.4], 5: [1.9, 0.5, 0.2], 6: [-1.9, 0.5, 0.2] });
+  }
+  // 12. the Weed Witch's swamp barge: a mossy log barge, a crooked thatched hut, a black cauldron bubbling green,
+  // skull totems and green lanterns, weed trailing off the sides
+  {
+    const log = C('#5a4028'), moss = C('#4a6a2a'), thatch = C('#8a7a3a'), green = C('#7aff5a');
+    P('bbarge', [
+      ...Array.from({ length: 6 }, (_, i) => ({ s: 'cap', a: [-1.5 + i * 0.6, 0.25, -3.1], b: [-1.5 + i * 0.6, 0.25, 3.1], r: 0.3, col: i % 2 ? log : C('#6a4a2e'), k: 0 })),
+      ...[-2.4, 0, 2.4].map(z => ({ s: 'cap', a: [-1.9, 0.5, z], b: [1.9, 0.5, z], r: 0.12, col: C('#3a2a1a'), k: 0 })),
+      ...[[-1.0, -1.5], [1.2, 0.8], [-0.4, 2.2], [1.4, -2.2]].map(([x, z]) => ({ s: 'ell', c: [x, 0.52, z], rr: [0.7, 0.14, 0.6], col: moss, k: 0.05 })),
+      // the hut at the back: crooked walls, a thatched roof, a glowing window
+      { s: 'box', c: [0, 1.25, -1.9], hs: [1.1, 0.75, 0.95], rd: 0.08, col: C('#6a5a3a'), k: 0 },
+      { s: 'gable', c: [0, 2.0, -1.9], w: 1.45, h: 1.1, hh: 1.15, ax: 'x', col: thatch, k: 0 },
+      { s: 'box', c: [0.6, 1.4, -0.92], hs: [0.22, 0.2, 0.03], rd: 0.03, col: green, k: 0 },
+      { s: 'cap', a: [-0.6, 2.6, -2.2], b: [-0.7, 3.4, -2.3], r: 0.1, col: C('#4a4040'), k: 0 },
+      // the cauldron, bubbling
+      { s: 'sph', c: [0, 1.15, 1.4], r: 0.75, col: C('#2a2a30'), k: 0 }, { s: 'cyl', ax: 'y', c: [0, 1.75, 1.4], r: 0.62, hh: 0.3, rd: 0.05, sub: true, k: 0.02 },
+      { s: 'tor', ax: 'y', c: [0, 1.75, 1.4], R: 0.62, r: 0.08, a0: -Math.PI, a1: Math.PI, col: C('#3a3a42'), k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.62, 1.4], r: 0.6, hh: 0.05, rd: 0.03, col: green, k: 0 },
+      ...[[0.15, 1.3], [-0.2, 1.55], [0.25, 1.6]].map(([x, z]) => ({ s: 'sph', c: [x, 1.7, z], r: 0.12, col: C('#b8ff8a'), k: 0 })),
+      // skull totems and lanterns at the corners, weed hanging off the edges
+      ...[[1.7, 2.8], [-1.7, 2.8]].flatMap(([x, z]) => [{ s: 'cap', a: [x, 0.5, z], b: [x, 2.2, z], r: 0.07, col: C('#3a2a1a'), k: 0 }, { s: 'sph', c: [x, 2.3, z], r: 0.22, col: C('#efe8d4'), k: 0 },
+        ...[1, -1].map(sx => ({ s: 'sph', c: [x + sx * 0.08, 2.32, z + 0.18], r: 0.06, col: dark, k: 0 }))]),
+      ...[[1.7, -2.8], [-1.7, -2.8]].flatMap(([x, z]) => [{ s: 'cap', a: [x, 0.5, z], b: [x, 1.8, z], r: 0.05, col: C('#2a2a2a'), k: 0 }, { s: 'sph', c: [x, 1.9, z], r: 0.18, col: green, k: 0 }]),
+      ...Array.from({ length: 8 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -2.6 + Math.floor(i / 2) * 1.6; return { s: 'cap', a: [sx * 1.8, 0.45, z], b: [sx * 2.1, -0.1, z + 0.3], r: 0.08, r2: 0.04, col: moss, k: 0.03 }; }),
+    ]);
+  }
+  // 13. the Whirl Wyrm: a sea serpent: a horned, frilled head with fangs rearing up at the front, its body looping
+  // out of the water in great coils behind, fins along its back, a tail fin at the end
+  {
+    const scale = C('#2a8a7a'), scaleD = C('#1a5a54'), belly = C('#bfe8a8'), frill = C('#ff7a5a');
+    const parts = [
+      // the neck rising to the head
+      { s: 'cap', a: [0, -0.4, 1.0], b: [0, 2.2, 2.4], r: 0.75, r2: 0.62, col: scale, k: 0.15 },
+      { s: 'ell', c: [0, 2.6, 2.9], rr: [0.8, 0.7, 1.1], col: scale, k: 0.3 },
+      { s: 'ell', c: [0, 2.35, 3.6], rr: [0.6, 0.45, 0.65], col: scale, k: 0.25 },
+      { s: 'ell', c: [0, 2.05, 3.7], rr: [0.52, 0.18, 0.55], col: C('#5a1a20'), k: 0.03 },
+      ...Array.from({ length: 4 }, (_, i) => ({ s: 'cap', a: [-0.3 + i * 0.2, 2.25, 4.05], b: [-0.3 + i * 0.2, 1.95, 4.1], r: 0.05, r2: 0.01, col: teeth, k: 0 })),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.5, 2.85, 3.3], r: 0.17, col: C('#ffd34a'), k: 0 }, { s: 'ell', c: [sx * 0.55, 2.86, 3.43], rr: [0.03, 0.12, 0.04], col: dark, k: 0 },
+        { s: 'cap', a: [sx * 0.4, 3.1, 2.7], b: [sx * 0.8, 3.9, 2.1], r: 0.1, r2: 0.02, col: C('#e8e0c8'), k: 0.03 },
+        { s: 'ell', c: [sx * 0.85, 2.6, 2.5], rr: [0.08, 0.5, 0.4], col: frill, k: 0.05 }]),
+      { s: 'ell', c: [0, 1.6, 2.3], rr: [0.5, 0.6, 0.6], col: belly, k: 0.3 },
+      // the coils: half rings standing up out of the water, getting smaller toward the tail
+      ...[[-0.6, 1.25, 0.6], [-3.2, 1.05, 0.52], [-5.6, 0.85, 0.42]].flatMap(([z, R2, r]) => [
+        { s: 'tor', ax: 'x', c: [0, 0, z], R: R2, r, a0: 0.05, a1: Math.PI - 0.05, col: scale, k: 0.1 },
+        ...[0.6, 1.2, 1.8, 2.4].map(a => ({ s: 'ell', c: [0, Math.sin(a) * (R2 + r * 0.8), z + Math.cos(a) * (R2 + r * 0.8)], rr: [0.05, 0.25, 0.18], col: scaleD, k: 0.04 }))]),
+      { s: 'ell', c: [0, 0.6, -7.4], rr: [0.08, 0.8, 0.6], col: frill, bone: 4, k: 0.05 },
+    ];
+    bonesAt(P('bwyrm', parts), { 4: [0, 0.4, -6.8] });
+  }
+  // 14. the Trident Titan: a bronze giant waist-deep in the sea, green with age: a crested helmet, a sea-white
+  // beard, a breastplate, one hand raising a great golden trident
+  {
+    const bronze = C('#c08a4a'), patina = C('#5ab8a0'), beard = C('#e8f4f0'), plume = C('#d83a3a');
+    P('btitan', [
+      { s: 'cap', a: [0, -0.5, 0], b: [0, 3.0, 0], r: 1.35, r2: 1.55, col: patina, k: 0 },
+      { s: 'ell', c: [0, 2.4, 0.5], rr: [1.4, 1.0, 0.7], col: bronze, k: 0.2 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 1.7, 3.1, 0], r: 0.75, col: bronze, k: 0.3 })),
+      { s: 'cap', a: [0, 3.6, 0], b: [0, 4.3, 0.1], r: 0.55, col: patina, k: 0.2 },
+      { s: 'sph', c: [0, 4.6, 0.15], r: 0.8, col: patina, k: 0.2 },
+      { s: 'ell', c: [0, 4.0, 0.7], rr: [0.6, 0.7, 0.4], col: beard, k: 0.15 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.28, 4.75, 0.8], r: 0.12, col: C('#ffe86a'), k: 0 })),
+      // the helmet and its crest
+      { s: 'ell', c: [0, 5.0, 0.05], rr: [0.88, 0.62, 0.9], col: bronze, k: 0.05 },
+      { s: 'box', c: [0, 4.75, 0.85], hs: [0.5, 0.15, 0.08], rd: 0.05, col: bronze, k: 0 },
+      ...Array.from({ length: 6 }, (_, i) => { const a = 0.4 + i * 0.4; return { s: 'sph', c: [0, 5.2 + Math.sin(a) * 0.7, 0.05 - Math.cos(a) * 0.9], r: 0.22, col: plume, k: 0.15 }; }),
+      // arms: the left reaching forward, the right raising the trident
+      { s: 'cap', a: [1.8, 3.0, 0], b: [2.2, 1.8, 1.3], r: 0.45, r2: 0.38, col: patina, k: 0.15 }, { s: 'sph', c: [2.25, 1.65, 1.45], r: 0.42, col: bronze, k: 0.1 },
+      { s: 'cap', a: [-1.8, 3.1, 0], b: [-2.3, 4.6, 0.4], r: 0.45, r2: 0.38, col: patina, k: 0.15 }, { s: 'sph', c: [-2.35, 4.8, 0.45], r: 0.42, col: bronze, k: 0.1 },
+      { s: 'cap', a: [-2.35, 0.5, 0.45], b: [-2.35, 7.8, 0.45], r: 0.13, col: gold, k: 0 },
+      { s: 'cap', a: [-3.0, 7.8, 0.45], b: [-1.7, 7.8, 0.45], r: 0.12, col: gold, k: 0 },
+      ...[-0.65, 0, 0.65].map(dx => ({ s: 'cap', a: [-2.35 + dx, 7.8, 0.45], b: [-2.35 + dx * 1.1, 9.0, 0.45], r: 0.12, r2: 0.03, col: C('#ffd34a'), k: 0 })),
+      ...[[0.8, 1.6], [-0.9, 1.2], [0.2, 0.8]].map(([x, y]) => ({ s: 'sph', c: [x, y, 1.45], r: 0.15, col: C('#ff7a9a'), k: 0.05 })),
+    ]);
+  }
+  // 15. Captain Sugarbeard's cake ship: three tiers of sponge and frosting on a wafer hull, frosting drips,
+  // candles burning on top, a giant cherry, sugar pearls round the rims
+  {
+    const sponge = C('#f2c890'), frost = C('#ff9ac8'), cream = C('#fff4f8'), choc = C('#6a3a1e'), cherry = C('#e8283c');
+    P('bcake', [
+      { s: 'ell', c: [0, 0.3, 0], rr: [2.3, 0.6, 3.2], col: C('#d8a868'), k: 0 },
+      ...[[0.85, 2.1, 0.45, sponge], [1.55, 1.6, 0.35, choc], [2.15, 1.1, 0.3, sponge]].map(([y, r, h, col]) => ({ s: 'cyl', ax: 'y', c: [0, y, -0.4], r, hh: h, rd: 0.12, col, k: 0 })),
+      ...[[1.3, 2.12], [1.9, 1.62], [2.45, 1.12]].map(([y, r]) => ({ s: 'cyl', ax: 'y', c: [0, y, -0.4], r, hh: 0.08, rd: 0.06, col: frost, k: 0 })),
+      ...Array.from({ length: 14 }, (_, i) => { const a = i / 14 * TAU; return { s: 'cap', a: [Math.cos(a) * 2.13, 1.3, -0.4 + Math.sin(a) * 2.13], b: [Math.cos(a) * 2.13, 1.0 - (i % 3) * 0.12, -0.4 + Math.sin(a) * 2.13], r: 0.09, r2: 0.07, col: frost, k: 0.03 }; }),
+      ...Array.from({ length: 16 }, (_, i) => { const a = i / 16 * TAU; return { s: 'sph', c: [Math.cos(a) * 1.62, 1.97, -0.4 + Math.sin(a) * 1.62], r: 0.08, col: cream, k: 0 }; }),
+      ...Array.from({ length: 6 }, (_, i) => { const a = i / 6 * TAU + 0.3; return [{ s: 'cap', a: [Math.cos(a) * 0.8, 2.5, -0.4 + Math.sin(a) * 0.8], b: [Math.cos(a) * 0.8, 3.1, -0.4 + Math.sin(a) * 0.8], r: 0.07, col: i % 2 ? C('#5ac8ff') : C('#ffd34a'), k: 0 },
+        { s: 'sph', c: [Math.cos(a) * 0.8, 3.2, -0.4 + Math.sin(a) * 0.8], r: 0.09, col: C('#ffb02a'), k: 0 }]; }).flat(),
+      { s: 'sph', c: [0, 2.95, -0.4], r: 0.45, col: cherry, k: 0 }, { s: 'cap', a: [0, 3.35, -0.4], b: [0.25, 3.8, -0.6], r: 0.04, col: C('#3a6a2a'), k: 0 },
+      { s: 'cap', a: [0, 0.8, 2.6], b: [0, 1.2, 3.5], r: 0.25, r2: 0.1, col: C('#d8a868'), k: 0 },
+      ...[-1, 1].map(sx => ({ s: 'cap', a: [sx * 0.6, 0.85, 2.2], b: [sx * 1.2, 1.0, 2.8], r: 0.12, col: C('#ffffff'), k: 0 })),
+    ]);
+  }
+  // 16. the Triangle Saucer: a silver flying saucer hovering over the waves: a glass dome with a little green
+  // pilot, a ring of lights round the rim, a glowing beam emitter underneath
+  {
+    const silver = C('#c8d0dc'), silverD = C('#8a94a4'), glass = C('#8ae8ff'), lights = ['#ff4a6a', '#ffd34a', '#4aff8a', '#4ab8ff'].map(C);
+    P('bufo', [
+      { s: 'ell', c: [0, 2.6, 0], rr: [3.0, 0.55, 3.0], col: silver, k: 0 },
+      { s: 'ell', c: [0, 2.45, 0], rr: [2.2, 0.6, 2.2], col: silverD, k: 0.2 },
+      { s: 'sph', c: [0, 3.2, 0], r: 1.15, col: glass, k: 0 },
+      { s: 'sph', c: [0, 3.15, 0.1], r: 0.38, col: C('#7ad86a'), k: 0 },
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.17, 3.2, 0.42], rr: [0.11, 0.15, 0.06], col: dark, k: 0 })),
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.15, 3.45, 0.1], b: [sx * 0.3, 3.8, 0.15], r: 0.03, col: C('#7ad86a'), k: 0 })),
+      ...Array.from({ length: 12 }, (_, i) => { const a = i / 12 * TAU; return { s: 'sph', c: [Math.cos(a) * 2.75, 2.65, Math.sin(a) * 2.75], r: 0.16, col: lights[i % 4], k: 0 }; }),
+      { s: 'cyl', ax: 'y', c: [0, 1.95, 0], r: 0.8, hh: 0.18, rd: 0.08, col: silverD, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 1.75, 0], r: 0.6, hh: 0.06, rd: 0.04, col: C('#aaffd8'), k: 0 },
+      ...[0, 1, 2].map(i => { const a = i / 3 * TAU; return { s: 'cap', a: [Math.cos(a) * 1.6, 2.3, Math.sin(a) * 1.6], b: [Math.cos(a) * 2.1, 1.3, Math.sin(a) * 2.1], r: 0.08, col: silverD, k: 0 }; }),
+    ]);
+  }
+  // 17. the Cloud Whale: a great sky-blue whale with a white belly, swimming through the clouds: a blowhole,
+  // a smiling mouth, long pectoral fins (bones 5, 6), tail flukes (bone 4), puffs of cloud along its belly
+  {
+    const blue = C('#7aa8e8'), blueL = C('#a8c8ff'), belly = C('#f4f8ff');
+    const parts = [
+      { s: 'ell', c: [0, 1.0, 0.5], rr: [2.2, 1.8, 4.2], col: blue, k: 0 },
+      { s: 'ell', c: [0, 0.4, 0.8], rr: [1.9, 1.0, 3.8], col: belly, k: 0.5 },
+      ...Array.from({ length: 7 }, (_, i) => ({ s: 'cap', a: [-1.4 + i * 0.47, 0.1, 3.4], b: [-1.6 + i * 0.53, 0.3, 0.6], r: 0.06, col: C('#d8e4f4'), k: 0.03 })),
+      { s: 'cap', a: [-1.6, 0.75, 4.3], b: [1.6, 0.75, 4.3], r: 0.06, col: C('#3a4a6a'), k: 0.02 },
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 1.75, 1.35, 2.7], r: 0.22, col: white, k: 0 }, { s: 'sph', c: [sx * 1.88, 1.37, 2.82], r: 0.11, col: dark, k: 0 }]),
+      { s: 'ell', c: [0, 2.75, 1.6], rr: [0.3, 0.12, 0.2], col: C('#3a4a6a'), k: 0.05 },
+      { s: 'ell', c: [0, 2.6, -1.0], rr: [0.12, 0.5, 0.7], col: blueL, k: 0.1 },
+      { s: 'cap', a: [0, 1.0, -3.4], b: [0, 1.4, -5.6], r: 0.9, r2: 0.4, col: blue, k: 0.3 },
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 1.3, 1.5, -6.2], rr: [1.4, 0.15, 0.6], col: blueL, bone: 4, k: 0.1 })),
+      ...[1, -1].map((sx, j) => ({ s: 'ell', c: [sx * 2.6, 0.5, 1.4], rr: [1.4, 0.15, 0.6], col: blueL, bone: 5 + j, k: 0.1 })),
+      ...Array.from({ length: 7 }, (_, i) => { const a = i / 7 * TAU; return { s: 'sph', c: [Math.cos(a) * 2.3, 0.0, 0.4 + Math.sin(a) * 3.6], r: 0.8 + (i % 3) * 0.2, col: C('#ffffff'), k: 0.4 }; }),
+    ];
+    bonesAt(P('bwhale', parts), { 4: [0, 1.3, -5.4], 5: [2.0, 0.6, 1.4], 6: [-2.0, 0.6, 1.4] });
+  }
+  // 18. the Leviathan: a colossal head and neck rising from the deep: armored brow ridges, burning orange eyes,
+  // a jaw (bone 3) full of enormous teeth, spines down its neck and humps of its body behind
+  {
+    const hide = C('#1e3a4a'), hideD = C('#12262f'), plate = C('#3a5a68'), eye = C('#ff8a2a');
+    const parts = [
+      { s: 'cap', a: [0, -1.0, -1.0], b: [0, 3.0, 1.2], r: 1.6, r2: 1.35, col: hide, k: 0.2 },
+      { s: 'ell', c: [0, 3.6, 2.4], rr: [1.7, 1.3, 2.2], col: hide, k: 0.4 },
+      { s: 'ell', c: [0, 3.1, 3.9], rr: [1.4, 0.75, 1.3], col: hide, k: 0.3 },
+      { s: 'ell', c: [0, 2.7, 4.1], rr: [1.2, 0.25, 1.1], col: C('#4a1018'), k: 0.03 },
+      ...Array.from({ length: 7 }, (_, i) => { const x = -1.0 + i * 0.33; return { s: 'cap', a: [x, 3.0, 4.9 - Math.abs(x) * 0.4], b: [x * 1.03, 2.45, 5.0 - Math.abs(x) * 0.4], r: 0.11, r2: 0.02, col: teeth, k: 0 }; }),
+      { s: 'ell', c: [0, 2.2, 3.7], rr: [1.25, 0.4, 1.4], col: hideD, bone: 3, k: 0.15 },
+      ...Array.from({ length: 6 }, (_, i) => { const x = -0.85 + i * 0.34; return { s: 'cap', a: [x, 2.35, 4.8 - Math.abs(x) * 0.4], b: [x * 1.03, 2.95, 4.85 - Math.abs(x) * 0.4], r: 0.1, r2: 0.02, col: teeth, bone: 3, k: 0 }; }),
+      ...[1, -1].flatMap(sx => [{ s: 'cap', a: [sx * 0.5, 4.5, 2.6], b: [sx * 1.4, 4.2, 3.6], r: 0.28, col: plate, k: 0.15 }, { s: 'sph', c: [sx * 1.1, 3.95, 3.5], r: 0.3, col: eye, k: 0 },
+        { s: 'ell', c: [sx * 1.18, 3.95, 3.75], rr: [0.05, 0.22, 0.06], col: dark, k: 0 },
+        { s: 'cap', a: [sx * 0.9, 4.6, 1.6], b: [sx * 1.7, 5.8, 0.6], r: 0.22, r2: 0.04, col: C('#d8d0b8'), k: 0.05 }]),
+      ...Array.from({ length: 6 }, (_, i) => ({ s: 'cap', a: [0, 4.7 - i * 0.7, 1.4 - i * 0.55], b: [0, 5.4 - i * 0.7, 1.0 - i * 0.55], r: 0.16, r2: 0.03, col: plate, k: 0.05 })),
+      ...[[-4.2, 1.3, 0.75], [-7.0, 1.0, 0.6]].map(([z, R2, r]) => ({ s: 'tor', ax: 'x', c: [0, 0, z], R: R2, r, a0: 0.05, a1: Math.PI - 0.05, col: hide, k: 0.1 })),
+      { s: 'ell', c: [0, 0.5, -9.0], rr: [0.12, 1.0, 0.8], col: plate, bone: 4, k: 0.05 },
+    ];
+    bonesAt(P('blevi', parts), { 3: [0, 2.6, 2.6], 4: [0, 0.4, -8.4] });
+  }
+  // 19. Davy Jones' ship: the galleon, rotted green and grown over with coral, barnacles and kelp; tattered
+  // green sails on its rig
+  {
+    const G0 = defs.galleon, G1 = defs.galleon_rig, lum = c => c[0] * 0.3 + c[1] * 0.55 + c[2] * 0.15;
+    const sea = c => { const l = lum(c); return l < 0.25 ? [0.12, 0.26, 0.22] : l < 0.5 ? [0.22, 0.42, 0.36] : [0.55, 0.85, 0.7]; };
+    const coral = [C('#ff7a5a'), C('#ff5aa8'), C('#ffb02a'), C('#c86aff')];
+    const extra = [
+      ...Array.from({ length: 12 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -3 + Math.floor(i / 2) * 1.2; return { s: 'sph', c: [sx * 1.3 * Math.sqrt(Math.max(0.1, 1 - (z / 3.8) ** 2)), 0.35 + (i % 3) * 0.12, z], r: 0.16 + (i % 2) * 0.06, col: coral[i % 4], k: 0.04 }; }),
+      ...Array.from({ length: 8 }, (_, i) => { const sx = i % 2 ? 1 : -1, z = -2.6 + Math.floor(i / 2) * 1.6; return { s: 'cap', a: [sx * 1.25, 0.7, z], b: [sx * 1.45, -0.2, z + 0.2], r: 0.07, r2: 0.03, col: C('#3a7a3a'), k: 0.02 }; }),
+      ...[[0.6, 1.5], [-0.5, -1.2]].flatMap(([x, z], i) => [0, 1, 2].map(j => { const a = j * 2.1 + i; return { s: 'cap', a: [x, 0.9, z], b: [x + Math.cos(a) * 0.3, 1.5, z + Math.sin(a) * 0.3], r: 0.08, r2: 0.04, col: coral[(i + j) % 4], k: 0.04 }; })),
+    ];
+    const a = P('bjones', [...G0.parts.map(p => ({ ...p, col: p.col ? sea(p.col) : p.col })), ...extra], { ao: 0.5 });
+    const b = P('bjones_rig', G1.parts.map(p => ({ ...p, col: p.col ? sea(p.col) : p.col })), { ao: 0.4 });
+    a.bones = G0.bones.map(x => ({ ...x })); b.bones = G1.bones.map(x => ({ ...x }));
+  }
+  // 20. Neptune himself, standing in a great scallop-shell chariot of pearl and gold drawn by two seahorses:
+  // sea-green skin, a white beard, a golden crown, his trident raised
+  {
+    const shell = C('#fff0e8'), shellD = C('#f4c8b8'), skin = C('#6ac8b8'), beard = C('#f4f8f8'), horse = C('#2ab8a8'), horseD = C('#178a80');
+    const ribs = Array.from({ length: 9 }, (_, i) => { const a = -1.2 + i * 0.3; return { s: 'cap', a: [0, 0.4, -1.4], b: [Math.sin(a) * 2.2, 2.4, -1.4 - Math.cos(a) * 0.9], r: 0.18, col: i % 2 ? shell : shellD, k: 0.1 }; });
+    const seahorse = sx => [
+      { s: 'cap', a: [sx * 1.0, -0.4, 3.0], b: [sx * 1.0, 1.4, 3.3], r: 0.42, r2: 0.36, col: horse, k: 0.2 },
+      { s: 'cap', a: [sx * 1.0, 1.4, 3.3], b: [sx * 1.0, 2.0, 3.0], r: 0.34, r2: 0.3, col: horse, k: 0.2 },
+      { s: 'ell', c: [sx * 1.0, 2.2, 3.2], rr: [0.3, 0.32, 0.4], col: horse, k: 0.15 },
+      { s: 'cap', a: [sx * 1.0, 2.15, 3.5], b: [sx * 1.0, 2.0, 4.1], r: 0.16, r2: 0.11, col: horse, k: 0.1 },
+      ...Array.from({ length: 5 }, (_, i) => ({ s: 'ell', c: [sx * 1.0, 1.0 + i * 0.3, 2.85 - i * 0.05], rr: [0.05, 0.14, 0.12], col: horseD, k: 0.03 })),
+      { s: 'sph', c: [sx * 1.22, 2.3, 3.35], r: 0.08, col: dark, k: 0 },
+      { s: 'cap', a: [sx * 1.0, 1.6, 3.0], b: [sx * 0.2, 1.4, 1.2], r: 0.03, col: gold, k: 0 }];
+    P('bneptune', [
+      { s: 'ell', c: [0, 0.5, -0.4], rr: [2.2, 0.8, 2.0], col: shell, k: 0 },
+      ...ribs,
+      { s: 'ell', c: [0, 1.0, -0.2], rr: [1.7, 0.5, 1.5], sub: true, k: 0.05 },
+      ...Array.from({ length: 12 }, (_, i) => { const a = i / 12 * TAU; return { s: 'sph', c: [Math.cos(a) * 2.0, 1.05, -0.4 + Math.sin(a) * 1.8], r: 0.13, col: gold, k: 0 }; }),
+      ...seahorse(1), ...seahorse(-1),
+      // Neptune: legs in the shell, a broad torso, arms, the head, the beard, the crown, the trident
+      { s: 'cap', a: [0, 0.8, -0.4], b: [0, 2.9, -0.4], r: 0.7, r2: 0.85, col: skin, k: 0.1 },
+      { s: 'ell', c: [0, 1.4, -0.4], rr: [0.8, 0.45, 0.7], col: C('#2a6ad8'), k: 0.1 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.95, 3.0, -0.4], r: 0.45, col: skin, k: 0.25 })),
+      { s: 'sph', c: [0, 3.75, -0.35], r: 0.55, col: skin, k: 0.15 },
+      { s: 'ell', c: [0, 3.25, 0.0], rr: [0.5, 0.65, 0.35], col: beard, k: 0.15 },
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.2, 3.9, 0.12], r: 0.09, col: dark, k: 0 })),
+      { s: 'tor', ax: 'y', c: [0, 4.2, -0.35], R: 0.42, r: 0.07, a0: -Math.PI, a1: Math.PI, col: gold, k: 0 },
+      ...Array.from({ length: 7 }, (_, i) => { const a = i / 7 * TAU; return { s: 'cap', a: [Math.cos(a) * 0.42, 4.2, -0.35 + Math.sin(a) * 0.42], b: [Math.cos(a) * 0.45, 4.65, -0.35 + Math.sin(a) * 0.45], r: 0.06, r2: 0.01, col: gold, k: 0 }; }),
+      { s: 'cap', a: [1.0, 3.0, -0.4], b: [1.5, 2.0, 0.6], r: 0.3, r2: 0.26, col: skin, k: 0.15 },
+      { s: 'cap', a: [-1.0, 3.0, -0.4], b: [-1.5, 4.2, 0.0], r: 0.3, r2: 0.26, col: skin, k: 0.15 }, { s: 'sph', c: [-1.55, 4.35, 0.05], r: 0.28, col: skin, k: 0.1 },
+      { s: 'cap', a: [-1.55, 1.0, 0.05], b: [-1.55, 6.6, 0.05], r: 0.09, col: gold, k: 0 },
+      { s: 'cap', a: [-2.05, 6.6, 0.05], b: [-1.05, 6.6, 0.05], r: 0.09, col: gold, k: 0 },
+      ...[-0.5, 0, 0.5].map(dx => ({ s: 'cap', a: [-1.55 + dx, 6.6, 0.05], b: [-1.55 + dx * 1.1, 7.5, 0.05], r: 0.09, r2: 0.02, col: C('#ffd34a'), k: 0 })),
+    ]);
   }
 }
 
@@ -16004,6 +16493,17 @@ SKINS.push(
   { id: 'octopus', name: 'Octopus', cost: 1200, base: '#e8504a', top: '#ff9a7a', accent: '#9a1a3a', rim: '#ffd0c0', boost: { area: 4 } },
   { id: 'turtle', name: 'Sea Turtle', cost: 900, base: '#5ab04a', top: '#c8e07a', accent: '#2a6a3a', rim: '#e0ffc0', boost: { hp: 5 } },
 );
+// the deeper oceans' colors
+SKINS.push(
+  { id: 'glowtide', name: 'Glowtide', cost: 2400, base: '#0a2a3a', top: '#5affd8', accent: '#2affb8', rim: '#a8fff0', boost: { cd: 6 } },
+  { id: 'sargasso', name: 'Sargasso', cost: 1600, base: '#5a7a2a', top: '#c8e8a0', accent: '#3a5a1a', rim: '#e8ffc8', boost: { regen: 0.05 } },
+  { id: 'maelstrom', name: 'Maelstrom', cost: 1800, base: '#2a5a62', top: '#d0f0f0', accent: '#12303a', rim: '#ffffff', boost: { speed: 5 } },
+  { id: 'atlantean', name: 'Atlantean', cost: 2600, base: '#18b4cc', top: '#f2c440', accent: '#0a6a7e', rim: '#e8fff8', boost: { armor: 6 } },
+  { id: 'cherrysoda', name: 'Cherry Soda', cost: 2000, base: '#e8306a', top: '#ffb8d8', accent: '#a8104a', rim: '#fff0f8', boost: { gold: 6 } },
+  { id: 'triangle', name: 'Bermuda', cost: 2200, base: '#1c6656', top: '#a8ffd8', accent: '#0c3634', rim: '#e0fff0', boost: { xp: 6 } },
+  { id: 'cloudnine', name: 'Cloud Nine', cost: 1800, base: '#e8f0ff', top: '#ffffff', accent: '#a8c8ff', rim: '#ffffff', boost: { magnet: 10 } },
+  { id: 'abyssal', name: 'Abyssal', cost: 3000, base: '#040c1a', top: '#2a4a8a', accent: '#ff8a2a', rim: '#7ab8e0', boost: { dmg: 7 } },
+);
 SKINS.sort((a, b) => (a.goal ? 1e9 : a.cost) - (b.goal ? 1e9 : b.cost));
 
 const SEA_COSTUMES = [
@@ -16110,10 +16610,164 @@ const SEA_COSTUMES = [
   { id: 'seaweed', name: 'Seaweed Hair', cost: 600, boost: { regen: 0.03 }, pal: ['#3a9a4a', '#6ac85a'], parts:
     [0, 1, 2, 3, 4, 5].map(i => { const a = Math.PI * 0.45 + i * 0.45; return ['cap', 'head', [Math.sin(a) * 0.15, 0.18, Math.cos(a) * 0.15], [Math.sin(a) * 0.3, -0.12, Math.cos(a) * 0.3], 0.05, 0.02, 0.02, i % 2, 0.04]; }) },
 ];
+// ---------- trophies: one for sinking each boss of oceans 11-20, given by its achievement (goal: 'sea<n>', 14c-goals.js) ----------
+const SEA_TROPHIES = [
+  { id: 'anglerhood', name: 'Angler Hood', cost: 0, goal: 'sea11', boost: { cd: 7 }, pal: ['#1e2a44', '#f4f0e0', '#e8ff7a'], parts: [
+    ['ell', 'head', [0, 0.09, -0.08], [0.27, 0.27, 0.27], 0.02, 0],
+    ...[-0.14, -0.08, -0.02, 0.04, 0.1, 0.16].map(x => ['cap', 'head', [x, 0.2 - Math.abs(x) * 0.6, 0.15], [x, 0.13 - Math.abs(x) * 0.6, 0.19], 0.02, 0.004, 0.005, 1]),
+    ['cap', 'head', [0, 0.33, -0.02], [0, 0.56, 0.2], 0.026, 0.02, 0.01, 0, 0.02], ['cap', 'head', [0, 0.56, 0.2], [0, 0.5, 0.36], 0.02, 0.018, 0.01, 0, 0.03],
+    ['sph', 'head', [0, 0.46, 0.42], 0.075, 0.01, 2, 0.03],
+  ] },
+  { id: 'witchhat', name: 'Weed Witch Hat', cost: 0, goal: 'sea12', boost: { regen: 0.06 }, pal: ['#2a2a36', '#4a8a3a', '#7aff5a'], parts: [
+    ['ell', 'head', [0, 0.17, 0], [0.38, 0.03, 0.38], 0.01, 0],
+    ['cap', 'head', [0, 0.18, 0], [0.04, 0.58, -0.07], 0.18, 0.04, 0.02, 0], ['cap', 'head', [0.04, 0.58, -0.07], [0.16, 0.66, -0.16], 0.04, 0.012, 0.02, 0, 0.02],
+    ['ell', 'head', [0, 0.23, 0], [0.18, 0.035, 0.18], 0.01, 1], ['sph', 'head', [0, 0.23, 0.17], 0.035, 0.005, 2],
+  ] },
+  { id: 'wyrmhorns', name: 'Wyrm Horns', cost: 0, goal: 'sea13', boost: { speed: 7 }, pal: ['#2a8a7a', '#ff7a5a', '#e8e0c8'], parts: [
+    ...[1, -1].flatMap(sx => [['cap', 'head', [sx * 0.11, 0.17, 0.02], [sx * 0.22, 0.36, -0.14], 0.04, 0.02, 0.01, 2], ['cap', 'head', [sx * 0.22, 0.36, -0.14], [sx * 0.24, 0.4, -0.3], 0.02, 0.006, 0.01, 2],
+      ['ell', 'head', [sx * 0.21, 0.0, -0.04], [0.025, 0.11, 0.09], 0.01, 1]]),
+    ...[0, 1, 2].map(i => ['cap', 'head', [0, 0.21 - i * 0.05, -0.08 - i * 0.08], [0, 0.3 - i * 0.05, -0.12 - i * 0.08], 0.03, 0.008, 0.01, 0]),
+  ] },
+  { id: 'titanhelm', name: 'Titan Helm', cost: 0, goal: 'sea14', boost: { armor: 8 }, pal: ['#c08a4a', '#d83a3a', '#5ab8a0'], parts: [
+    ['ell', 'head', [0, 0.11, -0.03], [0.255, 0.21, 0.26], 0.02, 0],
+    ...[1, -1].map(sx => ['ell', 'head', [sx * 0.17, -0.04, 0.1], [0.04, 0.1, 0.08], 0.01, 0]),
+    ...[0, 1, 2, 3, 4, 5].map(i => { const a = 0.3 + i * 0.45; return ['sph', 'head', [0, 0.12 + Math.sin(a) * 0.24, -0.03 - Math.cos(a) * 0.26], 0.06, 0.02, 1]; }),
+    ['ell', 'head', [0, 0.06, 0.2], [0.17, 0.02, 0.04], 0.01, 2],
+  ] },
+  { id: 'cakehat', name: 'Birthday Cake', cost: 0, goal: 'sea15', boost: { gold: 8 }, pal: ['#f2c890', '#ff9ac8', '#e8283c', '#fff4f8'], parts: [
+    ['ell', 'head', [0, 0.25, 0], [0.2, 0.065, 0.2], 0.01, 0], ['ell', 'head', [0, 0.31, 0], [0.21, 0.025, 0.21], 0.01, 1],
+    ['ell', 'head', [0, 0.36, 0], [0.15, 0.05, 0.15], 0.01, 0], ['ell', 'head', [0, 0.41, 0], [0.16, 0.022, 0.16], 0.01, 1],
+    ['sph', 'head', [0, 0.47, 0], 0.055, 0.01, 2], ['cap', 'head', [0, 0.5, 0], [0.03, 0.56, -0.03], 0.008, 0.006, 0.005, 1],
+    ...[0, 1, 2, 3].map(i => { const a = i / 4 * TAU + 0.4; return ['sph', 'head', [Math.sin(a) * 0.18, 0.31, Math.cos(a) * 0.18], 0.025, 0.005, 3]; }),
+  ] },
+  { id: 'ufohat', name: 'Little Saucer', cost: 0, goal: 'sea16', boost: { xp: 8 }, pal: ['#c8d0dc', '#8ae8ff', '#7ad86a', '#ffd34a'], parts: [
+    ['ell', 'head', [0, 0.44, 0], [0.26, 0.05, 0.26], 0.01, 0], ['sph', 'head', [0, 0.49, 0], 0.11, 0.01, 1],
+    ['sph', 'head', [0, 0.48, 0.02], 0.045, 0.005, 2],
+    ...[0, 1, 2, 3, 4, 5].map(i => { const a = i / 6 * TAU; return ['sph', 'head', [Math.sin(a) * 0.24, 0.44, Math.cos(a) * 0.24], 0.025, 0.005, 3, 0.02]; }),
+  ] },
+  { id: 'cloudhat', name: 'Cloud Nine', cost: 0, goal: 'sea17', boost: { magnet: 12 }, pal: ['#ffffff', '#e8eef8', '#ff6a6a', '#5ab0ff'], parts: [
+    ['sph', 'head', [0, 0.27, 0], 0.13, 0.04, 0], ['sph', 'head', [0.12, 0.23, 0.03], 0.1, 0.04, 1], ['sph', 'head', [-0.12, 0.23, -0.02], 0.1, 0.04, 1], ['sph', 'head', [0.02, 0.25, -0.13], 0.1, 0.04, 0],
+    ...[0, 1, 2, 3, 4].map(i => { const a = 0.4 + i * 0.58; return ['sph', 'head', [Math.cos(a) * 0.24, 0.3 + Math.sin(a) * 0.2, 0.06], 0.028, 0.01, 2]; }),
+    ...[0, 1, 2, 3, 4].map(i => { const a = 0.45 + i * 0.56; return ['sph', 'head', [Math.cos(a) * 0.19, 0.3 + Math.sin(a) * 0.15, 0.06], 0.026, 0.01, 3]; }),
+  ] },
+  { id: 'levihood', name: 'Leviathan Skull', cost: 0, goal: 'sea18', boost: { dmg: 8 }, pal: ['#1e3a4a', '#f4f0e0', '#ff8a2a'], parts: [
+    ['ell', 'head', [0, 0.09, -0.08], [0.27, 0.27, 0.27], 0.02, 0],
+    ...[1, -1].map(sx => ['sph', 'head', [sx * 0.11, 0.25, 0.14], 0.035, 0.005, 2, 0.02]),
+    ...[0, 1, 2, 3].map(i => ['cap', 'head', [0, 0.34 - i * 0.04, -0.04 - i * 0.08], [0, 0.46 - i * 0.05, -0.08 - i * 0.1], 0.04, 0.008, 0.01, 0]),
+    ...[-0.13, -0.065, 0, 0.065, 0.13].map(x => ['cap', 'head', [x, -0.15, 0.17], [x, -0.08, 0.19], 0.022, 0.004, 0.005, 1]),
+  ] },
+  { id: 'jonesbeard', name: "Davy's Beard", cost: 0, goal: 'sea19', boost: { hp: 9 }, pal: ['#3a8a7a', '#2a6a5a', '#7affa8'], parts: [
+    ...[-0.12, -0.07, -0.02, 0.03, 0.08, 0.13].map((x, i) => ['cap', 'head', [x, -0.12, 0.15], [x * 1.3, -0.36 - (i % 2) * 0.08, 0.18 + (i % 3) * 0.03], 0.035, 0.015, 0.015, i % 2]),
+    ['ell', 'head', [0, -0.1, 0.13], [0.15, 0.05, 0.06], 0.02, 0], ['sph', 'head', [0.02, -0.43, 0.2], 0.022, 0.005, 2, 0.02],
+  ] },
+  { id: 'neptunecrown', name: "Neptune's Crown", cost: 0, goal: 'sea20', boost: { dmg: 6, armor: 4 }, pal: ['#f2c440', '#5ad8ff', '#fff4dc'], parts: [
+    ['ell', 'head', [0, 0.18, 0], [0.225, 0.05, 0.225], 0.01, 0],
+    ...[0, 1, 2, 3, 4, 5, 6].map(i => { const a = i / 7 * TAU; return ['cap', 'head', [Math.sin(a) * 0.21, 0.2, Math.cos(a) * 0.21], [Math.sin(a) * 0.23, 0.36 + (i % 2) * 0.06, Math.cos(a) * 0.23], 0.035, 0.008, 0.01, 0]; }),
+    ['sph', 'head', [0, 0.22, 0.22], 0.045, 0.01, 1, 0.02], ...[1, -1].map(sx => ['sph', 'head', [sx * 0.15, 0.2, 0.16], 0.025, 0.005, 2]),
+  ] },
+];
+SEA_COSTUMES.push(...SEA_TROPHIES);
 COSTUMES.push(...SEA_COSTUMES);
-HAT_IDS.push('sharkfin', 'captain', 'sailor', 'bicorne', 'angler', 'jellyhat', 'starfish', 'coralcrown', 'narwhal', 'seaweed');
+HAT_IDS.push('sharkfin', 'captain', 'sailor', 'bicorne', 'angler', 'jellyhat', 'starfish', 'coralcrown', 'narwhal', 'seaweed', 'witchhat', 'wyrmhorns', 'titanhelm', 'cakehat', 'ufohat', 'cloudhat', 'neptunecrown');
 for (const c of SEA_COSTUMES) c.slot = HAT_IDS.includes(c.id) ? 'hat' : 'hood';
 COSTUMES.sort((a, b) => a.cost - b.cost);
+
+// ---- 10c-ship-cosmetics.js ----
+// ============================================================
+// Ship looks (the Ships tab on the Blobs screen): hull paints, sail colors, flags and wake trails. They apply to
+// whichever ship you sail. Paints and sails recolor the parts marked `paint` in the ship models (04k, 04l):
+// those keep their own shading and are multiplied by a tint, paint color / the ship's own color
+// (SHIP_BASE_COL), so 'Classic' is a tint of 1. Flags are small meshes on a pole (FLAG_SPOT).
+// ============================================================
+const SHIP_PAINTS = [
+  { id: 'classic', name: 'Classic', cost: 0, col: null },
+  { id: 'royal', name: 'Royal Blue', cost: 900, col: '#2a5ad8' },
+  { id: 'crimson', name: 'Crimson', cost: 900, col: '#c8283a' },
+  { id: 'emerald', name: 'Emerald', cost: 1200, col: '#1f9a5a' },
+  { id: 'midnight', name: 'Midnight', cost: 1200, col: '#1c2236' },
+  { id: 'bubblegum', name: 'Bubblegum', cost: 1500, col: '#ff7ab8' },
+  { id: 'sunshine', name: 'Sunshine', cost: 1500, col: '#ffc21f' },
+  { id: 'arctic', name: 'Arctic', cost: 1800, col: '#e8f4ff' },
+  { id: 'goldleaf', name: 'Gold Leaf', cost: 3000, col: '#e8b84a' },
+];
+const SHIP_SAILS = [
+  { id: 'classic', name: 'Classic Sails', cost: 0, col: null },
+  { id: 'crimson', name: 'Crimson Sails', cost: 700, col: '#d8323c' },
+  { id: 'sky', name: 'Sky Sails', cost: 700, col: '#7ac8ff' },
+  { id: 'mint', name: 'Mint Sails', cost: 900, col: '#7af0c8' },
+  { id: 'lavender', name: 'Lavender Sails', cost: 900, col: '#b48aff' },
+  { id: 'jet', name: 'Jet Black Sails', cost: 1200, col: '#1c1820' },
+  { id: 'gold', name: 'Golden Sails', cost: 2200, col: '#f2c440' },
+];
+// flags: the cloth's color and its emblem (drawn as flag_<id>, built in 04l-ship-models.js)
+const SHIP_FLAGS = [
+  { id: 'none', name: 'No Flag', cost: 0 },
+  { id: 'roger', name: 'Jolly Roger', cost: 800, cloth: '#1c1820', mark: '#f4ecdc', emblem: 'skull' },
+  { id: 'goo', name: 'Goo Flag', cost: 800, cloth: '#2a8ad8', mark: '#7affe0', emblem: 'blob' },
+  { id: 'heart', name: 'Sweetheart', cost: 1000, cloth: '#ffd8e8', mark: '#ff3a6a', emblem: 'heart' },
+  { id: 'checker', name: 'Racing Flag', cost: 1000, cloth: '#ffffff', mark: '#1c1820', emblem: 'checker' },
+  { id: 'swords', name: 'Crossed Swords', cost: 1300, cloth: '#a8242c', mark: '#f2c440', emblem: 'swords' },
+  { id: 'rainbow', name: 'Rainbow Flag', cost: 1600, cloth: '#ff5a5a', mark: '#4aa8ff', emblem: 'rainbow' },
+];
+// wake trails: the wake's foam color, and what rises out of it
+const WAKE_TRAILS = [
+  { id: 'foam', name: 'Sea Foam', cost: 0, col: [0.95, 0.99, 1] },
+  { id: 'bubbles', name: 'Bubbles', cost: 700, col: [0.8, 0.95, 1], part: 'bubble' },
+  { id: 'glow', name: 'Glowing Wake', cost: 1000, col: [0.4, 1, 0.85], add: true },
+  { id: 'sparkle', name: 'Gold Sparkles', cost: 1300, col: [1, 0.92, 0.6], part: 'sparkle' },
+  { id: 'hearts', name: 'Lovestruck', cost: 1300, col: [1, 0.75, 0.85], part: 'heart' },
+  { id: 'flame', name: 'Flame Wake', cost: 1800, col: [1, 0.62, 0.3], part: 'flame', add: true },
+  { id: 'rainbow', name: 'Rainbow Wake', cost: 2500, col: null, part: 'rainbow' },
+];
+// each ship's own colors under the paint and the sails, and where its flag flies [x, z, y of the pole's foot, height]
+const SHIP_BASE_COL = {
+  raft: { hull: '#b07a45' }, canoe: { hull: '#c0582e' }, sloop: { hull: '#8a5530', sail: '#f4e8cc' }, galleon: { hull: '#3e2a22', sail: '#2c2832' },
+  yacht: { hull: '#fbf8f2' }, cruise: { hull: '#fbf8f2' }, cargo: { hull: '#244a7a' }, battleship: { hull: '#7a8494' }, carrier: { hull: '#6a7280' }, ark: { hull: '#f4ecd6', sail: '#fffaf0' },
+};
+const FLAG_SPOT = {
+  raft: [0.55, -1.0, 0.17, 1.6], canoe: [0, -1.85, 0.2, 1.6], sloop: [0, -2.45, 1.4, 1.5], galleon: [0, -3.4, 2.1, 1.8], yacht: [0, -2.45, 3.0, 1.4], cruise: [0, -4.6, 2.76, 2.0],
+  cargo: [0, -6.4, 5.2, 2.0], battleship: [0, -7.6, 1.6, 2.4], carrier: [-2.35, -1.6, 7.3, 1.8], ark: [0, -8.6, 3.0, 2.4],
+};
+const SHIP_LOOK_KINDS = [
+  { key: 'paint', title: 'Hull Paint', list: SHIP_PAINTS },
+  { key: 'sail', title: 'Sails', list: SHIP_SAILS },
+  { key: 'flag', title: 'Flags', list: SHIP_FLAGS },
+  { key: 'trail', title: 'Wake Trails', list: WAKE_TRAILS },
+];
+// the looks in use: what is being tried on in the Ships tab, or else what is equipped
+function shipLook() {
+  const sv = G.save && G.save.sea, pv = typeof UI !== 'undefined' && UI.menuTab === 'skins' && UI.blobTab === 'ships' && UI.shipPreview;
+  const get = key => (pv && pv[key]) || (sv && sv[key]);
+  return { paint: SHIP_PAINTS.find(p => p.id === get('paint')) || SHIP_PAINTS[0], sail: SHIP_SAILS.find(p => p.id === get('sail')) || SHIP_SAILS[0], flag: SHIP_FLAGS.find(p => p.id === get('flag')) || SHIP_FLAGS[0], trail: WAKE_TRAILS.find(p => p.id === get('trail')) || WAKE_TRAILS[0] };
+}
+const SHIP_ONE = [1, 1, 1];
+// the tint that turns a ship's own color into the paint: per channel, paint / own
+function shipTint(id, part, look) {
+  const L = look || shipLook(), item = part === 'sail' ? L.sail : L.paint, base = SHIP_BASE_COL[id] && SHIP_BASE_COL[id][part === 'sail' ? 'sail' : 'hull'];
+  if (!item || !item.col || !base) return SHIP_ONE;
+  const c = hexToRgb(item.col), b = hexToRgb(base);
+  return [c[0] / Math.max(0.04, b[0]), c[1] / Math.max(0.04, b[1]), c[2] / Math.max(0.04, b[2])];
+}
+// little pictures for the Ships tab
+function shipLookIcon(key, item) {
+  const ol = 'stroke="#23305a" stroke-width="3" stroke-linejoin="round"';
+  let inner;
+  if (key === 'paint') { const c = item.col || '#8a5530'; inner = `<path d="M6 34 H58 L50 52 Q32 56 14 52 Z" fill="${c}" ${ol}/><path d="M10 38 H54" stroke="#fff" stroke-opacity=".5" stroke-width="2.5"/><rect x="24" y="22" width="16" height="12" rx="2" fill="#f4ecdc" ${ol}/><path d="M32 22 V8" stroke="#23305a" stroke-width="3"/>`; }
+  else if (key === 'sail') { const c = item.col || '#f4e8cc'; inner = `<path d="M30 6 V54" stroke="#6e4426" stroke-width="4" stroke-linecap="round"/><path d="M14 12 Q34 20 14 44 Z M34 10 Q58 22 34 48 Z" fill="${c}" ${ol}/><path d="M8 54 H56" stroke="#23305a" stroke-width="4" stroke-linecap="round"/>`; }
+  else if (key === 'flag') {
+    if (item.id === 'none') inner = `<path d="M18 8 V58" stroke="#6e4426" stroke-width="4" stroke-linecap="round"/><path d="M14 20 L50 44 M50 20 L14 44" stroke="#c8d0da" stroke-width="5" stroke-linecap="round"/>`;
+    else { const e = item.emblem, m = item.mark;
+      const em = e === 'skull' ? `<circle cx="36" cy="22" r="7" fill="${m}"/><rect x="31" y="27" width="10" height="5" fill="${m}"/>` : e === 'blob' ? `<path d="M28 30 Q28 14 36 14 Q44 14 44 30 Z" fill="${m}"/><circle cx="33" cy="23" r="2" fill="#23305a"/><circle cx="39" cy="23" r="2" fill="#23305a"/>`
+        : e === 'heart' ? `<path d="M36 33 C26 26 28 16 36 21 C44 16 46 26 36 33 Z" fill="${m}"/>` : e === 'checker' ? Array.from({ length: 8 }, (_, i) => { const cx = i % 4, cy = Math.floor(i / 4); return (cx + cy) % 2 ? '' : `<rect x="${20 + cx * 8}" y="${10 + cy * 13}" width="8" height="13" fill="${m}"/>`; }).join('')
+        : e === 'swords' ? `<path d="M24 12 L48 34 M48 12 L24 34" stroke="${m}" stroke-width="4" stroke-linecap="round"/>` : `<path d="M20 12 H52 V16 H20 Z" fill="#ff5a5a"/><path d="M20 16 H52 V20 H20 Z" fill="#ffa83a"/><path d="M20 20 H52 V24 H20 Z" fill="#ffe84a"/><path d="M20 24 H52 V28 H20 Z" fill="#5ad86a"/><path d="M20 28 H52 V32 H20 Z" fill="#4aa8ff"/><path d="M20 32 H52 V36 H20 Z" fill="#a86aff"/>`;
+      inner = `<path d="M18 8 V58" stroke="#6e4426" stroke-width="4" stroke-linecap="round"/><path d="M20 10 H52 V36 H20 Z" fill="${e === 'rainbow' ? '#fff' : item.cloth}" ${ol}/>${em}<path d="M20 10 H52 V36 H20 Z" fill="none" ${ol}/>`; }
+  } else {
+    const col = item.col ? '#' + item.col.map(v => Math.round(Math.min(1, v) * 255).toString(16).padStart(2, '0')).join('') : null;
+    const dots = [[12, 46, 6], [24, 38, 5], [36, 30, 4.5], [47, 22, 4], [56, 15, 3]];
+    inner = `<path d="M6 54 Q30 50 58 10" stroke="#9fd0ff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".5"/>` + dots.map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col || ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff'][i]}" ${ol.replace('3"', '2"')}/>`).join('');
+  }
+  return svgUrl(svgDoc(inner));
+}
 
 // ---- 11-game.js ----
 // ============================================================
@@ -26078,6 +26732,7 @@ function updateSeaHazards(dt) {
     if (h.k === 'lob') { h.x = lerp(h.sx, h.tx, u); h.z = lerp(h.sz, h.tz, u); h.y = lerp(h.sy, 0, u) + Math.sin(u * Math.PI) * 4; }
     if (u >= 1) {
       h.dead = true;
+      if (h.onLand) h.onLand(h);
       if (h.k === 'zap') {
         addBolt(h.x, 14, h.z, h.x, 0, h.z, 0.4, [0.8, 0.9, 1]);
         R.frame.flashW = Math.max(R.frame.flashW, 0.5); AUDIO.play('thunder');
@@ -26237,6 +26892,8 @@ SEA_DRAW.pcapt = e => {
 // health it is enraged and its pauses get shorter. It can be rammed like anything else, though it barely budges.
 // ============================================================
 const SEA_BOSS_IDS = ['sflamingo', 'sclam', 'skelp', 'ssmuggler', 'sfrost', 'smagma', 'sphantom', 'sthunder', 'skraken', 'sking'];
+// the later bosses' attacks by name (13p-sea-deep-bosses.js fills it): fn(e, dt, ai, ctx)
+const SEA_BOSS_ATK = {};
 // ride: the vehicle; rig: its masts; len: its length; deck: where the captain stands; rs: the captain's size;
 // tint: the captain's coat; atk: the attack cycle (the signature move is its own name); pk: portrait size
 Object.assign(BOSS_TYPES, {
@@ -26489,6 +27146,12 @@ function seaBossAI(e, dt) {
       if (ai.t <= 0) { ai.state = 'circle'; ai.t = 2.4; }
       break;
     }
+    default: {
+      // the later bosses' own moves (13p-sea-deep-bosses.js)
+      const f = SEA_BOSS_ATK[ai.state];
+      if (f) f(e, dt, ai, { S, D, B, dx, dz, d, lead, lob, hz, steer });
+      else { ai.state = 'circle'; ai.t = 2; }
+    }
   }
   if (ai.state !== 'charge') { const sp = Math.hypot(e.vx, e.vz); if (sp > 0.5) e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 1.5)); }
   else e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 5));
@@ -26557,7 +27220,7 @@ function emitSeaBossHazards() {
         const up = clamp((h.t - h.dur) * 4, 0, 1) * clamp((h.dur + 1 - h.t) * 3, 0, 1);
         const n = 6, pts = [];
         for (let i = 0; i < n; i++) { const v = i / (n - 1); pts.push(h.x + Math.sin(v * 2 + h.x) * 0.4 * v, -0.4 + v * 3.2 * up, h.z + Math.cos(v * 2) * 0.3 * v); }
-        R.ribStrip(pts, n, 0.5, [0.55, 0.3, 0.75, 1], 1, 0, 1, u2 => 1 - u2 * 0.75);
+        R.ribStrip(pts, n, h.w || 0.5, h.col || [0.55, 0.3, 0.75, 1], 1, 0, 1, u2 => 1 - u2 * 0.75);
       }
     } else if (h.k === 'ink') { const a = clamp(Math.min(h.t * 2, (h.life - h.t)), 0, 1); pushDecal(h.x, h.z, h.r, h.r, h.t * 0.1, 1, 0, 0, 0.04, 0.02, 0.08, 0.75 * a); }
   }
@@ -26570,7 +27233,7 @@ function seaBossDraw(e) {
   const V = MODELS.defs[B.ride];
   if (V && R.enemyDraw[B.ride]) { const c = V.clips[V.clipNames[0]]; pushEnemy(B.ride, false, e.x, bob, e.z, e.yaw, c.row + Math.floor(((t * 0.2) % 1) * c.frames), k, 1, dead, flash, 0, 1, 1, 1, fade); }
   if (B.rig && R.enemyDraw[B.rig]) { const c = MODELS.defs[B.rig].clips.rock; pushEnemy(B.rig, false, e.x, bob, e.z, e.yaw, c.row + Math.floor(((t * 0.2) % 1) * c.frames), k, 1, dead, flash, 0, 1, 1, 1, Math.max(fade, e.portrait ? 0 : 0.25)); }
-  if (R.enemyDraw.pcapt) {
+  if (R.enemyDraw.pcapt && !B.noRider) {
     const M = MODELS.defs.pcapt, S = OC.ship, face = e.portrait || !S ? e.yaw + 0.3 : Math.atan2(S.x - e.x, S.z - e.z);
     const busy = ['broadside', 'barrage', 'lava', 'storm', 'summon', 'squirt', 'pearls', 'tentacles'].includes(e.ai.state);
     const clip = busy ? M.clips.throw : M.clips.idle, u = busy ? clamp(1 - (e.ai.t || 0) / 0.6, 0, 0.999) : (e.phase || 0) % 1;
@@ -26917,6 +27580,233 @@ function emitSeaDeep() {
     if (I.kind === 'iglow') pushDecal(I.x, I.z, I.r * 1.5, I.r * 1.5, 0, 1, 0, 0, 0.3, 1, 0.85, 0.22 + 0.05 * Math.sin(t * 1.5 + I.x), true);
     else if (I.kind === 'ilocker') pushDecal(I.x, I.z, I.r * 1.4, I.r * 1.4, 0, 1, 0, 0, 0.35, 1, 0.5, 0.16, true);
     else if (I.kind === 'iedge' && Math.random() < 0.2) FX.part(I.x + rand(-I.r, I.r), rand(0.5, 2.5), I.z + rand(-I.r, I.r), 0, 0.5, 0, 0.08, 0.03, 0.9, [1, 0.9, 0.5], 1, 3);
+  }
+}
+
+// ---- 13p-sea-deep-bosses.js ----
+// ============================================================
+// The bosses of oceans 11-20, on the shared sea-boss brain (13n-sea-bosses.js): it circles the ship and works
+// through its attack cycle; the moves below are the new ones (SEA_BOSS_ATK), mixed with the old (summon, ram,
+// volley, broadside, barrage, storm, pearls, vanish). Creatures carry no captain (noRider).
+// glow: a light on the model (local x, y, z; color; size), drawn every frame.
+// ============================================================
+const SEA_DEEP_BOSS_IDS = ['sangler', 'switch', 'swyrm', 'stitan', 'ssugar', 'ssaucer', 'swhale', 'slevi', 'sjones', 'sneptune'];
+Object.assign(BOSS_TYPES, {
+  sangler: { name: 'The Lantern Angler', ride: 'bangler', len: 6.4, wid: 4.0, deck: 0, rs: 1, tint: '#1e2a44', noRider: true, hp: 4300, speed: 3.2, dmg: 13, atk: ['lure', 'pearls', 'summon', 'ram', 'lure'], glow: [0, 3.2, 3.35, [0.9, 1, 0.5], 1.6] },
+  switch: { name: 'The Weed Witch', ride: 'bbarge', len: 6.4, wid: 4.0, deck: 0.55, rs: 2.1, tint: '#2e5a26', hp: 4000, speed: 2.8, dmg: 13, atk: ['hex', 'snareb', 'summon', 'volley', 'hex'], glow: [0, 1.7, 1.4, [0.5, 1, 0.3], 1.2] },
+  swyrm: { name: 'The Whirl Wyrm', ride: 'bwyrm', len: 9, wid: 2.4, deck: 0, rs: 1, tint: '#2a8a7a', noRider: true, hp: 3800, speed: 3.6, dmg: 14, atk: ['whirlb', 'coil', 'ram', 'summon', 'coil'] },
+  stitan: { name: 'The Trident Titan', ride: 'btitan', len: 5.5, wid: 4.0, deck: 0, rs: 1, tint: '#5ab8a0', noRider: true, hp: 3600, speed: 2.4, dmg: 14, atk: ['trident', 'pillars', 'tidal', 'summon'], glow: [-2.35, 8.4, 0.45, [1, 0.85, 0.4], 1.3] },
+  ssugar: { name: 'Captain Sugarbeard', ride: 'bcake', len: 6.4, wid: 4.6, deck: 2.53, rs: 2.1, tint: '#ff5aa8', hp: 3400, speed: 3.0, dmg: 14, atk: ['sprinkles', 'cherry', 'fizzb', 'summon', 'ram'] },
+  ssaucer: { name: 'The Triangle Saucer', ride: 'bufo', len: 6, wid: 6, deck: 0, rs: 1, tint: '#8ae8ff', noRider: true, hp: 3200, speed: 3.8, dmg: 15, atk: ['beam', 'zaplines', 'blink', 'riftsb', 'beam'], glow: [0, 1.6, 0, [0.6, 1, 0.85], 2.2] },
+  swhale: { name: 'The Cloud Whale', ride: 'bwhale', len: 11, wid: 4.4, deck: 0, rs: 1, tint: '#7aa8e8', noRider: true, hp: 3000, speed: 3.0, dmg: 15, atk: ['gustb', 'spout', 'dive', 'summon', 'ram'] },
+  slevi: { name: 'The Leviathan', ride: 'blevi', len: 12, wid: 3.4, deck: 0, rs: 1, tint: '#1e3a4a', noRider: true, hp: 2900, speed: 2.8, dmg: 16, atk: ['breachb', 'maw', 'tail', 'summon', 'breachb'], glow: [0, 3.95, 3.6, [1, 0.55, 0.15], 1.4] },
+  sjones: { name: 'Davy Jones', ride: 'bjones', rig: 'bjones_rig', len: 7.6, wid: 2.7, deck: 0.885, rs: 2.4, tint: '#2a6a5a', hp: 2750, speed: 3.4, dmg: 16, atk: ['organ', 'fireb', 'summon', 'broadside', 'vanish'] },
+  sneptune: { name: 'Neptune', ride: 'bneptune', len: 8, wid: 4.4, deck: 0, rs: 1, tint: '#6ac8b8', noRider: true, hp: 2700, speed: 3.2, dmg: 17, atk: ['trident', 'whirlb', 'storm', 'tidal', 'barrage', 'summon', 'pillars'], glow: [-1.55, 7.2, 0.05, [1, 0.9, 0.5], 1.5] },
+});
+for (const id of SEA_DEEP_BOSS_IDS) {
+  const B = BOSS_TYPES[id];
+  Object.assign(B, { sea: true, noDrop: true, model: B.ride, meshes: [B.ride, ...(B.rig ? [B.rig] : []), ...(B.noRider ? [] : ['pcapt'])], radius: Math.max(1.4, B.len * 0.32), scale: 1, mass: 30, portraitTop: 1.6, pk: 2.6 / B.len });
+  BOSS_DRAW[id] = seaBossDraw;
+  SEA_DRAW[id] = e => { seaBossDraw(e); seaDeepBossFx(e); return true; };
+  SEA_AI[id] = seaBossAI;
+}
+SEA_DEEP_BOSS_IDS.forEach((id, i) => { SEA_CHAPTERS[10 + i].boss = id; });
+Object.assign(BOSS_HINTS, {
+  sangler: 'Its lure drags you in: sail hard away, then dodge the lunge.',
+  switch: 'Her potions leave poison on the water, and weed grips the hull.',
+  swyrm: 'Whirlpools pull you in, and its coils burst up all around you.',
+  stitan: 'Stay out of the three trident lanes, and out of the tidal wave.',
+  ssugar: 'Sprinkles rain in a ring; the cherry bombs hit hard.',
+  ssaucer: 'Its beam pulls you in. Mind the rifts it leaves behind.',
+  swhale: 'Wind lanes shove you about; when it dives, a circle marks where it comes up.',
+  slevi: 'It breaches under marked circles, then sucks you toward its jaws.',
+  sjones: 'Cursed pearls and ghost fire: keep moving.',
+  sneptune: 'The god of the sea himself. Everything at once. Good luck, captain.',
+});
+
+// ---------- the new moves ----------
+const toCircle = (ai, t = 2.4) => { ai.state = 'circle'; ai.t = t; };
+const startRam = (e, ai, c) => { ai.state = 'ram'; ai.t = 1.0; ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: e.radius, len: c.d + 5, rot: Math.atan2(c.dx, c.dz), dur: 1.0 }); };
+const around = (S, r0, r1) => { const a = rand(0, TAU), r = rand(r0, r1); return [S.x + Math.sin(a) * r, S.z + Math.cos(a) * r]; };
+// a lane from the boss: is the ship in it? (half width w, length len, angle rot)
+const inLane = (e, S, D, rot, w, len) => { const fx = Math.sin(rot), fz = Math.cos(rot), ox = S.x - e.x, oz = S.z - e.z, al = ox * fx + oz * fz; return al > 0 && al < len + D.len / 2 && Math.abs(ox * fz - oz * fx) < w + D.wid / 2; };
+Object.assign(SEA_BOSS_ATK, {
+  // the angler's lure (and the leviathan's maw): the ship is dragged toward its jaws, then it lunges
+  lure(e, dt, ai, c) {
+    e.vx *= 0.9; e.vz *= 0.9;
+    if (!ai.done) { ai.done = true; ai.t = 2.2; AUDIO.play('wind', 0.7); }
+    const S = c.S; S.vx -= c.dx / c.d * 7 * dt; S.vz -= c.dz / c.d * 7 * dt;
+    if (Math.random() < 0.7) FX.part(S.x + rand(-1, 1), 0.6, S.z + rand(-1, 1), -c.dx / c.d * 8, 0.3, -c.dz / c.d * 8, 0.1, 0.04, 0.6, B_GLOW(e), 1, 1);
+    if (ai.t <= 0) startRam(e, ai, c);
+  },
+  // the witch's potions: green flasks that leave poison burning on the water
+  hex(e, dt, ai, c) {
+    e.vx *= 0.92; e.vz *= 0.92;
+    if (!ai.done) {
+      ai.done = true;
+      for (let i = 0; i < 5; i++) { const [lx, lz] = c.lead(1.1); c.lob(lx + rand(-4, 4), lz + rand(-4, 4), i * 0.15, 1.4, [0.5, 1, 0.3], { onLand: h => OC.hz.push({ k: 'gfire', x: h.tx, z: h.tz, t: 0, life: 6, r: 1.8, tick: 0 }) }); }
+      AUDIO.play('cackle');
+    }
+    if (ai.t <= 0) toCircle(ai);
+  },
+  snareb(e, dt, ai, c) {
+    e.vx *= 0.92; e.vz *= 0.92;
+    if (!ai.done) {
+      ai.done = true;
+      for (let i = 0; i < 4; i++) { const [lx, lz] = c.lead(1.4); c.hz({ k: 'snare', weed: true, x: lx + rand(-5, 5), z: lz + rand(-5, 5), t: 0, life: 9, r: 2.4 }); }
+      for (let k = 0; k < 3; k++) { const a = k / 3 * TAU, o = seaFoe('pweed', e.x + Math.sin(a) * 3, e.z + Math.cos(a) * 3); o.spawnT = 0.3; }
+      AUDIO.play('splash');
+    }
+    if (ai.t <= 0) toCircle(ai);
+  },
+  // the wyrm: whirlpools in your path, and its coils bursting up in a ring round the ship
+  whirlb(e, dt, ai, c) {
+    e.vx *= 0.92; e.vz *= 0.92;
+    if (!ai.done) {
+      ai.done = true;
+      const [lx, lz] = c.lead(1.2);
+      c.hz({ k: 'whirl', x: lx, z: lz, t: 0, life: 9, r: 4.4, tick: 0 });
+      for (let i = 0; i < 2; i++) { const a = rand(0, TAU); c.hz({ k: 'whirl', x: lx + Math.sin(a) * 10, z: lz + Math.cos(a) * 10, t: 0, life: 8, r: 3.4, tick: 0 }); }
+      AUDIO.play('wind');
+    }
+    if (ai.t <= 0) toCircle(ai);
+  },
+  coil(e, dt, ai, c) {
+    e.vx *= 0.9; e.vz *= 0.9;
+    if (ai.k === 0 && !ai.done) { ai.done = true; ai.a0 = rand(0, TAU); }
+    if (ai.t <= 0 && ai.k < 8) { const a = ai.a0 + ai.k / 8 * TAU; ai.k++; ai.t = 0.12; c.hz({ k: 'tent', x: c.S.x + Math.sin(a) * 4.2, z: c.S.z + Math.cos(a) * 4.2, t: 0, dur: 1.1, r: 1.7, dmg: e.dmg * 0.7, col: [0.16, 0.54, 0.48, 1], w: 0.7 }); }
+    if (ai.k >= 8 && ai.t <= 0) toCircle(ai, 2.2);
+  },
+  // the titan's trident: three lanes, then lightning down all three
+  trident(e, dt, ai, c) {
+    e.vx *= 0.9; e.vz *= 0.9;
+    if (!ai.done) { ai.done = true; ai.fired = false; ai.t = 1.1; ai.rot = Math.atan2(c.dx, c.dz); for (const o of [-0.22, 0, 0.22]) addTele({ kind: 'lane', x: e.x, z: e.z, r: 1.0, len: 24, rot: ai.rot + o, dur: 1.1 }); AUDIO.play('horn', 1.3); }
+    if (ai.t <= 0 && !ai.fired) {
+      ai.fired = true;
+      let hit = false;
+      for (const o of [-0.22, 0, 0.22]) { const r = ai.rot + o; addBolt(e.x, 2, e.z, e.x + Math.sin(r) * 24, 0.4, e.z + Math.cos(r) * 24, 0.25, [1, 0.9, 0.4]); if (!hit && inLane(e, c.S, c.D, r, 1.0, 24)) hit = true; }
+      if (hit && !OC.sink) hurtHero(e.dmg * 0.9, e.x, e.z);
+      R.frame.flashW = Math.max(R.frame.flashW, 0.35); AUDIO.play('thunder', 0.8); G.cam.shake = Math.max(G.cam.shake, 0.25);
+    }
+    if (ai.fired && ai.t < -0.5) toCircle(ai);
+  },
+  pillars(e, dt, ai, c) {
+    e.vx *= 0.92; e.vz *= 0.92;
+    if (!ai.done) { ai.done = true; const a0 = rand(0, TAU); for (let i = 0; i < 6; i++) { const a = a0 + i / 6 * TAU; c.hz({ k: 'pillar', x: c.S.x + Math.sin(a) * 4.6, z: c.S.z + Math.cos(a) * 4.6, t: -i * 0.08, dur: 1.5, r: 1.6 }); } const [lx, lz] = c.lead(1.3); c.hz({ k: 'pillar', x: lx, z: lz, t: 0, dur: 1.5, r: 1.8 }); AUDIO.play('rumble'); }
+    if (ai.t <= 0) toCircle(ai);
+  },
+  // a tidal wave down a wide lane through the ship
+  tidal(e, dt, ai, c) {
+    e.vx *= 0.9; e.vz *= 0.9;
+    if (!ai.done) { ai.done = true; ai.fired = false; ai.t = 1.4; ai.rot = Math.atan2(c.dx, c.dz); addTele({ kind: 'lane', x: e.x, z: e.z, r: 3.2, len: 30, rot: ai.rot, dur: 1.4 }); AUDIO.play('rumble'); }
+    if (ai.t <= 0 && !ai.fired) {
+      ai.fired = true;
+      const S = c.S, fx = Math.sin(ai.rot), fz = Math.cos(ai.rot);
+      if (inLane(e, S, c.D, ai.rot, 3.2, 30) && !OC.sink) { hurtHero(e.dmg * 1.1, e.x, e.z); S.vx += fx * 10; S.vz += fz * 10; }
+      for (let i = 0; i < 40; i++) { const u = Math.random() * 30, v = rand(-3, 3); FX.part(e.x + fx * u + fz * v, 0.4, e.z + fz * u - fx * v, fx * 7, rand(2, 5), fz * 7, 0.2, 0.06, 0.7, [0.8, 0.95, 1], 0.9, 2, -6); }
+      AUDIO.play('splash'); AUDIO.play('wind');
+    }
+    if (ai.fired && ai.t < -0.6) toCircle(ai);
+  },
+  // Sugarbeard: a ring of sprinkles, cherry bombs, fizz
+  sprinkles(e, dt, ai, c) {
+    e.vx *= 0.95; e.vz *= 0.95;
+    if (!ai.done) { ai.done = true; const cols = [[1, 0.3, 0.4], [1, 0.85, 0.2], [0.3, 0.8, 1], [0.6, 0.4, 1], [0.4, 1, 0.5]]; for (let i = 0; i < 14; i++) { const a = i / 14 * TAU, r = rand(2.5, 6); c.lob(c.S.x + Math.sin(a) * r, c.S.z + Math.cos(a) * r, i * 0.05, 1.2, cols[i % 5]); } AUDIO.play('pop'); }
+    if (ai.t <= 0) toCircle(ai, 2.6);
+  },
+  cherry(e, dt, ai, c) {
+    e.vx *= 0.95; e.vz *= 0.95;
+    if (!ai.done) { ai.done = true; for (let i = 0; i < 3; i++) { const [lx, lz] = c.lead(1.0 + i * 0.4); c.lob(lx + rand(-2, 2), lz + rand(-2, 2), i * 0.3, 2.4, [0.9, 0.12, 0.2], { onLand: h => FX.burst(h.tx, 0.6, h.tz, 18, [1, 0.95, 0.95], 5, 0.1, 0.5, 1, 2) }); } AUDIO.play('cannon'); }
+    if (ai.t <= 0) toCircle(ai, 2.6);
+  },
+  fizzb(e, dt, ai, c) {
+    e.vx *= 0.95; e.vz *= 0.95;
+    if (!ai.done) { ai.done = true; for (let i = 0; i < 5; i++) { const [x, z] = around(c.S, 1, 5); c.hz({ k: 'geyser', x, z, t: -i * 0.25, dur: 1.3, r: 1.9 }); } AUDIO.play('pop', 0.7); }
+    if (ai.t <= 0) toCircle(ai, 2.6);
+  },
+  // the saucer: a tractor beam that pulls you under it and burns, lines of lightning, blinking about, rifts
+  beam(e, dt, ai, c) {
+    e.vx *= 0.9; e.vz *= 0.9;
+    if (!ai.done) { ai.done = true; ai.t = 2.4; ai.tick = 0; AUDIO.play('laser'); }
+    const S = c.S; S.vx -= c.dx / c.d * 6 * dt; S.vz -= c.dz / c.d * 6 * dt;
+    if ((ai.tick -= dt) <= 0) { ai.tick = 0.5; if (c.d < 9 && !OC.sink) hurtHero(e.dmg * 0.3, e.x, e.z); }
+    if (ai.t <= 0) toCircle(ai);
+  },
+  zaplines(e, dt, ai, c) {
+    e.vx *= 0.95; e.vz *= 0.95;
+    if (ai.t <= 0 && ai.k < 3) { ai.k++; ai.t = 0.7; const a = rand(0, TAU), S = c.S; for (let j = -2; j <= 2; j++) c.hz({ k: 'zap', x: S.x + Math.sin(a) * j * 2.3, z: S.z + Math.cos(a) * j * 2.3, t: -(j + 2) * 0.08, dur: 1.0, r: 1.4, dmg: e.dmg * 0.5 }); }
+    if (ai.k >= 3 && ai.t <= 0) toCircle(ai);
+  },
+  blink(e, dt, ai, c) {
+    if (!ai.done) { ai.done = true; ai.t = 0.6; ai.phase2 = false; AUDIO.play('zap', 0.6); }
+    if (!ai.phase2) {
+      e.fade = clamp(1 - ai.t / 0.6, 0, 1); if (ai.t < 0.2) e.hidden = true;
+      if (ai.t <= 0) { ai.phase2 = true; ai.t = 0.5; const a = rand(0, TAU), r = c.D.len * 0.5 + c.B.len * 0.5 + 4; e.x = c.S.x + Math.sin(a) * r; e.z = c.S.z + Math.cos(a) * r; e.vx = e.vz = 0; e.hidden = false; e.fade = 0; FX.ring(e.x, e.z, c.B.len * 0.6, [0.5, 1, 0.8], 0.6, 1); AUDIO.play('ghost'); }
+    } else if (ai.t <= 0) toCircle(ai, 2.0);
+  },
+  riftsb(e, dt, ai, c) {
+    if (!ai.done) { ai.done = true; for (let i = 0; i < 3; i++) { const [x, z] = around(c.S, 5, 8); if (!inIsle(x, z, 3)) c.hz({ k: 'rift', x, z, t: 0, life: 10, r: 1.7, seed: rand(0, 6) }); } AUDIO.play('ghost', 0.8); }
+    if (ai.t <= 0) toCircle(ai);
+  },
+  // the whale: gusts, a rain of spray from its blowhole, a dive and a breach under you
+  gustb(e, dt, ai, c) {
+    e.vx *= 0.95; e.vz *= 0.95;
+    if (!ai.done) { ai.done = true; const S = c.S, a0 = Math.atan2(c.dx, c.dz); for (let i = 0; i < 3; i++) { const a = a0 + (i - 1) * 0.9; c.hz({ k: 'gust', x: S.x - Math.sin(a) * 2, z: S.z - Math.cos(a) * 2, rot: a, len: 18, w: 4.5, t: -i * 0.5, tele: 1.0, dur: 2.5 }); } AUDIO.play('wind'); }
+    if (ai.t <= 0) toCircle(ai);
+  },
+  spout(e, dt, ai, c) {
+    e.vx *= 0.95; e.vz *= 0.95;
+    if (!ai.done) { ai.done = true; for (let i = 0; i < 10; i++) { const [x, z] = around(c.S, 0, 6); c.lob(x, z, i * 0.1, 1.4, [0.75, 0.9, 1]); } FX.burst(e.x, 3, e.z, 30, [0.85, 0.95, 1], 7, 0.15, 0.8, 2, 3); AUDIO.play('splash'); }
+    if (ai.t <= 0) toCircle(ai);
+  },
+  dive(e, dt, ai, c) {
+    if (!ai.done) { ai.done = true; ai.t = 1.2; ai.phase2 = false; seaSplash(e.x, e.z, 2); AUDIO.play('splash'); }
+    if (!ai.phase2) {
+      e.fade = clamp(1 - ai.t / 1.2, 0, 1); if (ai.t < 0.5) e.hidden = true;
+      if (ai.t <= 0) { ai.phase2 = true; ai.t = 2.2; const [lx, lz] = c.lead(0.8); ai.bx = lx; ai.bz = lz; c.hz({ k: 'breach', x: lx, z: lz, t: 0, dur: 1.3, r: 3.4 }); }
+    } else if (ai.t <= 0.9 && e.hidden) { e.hidden = false; e.fade = 0; const a = rand(0, TAU); e.x = ai.bx + Math.sin(a) * (c.B.len * 0.5 + c.D.len * 0.5 + 2); e.z = ai.bz + Math.cos(a) * (c.B.len * 0.5 + c.D.len * 0.5 + 2); seaSplash(e.x, e.z, 2.5); }
+    else if (ai.t <= 0) toCircle(ai);
+  },
+  // the leviathan: breaches along your path, its maw (the lure, as suction), tail slams
+  breachb(e, dt, ai, c) {
+    e.vx *= 0.95; e.vz *= 0.95;
+    if (!ai.done) { ai.done = true; for (let i = 0; i < 3; i++) { const [lx, lz] = c.lead(0.7 + i * 0.6); c.hz({ k: 'breach', x: lx + rand(-1.5, 1.5), z: lz + rand(-1.5, 1.5), t: -i * 0.5, dur: 1.3, r: 3.0 }); } AUDIO.play('rumble'); }
+    if (ai.t <= 0) toCircle(ai, 2.6);
+  },
+  tail(e, dt, ai, c) {
+    e.vx *= 0.92; e.vz *= 0.92;
+    if (ai.t <= 0 && ai.k < 4) { ai.k++; ai.t = 0.4; const [x, z] = around(c.S, 0, 4); c.hz({ k: 'tent', x, z, t: 0, dur: 1.1, r: 2.2, dmg: e.dmg * 0.8, col: [0.12, 0.24, 0.3, 1], w: 1.0 }); }
+    if (ai.k >= 4 && ai.t <= 0) toCircle(ai, 2.2);
+  },
+  // Davy Jones: rings of cursed pearls from the organ, ghost fire round the ship
+  organ(e, dt, ai, c) {
+    e.vx *= 0.9; e.vz *= 0.9;
+    if (ai.t <= 0 && ai.k < 3) { ai.k++; ai.t = 0.6; const n = 18, off = ai.k * 0.17; for (let i = 0; i < n; i++) { const a = off + i / n * TAU; c.hz({ k: 'ball', pearl: true, x: e.x, y: 0.5, z: e.z, vx: Math.sin(a) * 7.5, vz: Math.cos(a) * 7.5, life: 3, dmg: e.dmg * 0.4 }); } AUDIO.play('ghost', 0.7); }
+    if (ai.k >= 3 && ai.t <= 0) toCircle(ai, 2.2);
+  },
+  fireb(e, dt, ai, c) {
+    e.vx *= 0.92; e.vz *= 0.92;
+    if (!ai.done) { ai.done = true; for (let i = 0; i < 6; i++) { const [x, z] = around(c.S, 2.5, 6.5); c.hz({ k: 'gfire', x, z, t: 0, life: 7, r: 2.0, tick: 0 }); } AUDIO.play('ghost'); }
+    if (ai.t <= 0) toCircle(ai);
+  },
+});
+SEA_BOSS_ATK.maw = SEA_BOSS_ATK.lure;
+const B_GLOW = e => (e.def.glow ? e.def.glow[3] : [0.8, 0.95, 1]);
+// a boss's own lights, and its tractor beam
+function seaDeepBossFx(e) {
+  const B = e.def;
+  if (e.hidden || e.dying || e.portrait) return;
+  if (B.glow) {
+    const [lx, ly, lz, col, size] = B.glow, c = Math.cos(e.yaw), s = Math.sin(e.yaw);
+    const x = e.x + c * lx + s * lz, z = e.z - s * lx + c * lz;
+    FX.glow(x, ly, z, size * (0.85 + 0.15 * Math.sin(OC.t * 3)), col, 0.04, 0.7);
+    pushDecal(x, z, size * 1.4, size * 1.4, 0, 1, 0, 0, col[0], col[1], col[2], 0.3, true);
+  }
+  if (e.ai.state === 'beam') {
+    const S = OC.ship, w = 1.2 + 0.2 * Math.sin(OC.t * 20);
+    R.ribStrip([e.x, 1.8, e.z, S.x, 0.6, S.z], 2, w, [0.5, 1, 0.8, 0.6], 0, 0, 1);
+    pushDecal(S.x, S.z, 2.2, 2.2, 0, 3, 0, (OC.t * 2) % 1, 0.5, 1, 0.8, 0.6, true);
+    if (Math.random() < 0.6) FX.part(S.x + rand(-1, 1), 0.5, S.z + rand(-1, 1), (e.x - S.x) * 0.4, 1.5, (e.z - S.z) * 0.4, 0.1, 0.04, 0.6, [0.5, 1, 0.8], 1, 3);
   }
 }
 
@@ -28435,7 +29325,9 @@ const GOAL_VALUE = {
   rarity: sv => Math.max(0, ...Object.keys(sv.gear.items).map(k => artParse(k).r + 1)),
   runs: sv => sv.stats.runs || 0,
   coins: sv => sv.stats.coinsEarned || 0,
+  // (oceans 11-20: has that ocean's boss been sunk; filled in below)
 };
+for (let n = 11; n <= 20; n++) GOAL_VALUE['sea' + n] = sv => (sv.sea && sv.sea.cleared[n] ? 1 : 0);
 // group: icon color and order on the screen. desc: {n} is the target.
 const GOALS = [
   { id: 'kills1', group: 'fight', name: 'Goo Getter', desc: 'Defeat {n} foes', stat: 'kills', n: 500, coins: 150 },
@@ -28470,8 +29362,13 @@ const GOALS = [
   { id: 'runs1', group: 'play', name: 'Regular', desc: 'Play {n} runs', stat: 'runs', n: 25, coins: 500 },
   { id: 'runs2', group: 'play', name: 'Veteran', desc: 'Play {n} runs', stat: 'runs', n: 150, coins: 2500, scrolls: 2 },
   { id: 'coins', group: 'play', name: 'Rich Blob', desc: 'Earn {n} coins in all', stat: 'coins', n: 50000, coins: 1500 },
+  // the deeper oceans: each boss gives its trophy (a hat or costume that cannot be bought, 10b-sea-cosmetics.js)
+  ...[['sea11', 'Lights Out', 'The Lantern Angler', 'anglerhood'], ['sea12', 'Weed Whacker', 'The Weed Witch', 'witchhat'], ['sea13', 'Serpent Slayer', 'The Whirl Wyrm', 'wyrmhorns'],
+    ['sea14', 'Titan Toppler', 'The Trident Titan', 'titanhelm'], ['sea15', 'Sugar Crash', 'Captain Sugarbeard', 'cakehat'], ['sea16', 'Close Encounter', 'The Triangle Saucer', 'ufohat'],
+    ['sea17', 'Head in the Clouds', 'The Cloud Whale', 'cloudhat'], ['sea18', 'Leviathan Hunter', 'The Leviathan', 'levihood'], ['sea19', "Locker Picker", 'Davy Jones', 'jonesbeard'],
+    ['sea20', 'Ruler of the Waves', 'Neptune', 'neptunecrown']].map(([id, name, boss, costume], i) => ({ id, group: 'ocean', name, desc: `Sink ${boss}`, stat: id, n: 1, coins: 1500 + i * 300, scrolls: 1 + Math.floor(i / 4), costume })),
 ];
-const GOAL_GROUPS = { fight: '#ff5f8f', chapter: '#8f6bff', mode: '#ff8a1f', collect: '#33c6f2', gear: '#ffc23a', play: '#4cd964' };
+const GOAL_GROUPS = { fight: '#ff5f8f', chapter: '#8f6bff', mode: '#ff8a1f', collect: '#33c6f2', gear: '#ffc23a', play: '#4cd964', ocean: '#2fa8e0' };
 
 const goalProgress = (g, sv = G.save) => Math.min(g.n, GOAL_VALUE[g.stat](sv));
 const goalReached = (g, sv = G.save) => GOAL_VALUE[g.stat](sv) >= g.n;
@@ -28526,6 +29423,10 @@ Object.assign(UI, {
         const s = SKINS.find(k => k.id === g.skin);
         rew.insertAdjacentHTML('beforeend', `<span class="gskin"><i style="background:linear-gradient(180deg, ${s.top || s.base}, ${s.base})"></i>${s.name} color</span>`);
       }
+      if (g.costume) {
+        const c = COSTUMES.find(k => k.id === g.costume);
+        rew.insertAdjacentHTML('beforeend', `<span class="gskin"><i style="background:linear-gradient(180deg, ${c.pal[1] || c.pal[0]}, ${c.pal[0]})"></i>${c.name}</span>`);
+      }
       const b = row.querySelector('button');
       if (claimed) { b.textContent = '✓'; b.disabled = true; }
       else if (ready) { b.textContent = 'Claim'; b.className = 'jelly gold'; b.addEventListener('click', () => this.claimGoal(g)); }
@@ -28540,9 +29441,10 @@ Object.assign(UI, {
     sv.coins += g.coins || 0;
     sv.scrolls = (sv.scrolls || 0) + (g.scrolls || 0);
     if (g.skin && !sv.skins.includes(g.skin)) sv.skins.push(g.skin);
+    if (g.costume && !sv.costumes.includes(g.costume)) sv.costumes.push(g.costume);
     saveGame();
     AUDIO.play('coin'); AUDIO.play('levelup');
-    const parts = [g.coins && `${fmtNum(g.coins)} coins`, g.scrolls && `${g.scrolls} scroll${g.scrolls > 1 ? 's' : ''}`, g.skin && `the ${SKINS.find(k => k.id === g.skin).name} color`].filter(Boolean);
+    const parts = [g.coins && `${fmtNum(g.coins)} coins`, g.scrolls && `${g.scrolls} scroll${g.scrolls > 1 ? 's' : ''}`, g.skin && `the ${SKINS.find(k => k.id === g.skin).name} color`, g.costume && COSTUMES.find(k => k.id === g.costume).name].filter(Boolean);
     this.toast(`${g.name}: ${parts.join(', ')}`, 2.5);
     G.hero.impulse(2);
     this.renderGoals();
