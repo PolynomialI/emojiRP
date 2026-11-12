@@ -531,7 +531,7 @@ const UI = {
       b.className = 'card'; b.style.setProperty('--i', i);
       b.innerHTML = `<span class="tile ${d.kind}${seaTile(c.id)}"><img alt=""></span><span><span class="nm"></span><span class="pips"></span><span class="ds"></span></span>`;
       b.querySelector('img').src = ICONS.get(d.icon);
-      b.querySelector('.nm').textContent = d.name + (d.evo ? ' ★' : '');
+      b.querySelector('.nm').textContent = d.name + (d.evo ? '\u00a0★' : '');
       // level dots: filled up to the level this pick reaches
       if (d.max > 1) b.querySelector('.pips').innerHTML = Array.from({ length: d.max }, (_, k) => `<i class="${k < d.lvl ? 'on' : ''}"></i>`).join('');
       b.querySelector('.ds').innerHTML = d.desc;

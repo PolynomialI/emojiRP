@@ -732,6 +732,17 @@ function iconFrame(m, yaw, s, pitch, fov) {
   const D = Math.max(W, H) * 1.14 / Math.tan(fov / 2) + Z;
   return [[c[0], c[1] + ex[1] * D, c[2] + ex[2] * D], c, fov];
 }
+// the box framing is loose (a turned box's corners stick out past the model), so draw it once, see where it
+// landed, and aim again: centred on what was drawn, and zoomed so it fills 80% of the square
+function iconFit([eye, tgt, fov], pitch) {
+  const b = iconCapture(eye, tgt, fov, null, 'measure');
+  if (!b) return [eye, tgt, fov];
+  const S = ICONS.size, t = Math.tan(fov / 2), dist = Math.hypot(eye[0] - tgt[0], eye[1] - tgt[1], eye[2] - tgt[2]);
+  const cx = (b.x0 + b.x1) / S - 1, cy = 1 - (b.y0 + b.y1) / S, half = Math.max(b.x1 - b.x0, b.y1 - b.y0) / S;
+  const fov2 = 2 * Math.atan(t * Math.min(1, half / 0.8));
+  const sh = [cx * t * dist, cy * t * dist * Math.cos(pitch), -cy * t * dist * Math.sin(pitch)];
+  return [eye.map((v, i) => v + sh[i]), tgt.map((v, i) => v + sh[i]), fov2];
+}
 // sea upgrade icons are drawn from their own models once those are built
 function seaIcons() {
   const todo = SEA_ICON_SHOTS.filter(([k, m]) => !ICONS.map[k + '!'] && R.enemyDraw[m]);
@@ -742,7 +753,7 @@ function seaIcons() {
     const M = MODELS.defs[m], c = M.clips.still || M.clips.rock || Object.values(M.clips)[0];
     const g = opts.goo ? R.goo.base : [1, 1, 1], yaw = opts.yaw ?? 0.7, s = opts.s ?? 1;
     pushEnemy(m, false, 0, 0, 0, yaw, c.row, s, 1, 0, 0, 0, g[0], g[1], g[2]);
-    ICONS.map[key] = ICONS.map[key + '!'] = iconCapture(...iconFrame(m, yaw, s, opts.pitch ?? 0.5, 0.5), null, true);
+    ICONS.map[key] = ICONS.map[key + '!'] = iconCapture(...iconFit(iconFrame(m, yaw, s, opts.pitch ?? 0.5, 0.5), opts.pitch ?? 0.5), null, true);
   }
   iconEnd();
   R.resetStreams();

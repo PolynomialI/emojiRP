@@ -266,23 +266,28 @@ function mountModels(defs) {
     ...[[0.0, 0.0], [0.08, -0.12], [0.08, 0.12]].map(([y, z]) => ({ s: 'cyl', ax: 'x', c: [0.05, y, z], r: 0.06, hh: 0.012, rd: 0.005, col: ironD, k: 0 })),
     ...Array.from({ length: 5 }, (_, i) => { const u = (i + 0.5) / 5, z = -0.24 + u * 0.48; return { s: 'tor', ax: i % 2 ? 'x' : 'y', c: [0.05, -0.14 - Math.sin(u * Math.PI) * 0.05, z], R: 0.028, r: 0.009, a0: -Math.PI, a1: Math.PI, col: ironL, k: 0 }; }),
   ], { ao: 0.5 });
-  // ---------- Propellers: an outboard motor on the stern: a red cowling with a white stripe and a badge, a tiller handle,
-  // an exhaust, a shaft with a skeg fin, and a three-bladed brass propeller with a hub cap (turning, bone 1) ----------
+  // ---------- Propellers: an outboard motor on the stern: a rounded red cowling with a white stripe, a dark seam and a
+  // brass badge, a tiller handle, the leg down to a torpedo gearcase with a cavitation plate and a skeg, and a
+  // four-bladed brass propeller with a hub cap (turning, bone 1) ----------
   {
+    const grey = C('#3a3f4a'), greyL = C('#5a6270');
     const m = P('sprop', [
-      { s: 'box', c: [0, 0.35, -0.08], hs: [0.15, 0.2, 0.17], rd: 0.08, col: red, k: 0 },
-      { s: 'box', c: [0, 0.4, -0.08], hs: [0.153, 0.025, 0.173], rd: 0.02, col: white, k: 0 },
-      { s: 'box', c: [0, 0.52, -0.08], hs: [0.152, 0.035, 0.172], rd: 0.03, col: C('#2a2e38'), k: 0 },
-      { s: 'cyl', ax: 'x', c: [0.152, 0.3, -0.06], r: 0.045, hh: 0.006, rd: 0.003, col: brass, k: 0 },
-      { s: 'cap', a: [0, 0.18, -0.1], b: [0, -0.15, -0.1], r: 0.05, r2: 0.045, col: C('#3a3f4a'), k: 0 },
-      { s: 'box', c: [0, -0.14, -0.06], hs: [0.012, 0.06, 0.08], rd: 0.008, col: C('#3a3f4a'), k: 0 },
-      { s: 'cap', a: [0, 0.4, 0.05], b: [0, 0.38, 0.42], r: 0.02, col: C('#3a3f4a'), k: 0 }, { s: 'cap', a: [0, 0.38, 0.36], b: [0, 0.38, 0.46], r: 0.03, col: dark, k: 0 },
-      { s: 'cap', a: [0.08, 0.58, -0.2], b: [0.1, 0.66, -0.22], r: 0.02, col: steel, k: 0 },
-      { s: 'sph', c: [0, -0.12, -0.2], r: 0.05, col: brass, bone: 1, k: 0 },
-      { s: 'sph', c: [0, -0.12, -0.25], r: 0.03, col: C('#c08a2a'), bone: 1, k: 0 },
-      ...[0, 1, 2].map(i => { const a = i / 3 * TAU; return { s: 'ell', c: [Math.cos(a) * 0.11, -0.12 + Math.sin(a) * 0.11, -0.21], rr: [0.075, 0.075, 0.02], col: brass, bone: 1, k: 0.02 }; }),
+      { s: 'box', c: [0, 0.34, -0.08], hs: [0.15, 0.15, 0.19], rd: 0.1, col: red, k: 0 },
+      { s: 'ell', c: [0, 0.47, -0.08], rr: [0.15, 0.09, 0.19], col: red, k: 0.05 },
+      { s: 'box', c: [0, 0.43, -0.08], hs: [0.153, 0.012, 0.193], rd: 0.01, col: dark, k: 0 },
+      { s: 'box', c: [0, 0.32, -0.08], hs: [0.154, 0.024, 0.194], rd: 0.02, col: white, k: 0 },
+      ...[1, -1].map(sx => ({ s: 'cyl', ax: 'x', c: [sx * 0.153, 0.37, -0.04], r: 0.04, hh: 0.006, rd: 0.003, col: brass, k: 0 })),
+      { s: 'cap', a: [0, 0.2, -0.1], b: [0, -0.1, -0.1], r: 0.045, r2: 0.04, col: grey, k: 0.02 },
+      { s: 'box', c: [0, -0.02, -0.12], hs: [0.075, 0.01, 0.1], rd: 0.01, col: greyL, k: 0 },
+      { s: 'cap', a: [0, -0.13, 0.0], b: [0, -0.13, -0.17], r: 0.05, r2: 0.045, col: grey, k: 0.02 },
+      { s: 'box', c: [0, -0.22, -0.06], hs: [0.012, 0.07, 0.05], rd: 0.008, col: grey, k: 0 },
+      { s: 'cap', a: [0, 0.4, 0.08], b: [0, 0.38, 0.4], r: 0.02, col: grey, k: 0 }, { s: 'cap', a: [0, 0.38, 0.34], b: [0, 0.38, 0.46], r: 0.03, col: dark, k: 0 },
+      { s: 'cap', a: [0.08, 0.5, -0.24], b: [0.1, 0.6, -0.26], r: 0.02, col: steel, k: 0 },
+      { s: 'sph', c: [0, -0.13, -0.21], r: 0.045, col: brass, bone: 1, k: 0 },
+      { s: 'cap', a: [0, -0.13, -0.23], b: [0, -0.13, -0.28], r: 0.03, r2: 0.008, col: C('#c08a2a'), bone: 1, k: 0 },
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ s: 'ell', c: [dx * 0.1, -0.13 + dy * 0.1, -0.21], rr: dx ? [0.085, 0.042, 0.016] : [0.042, 0.085, 0.016], col: brass, bone: 1, k: 0.02 })),
     ], { ao: 0.6 });
-    rig(m, { 1: [0, -0.12, -0.2] });
+    rig(m, { 1: [0, -0.13, -0.21] });
   }
   // ---------- Repair Crew: a little goo sailor (the body takes the blob's color) in a white cap with a blue band and
   // ribbon, a red neckerchief, a tool belt with a wrench, and a hammer ----------
@@ -304,22 +309,27 @@ function mountModels(defs) {
     m.name = 'screw'; m.runAmp = 1.2;
     defs.screw = m;
   }
-  // ---------- Gust Sails: a mast with a billowing sail sewn in panels and painted with a wind swirl, a yard at top and
-  // bottom, rope rigging to the deck, a crow's-nest ring and a long pennant ----------
+  // ---------- Gust Sails: a square sail bellied out by the wind (a shell cut to a rectangle, so it reads as canvas,
+  // not an egg) with a blue wind swirl and a row of reef points, on a mast with a yard top and bottom, ropes from the
+  // yard ends and the lower corners to the deck, a crow's-nest ring and a long pennant ----------
   P('ssail', [
-    { s: 'cap', a: [0, 0, 0], b: [0, 1.85, 0], r: 0.05, r2: 0.035, col: woodD, k: 0 },
-    { s: 'cap', a: [-0.52, 1.5, 0.02], b: [0.52, 1.5, 0.02], r: 0.03, col: woodD, k: 0 },
-    { s: 'cap', a: [-0.46, 0.55, 0.02], b: [0.46, 0.55, 0.02], r: 0.03, col: woodD, k: 0 },
-    ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.52, 1.5, 0.02], r: 0.035, col: brass, k: 0 })),
-    { s: 'ell', c: [0, 1.02, 0.05], rr: [0.5, 0.46, 0.2], col: C('#f6fbff'), k: 0 },
-    { s: 'ell', c: [0, 1.02, 0.0], rr: [0.5, 0.46, 0.17], sub: true, k: 0 },
-    { s: 'box', c: [0, 1.02, -0.17], hs: [1, 1, 0.17], sub: true, k: 0 },
-    ...[0.75, 1.02, 1.29].map(y => { const w = 0.5 * Math.sqrt(Math.max(0, 1 - ((y - 1.02) / 0.46) ** 2)), d = 0.2 * Math.sqrt(Math.max(0, 1 - ((y - 1.02) / 0.46) ** 2)); return { s: 'tor', ax: 'y', c: [0, y, 0.05], R: Math.max(0.05, w * 0.98), r: 0.007, a0: 0.15, a1: Math.PI - 0.15, col: C('#c8d8e8'), k: 0 }; }),
-    { s: 'tor', ax: 'z', c: [0, 1.04, 0.2], R: 0.16, r: 0.025, a0: -0.4, a1: 3.6, col: C('#35b8e8'), k: 0 },
-    { s: 'tor', ax: 'z', c: [0.05, 1.0, 0.21], R: 0.07, r: 0.022, a0: 0.5, a1: 4.4, col: C('#35b8e8'), k: 0 },
-    { s: 'tor', ax: 'y', c: [0, 1.7, 0], R: 0.1, r: 0.02, a0: -Math.PI, a1: Math.PI, col: wood, k: 0 },
-    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.5, 1.5, 0.02], b: [sx * 0.3, 0.02, -0.25], r: 0.008, col: rope, k: 0 })),
-    { s: 'cap', a: [0, 1.85, 0], b: [0, 1.85, -0.38], r: 0.006, col: woodD, k: 0 },
-    { s: 'box', c: [0, 1.82, -0.22], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
+    { s: 'ell', c: [0, 1.02, -0.02], rr: [0.78, 0.64, 0.24], col: C('#f6fbff'), k: 0 },
+    { s: 'ell', c: [0, 1.02, -0.07], rr: [0.74, 0.6, 0.24], sub: true, k: 0 },
+    { s: 'box', c: [0, 1.02, -0.6], hs: [1, 1, 0.6], sub: true, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'box', c: [sx * 1.02, 1.02, 0], hs: [0.5, 1, 1], sub: true, k: 0 })),
+    { s: 'box', c: [0, 2.0, 0], hs: [1, 0.5, 1], sub: true, k: 0 },
+    { s: 'box', c: [0, 0.06, 0], hs: [1, 0.5, 1], sub: true, k: 0 },
+    { s: 'tor', ax: 'z', c: [0, 1.06, 0.2], R: 0.17, r: 0.026, a0: -0.4, a1: 3.6, col: C('#35b8e8'), k: 0 },
+    { s: 'tor', ax: 'z', c: [0.05, 1.02, 0.21], R: 0.075, r: 0.023, a0: 0.5, a1: 4.4, col: C('#35b8e8'), k: 0 },
+    ...[-0.36, -0.18, 0, 0.18, 0.36].map(x => ({ s: 'sph', c: [x, 1.32, 0.24 * Math.sqrt(Math.max(0, 1 - (x / 0.78) ** 2 - (0.3 / 0.64) ** 2)) - 0.01], r: 0.018, col: rope, k: 0 })),
+    { s: 'cap', a: [0, 0, -0.06], b: [0, 1.85, -0.06], r: 0.05, r2: 0.035, col: woodD, k: 0 },
+    { s: 'cap', a: [-0.56, 1.5, -0.04], b: [0.56, 1.5, -0.04], r: 0.03, col: woodD, k: 0 },
+    { s: 'cap', a: [-0.52, 0.55, -0.04], b: [0.52, 0.55, -0.04], r: 0.03, col: woodD, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.56, 1.5, -0.04], r: 0.035, col: brass, k: 0 })),
+    { s: 'tor', ax: 'y', c: [0, 1.7, -0.06], R: 0.1, r: 0.02, a0: -Math.PI, a1: Math.PI, col: wood, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.56, 1.5, -0.04], b: [sx * 0.3, 0.02, -0.3], r: 0.013, col: rope, k: 0 })),
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.5, 0.58, -0.02], b: [sx * 0.42, 0.02, 0.2], r: 0.013, col: rope, k: 0 })),
+    { s: 'cap', a: [0, 1.85, -0.06], b: [0, 1.85, -0.44], r: 0.006, col: woodD, k: 0 },
+    { s: 'box', c: [0, 1.82, -0.28], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
   ], { ao: 0.4 });
 }

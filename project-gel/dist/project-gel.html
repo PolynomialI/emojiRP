@@ -247,22 +247,22 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 /* goals */
 .goalsum { text-align: center; font-size: 17px; margin-top: 6px; }
 #goalList { margin-top: 8px; max-height: calc(100% - 92px); }
-.goalrow { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; }
-.goalrow .gicon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; box-shadow: inset 0 -4px 0 rgba(0,0,0,.14), inset 0 2px 0 rgba(255,255,255,.45); }
+.goalrow { display: grid; grid-template-columns: 54px 1fr auto; gap: 12px; align-items: center; padding: 8px 12px; }
+.goalrow .gicon { width: 54px; height: 54px; border-radius: 14px; display: grid; place-items: center; box-shadow: inset 0 -4px 0 rgba(0,0,0,.14), inset 0 2px 0 rgba(255,255,255,.45); }
 .goalrow .gicon svg { width: 62%; height: 62%; }
 .goalrow .gmid { display: grid; gap: 3px; min-width: 0; }
-.goalrow .nm { font-size: 20px; }
-.goalrow .ds { font-size: 15.5px; font-weight: 500; color: var(--ink-dim); }
-.goalrow .gbar { position: relative; height: 16px; border-radius: 8px; background: #e4eefb; overflow: hidden; }
+.goalrow .nm { font-size: 23px; }
+.goalrow .ds { font-size: 17.5px; font-weight: 500; color: var(--ink-dim); }
+.goalrow .gbar { position: relative; height: 18px; border-radius: 8px; background: #e4eefb; overflow: hidden; }
 .goalrow .gbar i { position: absolute; inset: 0 auto 0 0; border-radius: 8px; background: linear-gradient(180deg, #8fe3ff, #33c6f2); }
 .goalrow.ready .gbar i { background: linear-gradient(180deg, #ffe58a, #ffc23a); }
-.goalrow .gbar b { position: relative; display: block; text-align: center; font-size: 13px; line-height: 16px; color: var(--ink); }
-.goalrow .grew { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 15px; color: var(--ink-dim); }
+.goalrow .gbar b { position: relative; display: block; text-align: center; font-size: 14.5px; line-height: 18px; color: var(--ink); }
+.goalrow .grew { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 17px; color: var(--ink-dim); }
 .goalrow .grew span { display: inline-flex; align-items: center; gap: 4px; }
-.goalrow .grew .coin { width: 15px; height: 15px; }
-.goalrow .grew img { width: 18px; height: 18px; }
+.goalrow .grew .coin { width: 17px; height: 17px; }
+.goalrow .grew img { width: 21px; height: 21px; }
 .goalrow .gskin i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #c8d6e8; }
-.goalrow .jelly { min-height: 44px; min-width: 76px; padding: 6px 12px 10px; font-size: 18px; border-radius: 14px; }
+.goalrow .jelly { min-height: 46px; min-width: 80px; padding: 6px 12px 10px; font-size: 20px; border-radius: 14px; }
 .goalrow.ready { box-shadow: inset 0 0 0 3px #ffc23a, 0 4px 0 #e0a000; }
 .goalrow.claimed { opacity: .62; }
 .blob-pick { margin-top: auto; display: grid; gap: 10px; }
@@ -270,12 +270,12 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .blob-tabs button { padding: 8px 20px; font-size: 17.5px; }
 .skins-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-height: 44vh; overflow-y: auto; padding: 2px 2px 6px; }
 .skin { display: grid; justify-items: center; gap: 1px; padding: 6px 2px 8px; min-width: 0; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; font-size: 15px; }
-.skin img { width: 58px; height: 58px; }
+.skin img { width: 66px; height: 66px; }
 .skin img.pending { border-radius: 50%; background: radial-gradient(circle, #dbeafc 40%, transparent 42%); animation: pulse 1.2s ease-in-out infinite; }
 .skin.sel { box-shadow: inset 0 0 0 3px var(--sky), 0 4px 0 var(--sky-deep); }
 .skin-head { grid-column: 1 / -1; font: 800 19px/1.1 var(--font); color: var(--ink); padding: 10px 4px 0; text-align: left; }
-.skin small { font-size: 13.5px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; }
-.skin small .coin { width: 14px; height: 14px; }
+.skin small { font-size: 15.5px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; }
+.skin small .coin { width: 16px; height: 16px; }
 .skin small.poor { color: #c2586a; }
 .skin.worn { background: linear-gradient(180deg, #f2fbff, #dff1ff); }
 .skin.worn small { color: #14a070; font-weight: 700; }
@@ -295,8 +295,8 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .node.current { box-shadow: inset 0 0 0 3px var(--sky), 0 4px 0 var(--sky-deep); }
 .node.current .num { box-shadow: inset 0 0 0 3px var(--sky); }
 .node.locked { opacity: 0.6; }
-.node .nm { font-size: 21px; }
-.node .ds { display: block; font-size: 14.5px; font-weight: 500; color: var(--ink-dim); }
+.node .nm { font-size: 27px; line-height: 1.1; }
+.node .ds { display: block; font-size: 18px; font-weight: 500; color: var(--ink-dim); }
 .node.big .num { width: 72px; height: 72px; }
 
 /* gear: a ribbon title, the hero between four equip slots, then totals, buttons and the artifact grid */
@@ -346,7 +346,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .chest-stage.open.r5 .rays { background-color: rgba(255, 120, 220, .5); }
 /* stat chips: an icon and a percent, nothing else */
 .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 5px; border-radius: 999px; background: #eef4fd; color: var(--ink); font-size: 16px; font-weight: 700; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px 3px 6px; border-radius: 999px; background: #eef4fd; color: var(--ink); font-size: 18px; font-weight: 700; white-space: nowrap; }
 .chip .sti { width: 20px; height: 20px; }
 .art-tip { position: fixed; z-index: 50; pointer-events: none; display: flex; gap: 5px; padding: 5px; border-radius: 14px; background: #fff; box-shadow: 0 0 0 3px #23305a, 0 6px 16px rgba(0, 30, 90, .35); }
 .art-tip.r5 { box-shadow: 0 0 0 3px #9c6bff, 0 0 16px rgba(200, 120, 255, .8); }
@@ -366,11 +366,13 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .gear-stage .eye svg { width: 22px; height: 22px; }
 .gear-stage .eye.off { background: rgba(35, 48, 90, .65); }
 .art-big b { position: absolute; right: 8px; bottom: 4px; font-size: 22px; color: #fff; -webkit-text-stroke: 4px #23305a; paint-order: stroke fill; }
-.art-big { width: 120px; height: 120px; border-radius: 26px; margin: 0 auto; }
+.art-big { width: 136px; height: 136px; border-radius: 28px; margin: 0 auto; }
+#artInfo .modal-body { width: min(100%, 370px); }
 .art-info { display: grid; gap: 6px; padding: 18px 16px; text-align: center; }
-.art-info h2 { margin: 0; font-size: 31px; color: var(--ink); }
-.art-info .art-stat { margin: 0; font-size: 20px; color: var(--ink); }
-.art-info .dim { margin: 0; font-size: 16px; font-weight: 500; }
+.art-info h2 { margin: 0; font-size: 34px; line-height: 1.1; color: var(--ink); }
+.art-info .art-stat { margin: 0; font-size: 22px; color: var(--ink); }
+.art-info .chip { font-size: 20px; }
+.art-info .dim { margin: 0; font-size: 18px; font-weight: 500; }
 .chest-stage { position: relative; height: 280px; display: grid; place-items: center; }
 .chest-stage .rays { position: absolute; width: 300px; height: 300px; border-radius: 50%; opacity: 0; transition: opacity .3s;
   background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.55) 0deg 10deg, rgba(255,255,255,0) 10deg 24deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%); }
@@ -404,8 +406,8 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .fslot.made { animation: pop 0.45s cubic-bezier(.3, 1.6, .5, 1); }
 .fuse-arrow { font-size: 26px; color: var(--violet); }
 .fuse-grid .art:disabled { opacity: 0.35; filter: grayscale(0.6); }
-.skin .boost { font-style: normal; font-size: 12px; color: #13a56f; white-space: nowrap; max-width: 100%; overflow: hidden; letter-spacing: -0.01em; }
-.skin > span { max-width: 100%; font-size: 14.5px; line-height: 1.15; text-align: center; }
+.skin .boost { font-style: normal; font-size: 13.5px; color: #13a56f; white-space: nowrap; max-width: 100%; overflow: hidden; letter-spacing: -0.01em; }
+.skin > span { max-width: 100%; font-size: 17px; line-height: 1.12; text-align: center; }
 /* wide screens: the hero and slots on the left, the panel on the right */
 @media (min-aspect-ratio: 11/10) {
   #gear .gear-panel { position: absolute; right: max(3vw, 16px); top: 84px; bottom: 18px; width: min(470px, 48vw); margin: 0; align-content: start; grid-template-rows: auto auto minmax(0, 1fr); }
@@ -491,57 +493,62 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 @media (prefers-reduced-motion: reduce) { .screen.enter > *, .cascade, #levelup .card { animation: none; } }
 @keyframes pop { from { transform: scale(0.82); opacity: 0; } to { transform: none; opacity: 1; } }
 .cards { display: grid; gap: 12px; }
-.card { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: center; text-align: left; padding: 12px 14px; border-radius: 22px; color: var(--ink);
+.card { display: grid; grid-template-columns: 80px 1fr; gap: 14px; align-items: center; text-align: left; padding: 12px 14px; border-radius: 22px; color: var(--ink);
   background: #fff; box-shadow: 0 5px 0 #a9cdf5, 0 12px 24px rgba(0,30,90,.3); transition: transform 0.2s cubic-bezier(.3,1.8,.5,1), box-shadow .15s, translate .25s cubic-bezier(.2, .9, .3, 1.25); animation: pop 0.4s cubic-bezier(.3,1.6,.5,1) both; }
 .card:nth-child(2) { animation-delay: 0.06s; } .card:nth-child(3) { animation-delay: 0.12s; }
 .card:hover, .card:focus-visible { box-shadow: inset 0 0 0 3px var(--sky), 0 5px 0 var(--sky-deep), 0 12px 24px rgba(0,30,90,.3); outline: none; }
 .card:active { transform: scale(1.03, 0.95); }
-.card .tile { width: 72px; height: 72px; border-radius: 18px; }
+.card .tile { width: 80px; height: 80px; border-radius: 20px; }
 .card .pips { display: flex; gap: 3px; margin-top: 4px; }
-.card .pips i { width: 9px; height: 9px; border-radius: 50%; background: #d6e3f5; }
+.card .pips i { width: 10px; height: 10px; border-radius: 50%; background: #d6e3f5; }
 .card .pips i.on { background: var(--sky); }
 #levelup .card .pips { justify-content: center; }
-.card .nm { display: block; font-size: 23px; line-height: 1.15; }
-.card .ds { display: block; font-size: 16px; font-weight: 500; color: var(--ink-dim); margin-top: 3px; }
+.card .nm { display: block; font-size: 25px; line-height: 1.1; }
+.card .ds { display: block; font-size: 17.5px; font-weight: 500; color: var(--ink-dim); margin-top: 3px; }
 .card .ds em { font-style: normal; color: var(--ink); font-weight: 700; }
 .row-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 @media (min-width: 820px) and (min-aspect-ratio: 1/1) {
-  #levelup .modal-body { width: min(100%, 900px); }
+  #levelup .modal-body { width: min(100%, 820px); }
   #levelup .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  #levelup .card { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 18px; }
-  #levelup .card .tile { width: 96px; height: 96px; }
+  #levelup .card { grid-template-columns: 1fr; justify-items: center; align-content: center; gap: 8px; text-align: center; padding: 14px 10px 16px; }
+  #levelup .card .tile { width: 124px; height: 124px; border-radius: 26px; }
+  #levelup .card .nm { font-size: 28px; }
+  #levelup .card .ds { font-size: 19px; }
+  #levelup .card .pips i { width: 12px; height: 12px; }
 }
 .roulette { position: relative; height: 104px; border-radius: 22px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 3px var(--gold), 0 5px 0 #d89a14; }
 .roulette .strip { position: absolute; left: 0; top: 12px; display: flex; gap: 10px; will-change: transform; }
 .roulette .strip .tile { width: 80px; height: 80px; border-radius: 18px; flex: none; }
 .roulette::after { content: ''; position: absolute; left: 50%; top: 4px; bottom: 4px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--red); box-shadow: 0 0 10px rgba(255,77,90,.7); }
 .chest-res { display: grid; gap: 8px; }
-.chest-res div { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; animation: pop .3s both; }
-.chest-res .tile { width: 44px; height: 44px; border-radius: 12px; }
-.pause-list { display: grid; gap: 6px; max-height: 42vh; overflow-y: auto; padding: 2px; }
-.pause-list div { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 3px 0 #a9cdf5; font-size: 17px; }
-.pause-list .tile { width: 40px; height: 40px; border-radius: 11px; }
+.chest-res div { display: grid; grid-template-columns: 52px 1fr; font-size: 20px; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; animation: pop .3s both; }
+.chest-res .tile { width: 52px; height: 52px; border-radius: 14px; }
+.pause-list { display: grid; gap: 6px; max-height: 46vh; overflow-y: auto; padding: 2px; }
+.pause-list div { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; padding: 4px 14px 4px 5px; border-radius: 17px; color: var(--ink); background: #fff; box-shadow: 0 3px 0 #a9cdf5; font-size: 23px; }
+#pause .modal-body, #settings .modal-body { width: min(100%, 430px); }
+#results .modal-body { width: min(100%, 400px); }
+.pause-list .tile { width: 48px; height: 48px; border-radius: 13px; }
 .dots { display: flex; gap: 3px; }
-.dots i { width: 7px; height: 7px; border-radius: 50%; background: #d6e6f8; }
+.dots i { width: 9px; height: 9px; border-radius: 50%; background: #d6e6f8; }
 .dots i.on { background: var(--sky); }
 .confirm { padding: 12px; text-align: center; display: grid; gap: 10px; }
 .ring { position: relative; width: 150px; height: 150px; margin: 0 auto; }
 .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 60px; color: #fff; -webkit-text-stroke: 7px var(--sky-deep); paint-order: stroke fill; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
-.stats div { padding: 10px 4px; border-radius: 18px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; }
-.stats b { display: block; font-size: 26px; font-variant-numeric: tabular-nums; }
-.stats small { font-size: 13px; letter-spacing: 0.12em; color: var(--ink-dim); }
-.earn { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; font-size: 32px; }
-.earn .coin { width: 34px; height: 34px; }
+.stats div { padding: 8px 4px; border-radius: 18px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; }
+.stats b { display: block; font-size: 34px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stats small { font-size: 15px; letter-spacing: 0.12em; color: var(--ink-dim); }
+.earn { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px; font-size: 42px; }
+.earn .coin { width: 44px; height: 44px; }
 .settings-list { display: grid; gap: 8px; }
-.setting { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 18px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; }
-.switch { width: 58px; height: 34px; border-radius: 20px; background: #d3e4f7; position: relative; transition: background .2s; }
-.switch::after { content: ''; position: absolute; top: 4px; left: 4px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 3px rgba(0,40,110,.3); transition: transform 0.25s cubic-bezier(.3,1.6,.5,1); }
+.setting { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; padding: 8px 10px 8px 16px; font-size: 21px; border-radius: 18px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5; }
+.switch { width: 64px; height: 38px; border-radius: 20px; background: #d3e4f7; position: relative; transition: background .2s; }
+.switch::after { content: ''; position: absolute; top: 4px; left: 4px; width: 30px; height: 30px; border-radius: 50%; background: #fff; box-shadow: 0 2px 3px rgba(0,40,110,.3); transition: transform 0.25s cubic-bezier(.3,1.6,.5,1); }
 .switch[aria-checked="true"] { background: var(--sky); }
-.switch[aria-checked="true"]::after { transform: translateX(24px); }
+.switch[aria-checked="true"]::after { transform: translateX(26px); }
 .seg { display: inline-flex; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 3px 0 #a9cdf5; }
-.seg button { padding: 8px 12px; font-size: 16px; color: var(--ink-dim); }
+.seg button { padding: 8px 12px; font-size: 18px; color: var(--ink-dim); }
 #qualitySeg button { padding: 8px 9px; white-space: nowrap; }
 .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #6fcbff, var(--sky)); color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.5); }
 #toast { position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%); padding: 10px 18px; border-radius: 16px; color: var(--ink); background: #fff; box-shadow: 0 4px 0 #a9cdf5, 0 8px 18px rgba(0,40,110,.25); font-size: 17px; opacity: 0; transition: opacity .2s; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); text-align: center; }
@@ -749,7 +756,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
       <h1 class="title outline" id="resTitle">CLEARED!</h1>
       <div class="stats"><div><b id="resTime">0:00</b><small>TIME</small></div><div><b id="resKills">0</b><small>KILLS</small></div><div><b id="resLevel">1</b><small>LEVEL</small></div></div>
       <div class="panel earn"><i class="coin"></i><span id="resCoins">+0</span></div>
-      <p class="dim" style="text-align:center;margin:-6px 0 0;font-size:14px" id="resBreak"></p>
+      <p class="dim" style="text-align:center;margin:-6px 0 0;font-size:17px" id="resBreak"></p>
       <div class="row-actions"><button class="jelly" id="btnContinue">Continue</button></div>
     </div>
   </section>
@@ -763,7 +770,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
         <div class="setting"><span>Screen shake</span><button class="switch" role="switch" data-set="shake" aria-label="Screen shake"></button></div>
         <div class="setting"><span>Vibration</span><button class="switch" role="switch" data-set="haptics" aria-label="Vibration"></button></div>
         <div class="setting"><span>Graphics</span><div class="seg" id="qualitySeg"><button data-q="auto">Auto</button><button data-q="high">High</button><button data-q="low">Low</button><button data-q="ultra">Ultra low</button></div></div>
-        <div class="setting"><span>Reset progress</span><button class="jelly ghost" id="btnReset" style="min-height:40px;padding:6px 14px 10px;font-size:14px">Reset</button></div>
+        <div class="setting"><span>Reset progress</span><button class="jelly ghost" id="btnReset" style="min-height:42px;padding:6px 16px 10px;font-size:18px">Reset</button></div>
         <div class="panel confirm" id="resetConfirm" hidden><span>Erase all coins, upgrades, skins and chapters?</span><div class="row-actions"><button class="jelly danger" id="btnResetYes">Erase</button><button class="jelly ghost" id="btnResetNo">Cancel</button></div></div>
       </div>
       <div class="row-actions"><button class="jelly" id="btnSettingsDone">Done</button></div>
@@ -5547,23 +5554,28 @@ function mountModels(defs) {
     ...[[0.0, 0.0], [0.08, -0.12], [0.08, 0.12]].map(([y, z]) => ({ s: 'cyl', ax: 'x', c: [0.05, y, z], r: 0.06, hh: 0.012, rd: 0.005, col: ironD, k: 0 })),
     ...Array.from({ length: 5 }, (_, i) => { const u = (i + 0.5) / 5, z = -0.24 + u * 0.48; return { s: 'tor', ax: i % 2 ? 'x' : 'y', c: [0.05, -0.14 - Math.sin(u * Math.PI) * 0.05, z], R: 0.028, r: 0.009, a0: -Math.PI, a1: Math.PI, col: ironL, k: 0 }; }),
   ], { ao: 0.5 });
-  // ---------- Propellers: an outboard motor on the stern: a red cowling with a white stripe and a badge, a tiller handle,
-  // an exhaust, a shaft with a skeg fin, and a three-bladed brass propeller with a hub cap (turning, bone 1) ----------
+  // ---------- Propellers: an outboard motor on the stern: a rounded red cowling with a white stripe, a dark seam and a
+  // brass badge, a tiller handle, the leg down to a torpedo gearcase with a cavitation plate and a skeg, and a
+  // four-bladed brass propeller with a hub cap (turning, bone 1) ----------
   {
+    const grey = C('#3a3f4a'), greyL = C('#5a6270');
     const m = P('sprop', [
-      { s: 'box', c: [0, 0.35, -0.08], hs: [0.15, 0.2, 0.17], rd: 0.08, col: red, k: 0 },
-      { s: 'box', c: [0, 0.4, -0.08], hs: [0.153, 0.025, 0.173], rd: 0.02, col: white, k: 0 },
-      { s: 'box', c: [0, 0.52, -0.08], hs: [0.152, 0.035, 0.172], rd: 0.03, col: C('#2a2e38'), k: 0 },
-      { s: 'cyl', ax: 'x', c: [0.152, 0.3, -0.06], r: 0.045, hh: 0.006, rd: 0.003, col: brass, k: 0 },
-      { s: 'cap', a: [0, 0.18, -0.1], b: [0, -0.15, -0.1], r: 0.05, r2: 0.045, col: C('#3a3f4a'), k: 0 },
-      { s: 'box', c: [0, -0.14, -0.06], hs: [0.012, 0.06, 0.08], rd: 0.008, col: C('#3a3f4a'), k: 0 },
-      { s: 'cap', a: [0, 0.4, 0.05], b: [0, 0.38, 0.42], r: 0.02, col: C('#3a3f4a'), k: 0 }, { s: 'cap', a: [0, 0.38, 0.36], b: [0, 0.38, 0.46], r: 0.03, col: dark, k: 0 },
-      { s: 'cap', a: [0.08, 0.58, -0.2], b: [0.1, 0.66, -0.22], r: 0.02, col: steel, k: 0 },
-      { s: 'sph', c: [0, -0.12, -0.2], r: 0.05, col: brass, bone: 1, k: 0 },
-      { s: 'sph', c: [0, -0.12, -0.25], r: 0.03, col: C('#c08a2a'), bone: 1, k: 0 },
-      ...[0, 1, 2].map(i => { const a = i / 3 * TAU; return { s: 'ell', c: [Math.cos(a) * 0.11, -0.12 + Math.sin(a) * 0.11, -0.21], rr: [0.075, 0.075, 0.02], col: brass, bone: 1, k: 0.02 }; }),
+      { s: 'box', c: [0, 0.34, -0.08], hs: [0.15, 0.15, 0.19], rd: 0.1, col: red, k: 0 },
+      { s: 'ell', c: [0, 0.47, -0.08], rr: [0.15, 0.09, 0.19], col: red, k: 0.05 },
+      { s: 'box', c: [0, 0.43, -0.08], hs: [0.153, 0.012, 0.193], rd: 0.01, col: dark, k: 0 },
+      { s: 'box', c: [0, 0.32, -0.08], hs: [0.154, 0.024, 0.194], rd: 0.02, col: white, k: 0 },
+      ...[1, -1].map(sx => ({ s: 'cyl', ax: 'x', c: [sx * 0.153, 0.37, -0.04], r: 0.04, hh: 0.006, rd: 0.003, col: brass, k: 0 })),
+      { s: 'cap', a: [0, 0.2, -0.1], b: [0, -0.1, -0.1], r: 0.045, r2: 0.04, col: grey, k: 0.02 },
+      { s: 'box', c: [0, -0.02, -0.12], hs: [0.075, 0.01, 0.1], rd: 0.01, col: greyL, k: 0 },
+      { s: 'cap', a: [0, -0.13, 0.0], b: [0, -0.13, -0.17], r: 0.05, r2: 0.045, col: grey, k: 0.02 },
+      { s: 'box', c: [0, -0.22, -0.06], hs: [0.012, 0.07, 0.05], rd: 0.008, col: grey, k: 0 },
+      { s: 'cap', a: [0, 0.4, 0.08], b: [0, 0.38, 0.4], r: 0.02, col: grey, k: 0 }, { s: 'cap', a: [0, 0.38, 0.34], b: [0, 0.38, 0.46], r: 0.03, col: dark, k: 0 },
+      { s: 'cap', a: [0.08, 0.5, -0.24], b: [0.1, 0.6, -0.26], r: 0.02, col: steel, k: 0 },
+      { s: 'sph', c: [0, -0.13, -0.21], r: 0.045, col: brass, bone: 1, k: 0 },
+      { s: 'cap', a: [0, -0.13, -0.23], b: [0, -0.13, -0.28], r: 0.03, r2: 0.008, col: C('#c08a2a'), bone: 1, k: 0 },
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ s: 'ell', c: [dx * 0.1, -0.13 + dy * 0.1, -0.21], rr: dx ? [0.085, 0.042, 0.016] : [0.042, 0.085, 0.016], col: brass, bone: 1, k: 0.02 })),
     ], { ao: 0.6 });
-    rig(m, { 1: [0, -0.12, -0.2] });
+    rig(m, { 1: [0, -0.13, -0.21] });
   }
   // ---------- Repair Crew: a little goo sailor (the body takes the blob's color) in a white cap with a blue band and
   // ribbon, a red neckerchief, a tool belt with a wrench, and a hammer ----------
@@ -5585,23 +5597,28 @@ function mountModels(defs) {
     m.name = 'screw'; m.runAmp = 1.2;
     defs.screw = m;
   }
-  // ---------- Gust Sails: a mast with a billowing sail sewn in panels and painted with a wind swirl, a yard at top and
-  // bottom, rope rigging to the deck, a crow's-nest ring and a long pennant ----------
+  // ---------- Gust Sails: a square sail bellied out by the wind (a shell cut to a rectangle, so it reads as canvas,
+  // not an egg) with a blue wind swirl and a row of reef points, on a mast with a yard top and bottom, ropes from the
+  // yard ends and the lower corners to the deck, a crow's-nest ring and a long pennant ----------
   P('ssail', [
-    { s: 'cap', a: [0, 0, 0], b: [0, 1.85, 0], r: 0.05, r2: 0.035, col: woodD, k: 0 },
-    { s: 'cap', a: [-0.52, 1.5, 0.02], b: [0.52, 1.5, 0.02], r: 0.03, col: woodD, k: 0 },
-    { s: 'cap', a: [-0.46, 0.55, 0.02], b: [0.46, 0.55, 0.02], r: 0.03, col: woodD, k: 0 },
-    ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.52, 1.5, 0.02], r: 0.035, col: brass, k: 0 })),
-    { s: 'ell', c: [0, 1.02, 0.05], rr: [0.5, 0.46, 0.2], col: C('#f6fbff'), k: 0 },
-    { s: 'ell', c: [0, 1.02, 0.0], rr: [0.5, 0.46, 0.17], sub: true, k: 0 },
-    { s: 'box', c: [0, 1.02, -0.17], hs: [1, 1, 0.17], sub: true, k: 0 },
-    ...[0.75, 1.02, 1.29].map(y => { const w = 0.5 * Math.sqrt(Math.max(0, 1 - ((y - 1.02) / 0.46) ** 2)), d = 0.2 * Math.sqrt(Math.max(0, 1 - ((y - 1.02) / 0.46) ** 2)); return { s: 'tor', ax: 'y', c: [0, y, 0.05], R: Math.max(0.05, w * 0.98), r: 0.007, a0: 0.15, a1: Math.PI - 0.15, col: C('#c8d8e8'), k: 0 }; }),
-    { s: 'tor', ax: 'z', c: [0, 1.04, 0.2], R: 0.16, r: 0.025, a0: -0.4, a1: 3.6, col: C('#35b8e8'), k: 0 },
-    { s: 'tor', ax: 'z', c: [0.05, 1.0, 0.21], R: 0.07, r: 0.022, a0: 0.5, a1: 4.4, col: C('#35b8e8'), k: 0 },
-    { s: 'tor', ax: 'y', c: [0, 1.7, 0], R: 0.1, r: 0.02, a0: -Math.PI, a1: Math.PI, col: wood, k: 0 },
-    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.5, 1.5, 0.02], b: [sx * 0.3, 0.02, -0.25], r: 0.008, col: rope, k: 0 })),
-    { s: 'cap', a: [0, 1.85, 0], b: [0, 1.85, -0.38], r: 0.006, col: woodD, k: 0 },
-    { s: 'box', c: [0, 1.82, -0.22], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
+    { s: 'ell', c: [0, 1.02, -0.02], rr: [0.78, 0.64, 0.24], col: C('#f6fbff'), k: 0 },
+    { s: 'ell', c: [0, 1.02, -0.07], rr: [0.74, 0.6, 0.24], sub: true, k: 0 },
+    { s: 'box', c: [0, 1.02, -0.6], hs: [1, 1, 0.6], sub: true, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'box', c: [sx * 1.02, 1.02, 0], hs: [0.5, 1, 1], sub: true, k: 0 })),
+    { s: 'box', c: [0, 2.0, 0], hs: [1, 0.5, 1], sub: true, k: 0 },
+    { s: 'box', c: [0, 0.06, 0], hs: [1, 0.5, 1], sub: true, k: 0 },
+    { s: 'tor', ax: 'z', c: [0, 1.06, 0.2], R: 0.17, r: 0.026, a0: -0.4, a1: 3.6, col: C('#35b8e8'), k: 0 },
+    { s: 'tor', ax: 'z', c: [0.05, 1.02, 0.21], R: 0.075, r: 0.023, a0: 0.5, a1: 4.4, col: C('#35b8e8'), k: 0 },
+    ...[-0.36, -0.18, 0, 0.18, 0.36].map(x => ({ s: 'sph', c: [x, 1.32, 0.24 * Math.sqrt(Math.max(0, 1 - (x / 0.78) ** 2 - (0.3 / 0.64) ** 2)) - 0.01], r: 0.018, col: rope, k: 0 })),
+    { s: 'cap', a: [0, 0, -0.06], b: [0, 1.85, -0.06], r: 0.05, r2: 0.035, col: woodD, k: 0 },
+    { s: 'cap', a: [-0.56, 1.5, -0.04], b: [0.56, 1.5, -0.04], r: 0.03, col: woodD, k: 0 },
+    { s: 'cap', a: [-0.52, 0.55, -0.04], b: [0.52, 0.55, -0.04], r: 0.03, col: woodD, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.56, 1.5, -0.04], r: 0.035, col: brass, k: 0 })),
+    { s: 'tor', ax: 'y', c: [0, 1.7, -0.06], R: 0.1, r: 0.02, a0: -Math.PI, a1: Math.PI, col: wood, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.56, 1.5, -0.04], b: [sx * 0.3, 0.02, -0.3], r: 0.013, col: rope, k: 0 })),
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.5, 0.58, -0.02], b: [sx * 0.42, 0.02, 0.2], r: 0.013, col: rope, k: 0 })),
+    { s: 'cap', a: [0, 1.85, -0.06], b: [0, 1.85, -0.44], r: 0.006, col: woodD, k: 0 },
+    { s: 'box', c: [0, 1.82, -0.28], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
   ], { ao: 0.4 });
 }
 
@@ -11290,23 +11307,28 @@ function mountModels(defs) {
     ...[[0.0, 0.0], [0.08, -0.12], [0.08, 0.12]].map(([y, z]) => ({ s: 'cyl', ax: 'x', c: [0.05, y, z], r: 0.06, hh: 0.012, rd: 0.005, col: ironD, k: 0 })),
     ...Array.from({ length: 5 }, (_, i) => { const u = (i + 0.5) / 5, z = -0.24 + u * 0.48; return { s: 'tor', ax: i % 2 ? 'x' : 'y', c: [0.05, -0.14 - Math.sin(u * Math.PI) * 0.05, z], R: 0.028, r: 0.009, a0: -Math.PI, a1: Math.PI, col: ironL, k: 0 }; }),
   ], { ao: 0.5 });
-  // ---------- Propellers: an outboard motor on the stern: a red cowling with a white stripe and a badge, a tiller handle,
-  // an exhaust, a shaft with a skeg fin, and a three-bladed brass propeller with a hub cap (turning, bone 1) ----------
+  // ---------- Propellers: an outboard motor on the stern: a rounded red cowling with a white stripe, a dark seam and a
+  // brass badge, a tiller handle, the leg down to a torpedo gearcase with a cavitation plate and a skeg, and a
+  // four-bladed brass propeller with a hub cap (turning, bone 1) ----------
   {
+    const grey = C('#3a3f4a'), greyL = C('#5a6270');
     const m = P('sprop', [
-      { s: 'box', c: [0, 0.35, -0.08], hs: [0.15, 0.2, 0.17], rd: 0.08, col: red, k: 0 },
-      { s: 'box', c: [0, 0.4, -0.08], hs: [0.153, 0.025, 0.173], rd: 0.02, col: white, k: 0 },
-      { s: 'box', c: [0, 0.52, -0.08], hs: [0.152, 0.035, 0.172], rd: 0.03, col: C('#2a2e38'), k: 0 },
-      { s: 'cyl', ax: 'x', c: [0.152, 0.3, -0.06], r: 0.045, hh: 0.006, rd: 0.003, col: brass, k: 0 },
-      { s: 'cap', a: [0, 0.18, -0.1], b: [0, -0.15, -0.1], r: 0.05, r2: 0.045, col: C('#3a3f4a'), k: 0 },
-      { s: 'box', c: [0, -0.14, -0.06], hs: [0.012, 0.06, 0.08], rd: 0.008, col: C('#3a3f4a'), k: 0 },
-      { s: 'cap', a: [0, 0.4, 0.05], b: [0, 0.38, 0.42], r: 0.02, col: C('#3a3f4a'), k: 0 }, { s: 'cap', a: [0, 0.38, 0.36], b: [0, 0.38, 0.46], r: 0.03, col: dark, k: 0 },
-      { s: 'cap', a: [0.08, 0.58, -0.2], b: [0.1, 0.66, -0.22], r: 0.02, col: steel, k: 0 },
-      { s: 'sph', c: [0, -0.12, -0.2], r: 0.05, col: brass, bone: 1, k: 0 },
-      { s: 'sph', c: [0, -0.12, -0.25], r: 0.03, col: C('#c08a2a'), bone: 1, k: 0 },
-      ...[0, 1, 2].map(i => { const a = i / 3 * TAU; return { s: 'ell', c: [Math.cos(a) * 0.11, -0.12 + Math.sin(a) * 0.11, -0.21], rr: [0.075, 0.075, 0.02], col: brass, bone: 1, k: 0.02 }; }),
+      { s: 'box', c: [0, 0.34, -0.08], hs: [0.15, 0.15, 0.19], rd: 0.1, col: red, k: 0 },
+      { s: 'ell', c: [0, 0.47, -0.08], rr: [0.15, 0.09, 0.19], col: red, k: 0.05 },
+      { s: 'box', c: [0, 0.43, -0.08], hs: [0.153, 0.012, 0.193], rd: 0.01, col: dark, k: 0 },
+      { s: 'box', c: [0, 0.32, -0.08], hs: [0.154, 0.024, 0.194], rd: 0.02, col: white, k: 0 },
+      ...[1, -1].map(sx => ({ s: 'cyl', ax: 'x', c: [sx * 0.153, 0.37, -0.04], r: 0.04, hh: 0.006, rd: 0.003, col: brass, k: 0 })),
+      { s: 'cap', a: [0, 0.2, -0.1], b: [0, -0.1, -0.1], r: 0.045, r2: 0.04, col: grey, k: 0.02 },
+      { s: 'box', c: [0, -0.02, -0.12], hs: [0.075, 0.01, 0.1], rd: 0.01, col: greyL, k: 0 },
+      { s: 'cap', a: [0, -0.13, 0.0], b: [0, -0.13, -0.17], r: 0.05, r2: 0.045, col: grey, k: 0.02 },
+      { s: 'box', c: [0, -0.22, -0.06], hs: [0.012, 0.07, 0.05], rd: 0.008, col: grey, k: 0 },
+      { s: 'cap', a: [0, 0.4, 0.08], b: [0, 0.38, 0.4], r: 0.02, col: grey, k: 0 }, { s: 'cap', a: [0, 0.38, 0.34], b: [0, 0.38, 0.46], r: 0.03, col: dark, k: 0 },
+      { s: 'cap', a: [0.08, 0.5, -0.24], b: [0.1, 0.6, -0.26], r: 0.02, col: steel, k: 0 },
+      { s: 'sph', c: [0, -0.13, -0.21], r: 0.045, col: brass, bone: 1, k: 0 },
+      { s: 'cap', a: [0, -0.13, -0.23], b: [0, -0.13, -0.28], r: 0.03, r2: 0.008, col: C('#c08a2a'), bone: 1, k: 0 },
+      ...[[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ s: 'ell', c: [dx * 0.1, -0.13 + dy * 0.1, -0.21], rr: dx ? [0.085, 0.042, 0.016] : [0.042, 0.085, 0.016], col: brass, bone: 1, k: 0.02 })),
     ], { ao: 0.6 });
-    rig(m, { 1: [0, -0.12, -0.2] });
+    rig(m, { 1: [0, -0.13, -0.21] });
   }
   // ---------- Repair Crew: a little goo sailor (the body takes the blob's color) in a white cap with a blue band and
   // ribbon, a red neckerchief, a tool belt with a wrench, and a hammer ----------
@@ -11328,23 +11350,28 @@ function mountModels(defs) {
     m.name = 'screw'; m.runAmp = 1.2;
     defs.screw = m;
   }
-  // ---------- Gust Sails: a mast with a billowing sail sewn in panels and painted with a wind swirl, a yard at top and
-  // bottom, rope rigging to the deck, a crow's-nest ring and a long pennant ----------
+  // ---------- Gust Sails: a square sail bellied out by the wind (a shell cut to a rectangle, so it reads as canvas,
+  // not an egg) with a blue wind swirl and a row of reef points, on a mast with a yard top and bottom, ropes from the
+  // yard ends and the lower corners to the deck, a crow's-nest ring and a long pennant ----------
   P('ssail', [
-    { s: 'cap', a: [0, 0, 0], b: [0, 1.85, 0], r: 0.05, r2: 0.035, col: woodD, k: 0 },
-    { s: 'cap', a: [-0.52, 1.5, 0.02], b: [0.52, 1.5, 0.02], r: 0.03, col: woodD, k: 0 },
-    { s: 'cap', a: [-0.46, 0.55, 0.02], b: [0.46, 0.55, 0.02], r: 0.03, col: woodD, k: 0 },
-    ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.52, 1.5, 0.02], r: 0.035, col: brass, k: 0 })),
-    { s: 'ell', c: [0, 1.02, 0.05], rr: [0.5, 0.46, 0.2], col: C('#f6fbff'), k: 0 },
-    { s: 'ell', c: [0, 1.02, 0.0], rr: [0.5, 0.46, 0.17], sub: true, k: 0 },
-    { s: 'box', c: [0, 1.02, -0.17], hs: [1, 1, 0.17], sub: true, k: 0 },
-    ...[0.75, 1.02, 1.29].map(y => { const w = 0.5 * Math.sqrt(Math.max(0, 1 - ((y - 1.02) / 0.46) ** 2)), d = 0.2 * Math.sqrt(Math.max(0, 1 - ((y - 1.02) / 0.46) ** 2)); return { s: 'tor', ax: 'y', c: [0, y, 0.05], R: Math.max(0.05, w * 0.98), r: 0.007, a0: 0.15, a1: Math.PI - 0.15, col: C('#c8d8e8'), k: 0 }; }),
-    { s: 'tor', ax: 'z', c: [0, 1.04, 0.2], R: 0.16, r: 0.025, a0: -0.4, a1: 3.6, col: C('#35b8e8'), k: 0 },
-    { s: 'tor', ax: 'z', c: [0.05, 1.0, 0.21], R: 0.07, r: 0.022, a0: 0.5, a1: 4.4, col: C('#35b8e8'), k: 0 },
-    { s: 'tor', ax: 'y', c: [0, 1.7, 0], R: 0.1, r: 0.02, a0: -Math.PI, a1: Math.PI, col: wood, k: 0 },
-    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.5, 1.5, 0.02], b: [sx * 0.3, 0.02, -0.25], r: 0.008, col: rope, k: 0 })),
-    { s: 'cap', a: [0, 1.85, 0], b: [0, 1.85, -0.38], r: 0.006, col: woodD, k: 0 },
-    { s: 'box', c: [0, 1.82, -0.22], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
+    { s: 'ell', c: [0, 1.02, -0.02], rr: [0.78, 0.64, 0.24], col: C('#f6fbff'), k: 0 },
+    { s: 'ell', c: [0, 1.02, -0.07], rr: [0.74, 0.6, 0.24], sub: true, k: 0 },
+    { s: 'box', c: [0, 1.02, -0.6], hs: [1, 1, 0.6], sub: true, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'box', c: [sx * 1.02, 1.02, 0], hs: [0.5, 1, 1], sub: true, k: 0 })),
+    { s: 'box', c: [0, 2.0, 0], hs: [1, 0.5, 1], sub: true, k: 0 },
+    { s: 'box', c: [0, 0.06, 0], hs: [1, 0.5, 1], sub: true, k: 0 },
+    { s: 'tor', ax: 'z', c: [0, 1.06, 0.2], R: 0.17, r: 0.026, a0: -0.4, a1: 3.6, col: C('#35b8e8'), k: 0 },
+    { s: 'tor', ax: 'z', c: [0.05, 1.02, 0.21], R: 0.075, r: 0.023, a0: 0.5, a1: 4.4, col: C('#35b8e8'), k: 0 },
+    ...[-0.36, -0.18, 0, 0.18, 0.36].map(x => ({ s: 'sph', c: [x, 1.32, 0.24 * Math.sqrt(Math.max(0, 1 - (x / 0.78) ** 2 - (0.3 / 0.64) ** 2)) - 0.01], r: 0.018, col: rope, k: 0 })),
+    { s: 'cap', a: [0, 0, -0.06], b: [0, 1.85, -0.06], r: 0.05, r2: 0.035, col: woodD, k: 0 },
+    { s: 'cap', a: [-0.56, 1.5, -0.04], b: [0.56, 1.5, -0.04], r: 0.03, col: woodD, k: 0 },
+    { s: 'cap', a: [-0.52, 0.55, -0.04], b: [0.52, 0.55, -0.04], r: 0.03, col: woodD, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.56, 1.5, -0.04], r: 0.035, col: brass, k: 0 })),
+    { s: 'tor', ax: 'y', c: [0, 1.7, -0.06], R: 0.1, r: 0.02, a0: -Math.PI, a1: Math.PI, col: wood, k: 0 },
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.56, 1.5, -0.04], b: [sx * 0.3, 0.02, -0.3], r: 0.013, col: rope, k: 0 })),
+    ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.5, 0.58, -0.02], b: [sx * 0.42, 0.02, 0.2], r: 0.013, col: rope, k: 0 })),
+    { s: 'cap', a: [0, 1.85, -0.06], b: [0, 1.85, -0.44], r: 0.006, col: woodD, k: 0 },
+    { s: 'box', c: [0, 1.82, -0.28], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
   ], { ao: 0.4 });
 }
 
@@ -26190,6 +26217,17 @@ function iconFrame(m, yaw, s, pitch, fov) {
   const D = Math.max(W, H) * 1.14 / Math.tan(fov / 2) + Z;
   return [[c[0], c[1] + ex[1] * D, c[2] + ex[2] * D], c, fov];
 }
+// the box framing is loose (a turned box's corners stick out past the model), so draw it once, see where it
+// landed, and aim again: centred on what was drawn, and zoomed so it fills 80% of the square
+function iconFit([eye, tgt, fov], pitch) {
+  const b = iconCapture(eye, tgt, fov, null, 'measure');
+  if (!b) return [eye, tgt, fov];
+  const S = ICONS.size, t = Math.tan(fov / 2), dist = Math.hypot(eye[0] - tgt[0], eye[1] - tgt[1], eye[2] - tgt[2]);
+  const cx = (b.x0 + b.x1) / S - 1, cy = 1 - (b.y0 + b.y1) / S, half = Math.max(b.x1 - b.x0, b.y1 - b.y0) / S;
+  const fov2 = 2 * Math.atan(t * Math.min(1, half / 0.8));
+  const sh = [cx * t * dist, cy * t * dist * Math.cos(pitch), -cy * t * dist * Math.sin(pitch)];
+  return [eye.map((v, i) => v + sh[i]), tgt.map((v, i) => v + sh[i]), fov2];
+}
 // sea upgrade icons are drawn from their own models once those are built
 function seaIcons() {
   const todo = SEA_ICON_SHOTS.filter(([k, m]) => !ICONS.map[k + '!'] && R.enemyDraw[m]);
@@ -26200,7 +26238,7 @@ function seaIcons() {
     const M = MODELS.defs[m], c = M.clips.still || M.clips.rock || Object.values(M.clips)[0];
     const g = opts.goo ? R.goo.base : [1, 1, 1], yaw = opts.yaw ?? 0.7, s = opts.s ?? 1;
     pushEnemy(m, false, 0, 0, 0, yaw, c.row, s, 1, 0, 0, 0, g[0], g[1], g[2]);
-    ICONS.map[key] = ICONS.map[key + '!'] = iconCapture(...iconFrame(m, yaw, s, opts.pitch ?? 0.5, 0.5), null, true);
+    ICONS.map[key] = ICONS.map[key + '!'] = iconCapture(...iconFit(iconFrame(m, yaw, s, opts.pitch ?? 0.5, 0.5), opts.pitch ?? 0.5), null, true);
   }
   iconEnd();
   R.resetStreams();
@@ -26979,14 +27017,14 @@ const SEA_ICON_SHOTS = [
   ['skill-barrels', 'sbarrel', { yaw: 0.2, s: 1.9, d: 1.9, mid: 0.5 }],
   ['skill-lamp', 'slamp', { yaw: 0.3, s: 1.2, d: 2.2, mid: 0.65 }],
   ['skill-net', 'snet', { yaw: 0.3, s: 0.8, d: 2.0, mid: 0.2 }],
-  ['skill-gulls', 'sgull', { yaw: 0.8, s: 2.6, d: 2.1, mid: 1.35 }],
+  ['skill-gulls', 'sgull', { yaw: 0.5, s: 2.6, d: 2.1, mid: 1.35, pitch: 1.05 }],
   ['skill-shark', 'sshark', { yaw: 0.9, s: 1.2, d: 2.4, mid: 0.2 }],
   ['skill-hose', 'shose', { yaw: 1.0, s: 1.6, d: 1.9, mid: 0.4 }],
   ['skill-figure', 'sfigure', { yaw: 0.6, s: 1.7, d: 1.9, mid: 0.55, goo: true }],
   ['passive-fort', 'sfort', { yaw: -0.9, s: 2.2, d: 1.6, mid: 0.0 }],
-  ['passive-propeller', 'sprop', { yaw: 2.4, s: 1.8, d: 1.9, mid: 0.4 }],
+  ['passive-propeller', 'sprop', { yaw: 1.95, s: 1.8, d: 1.9, mid: 0.4, pitch: 0.3 }],
   ['passive-crew', 'screw', { yaw: 0.4, s: 1.6, d: 2.0, mid: 0.65, goo: true }],
-  ['passive-sails', 'ssail', { yaw: 0.5, s: 1.0, d: 2.6, mid: 1.0 }],
+  ['passive-sails', 'ssail', { yaw: 0.75, s: 1.0, d: 2.6, mid: 1.0, pitch: 0.3 }],
 ];
 
 // ---- 13m-sea-folk.js ----
@@ -28767,7 +28805,7 @@ const UI = {
       b.className = 'card'; b.style.setProperty('--i', i);
       b.innerHTML = `<span class="tile ${d.kind}${seaTile(c.id)}"><img alt=""></span><span><span class="nm"></span><span class="pips"></span><span class="ds"></span></span>`;
       b.querySelector('img').src = ICONS.get(d.icon);
-      b.querySelector('.nm').textContent = d.name + (d.evo ? ' ★' : '');
+      b.querySelector('.nm').textContent = d.name + (d.evo ? '\u00a0★' : '');
       // level dots: filled up to the level this pick reaches
       if (d.max > 1) b.querySelector('.pips').innerHTML = Array.from({ length: d.max }, (_, k) => `<i class="${k < d.lvl ? 'on' : ''}"></i>`).join('');
       b.querySelector('.ds').innerHTML = d.desc;
@@ -30096,6 +30134,12 @@ function iconCapture(eye, target, fov, heroOut, sticker) {
   const px = new Uint8Array(S * S * 4);
   gl.readPixels(0, 0, S, S, gl.RGBA, gl.UNSIGNED_BYTE, px);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  // 'measure': only where the drawing landed, in pixels from the top left (for framing it again tighter)
+  if (sticker === 'measure') {
+    let x0 = S, y0 = S, x1 = -1, y1 = -1;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (px[((S - 1 - y) * S + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return x1 < 0 ? null : { x0, y0, x1: x1 + 1, y1: y1 + 1 };
+  }
   const cv = document.createElement('canvas');
   cv.width = S; cv.height = S;
   const c2 = cv.getContext('2d'), img = c2.createImageData(S, S);

@@ -70,6 +70,12 @@ function iconCapture(eye, target, fov, heroOut, sticker) {
   const px = new Uint8Array(S * S * 4);
   gl.readPixels(0, 0, S, S, gl.RGBA, gl.UNSIGNED_BYTE, px);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  // 'measure': only where the drawing landed, in pixels from the top left (for framing it again tighter)
+  if (sticker === 'measure') {
+    let x0 = S, y0 = S, x1 = -1, y1 = -1;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (px[((S - 1 - y) * S + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return x1 < 0 ? null : { x0, y0, x1: x1 + 1, y1: y1 + 1 };
+  }
   const cv = document.createElement('canvas');
   cv.width = S; cv.height = S;
   const c2 = cv.getContext('2d'), img = c2.createImageData(S, S);
