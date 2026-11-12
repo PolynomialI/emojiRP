@@ -62,3 +62,53 @@ SKILL_HOOKS.turret = {
     }
   },
 };
+
+// ---------- Spore Cloud (chapter 17): clouds of glowing spores drift into crowds and linger, poisoning everything
+// inside; evolved (Fungal Bloom), every enemy that dies in a cloud bursts into a new one ----------
+const SPORE = { tick: 0.4, drift: 7, max: 14 };
+SKILL_HOOKS.spore = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, rad = L.radius * areaMul();
+    st.clouds = st.clouds || [];
+    st.t = (st.t ?? 0.8) - dt;
+    if (st.t <= 0) {
+      const near = [];
+      enemiesInRadius(h[0], h[2], 9, e => near.push(e));
+      if (near.length) {
+        st.t = L.cd * cdMul();
+        for (let i = 0; i < L.count; i++) {
+          const tg = near[Math.floor(Math.random() * near.length)];
+          st.clouds.push({ x: h[0], z: h[2], tx: tg.x, tz: tg.z, r: rad, life: L.life, tick: 0.2, ph: rand(0, 10), grow: 0 });
+        }
+        AUDIO.play('drip', 0.7);
+      } else st.t = 0.3;
+    }
+    const born = [];
+    for (const c of st.clouds) {
+      c.life -= dt; c.grow = Math.min(1, c.grow + dt * 2.5); c.ph += dt;
+      const dx = c.tx - c.x, dz = c.tz - c.z, d = Math.hypot(dx, dz);
+      if (d > 0.1) { const v = Math.min(d, SPORE.drift * dt); c.x += dx / d * v; c.z += dz / d * v; }
+      c.tick -= dt;
+      if (c.tick > 0) continue;
+      c.tick = SPORE.tick;
+      enemiesInRadius(c.x, c.z, c.r * c.grow, e => {
+        hurtEnemy(e, L.dmg, 0, 0, { sound: false });
+        e.auraTint = Math.max(e.auraTint || 0, 0.6);
+        if (s.evo && e.hp <= 0 && st.clouds.length + born.length < SPORE.max) born.push({ x: e.x, z: e.z, tx: e.x, tz: e.z, r: rad * 0.7, life: 2.2, tick: 0.2, ph: rand(0, 10), grow: 0 });
+      });
+    }
+    st.clouds = st.clouds.filter(c => c.life > 0).concat(born);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.clouds) return;
+    const gold = s.evo;
+    for (const c of st.clouds) {
+      const k = c.grow * Math.min(1, c.life / 0.5), R = c.r * k;
+      pushDecal(c.x, c.z, R, R, c.ph * 0.6, 3, 0, 0.5, gold ? 1 : 0.75, gold ? 0.75 : 0.4, gold ? 0.3 : 1.0, 0.3 * k, true);
+      pushDecal(c.x, c.z, R * 0.7, R * 0.7, -c.ph * 0.9, 3, 0, 0.5, 0.5, 1.0, 0.6, 0.2 * k, true);
+      if (Math.random() < 0.7) FX.part(c.x + rand(-0.7, 0.7) * R, rand(0.1, 0.5), c.z + rand(-0.7, 0.7) * R, 0, rand(0.4, 1.0), 0, 0.09, 0.02, 1.2, gold ? [1, 0.85, 0.4] : [0.8, 0.5, 1], 0.9, 0, -0.2, 0.5);
+      if (Math.random() < 0.3) FX.smoke(c.x + rand(-0.5, 0.5) * R, 0.35, c.z + rand(-0.5, 0.5) * R, R * 0.45, gold ? [0.9, 0.8, 0.5] : [0.7, 0.5, 0.9], 1, 0.25);
+    }
+  },
+};

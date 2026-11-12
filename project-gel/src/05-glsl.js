@@ -393,6 +393,27 @@ void main() {
     N = normalize(vec3(tf.x * bump * 0.5 * (1.0 - band), 1.0, tf.y * bump * 0.5 * (1.0 - band)));
     ao = 1.0 - 0.3 * seam - 0.2 * rivet;
     gloss = 0.3 + oil * 0.4; sharp = 50.0;
+  } else if (style == 16) {
+    // mushroom forest: moss and dark loam under fallen leaves, threaded with mycelium that glows and pulses,
+    // and the odd glowing spore speck
+    float loam = smoothstep(0.4, 0.75, texture(uNoise, p * 0.04).g) * 0.7;
+    float blades = texture(uNoise, p * vec2(2.3, 2.8)).b;
+    alb = mix(mix(uStoneA, uStoneB, mott) * (0.82 + 0.3 * blades), uGrout * 1.4 * (0.85 + 0.3 * fine), loam);
+    vec2 lc = floor(p / 0.75), lf = fract(p / 0.75) - 0.5;
+    float lh = hash12(lc);
+    vec2 lo = (vec2(hash12(lc + 1.3), hash12(lc + 2.7)) - 0.5) * 0.5;
+    float leaf = step(0.84, lh) * (1.0 - smoothstep(0.08, 0.13, length((lf - lo) * vec2(1.0, 1.8))));
+    alb = mix(alb, lh > 0.94 ? vec3(0.55, 0.25, 0.45) : vec3(0.6, 0.38, 0.14), leaf);
+    vec3 vc = voro(p * 0.22 + (texture(uNoise, p * 0.05).rg - 0.5) * 1.2);
+    float thread = (1.0 - smoothstep(0.0, 0.022, vc.y)) * smoothstep(0.55, 0.75, texture(uNoise, p * 0.03 + 0.7).r);
+    float pulse = 0.55 + 0.45 * sin(uTime * 1.3 + vc.z * 6.28 + p.x * 0.1);
+    alb = mix(alb, uAccent * 0.5, thread * 0.35);
+    emis += uAccent * thread * pulse * 0.3;
+    vec2 scl = floor(p * 1.7);
+    float speck = step(0.992, hash12(scl)) * (1.0 - smoothstep(0.05, 0.12, length(fract(p * 1.7) - 0.5)));
+    emis += vec3(0.5, 1.0, 0.9) * speck * (0.6 + 0.4 * sin(uTime * 2.0 + hash12(scl + 3.0) * 6.28));
+    N = normalize(vec3((blades - 0.5) * 0.3 * (1.0 - loam), 1.0, (fine - 0.5) * 0.3 * (1.0 - loam)));
+    ao = mix(0.78, 1.0, blades) * (1.0 - 0.15 * leaf);
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -1058,6 +1079,17 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (eye < d) { d = eye; m = length(e - vec3(-0.02, 0.0, 0.11)) < 0.085 ? 12.0 : 7.0; }
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
+  if (type == 49) {
+    // spore mushroom: a red spotted cap on a white stem, with glowing spores puffing up beside it (P1.y: spore color)
+    vec3 q = p - vec3(-0.15, -0.1, 0.0), cq = q - vec3(0.0, 0.15, 0.0);
+    float capd = max(sdEllipsoid(cq, vec3(0.62, 0.42, 0.62)), -(q.y - 0.05));
+    float stem = sdRoundCone(q, vec3(0.0, -0.75, 0.0), vec3(0.0, 0.1, 0.0), 0.2, 0.15);
+    float d = min(capd, stem), m = capd < stem ? 13.0 : 7.0;
+    if (capd < stem && sin(atan(cq.z, cq.x) * 5.0) * sin(cq.y * 9.0 + 1.0) > 0.55) m = 14.0;
+    float spr = min(length(p - vec3(0.6, 0.55, 0.1)) - 0.14, min(length(p - vec3(0.45, 0.85, -0.05)) - 0.1, length(p - vec3(0.75, 0.25, 0.0)) - 0.09));
+    if (spr < d) { d = spr; m = 1.0; }
     return vec2(d, m);
   }
   if (type == 48) {

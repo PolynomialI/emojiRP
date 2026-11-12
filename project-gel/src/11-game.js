@@ -729,6 +729,7 @@ function enemyAct(e, dt, d, dx, dz) {
     if (a.t >= 0.75) {
       if (Math.hypot(h[0] - e.x, h[2] - e.z) < 1.8 + HERO_R * 0.5) hurtHero(D.hit * mul, e.x, e.z);
       enemiesInRadius(e.x, e.z, 1.8, o => { if (o !== e && !o.boss) hurtEnemy(o, 20, (o.x - e.x) * 3, (o.z - e.z) * 3, { sound: false }); });
+      if (D.burstZone) tempZone(D.burstZone, e.x, e.z, 1.7, 3.5);
       FX.ring(e.x, e.z, 2.6, [1, 0.7, 0.3], 0.4); FX.scorch(e.x, e.z, 2.0);
       FX.burst(e.x, 0.6, e.z, 22, [1, 0.6, 0.2], 6, 0.14, 0.5, 0);
       FX.glow(e.x, 0.6, e.z, 2.4, [1, 0.6, 0.25], 0.25);

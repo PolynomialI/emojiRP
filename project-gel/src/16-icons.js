@@ -117,6 +117,7 @@ function renderAllIcons() {
     yoyo: { scale: 0.62, emissive: 0.15, eye: [0, 1.5, 2.0] },
     bubble: { scale: 0.62, emissive: 0.15 },
     turret: { scale: 0.6, ax: 0.8, az: 0.6, emissive: 0.1, eye: [0, 1.0, 2.3] },
+    spore: { scale: 0.62, emissive: 0.2, p1: 2 },
   };
   for (const id in SKILLS) { const ic = SKILLS[id].icon; renderIcon('skill-' + id, ic.type, ic.colw, special[id] || {}); }
   const pspecial = {

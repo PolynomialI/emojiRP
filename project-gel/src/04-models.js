@@ -236,6 +236,7 @@ function modelDefs() {
   themeModels3(defs);
   westModels(defs);
   factoryModels(defs);
+  shroomModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
