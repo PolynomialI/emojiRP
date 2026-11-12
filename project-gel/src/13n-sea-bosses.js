@@ -76,7 +76,8 @@ function seaBossAI(e, dt) {
     const ox = tx - e.x, oz = tz - e.z, l = Math.hypot(ox, oz) || 1, s2 = Math.min(sp, l * 2);
     e.vx += (ox / l * s2 - e.vx) * Math.min(1, dt * k); e.vz += (oz / l * s2 - e.vz) * Math.min(1, dt * k);
   };
-  const ring = D.len * 0.5 + B.len * 0.5 + 6;
+  // (close enough for the deck guns, whatever the ship)
+  const ring = D.len * 0.4 + B.len * 0.5 + 3.5;
   const hz = o => OC.hz.push(o);
   const lob = (tx, tz, delay, r = 1.5, col = [1, 0.55, 0.2], extra = {}) => hz({ k: 'lob', sx: e.x, sy: B.deck + 1.5, sz: e.z, tx, tz, x: e.x, y: B.deck + 1.5, z: e.z, t: -delay, dur: 1.2, r, dmg: e.dmg * 0.6, col, ...extra });
   const lead = k => [S.x + S.vx * k, S.z + S.vz * k];

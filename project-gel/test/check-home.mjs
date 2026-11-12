@@ -15,7 +15,8 @@ const errs = []; page.on('pageerror', e => errs.push(e.message));
 await page.addInitScript({ path: path.join(dir, 'harness.js') });
 await page.goto('file://' + path.join(dir, '..', 'dist', 'project-gel.html'));
 await page.waitForFunction(() => G.state === 'home', null, { timeout: 120000 });
-await page.waitForFunction(() => MESHJOB.done.size === MESH_ORDER.length, null, { timeout: 180000 });
+// (the land's meshes; the ocean's come after them)
+await page.waitForFunction(() => MESH_ORDER.slice(0, MESH_ORDER.indexOf('raft')).every(m => MESHJOB.done.has(m)), null, { timeout: 600000, polling: 1000 });
 await page.evaluate(() => { __manual(); __frames(3, 1 / 60, true); });
 
 // drag sideways across the stage: the blob turns with the pointer, then keeps a little spin

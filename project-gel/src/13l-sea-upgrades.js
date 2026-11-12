@@ -163,10 +163,10 @@ SKILL_HOOKS.cannon = {
     const D = shipDef(), M = mountsOf(D), S = OC.ship;
     s.st.cd = (s.st.cd ?? 0.5) - dt;
     s.st.aim = s.st.aim || []; s.st.kick = s.st.kick || [];
-    const n = Math.min(L.count, M.guns.length);
+    const n = Math.min(L.count, M.guns.length), reach = 15 + D.len * 0.3;
     for (let i = 0; i < n; i++) {
       const g = M.guns[i], w = shipW(g[0], g[1]);
-      const tgt = nearestEnemy(w[0], w[1], 15);
+      const tgt = nearestEnemy(w[0], w[1], reach);
       const want = tgt ? Math.atan2(tgt.x - w[0], tgt.z - w[1]) - S.yaw : (g[1] < 0 ? Math.PI : 0);
       s.st.aim[i] = angleLerp(s.st.aim[i] ?? want, want, Math.min(1, dt * 8));
       s.st.kick[i] = Math.max(0, (s.st.kick[i] || 0) - dt * 5);
@@ -174,11 +174,11 @@ SKILL_HOOKS.cannon = {
     if (s.st.cd > 0 || OC.sink) return;
     const taken = new Set();
     // every other cannon locks onto a boss or miniboss in range; the rest take the nearest swimmers
-    const big = G.run.enemies.find(e => (e.boss || e.mini) && !e.dying && !e.hidden && Math.hypot(e.x - S.x, e.z - S.z) < 16);
+    const big = G.run.enemies.find(e => (e.boss || e.mini) && !e.dying && !e.hidden && Math.hypot(e.x - S.x, e.z - S.z) < reach + 2);
     let fired = false;
     for (let i = 0; i < n; i++) {
       const g = M.guns[i], w = shipW(g[0], g[1]);
-      const tgt = (big && i % 2 === 1 ? big : null) || (big && n === 1 && Math.random() < 0.5 ? big : null) || nearestEnemy(w[0], w[1], 15, taken) || nearestEnemy(w[0], w[1], 15);
+      const tgt = (big && i % 2 === 1 ? big : null) || (big && n === 1 && Math.random() < 0.5 ? big : null) || nearestEnemy(w[0], w[1], reach, taken) || nearestEnemy(w[0], w[1], reach);
       if (!tgt) continue;
       taken.add(tgt);
       const a = S.yaw + s.st.aim[i], ms = M.ms;
