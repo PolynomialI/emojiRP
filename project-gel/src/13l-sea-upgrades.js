@@ -173,10 +173,12 @@ SKILL_HOOKS.cannon = {
     }
     if (s.st.cd > 0 || OC.sink) return;
     const taken = new Set();
+    // every other cannon locks onto a boss or miniboss in range; the rest take the nearest swimmers
+    const big = G.run.enemies.find(e => (e.boss || e.mini) && !e.dying && !e.hidden && Math.hypot(e.x - S.x, e.z - S.z) < 16);
     let fired = false;
     for (let i = 0; i < n; i++) {
       const g = M.guns[i], w = shipW(g[0], g[1]);
-      const tgt = nearestEnemy(w[0], w[1], 15, taken) || nearestEnemy(w[0], w[1], 15);
+      const tgt = (big && i % 2 === 1 ? big : null) || (big && n === 1 && Math.random() < 0.5 ? big : null) || nearestEnemy(w[0], w[1], 15, taken) || nearestEnemy(w[0], w[1], 15);
       if (!tgt) continue;
       taken.add(tgt);
       const a = S.yaw + s.st.aim[i], ms = M.ms;

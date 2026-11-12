@@ -23149,13 +23149,13 @@ BOSS_DRAW.bagger = function (e) {
 // hull: extra hull health; ram: ram damage at full speed; grip: how many boarders fit on; zoom: camera
 // distance; wake: wake width; bob: how much it rides the swell
 const SHIPS = [
-  { id: 'raft', name: 'Raft', model: 'raft', len: 2.5, wid: 1.9, deck: 0.17, spot: [0, -0.2], heroS: 0.8, speed: 4.6, accel: 5.5, turn: 3.0, hull: 0, ram: 16, grip: 6, zoom: 0.88, wake: 0.8, bob: 0.05 },
-  { id: 'canoe', name: 'Canoe', model: 'canoe', len: 3.8, wid: 1.05, deck: 0.125, spot: [0, -0.35], heroS: 0.82, speed: 5.4, accel: 6.5, turn: 2.7, hull: 0.15, ram: 24, grip: 7, zoom: 1.08, wake: 0.9, bob: 0.045 },
-  { id: 'sloop', name: 'Pirate Sloop', model: 'sloop', len: 5.6, wid: 2.1, deck: 0.655, spot: [0, -0.55], heroS: 0.9, speed: 5.6, accel: 5, turn: 2.2, hull: 0.35, ram: 36, grip: 9, zoom: 1.22, wake: 1.25, bob: 0.04 },
-  { id: 'galleon', name: 'Black Galleon', model: 'galleon', len: 7.6, wid: 2.7, deck: 0.885, spot: [0, 0.4], heroS: 1.0, speed: 5.8, accel: 4.2, turn: 1.8, hull: 0.6, ram: 50, grip: 11, zoom: 1.4, wake: 1.6, bob: 0.035 },
-  { id: 'yacht', name: 'Yacht', model: 'yacht', len: 9.4, wid: 3.0, deck: 1.19, spot: [0, 2.2], heroS: 1.1, speed: 6.8, accel: 5, turn: 1.7, hull: 0.85, ram: 64, grip: 12, zoom: 1.58, wake: 1.9, bob: 0.03 },
-  { id: 'cruise', name: 'Cruise Ship', model: 'cruise', len: 12, wid: 3.6, deck: 2.76, spot: [0, -1.0], heroS: 1.25, speed: 6.4, accel: 3.2, turn: 1.3, hull: 1.2, ram: 84, grip: 14, zoom: 1.8, wake: 2.3, bob: 0.02 },
-  { id: 'cargo', name: 'Cargo Ship', model: 'cargo', len: 14.5, wid: 3.9, deck: 3.19, spot: [0, 4.4], heroS: 1.4, speed: 6.2, accel: 2.6, turn: 1.05, hull: 1.6, ram: 110, grip: 16, zoom: 2.0, wake: 2.6, bob: 0.015 },
+  { id: 'raft', name: 'Raft', model: 'raft', len: 2.5, wid: 1.9, deck: 0.17, spot: [0, -0.2], heroS: 0.8, speed: 4.6, accel: 5.5, turn: 3.0, hull: 0, ram: 16, grip: 4, zoom: 0.88, wake: 0.8, bob: 0.05 },
+  { id: 'canoe', name: 'Canoe', model: 'canoe', len: 3.8, wid: 1.05, deck: 0.125, spot: [0, -0.35], heroS: 0.82, speed: 5.4, accel: 6.5, turn: 2.7, hull: 0.15, ram: 24, grip: 5, zoom: 1.08, wake: 0.9, bob: 0.045 },
+  { id: 'sloop', name: 'Pirate Sloop', model: 'sloop', len: 5.6, wid: 2.1, deck: 0.655, spot: [0, -0.55], heroS: 0.9, speed: 5.6, accel: 5, turn: 2.2, hull: 0.35, ram: 36, grip: 7, zoom: 1.22, wake: 1.25, bob: 0.04 },
+  { id: 'galleon', name: 'Black Galleon', model: 'galleon', len: 7.6, wid: 2.7, deck: 0.885, spot: [0, 0.4], heroS: 1.0, speed: 5.8, accel: 4.2, turn: 1.8, hull: 0.6, ram: 50, grip: 9, zoom: 1.4, wake: 1.6, bob: 0.035 },
+  { id: 'yacht', name: 'Yacht', model: 'yacht', len: 9.4, wid: 3.0, deck: 1.19, spot: [0, 2.2], heroS: 1.1, speed: 6.8, accel: 5, turn: 1.7, hull: 0.85, ram: 64, grip: 10, zoom: 1.58, wake: 1.9, bob: 0.03 },
+  { id: 'cruise', name: 'Cruise Ship', model: 'cruise', len: 12, wid: 3.6, deck: 2.76, spot: [0, -1.0], heroS: 1.25, speed: 6.4, accel: 3.2, turn: 1.3, hull: 1.2, ram: 84, grip: 12, zoom: 1.8, wake: 2.3, bob: 0.02 },
+  { id: 'cargo', name: 'Cargo Ship', model: 'cargo', len: 14.5, wid: 3.9, deck: 3.19, spot: [0, 4.4], heroS: 1.4, speed: 6.2, accel: 2.6, turn: 1.05, hull: 1.6, ram: 110, grip: 14, zoom: 2.0, wake: 2.6, bob: 0.015 },
 ];
 // The ten sea chapters. rough: swell (0 calm .. 1 rough); storm: a storm blows from the start (1), or comes in with
 // the boss (0.5); deep/shallow/lines: the water's colors; isle: the islands' look; mix: [enemy, from second, weight]
@@ -23176,7 +23176,7 @@ const SEA_COUNT = SEA_CHAPTERS.length;
 const SEA = {
   sink: 0.52,       // how far a swimmer sits in the water (of its height): the water hides the rest
   ramMin: 1.1,      // closing speed that counts as a ram
-  hackCd: 1.25,     // seconds between a boarder's hook blows
+  hackCd: 1.45,     // seconds between a boarder's hook blows
   shake: 0.38,      // boarders are flung off when the ship turns faster than this share of its best turn rate
   view: 1,          // (set from the ship) camera zoom
 };
@@ -23303,7 +23303,8 @@ function updateOcean(dt) {
   if (live) {
     run.t += dt;
     while (run.events.length && run.t >= run.events[0].t) seaEvent(run.events.shift());
-    const rate = (run.bossStarted ? 2.2 : spawnRate(run.t)) * run.info.rateMul * 0.85;
+    // (fewer while the boss is out, so the fight is about the boss)
+    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t)) * run.info.rateMul * 0.85;
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) { run.spawnAcc -= 1; if (run.enemies.length < MAX_ALIVE) seaSpawn(); }
   }
@@ -23993,10 +23994,12 @@ SKILL_HOOKS.cannon = {
     }
     if (s.st.cd > 0 || OC.sink) return;
     const taken = new Set();
+    // every other cannon locks onto a boss or miniboss in range; the rest take the nearest swimmers
+    const big = G.run.enemies.find(e => (e.boss || e.mini) && !e.dying && !e.hidden && Math.hypot(e.x - S.x, e.z - S.z) < 16);
     let fired = false;
     for (let i = 0; i < n; i++) {
       const g = M.guns[i], w = shipW(g[0], g[1]);
-      const tgt = nearestEnemy(w[0], w[1], 15, taken) || nearestEnemy(w[0], w[1], 15);
+      const tgt = (big && i % 2 === 1 ? big : null) || (big && n === 1 && Math.random() < 0.5 ? big : null) || nearestEnemy(w[0], w[1], 15, taken) || nearestEnemy(w[0], w[1], 15);
       if (!tgt) continue;
       taken.add(tgt);
       const a = S.yaw + s.st.aim[i], ms = M.ms;
