@@ -9,11 +9,44 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - **Text fills its space.** Every menu, title, button and label is sized to fill the box it sits in, never small
   text in a big box: titles and headers large (the PROJECT GEL logo largest of all), button text near the button's
   height, card text readable at a glance. A label that could overflow its box (a long stat name, a big number) is
-  scaled to fit instead of spilling out. Check new UI in a screenshot against this before committing.
+  scaled to fit instead of spilling out. The reverse holds too: a box (card, row, panel) is no bigger than what is
+  in it needs; tighten the box and grow the text rather than leave empty space. Check new UI in a screenshot
+  (`test/_menus.mjs`, every menu at 1100x720) against this before committing.
 - Buttons slide a little to the left under the pointer (CSS `translate`, so it stacks with each button's own
   `transform`); a new button with its own `transition` list must add `translate` to it.
 
-## The Deep: oceans 11-20, new ships, ship looks (latest)
+## Polish: menus, icons, mounts, ship details, deep balance (latest)
+- **Menus fit their contents.** Level-up cards are narrower with a 124px icon, 28px names and 19px numbers, and
+  their contents centered; pause rows are 430px wide with 48px icons and 23px names; settings rows 21px with bigger
+  switches; results numbers 34px and the coin line 42px; achievements, the chapter map, skin and ship-look tiles,
+  item info and chest results all have larger text in tighter boxes. A level-up name keeps its star on its line.
+- **Small animations.** Screens slide in (`.enter`), lists cascade in one after another (`UI.stagger`: skins,
+  ship looks, gear, achievements, chapter map), level-up cards deal in, the coin pill bumps and counts up to its
+  new total (`UI.syncCoins`), taps leave a ripple, the Play button breathes. All off under reduced motion.
+- **Usability.** Escape goes back from any menu (`UI.back`), R rerolls on a level-up, HUD slots have tooltips, the
+  pause line says Ocean N on sea runs, level-up cards show up to two changed stats.
+- **Sea upgrade icons** are sticker-style (a dark outline and a soft shadow, `iconSticker`) on ocean tiles
+  (weapons) and brass tiles (passives), and framed in two passes: drawn once, measured, and drawn again centered
+  and zoomed to fill 80% of the square (`iconFit` in 13k-ocean.js, `iconCapture(..., 'measure')`).
+- **Mount weapons rebuilt** in far more detail (04m): every cannon, musket, harpoon, gunner, anchor flail, barrel
+  mine, lamp, net rack, gull, shark, water cannon, figurehead, fort plating, crew, a new outboard motor
+  (Propellers) and a square bellied sail (Gust Sails).
+- **Ship details** (04l, shared helpers `sideX`, `portholes`, `anchor`, `wheel`, `lifeRing`, `hatch`, `rudder`,
+  `shrouds`): plank seams on the wooden hulls, anchors at every bow, ship's wheels and rudders on the pirate ships,
+  rope shrouds on every mast, cannon muzzles on the sloop, a skull prow on the galleon; running lights, a radar
+  bar, aerials, a jet ski and an ensign on the yacht; portholes, balcony dividers, davits, satellite domes and a
+  funnel band on the cruise ship; draft marks, bridge wings, life rings and a freefall lifeboat on the cargo ship;
+  portholes, AA guns, searchlights and a rangefinder on the battleship; arrestor wires, catapult tracks, an
+  elevator, hangar bays and deck crew on the carrier; gold wave scrolls, gem portholes, column capitals, golden
+  anchors, rudder and a stern lantern on the Ark; stripes, lashings, a mat and a fishing rod on the canoe; bark
+  rings on the raft's logs. `test/_shipgal.mjs` shoots every ship close up from two sides.
+- **Deep balance** (autopilot, a weak player: `CHS=11,15,20 CAP=600 node test/_seabot.mjs`). Past ocean 10 the
+  player's power stops growing (the Golden Ark, maxed mounts), so the boss multiplier stops its 12%-an-ocean climb
+  there and adds 5% an ocean instead, and the deep bosses were rebased (11k health at ocean 11 to 16.6k at 20).
+  The deep steps are gentle early and steep late (health x1.04 at ocean 11 to x1.6 at 20; damage x1.03 to x1.4).
+  Last run: ocean 11 won (needed the revive), ocean 15 won at 67% lowest hull, ocean 20 sank at 3:12 after a revive.
+
+## The Deep: oceans 11-20, new ships, ship looks
 - **Weight in the water.** Everything in the sea has a dark mass under the surface (decal type 12, `seaShadow` in
   13k-ocean.js): swimmers, divers, minibosses, bosses, the ship and its wreck pieces, mines and kegs, shark
   escorts, rising tentacles; islands have a dark drop-off round their shallows. The color is the chapter's deep
@@ -36,7 +69,7 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   swimmers: glowing jellyfish (sting the hull), weed-tangled pirates (slow the ship while aboard), merfolk (throw
   tridents from range), gummy bears (split in two), lost pilots (blink closer), balloon pirates (float overhead
   and drop bombs; only shot down), anglerfish (lunge and bite), skeletons (pull themselves back together once).
-  Oceans 11-20 are a little steeper (`seaInfo`: +3% health and damage per ocean past 10, more spawns).
+  Oceans 11-20 are steeper (`seaInfo`; see the deep balance note above).
 - **Ten new bosses** (13p-sea-deep-bosses.js; models 04p): the Lantern Angler, the Weed Witch, the Whirl Wyrm,
   the Trident Titan, Captain Sugarbeard, the Triangle Saucer, the Cloud Whale, the Leviathan, Davy Jones and
   Neptune, on the shared sea-boss brain with new moves in `SEA_BOSS_ATK` (lure, hex, coils, trident lanes, tidal

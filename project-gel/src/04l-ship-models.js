@@ -90,13 +90,50 @@ function shipModels(defs) {
     return p;
   };
   const wood = C('#a8693a'), woodD = C('#6e4426'), woodL = C('#d6a468'), rope = C('#e2c98f'), white = C('#fbf8f2'), cream = C('#f4ead2');
-  const gold = C('#e8b84a'), glowY = C('#ffd36a'), dark = C('#1e2230'), red = C('#d8323c');
+  const gold = C('#e8b84a'), glowY = C('#ffd36a'), dark = C('#1e2230'), red = C('#d8323c'), iron = C('#2e323c');
+  // ---------- small fittings shared by the ships ----------
+  // how far out the hull's side is at height y and length z (the larger of its two eggs there)
+  const sideX = (o, y, z) => {
+    const W = o.wid / 2, L = o.len / 2, H = o.top - o.bot, dy = y - o.top;
+    const a = 1 - (dy / H) ** 2 - ((z + L * 0.1) / (L * 0.9)) ** 2, b = 1 - (dy / (H * 0.96)) ** 2 - ((z - L * 0.32) / (L * 0.68)) ** 2;
+    return Math.max(W * Math.sqrt(Math.max(0, a)), W * 0.74 * Math.sqrt(Math.max(0, b)));
+  };
+  // round windows down both sides: a rim and a glass bead, set into the hull's curve
+  const portholes = (o, y, zs, r, glass, rim) => [-1, 1].flatMap(sx => zs.flatMap(z => { const x = sx * sideX(o, y, z); return [
+    { s: 'tor', ax: 'x', c: [x, y, z], R: r, r: r * 0.3, a0: -Math.PI, a1: Math.PI, col: rim, k: 0 },
+    { s: 'sph', c: [x - sx * r * 0.4, y, z], r: r * 0.95, col: glass, k: 0 }]; }));
+  // an anchor hung flat against each side of the bow: ring, shank, stock, curved arms and flukes
+  const anchor = (o, z, y, s, col) => [-1, 1].flatMap(sx => { const x = sx * (sideX(o, y, z) + 0.045 * s), arm = a => [y - 0.1 * s + Math.sin(a) * 0.22 * s, z + Math.cos(a) * 0.22 * s]; return [
+    { s: 'tor', ax: 'x', c: [x, y + 0.36 * s, z], R: 0.07 * s, r: 0.024 * s, a0: -Math.PI, a1: Math.PI, col, k: 0 },
+    { s: 'cap', a: [x, y + 0.29 * s, z], b: [x, y - 0.32 * s, z], r: 0.038 * s, col, k: 0 },
+    { s: 'cap', a: [x, y + 0.22 * s, z - 0.16 * s], b: [x, y + 0.22 * s, z + 0.16 * s], r: 0.03 * s, col, k: 0 },
+    { s: 'tor', ax: 'x', c: [x, y - 0.1 * s, z], R: 0.22 * s, r: 0.034 * s, a0: -Math.PI + 0.5, a1: -0.5, col, k: 0 },
+    ...[-Math.PI + 0.5, -0.5].map((a, i) => { const [py, pz] = arm(a); return { s: 'cap', a: [x, py, pz], b: [x, py + 0.1 * s, pz + (i ? 0.05 : -0.05) * s], r: 0.045 * s, r2: 0.012 * s, col, k: 0 }; })]; });
+  // a ship's wheel facing the bow on a post: rim, eight spokes, handles and a brass hub
+  const wheel = (x, y, z, R0, col, hub) => [
+    { s: 'cap', a: [x, y - R0 - 0.35, z - 0.08], b: [x, y, z - 0.08], r: R0 * 0.14, col, k: 0 },
+    { s: 'tor', ax: 'z', c: [x, y, z], R: R0, r: R0 * 0.1, a0: -Math.PI, a1: Math.PI, col, k: 0 },
+    ...[0, 1, 2, 3].map(i => { const a = i / 4 * Math.PI, c = Math.cos(a), s2 = Math.sin(a); return { s: 'cap', a: [x - c * R0 * 1.35, y - s2 * R0 * 1.35, z], b: [x + c * R0 * 1.35, y + s2 * R0 * 1.35, z], r: R0 * 0.07, col, k: 0 }; }),
+    { s: 'sph', c: [x, y, z + 0.02], r: R0 * 0.22, col: hub, k: 0 }];
+  // a red and white life ring hung flat on a wall that faces along x (side) or z (end)
+  const lifeRing = (c, R0, ax) => Array.from({ length: 8 }, (_, i) => ({ s: 'tor', ax, c, R: R0, r: R0 * 0.32, a0: (i / 8) * TAU - Math.PI, a1: ((i + 1) / 8) * TAU - Math.PI + 0.03, col: i % 2 ? white : C('#ff4a3a'), k: 0 }));
+  // a deck hatch: a raised frame with a grating of slats
+  const hatch = (x, y, z, w, l, col, slat) => [
+    { s: 'box', c: [x, y + 0.04, z], hs: [w, 0.05, l], rd: 0.03, col, k: 0 },
+    ...Array.from({ length: Math.max(2, Math.round(l / 0.12)) }, (_, i, A) => ({ s: 'box', c: [x, y + 0.095, z - l + (i + 0.5) * (2 * l / A.length)], hs: [w * 0.82, 0.012, 0.025], rd: 0.008, col: slat, k: 0 }))];
+  // the rudder below the stern and a rope ladder of shrouds from a mast top to the rail on both sides
+  const rudder = (o, s, col) => ({ s: 'box', c: [0, o.bot * 0.3 + 0.1 * s, -o.len / 2 + 0.02], hs: [0.05 * s, 0.32 * s, 0.16 * s], rd: 0.03 * s, col, k: 0 });
+  const shrouds = (z, top, deckY, half, col, n = 3) => [-1, 1].flatMap(sx => [
+    ...[-0.35, 0, 0.35].map(dz => ({ s: 'cap', a: [0, top, z], b: [sx * half, deckY, z + dz], r: 0.022, col, k: 0 })),
+    ...Array.from({ length: n }, (_, i) => { const t = (i + 1) / (n + 1), y = top + (deckY - top) * t, w = half * t; return { s: 'cap', a: [sx * w, y, z - 0.35 * t], b: [sx * w, y, z + 0.35 * t], r: 0.016, col, k: 0 }; })]);
 
   // ---------- the canoe: a dugout painted rust red with cream dots, an outrigger float, a paddle and snacks ----------
   {
     const hc = C('#c0582e'), inside = C('#d89a5a');
     const p = [
       { s: 'ell', c: [0, 0.36, 0], rr: [0.52, 0.56, 1.9], col: hc, paint: true, k: 0 },
+      // a cream stripe and a dark one round the hull (cut hollow with it below)
+      ...[[0.3, 0.028, cream], [0.14, 0.022, C('#6a2a16')]].map(([y, h, col]) => { const f = Math.sqrt(1 - ((y - 0.36) / 0.56) ** 2); return { s: 'ell', c: [0, y, 0], rr: [0.52 * f + 0.012, h, 1.9 * f + 0.012], col, k: 0 }; }),
       { s: 'box', c: [0, 2.38, 0], hs: [2, 2, 3], sub: true, k: 0 },
       { s: 'ell', c: [0, 0.38, 0], rr: [0.43, 0.29, 1.78], sub: true, k: 0 },
       { s: 'box', c: [0, 0.1, 0], hs: [0.36, 0.025, 1.35], rd: 0.02, col: inside, k: 0 },
@@ -118,6 +155,16 @@ function shipModels(defs) {
       { s: 'ell', c: [-0.68, 0.41, -1.22], rr: [0.18, 0.025, 0.1], col: woodL, k: 0.02 },
       { s: 'sph', c: [0.12, 0.2, 1.3], r: 0.1, col: C('#7a4a26'), k: 0 },
       ...[0, 1, 2].map(i => ({ s: 'cap', a: [-0.12 + i * 0.05, 0.16, 1.15], b: [-0.2 + i * 0.07, 0.24, 1.38], r: 0.035, col: C('#ffd84a'), k: 0.02 })),
+      // rope lashings where the booms meet the hull, a woven mat on the floor, a rolled mat at the stern
+      ...[0.75, -0.75].map(z => ({ s: 'tor', ax: 'x', c: [0.36, 0.4, z], R: 0.07, r: 0.022, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 })),
+      ...[-0.9, -0.55, -0.2, 0.15, 0.5].map(z => ({ s: 'box', c: [0, 0.13, z], hs: [0.3, 0.012, 0.07], rd: 0.008, col: C('#e8c87a'), k: 0 })),
+      { s: 'cap', a: [-0.26, 0.24, -1.45], b: [0.26, 0.24, -1.45], r: 0.09, col: C('#d8b860'), k: 0 },
+      ...[-0.14, 0.14].map(x => ({ s: 'tor', ax: 'x', c: [x, 0.24, -1.45], R: 0.09, r: 0.016, a0: -Math.PI, a1: Math.PI, col: C('#8a5a30'), k: 0 })),
+      // a fishing rod leaned over the stern with its line and a red and white bobber
+      { s: 'cap', a: [-0.3, 0.3, -0.95], b: [-0.95, 1.05, -1.95], r: 0.022, r2: 0.012, col: woodD, k: 0 },
+      { s: 'sph', c: [-0.38, 0.39, -1.07], r: 0.04, col: C('#5a6270'), k: 0 },
+      { s: 'cap', a: [-0.95, 1.05, -1.95], b: [-1.05, 0.08, -2.25], r: 0.008, col: C('#f4f4f4'), k: 0 },
+      { s: 'sph', c: [-1.05, 0.06, -2.25], r: 0.05, col: C('#ff4a3a'), k: 0 }, { s: 'sph', c: [-1.05, 0.11, -2.25], r: 0.032, col: white, k: 0 },
     ];
     ship('canoe', p, 2.1, -0.6, 0.6, { piv: 0.2 });
   }
@@ -125,7 +172,7 @@ function shipModels(defs) {
   // ---------- the pirate sloop: a warm brown hull with a yellow band, gun ports, a little stern castle with lit
   // windows and a lantern, a bowsprit; one mast with a square sail and the goo flag (rig mesh) ----------
   {
-    const o = { len: 5.6, wid: 2.1, top: 0.62, bot: -0.25, col: C('#8a5530'), deck: C('#d8a868'), bands: [[0.48, 0.06, C('#f0c040')], [0.22, 0.05, C('#5a3420')]] };
+    const o = { len: 5.6, wid: 2.1, top: 0.62, bot: -0.25, col: C('#8a5530'), deck: C('#d8a868'), bands: [[0.48, 0.06, C('#f0c040')], [0.22, 0.05, C('#5a3420')], [0.36, 0.022, C('#6a3e22')], [0.1, 0.022, C('#6a3e22')]] };
     const p = [
       ...hull(o),
       ...rail(o, 0.62, 0.2, 0.045, C('#5e3a20')),
@@ -143,6 +190,13 @@ function shipModels(defs) {
       ...[[0.62, 1.4], [0.62, 1.05], [-0.6, 1.25]].map(([x, z]) => ({ s: 'cyl', ax: 'y', c: [x, 0.8, z], r: 0.16, hh: 0.18, rd: 0.05, col: C('#9a6a3a'), k: 0 })),
       ...[[0.62, 1.4], [0.62, 1.05], [-0.6, 1.25]].map(([x, z]) => ({ s: 'tor', ax: 'y', c: [x, 0.84, z], R: 0.16, r: 0.018, a0: -Math.PI, a1: Math.PI, col: C('#4a3a30'), k: 0 })),
       { s: 'tor', ax: 'y', c: [-0.55, 0.66, -0.4], R: 0.16, r: 0.05, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 },
+      // cannon muzzles out of the ports, the anchors at the bow, the wheel before the castle, a skull over the
+      // stern windows and the rudder
+      ...[-1, 1].flatMap(sx => [-0.9, 0.2, 1.3].map(z => { const w = 1.05 * Math.sqrt(Math.max(0, 1 - ((z + 0.28) / 2.52) ** 2)); return { s: 'cap', a: [sx * (w - 0.04), 0.4, z], b: [sx * (w + 0.13), 0.4, z], r: 0.045, col: iron, k: 0 }; })),
+      ...anchor(o, 2.0, 0.34, 0.7, iron),
+      ...wheel(0, 1.0, -1.62, 0.19, woodD, gold),
+      { s: 'sph', c: [0, 1.26, -2.6], r: 0.085, col: cream, k: 0 }, ...[-0.03, 0.03].map(x => ({ s: 'sph', c: [x, 1.28, -2.67], r: 0.022, col: dark, k: 0 })),
+      rudder(o, 0.85, woodD),
     ];
     ship('sloop', p, 2.8, -0.9, 1.0, { piv: 0.4 });
     const sail = C('#f4e8cc'), sailB = C('#d8323c');
@@ -165,13 +219,14 @@ function shipModels(defs) {
       // stays to the bow and stern
       { s: 'cap', a: [0, 3.6, 0.6], b: [0, 1.15, 3.3], r: 0.032, col: rope, k: 0 },
       { s: 'cap', a: [0, 3.6, 0.6], b: [0, 1.36, -2.5], r: 0.032, col: rope, k: 0 },
+      ...shrouds(0.6, 3.0, 0.82, 0.96, rope),
     ], 2.8);
   }
 
   // ---------- the black galleon: dark timbers with red and gold trim, a two-tier stern castle glowing orange,
   // a row of cannon muzzles each side; two masts with tattered black sails and a skull (rig mesh) ----------
   {
-    const o = { len: 7.6, wid: 2.7, top: 0.85, bot: -0.3, col: C('#3e2a22'), deck: C('#6e5038'), bands: [[0.68, 0.06, C('#e0b048')], [0.5, 0.07, C('#a8242c')]] };
+    const o = { len: 7.6, wid: 2.7, top: 0.85, bot: -0.3, col: C('#3e2a22'), deck: C('#6e5038'), bands: [[0.68, 0.06, C('#e0b048')], [0.5, 0.07, C('#a8242c')], [0.36, 0.025, C('#2a1c16')], [0.18, 0.025, C('#2a1c16')]] };
     const p = [
       ...hull(o),
       ...rail(o, 0.85, 0.24, 0.055, C('#2a1c16')),
@@ -188,6 +243,12 @@ function shipModels(defs) {
       { s: 'cap', a: [0, 0.95, 3.4], b: [0, 1.45, 4.5], r: 0.09, r2: 0.05, col: C('#2a1c16'), k: 0 },
       // a big lantern at the bow
       { s: 'cap', a: [0, 0.85, 3.1], b: [0, 1.4, 3.1], r: 0.035, col: dark, k: 0 }, { s: 'sph', c: [0, 1.46, 3.1], r: 0.11, col: C('#ffb04a'), k: 0 },
+      // a skull on the prow, the anchors, the wheel before the castle, gilded corner posts and the rudder
+      { s: 'sph', c: [0, 0.86, 3.74], r: 0.17, col: cream, k: 0 }, ...[-0.065, 0.065].map(x => ({ s: 'sph', c: [x, 0.9, 3.88], r: 0.045, col: dark, k: 0 })),
+      ...anchor(o, 2.75, 0.5, 0.95, iron),
+      ...wheel(0, 1.42, -2.16, 0.24, C('#5a3a26'), gold),
+      ...[-1.1, 1.1].map(x => ({ s: 'cap', a: [x, 0.9, -3.58], b: [x, 1.84, -3.58], r: 0.045, col: gold, k: 0 })),
+      rudder(o, 1.0, C('#2a1c16')),
     ];
     ship('galleon', p, 3.8, -1.3, 1.2, { piv: 0.5 });
     const sail = C('#2c2832'), mastC = C('#2a1c16');
@@ -210,6 +271,7 @@ function shipModels(defs) {
       { s: 'box', c: [0.0, 5.25, -0.95], hs: [0.02, 0.15, 0.36], rd: 0.01, col: C('#a8242c'), k: 0 },
       { s: 'cap', a: [0, 4.9, -0.6], b: [0, 1.45, 4.4], r: 0.036, col: rope, k: 0 },
       { s: 'cap', a: [0, 4.9, -0.6], b: [0, 2.15, -3.4], r: 0.036, col: rope, k: 0 },
+      ...shrouds(-0.6, 4.3, 1.09, 1.25, rope, 4), ...shrouds(1.7, 3.5, 1.09, 1.1, rope),
     ], 3.8);
   }
 
@@ -220,7 +282,7 @@ function shipModels(defs) {
     const steel = C('#d8e0e8');
     const p = [
       ...hull(o),
-      ...rail(o, 1.0, 0.3, 0.055, steel, false),
+      ...rail(o, 1.0, 0.3, 0.055, steel),
       { s: 'box', c: [0, 1.45, -1.3], hs: [1.15, 0.45, 2.1], rd: 0.35, col: white, k: 0 },
       { s: 'box', c: [0, 1.55, -1.3], hs: [1.17, 0.15, 1.95], rd: 0.14, col: C('#1a2638'), k: 0 },
       { s: 'box', c: [0, 2.05, -1.8], hs: [0.9, 0.16, 1.2], rd: 0.12, col: white, k: 0 },
@@ -233,6 +295,15 @@ function shipModels(defs) {
       // the swim platform and a life ring
       { s: 'box', c: [0, 0.42, -4.45], hs: [1.1, 0.06, 0.32], rd: 0.04, col: C('#c99a62'), k: 0 },
       ...Array.from({ length: 6 }, (_, i) => ({ s: 'tor', ax: 'z', c: [0, 1.45, -3.42], R: 0.24, r: 0.07, a0: (i / 6) * TAU - Math.PI, a1: ((i + 1) / 6) * TAU - Math.PI + 0.03, col: i % 2 ? white : C('#ff6a2a'), k: 0 })),
+      // red and green running lights, an open radar bar and two whip aerials on the arch, steel anchors,
+      // a little red jet ski on the swim platform and an ensign at the stern
+      ...[-1, 1].map(sx => ({ s: 'sph', c: [sx * 1.12, 1.78, 0.72], r: 0.065, col: C(sx > 0 ? '#3ad86a' : '#ff3a3a'), k: 0 })),
+      { s: 'cap', a: [0, 3.12, -2.45], b: [0, 3.24, -2.45], r: 0.04, col: white, k: 0 }, { s: 'box', c: [0, 3.28, -2.45], hs: [0.42, 0.03, 0.05], rd: 0.02, col: C('#1a2638'), k: 0 },
+      ...[-1, 1].map(sx => ({ s: 'cap', a: [sx * 0.55, 2.86, -2.45], b: [sx * 0.62, 3.75, -2.55], r: 0.022, r2: 0.012, col: white, k: 0 })),
+      ...anchor(o, 3.6, 0.72, 0.6, C('#c8d0d8')),
+      { s: 'ell', c: [0.55, 0.6, -4.45], rr: [0.42, 0.11, 0.19], col: C('#ff3a4a'), k: 0 }, { s: 'ell', c: [0.45, 0.7, -4.45], rr: [0.17, 0.06, 0.11], col: dark, k: 0.02 },
+      { s: 'cap', a: [0.78, 0.74, -4.6], b: [0.78, 0.74, -4.3], r: 0.025, col: dark, k: 0 },
+      { s: 'cap', a: [0, 1.0, -4.15], b: [0, 1.95, -4.3], r: 0.025, col: steel, k: 0 }, { s: 'box', c: [0, 1.78, -4.5], hs: [0.012, 0.13, 0.2], rd: 0.008, col: C('#1d3a6e'), k: 0 },
     ];
     ship('yacht', p, 4.7, -1.6, 1.6, { piv: 0.6 });
   }
@@ -263,6 +334,18 @@ function shipModels(defs) {
       { s: 'ell', c: [0, 3.4, -3.3], rr: [0.55, 0.7, 0.8], col: C('#e0283a'), k: 0 },
       { s: 'box', c: [0, 2.6, -3.3], hs: [0.6, 0.12, 0.85], rd: 0.1, col: C('#e0283a'), k: 0.15 },
       { s: 'ell', c: [0, 3.95, -3.35], rr: [0.48, 0.2, 0.7], col: C('#1e2230'), k: 0.05 },
+      // a white band and a gold star on the funnel, a lower row of portholes, balcony dividers down both cabin
+      // decks, davits over the lifeboats, a mast and two satellite domes on the bridge, anchors at the bow
+      { s: 'ell', c: [0, 3.55, -3.31], rr: [0.57, 0.09, 0.82], col: white, k: 0 },
+      ...[-1, 1].map(sx => ({ s: 'sph', c: [sx * 0.5, 3.3, -3.3], r: 0.1, col: gold, k: 0 })),
+      ...portholes(o, 0.72, Array.from({ length: 10 }, (_, i) => -4.35 + i * 0.95), 0.055, win, C('#d8e0e8')),
+      ...[-1, 1].flatMap(sx => Array.from({ length: 15 }, (_, i) => ({ s: 'box', c: [sx * 1.635, 1.82, -4.6 + i * 0.56], hs: [0.025, 0.11, 0.025], rd: 0.01, col: white, k: 0 }))),
+      ...[-1, 1].flatMap(sx => Array.from({ length: 12 }, (_, i) => ({ s: 'box', c: [sx * 1.355, 2.5, -4.1 + i * 0.56], hs: [0.025, 0.09, 0.025], rd: 0.01, col: white, k: 0 }))),
+      ...[-1, 1].flatMap(sx => [-3.4, -1.9, -0.4, 1.1].flatMap(z => [-0.32, 0.32].map(dz => ({ s: 'cap', a: [sx * 1.42, 2.0, z + dz], b: [sx * 1.72, 2.32, z + dz], r: 0.028, col: C('#c8d0d8'), k: 0 })))),
+      { s: 'cap', a: [0, 2.77, 2.4], b: [0, 3.9, 2.4], r: 0.05, r2: 0.035, col: white, k: 0 }, { s: 'cap', a: [-0.4, 3.6, 2.4], b: [0.4, 3.6, 2.4], r: 0.03, col: white, k: 0 },
+      { s: 'sph', c: [0, 3.95, 2.4], r: 0.07, col: C('#ff4a3a'), k: 0 },
+      ...[-1, 1].map(sx => ({ s: 'sph', c: [sx * 0.6, 2.88, 2.62], r: 0.15, col: white, k: 0 })),
+      ...anchor(o, 5.2, 0.95, 0.85, iron),
     ];
     ship('cruise', p, 6, -2.0, 2.0, { piv: 1.0, ao: 0.4 });
   }
@@ -299,6 +382,16 @@ function shipModels(defs) {
         { s: 'cap', a: [-sx * 0.4, 4.2, z + 0.6], b: [-sx * 0.4, 3.6, z + 0.6], r: 0.05, col: dark, k: 0 }]; }),
       // the bow's mooring bitts
       ...[-0.6, 0.6].map(x => ({ s: 'cyl', ax: 'y', c: [x, 1.55, 6.2], r: 0.12, hh: 0.15, rd: 0.04, col: C('#1e2230'), k: 0 })),
+      // white draft marks at bow and stern, anchors, bridge wings with windows, life rings on the bridge front,
+      // the orange freefall lifeboat on its ramp at the stern, and a mast with a light on the bow
+      ...[-1, 1].flatMap(sx => [6.0, -6.4].flatMap(z => [0.42, 0.62, 0.82, 1.02].map(y => ({ s: 'box', c: [sx * (sideX(o, y, z) + 0.005), y, z], hs: [0.02, 0.035, 0.09], rd: 0.01, col: C('#f4f4f4'), k: 0 })))),
+      ...anchor(o, 6.0, 1.0, 1.0, iron),
+      ...[-1, 1].flatMap(sx => [{ s: 'box', c: [sx * 2.05, 3.5, -5.2], hs: [0.32, 0.13, 0.32], rd: 0.05, col: C('#f6f8fb'), k: 0 }, { s: 'box', c: [sx * 2.05, 3.55, -4.87], hs: [0.26, 0.06, 0.02], rd: 0.02, col: C('#1a2638'), k: 0 }]),
+      ...[-1, 1].flatMap(sx => lifeRing([sx * 1.2, 2.35, -4.74], 0.15, 'z')),
+      { s: 'box', c: [0, 1.75, -6.8], hs: [0.5, 0.06, 0.6], rd: 0.03, col: C('#5a6270'), k: 0 },
+      { s: 'cap', a: [0, 2.15, -6.45], b: [0, 1.85, -7.25], r: 0.3, r2: 0.22, col: C('#ff7a1a'), k: 0 },
+      { s: 'box', c: [0, 2.3, -6.6], hs: [0.16, 0.05, 0.14], rd: 0.03, col: C('#1a2638'), k: 0 },
+      { s: 'cap', a: [0, 1.4, 6.6], b: [0, 2.7, 6.6], r: 0.06, r2: 0.04, col: C('#f4f4f4'), k: 0 }, { s: 'sph', c: [0, 2.78, 6.6], r: 0.08, col: glowY, k: 0 },
     ];
     ship('cargo', p, 7.25, -2.4, 2.4, { piv: 1.0, ao: 0.4 });
   }
@@ -306,7 +399,7 @@ function shipModels(defs) {
   // ---------- the battleship: a long grey hull with a red waterline, three twin-gun turrets (the second raised to
   // fire over the first), a stepped bridge tower with a radar mast, a funnel, and little guns along the sides ----------
   {
-    const o = { len: 16.5, wid: 3.7, top: 1.5, bot: -0.3, col: C('#7a8494'), deck: C('#b0956a'), bands: [[0.1, 0.25, C('#a8282c')], [1.3, 0.05, C('#5a6270')]] };
+    const o = { len: 16.5, wid: 3.7, top: 1.5, bot: -0.3, col: C('#7a8494'), deck: C('#b0956a'), bands: [[0.1, 0.25, C('#a8282c')], [1.3, 0.05, C('#5a6270')], [0.38, 0.025, C('#e8ecf0')]] };
     const grey = C('#8a94a4'), greyD = C('#5a6270'), greyL = C('#b4bcc8');
     const turret = (z, y, back) => { const d = back ? -1 : 1; return [
       { s: 'cyl', ax: 'y', c: [0, y + 0.12, z], r: 0.95, hh: 0.14, rd: 0.05, col: greyD, k: 0 },
@@ -336,6 +429,16 @@ function shipModels(defs) {
       ...[-1, 1].flatMap(sx => [-3.2, -2.4, 2.4].map(z => ({ s: 'cap', a: [sx * 1.4, 1.75, z], b: [sx * 1.75, 1.9, z + 0.5], r: 0.06, col: greyD, k: 0 }))),
       ...[-1, 1].map(sx => ({ s: 'cap', a: [sx * 1.25, 2.95, -0.6], b: [sx * 1.25, 2.95, 0.8], r: 0.2, col: C('#e8ecf0'), k: 0 })),
       { s: 'cap', a: [0, 1.6, -7.6], b: [0, 2.8, -7.6], r: 0.04, col: greyD, k: 0 }, { s: 'box', c: [0, 2.6, -7.95], hs: [0.02, 0.18, 0.32], rd: 0.01, col: C('#2a5ad8'), k: 0 },
+      // a row of portholes, the anchors, twin AA guns on the bridge's front corners, searchlights and a
+      // rangefinder up top
+      ...portholes(o, 1.0, Array.from({ length: 12 }, (_, i) => -6.0 + i * 1.1), 0.06, C('#1a2638'), greyD),
+      ...anchor(o, 6.9, 1.0, 1.0, iron),
+      ...[-1, 1].flatMap(sx => [
+        { s: 'cyl', ax: 'y', c: [sx * 1.3, 2.86, 1.8], r: 0.2, hh: 0.07, rd: 0.03, col: greyD, k: 0 },
+        { s: 'sph', c: [sx * 1.3, 2.98, 1.8], r: 0.12, col: grey, k: 0 },
+        ...[-0.06, 0.06].map(dx => ({ s: 'cap', a: [sx * 1.3 + dx, 3.0, 1.85], b: [sx * 1.3 + dx, 3.12, 2.35], r: 0.025, col: iron, k: 0 }))]),
+      ...[-1, 1].map(sx => ({ s: 'sph', c: [sx * 0.95, 3.6, 1.3], r: 0.1, col: C('#fff6c8'), k: 0 })),
+      { s: 'cap', a: [-0.55, 4.08, 1.1], b: [0.55, 4.08, 1.1], r: 0.07, col: greyD, k: 0 }, { s: 'box', c: [0, 4.04, 1.1], hs: [0.15, 0.06, 0.12], rd: 0.03, col: greyD, k: 0 },
     ];
     ship('battleship', p, 8.25, -2.7, 2.7, { piv: 1.0, ao: 0.4 });
   }
@@ -373,6 +476,15 @@ function shipModels(defs) {
       { s: 'cap', a: [1.6, 3.35, -4.1], b: [1.6, 3.5, -5.0], r: 0.08, r2: 0.04, col: C('#3a5a3a'), k: 0 },
       { s: 'cap', a: [0.5, 3.75, -3.6], b: [2.7, 3.75, -3.6], r: 0.03, col: C('#2a2e38'), k: 0 },
       { s: 'cap', a: [1.6, 3.75, -4.7], b: [1.6, 3.75, -2.5], r: 0.03, col: C('#2a2e38'), k: 0 },
+      // arrestor wires over the stern, two catapult tracks and their blast shields at the bow, an elevator outlined
+      // in yellow, hangar bays open in the hull sides, the anchors, and the deck crew in colored vests
+      ...[-4.4, -5.0, -5.6, -6.2].map(z => ({ s: 'box', c: [0.3, 2.885, z], hs: [1.9, 0.01, 0.025], rd: 0.008, col: line, k: 0 })),
+      ...[-0.6, 0.9].flatMap(x => [{ s: 'box', c: [x, 2.885, 6.0], hs: [0.03, 0.01, 2.8], rd: 0.01, col: C('#2a2e34'), k: 0 }, { s: 'box', c: [x, 3.0, 3.0], hs: [0.42, 0.12, 0.035], rd: 0.02, col: C('#9aa0a8'), k: 0 }]),
+      ...[[2.3, -0.95, 0.75, 0.025], [2.3, -2.25, 0.75, 0.025], [1.55, -1.6, 0.025, 0.65], [3.05, -1.6, 0.025, 0.65]].map(([x, z, w, l]) => ({ s: 'box', c: [x, 2.885, z], hs: [w, 0.01, l], rd: 0.008, col: yel, k: 0 })),
+      ...[-1, 1].flatMap(sx => [3.0, -1.0, -5.0].map(z => ({ s: 'box', c: [sx * (sideX(o, 1.6, z) - 0.02), 1.6, z], hs: [0.05, 0.28, 0.75], rd: 0.04, col: C('#2a2e34'), k: 0 }))),
+      ...anchor(o, 8.0, 1.5, 1.1, iron),
+      ...[[1.0, 7.0, '#ffd34a'], [1.2, 1.5, '#3ac86a'], [-0.4, -4.4, '#ff4a3a'], [2.7, -6.2, '#2f8bff'], [-0.2, 1.4, '#ffd34a'], [2.9, 4.6, '#b05ae8']].flatMap(([x, z, c]) => [
+        { s: 'cap', a: [x, 2.95, z], b: [x, 3.2, z], r: 0.085, col: C(c), k: 0 }, { s: 'sph', c: [x, 3.3, z], r: 0.075, col: C('#f4f4f0'), k: 0 }]),
     ];
     ship('carrier', p, 9.5, -3.1, 3.1, { piv: 1.2, ao: 0.35 });
   }
@@ -400,6 +512,16 @@ function shipModels(defs) {
       { s: 'cap', a: [0, 2.7, 10.85], b: [0, 2.1, 10.5], r: 0.22, r2: 0.3, col: C('#fff4dc'), k: 0.1 },
       ...[-1, 1].map(sx => ({ s: 'ell', c: [sx * 0.55, 2.75, 10.4], rr: [0.6, 0.35, 0.12], col: gold, k: 0.05 })),
       { s: 'tor', ax: 'y', c: [0, 3.3, 11.0], R: 0.2, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#ffe86a'), k: 0 },
+      // gilded wave scrolls down the sides, gem portholes in gold rims, golden capitals and bases on the columns,
+      // golden anchors, a golden rudder and a great lantern at the stern
+      ...[-1, 1].flatMap(sx => Array.from({ length: 9 }, (_, i) => { const z = -7.2 + i * 1.8; return { s: 'tor', ax: 'x', c: [sx * (sideX(o, 1.38, z) + 0.01), 1.3, z], R: 0.24, r: 0.05, a0: 0.25, a1: Math.PI - 0.25, col: gold, k: 0 }; })),
+      ...portholes(o, 0.72, Array.from({ length: 7 }, (_, i) => -6.0 + i * 2.0), 0.13, gem, gold),
+      ...[-1.6, -0.55, 0.55, 1.6].flatMap(x => [-7.6, -3.6].flatMap(z => [{ s: 'box', c: [x, 4.12, z], hs: [0.27, 0.06, 0.27], rd: 0.03, col: gold, k: 0 }, { s: 'box', c: [x, 2.62, z], hs: [0.26, 0.05, 0.26], rd: 0.03, col: gold, k: 0 }])),
+      ...anchor(o, 8.2, 1.3, 1.3, gold),
+      rudder(o, 1.6, gold),
+      { s: 'cap', a: [0, 2.0, -9.2], b: [0, 3.2, -9.2], r: 0.07, col: gold, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 3.45, -9.2], r: 0.2, hh: 0.24, rd: 0.06, col: glowY, k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 3.72, -9.2], r: 0.24, hh: 0.04, rd: 0.02, col: gold, k: 0 }, { s: 'sph', c: [0, 3.86, -9.2], r: 0.09, col: gold, k: 0 },
     ];
     ship('ark', p, 10.5, -3.4, 3.4, { piv: 1.0, ao: 0.4 });
     const sailW = C('#fffaf0'), mastG = C('#c8962a');
@@ -414,6 +536,7 @@ function shipModels(defs) {
       { s: 'box', c: [0, 8.6, 0.45], hs: [0.03, 0.3, 0.55], rd: 0.02, col: C('#2a8ad8'), k: 0 },
       { s: 'cap', a: [0, 8.3, 0.8], b: [0, 2.6, 10.6], r: 0.05, col: gold, k: 0 },
       { s: 'cap', a: [0, 8.3, 0.8], b: [0, 4.5, -7.6], r: 0.05, col: gold, k: 0 },
+      ...shrouds(0.8, 7.4, 2.32, 2.6, gold, 4),
     ], 10.5);
   }
 

@@ -62,8 +62,9 @@ function seaModels(defs) {
       { s: 'cyl', ax: 'z', c: [x, 0.02, z0 + len - 0.005], r: 0.118, hh: 0.012, rd: 0.004, col: C('#e8c690'), k: 0 },
       { s: 'cyl', ax: 'z', c: [x, 0.02, z0 - len + 0.005], r: 0.118, hh: 0.012, rd: 0.004, col: C('#e8c690'), k: 0 },
       { s: 'sph', c: [x, 0.02, z0 + len + 0.004], r: 0.03, col: woodD, k: 0 }, { s: 'sph', c: [x, 0.02, z0 - len - 0.004], r: 0.03, col: woodD, k: 0 },
-      // a knot or two on top
+      // a knot or two on top, and rough rings of bark near both ends
       { s: 'ell', c: [x + 0.04, 0.165, z0 + 0.3 - (i % 3) * 0.35], rr: [0.035, 0.012, 0.045], col: bark, k: 0.01 },
+      ...[len - 0.16, -len + 0.2].map(dz => ({ s: 'tor', ax: 'z', c: [x, 0.02, z0 + dz], R: 0.15, r: 0.022, a0: -Math.PI, a1: Math.PI, col: bark, k: 0 })),
     ];
   };
   const beams = zz => zz.flatMap(z => [
