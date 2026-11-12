@@ -73,7 +73,11 @@ const slotIcon = id => GEAR_URL['slot-' + id] || (GEAR_URL['slot-' + id] = svgUr
 function gearStats(sv = G.save) {
   const out = {};
   const add = st => { if (st) for (const k in st) out[k] = (out[k] || 0) + st[k]; };
-  add((SKINS.find(s => s.id === sv.skin) || {}).boost);
+  const skin = SKINS.find(s => s.id === sv.skin) || {};
+  add(skin.boost);
+  // this color's own upgrades
+  const ups = (sv.blobUp || {})[sv.skin] || {};
+  for (const [k, per] of blobUps(skin)) if (ups[k]) add({ [k]: per * ups[k] });
   add((COSTUMES.find(c => c.id === sv.costume) || {}).boost);
   add((COSTUMES.find(c => c.id === sv.hat) || {}).boost);
   const g = sv.gear;
@@ -82,8 +86,8 @@ function gearStats(sv = G.save) {
 }
 // the attack and health numbers shown on the inventory screen
 function gearTotals(sv = G.save) {
-  const g = gearStats(sv), up = sv.upgrades;
-  return { atk: Math.round(100 * (1 + 0.03 * up.damage) * (1 + (g.dmg || 0) / 100)), hp: Math.round(140 * (1 + 0.05 * up.health) * (1 + (g.hp || 0) / 100)) };
+  const g = gearStats(sv);
+  return { atk: Math.round(100 * (1 + (g.dmg || 0) / 100)), hp: Math.round(140 * (1 + (g.hp || 0) / 100)) };
 }
 function rollArtifact() {
   const ids = Object.keys(ARTIFACTS), id = ids[Math.floor(Math.random() * ids.length)];
@@ -137,6 +141,13 @@ const STAT_SVG = {
 };
 const statIcon = k => `<svg class="sti" viewBox="0 0 24 24" fill="${STAT_SVG[k][0]}" aria-hidden="true">${STAT_SVG[k][1]}</svg>`;
 const statChips = st => Object.keys(st).map(k => `<span class="chip">${statIcon(k)}+${+st[k].toFixed(st[k] < 1 ? 2 : 1)}%</span>`).join('');
+// what an artifact sells for, by rarity (small on purpose)
+const SELL_PRICE = [5, 12, 30, 60, 120, 300];
+// can any of the worn color's upgrades be bought right now?
+function blobUpAffordable(sv = G.save) {
+  const skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp || {})[sv.skin] || {};
+  return blobUps(skin).some(([k]) => (ups[k] || 0) < BLOB_UP_MAX && sv.coins >= blobUpCost(ups[k] || 0));
+}
 const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
 
 // ---------- screens ----------
@@ -149,6 +160,9 @@ Object.assign(UI, {
     $('gChest').addEventListener('click', () => { AUDIO.play('click'); this.openScrollChest(); });
     $('gFuse').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(null, 'fuse'); });
     $('gMythic').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(null, 'mythic'); });
+    $('gUpgrade').addEventListener('click', () => { AUDIO.play('click'); this.openBlobUp(); });
+    $('buClose').addEventListener('click', () => { AUDIO.play('click'); this.show('blobUp', false); this.renderGear(); });
+    $('gSell').addEventListener('click', () => { AUDIO.play('click'); this.selling = !this.selling; this.renderGear(); });
     $('fuseRow').addEventListener('click', e => {
       const b = e.target.closest('.fslot[data-i]');
       if (!b) return;
@@ -224,8 +238,54 @@ Object.assign(UI, {
     $('gearGrid').replaceChildren(...this.sortedArtKeys().map(k => {
       const { r, def } = artParse(k), worn = g.eq[def.slot] === k;
       const b = this.artButton(k, g.items[k], `${worn ? ' worn' : ''}${g.items[k] >= fuseNeed(r) && r < MYTHIC ? ' fusable' : ''}`);
-      b.addEventListener('click', () => { AUDIO.play('click'); this.openArtifact(k); });
+      // in sell mode a tap sells one copy (the price shows on each item)
+      if (this.selling) { const p = document.createElement('span'); p.className = 'price'; p.textContent = SELL_PRICE[r]; b.append(p); }
+      b.addEventListener('click', () => { AUDIO.play('click'); if (this.selling) this.sellOne(k); else this.openArtifact(k); });
       return b;
+    }));
+    $('gearGrid').classList.toggle('selling', !!this.selling);
+    $('gSell').textContent = this.selling ? 'DONE' : 'SELL'; $('gSellHint').hidden = !this.selling;
+    $('gUpgrade').querySelector('.dot').hidden = !blobUpAffordable();
+  },
+  // sell one copy of an artifact (an equipped last copy comes off first)
+  sellOne(k) {
+    const g = G.save.gear, { r, def } = artParse(k);
+    if (!(g.items[k] > 0)) return;
+    g.items[k]--;
+    if (g.items[k] <= 0) { delete g.items[k]; if (g.eq[def.slot] === k) g.eq[def.slot] = null; }
+    G.save.coins += SELL_PRICE[r];
+    saveGame(); AUDIO.play('coin');
+    this.toast(`Sold ${RARITIES[r].name} ${def.name} for ${SELL_PRICE[r]} coins`);
+    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(G.save.coins); });
+    this.renderGear();
+  },
+  // ---------- the blob's own upgrades (Gear > Upgrade) ----------
+  openBlobUp() { this.renderBlobUp(); this.show('blobUp', true); },
+  renderBlobUp() {
+    const sv = G.save, skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp[sv.skin] = sv.blobUp[sv.skin] || {});
+    $('buTitle').textContent = skin.name.toUpperCase();
+    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    $('buList').replaceChildren(...blobUps(skin).map(([k, per]) => {
+      const lvl = ups[k] || 0, cost = blobUpCost(lvl), maxed = lvl >= BLOB_UP_MAX, row = document.createElement('div');
+      row.className = 'panel bu-row';
+      row.innerHTML = `<span class="ic"></span><span><span class="nm"></span><span class="ds"></span><span class="bu-pips"></span></span><button class="jelly gold"></button>`;
+      row.querySelector('.ic').textContent = STAT_INFO[k].short;
+      row.querySelector('.nm').textContent = STAT_INFO[k].name.replace(/^./, c => c.toUpperCase());
+      row.querySelector('.ds').textContent = `+${+(per * lvl).toFixed(2)}% now · +${per}% a level · Lv ${lvl}/${BLOB_UP_MAX}`;
+      row.querySelector('.bu-pips').innerHTML = Array.from({ length: BLOB_UP_MAX }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');
+      const b = row.querySelector('button');
+      if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
+      else {
+        b.innerHTML = `<i class="coin"></i><span></span>`; b.querySelector('span').textContent = fmtNum(cost);
+        b.disabled = sv.coins < cost;
+        b.addEventListener('click', () => {
+          if (sv.coins < cost || (ups[k] || 0) >= BLOB_UP_MAX) return;
+          sv.coins -= cost; ups[k] = (ups[k] || 0) + 1; saveGame();
+          AUDIO.play('coin'); G.hero.impulse(1.4);
+          this.renderBlobUp(); this.refreshBadges && this.refreshBadges();
+        });
+      }
+      return row;
     }));
   },
   sortedArtKeys() {

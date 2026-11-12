@@ -119,6 +119,22 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 @keyframes tabnudge { 50% { transform: translateX(4px); } }
 @keyframes tabnudgeL { 50% { transform: translateX(-4px); } }
 #home { position: relative; }
+/* gear: the blob's Upgrade button under it, the upgrade window, the sell mode */
+.blobup-btn { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 2; min-height: 48px; padding-inline: 26px; font-size: 20px; }
+.blobup-btn .dot { position: absolute; right: -6px; top: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px #fff; }
+.bu-sub { text-align: center; margin: -4px 0 4px; font-size: 16px; }
+.bu-list { display: grid; gap: 10px; }
+.bu-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; }
+.bu-row .ic { width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center; font: 800 15px/1 var(--font); color: #fff; background: linear-gradient(180deg, #8ad8ff, #2f8ff0); box-shadow: inset 0 -4px 0 rgba(0,0,0,.15); }
+.bu-row .nm { display: block; font-size: 21px; font-weight: 700; color: var(--ink); }
+.bu-row .ds { display: block; font-size: 15px; color: var(--ink-2, #5a6a8a); }
+.bu-row .jelly { min-width: 104px; font-size: 18px; }
+.bu-pips { display: flex; gap: 2px; margin-top: 4px; }
+.bu-pips i { flex: 1; height: 7px; border-radius: 3px; background: #d6e4f6; }
+.bu-pips i.on { background: var(--gold); }
+#gearGrid.selling .art { outline: 3px dashed var(--red); outline-offset: -3px; }
+#gearGrid .price { position: absolute; left: 4px; bottom: 4px; font: 800 13px/1 var(--font); color: #fff; background: var(--red); border-radius: 8px; padding: 3px 6px; }
+.sell-hint { margin: 6px 0 0; text-align: center; font-size: 15px; color: var(--red); font-weight: 700; }
 #home.sea .modes { display: none; }
 #btnPlay.sail { text-shadow: 0 2px 0 rgba(0, 70, 120, 0.6); background: linear-gradient(180deg, #8ff2f6 0%, #2fc4e8 52%, #1aa6d8 100%); box-shadow: inset 0 -7px 0 #0f7fb0, inset 0 3px 0 rgba(255,255,255,.5), 0 5px 0 #0b5f88, 0 10px 22px rgba(0,60,120,.3); }
 .home-stage { grid-area: stage; position: relative; min-height: 120px; cursor: grab; touch-action: none; }
@@ -546,7 +562,6 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <button class="jelly gold big" id="btnPlay">PLAY</button>
       <div class="modes"><button class="jelly violet" id="btnEndless" hidden>ENDLESS</button><button class="jelly danger" id="btnRush" hidden>BOSS RUSH</button></div>
       <nav class="mgrid" aria-label="Menu">
-        <button class="tab mbtn" data-tab="upgrades"><span class="ic up"><i class="dot" hidden></i><img alt="" data-icon="meta-damage"></span><span class="lb">Upgrades</span></button>
         <button class="tab mbtn" data-tab="gear"><span class="ic gr"><i class="dot" hidden></i><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
         <button class="tab mbtn" data-tab="skins"><span class="ic bl"><i class="dot" hidden></i><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
         <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><i class="dot" hidden></i><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
@@ -555,12 +570,6 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
   </section>
 
-  <section id="upgrades" class="screen modal menu" hidden style="place-items:start center">
-    <div class="col" style="height:100%">
-      <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Upgrades</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
-      <div class="list" id="upList"></div>
-    </div>
-  </section>
 
   <section id="skins" class="screen" hidden>
     <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Choose your blob</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
@@ -578,11 +587,22 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <div class="eqw" data-slot="armor"><button class="eq" data-slot="armor"></button><button class="eye" data-slot="armor"></button></div>
       <div class="eqw" data-slot="ring"><button class="eq" data-slot="ring"></button><button class="eye" data-slot="ring"></button></div>
       <div class="eqw" data-slot="necklace"><button class="eq" data-slot="necklace"></button><button class="eye" data-slot="necklace"></button></div>
+      <button class="jelly gold blobup-btn" id="gUpgrade"><i class="dot" hidden></i>UPGRADE</button>
     </div>
     <div class="col panel gear-panel">
       <div class="gear-stats"><span><img alt="Attack" data-icon="g-atk"><b id="gAtk">100</b></span><span><img alt="Health" data-icon="g-heart"><b id="gHp">140</b></span></div>
-      <div class="gear-btns"><button class="jelly ghost" id="gSort">RARITY</button><button class="jelly gold" id="gChest"><img alt="" data-icon="gear">CHEST</button><button class="jelly violet" id="gFuse">FUSE</button><button class="jelly mythic" id="gMythic">MYTHIC</button></div>
+      <div class="gear-btns"><button class="jelly ghost" id="gSort">RARITY</button><button class="jelly gold" id="gChest"><img alt="" data-icon="gear">CHEST</button><button class="jelly violet" id="gFuse">FUSE</button><button class="jelly mythic" id="gMythic">MYTHIC</button><button class="jelly danger" id="gSell">SELL</button></div>
+      <p class="sell-hint" id="gSellHint" hidden>Tap an item to sell one for coins. Tap SELL again when you are done.</p>
       <div class="gear-grid" id="gearGrid"></div>
+    </div>
+  </section>
+
+  <section id="blobUp" class="screen modal menu" hidden>
+    <div class="modal-body">
+      <h1 class="title outline" id="buTitle">CLASSIC</h1>
+      <p class="dim bu-sub">Each color has its own upgrades, up to level 20.</p>
+      <div class="bu-list" id="buList"></div>
+      <div class="row-actions"><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div><button class="jelly ghost" id="buClose">Done</button></div>
     </div>
   </section>
 
@@ -672,7 +692,8 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <h1 class="title outline">PAUSED</h1>
       <p class="dim" style="text-align:center;margin:-6px 0 0" id="pauseSub"></p>
       <div class="pause-list" id="pauseList"></div>
-      <div class="row-actions" id="pauseActions"><button class="jelly" id="btnResume">Resume</button><button class="jelly ghost" id="btnPauseSettings">Settings</button><button class="jelly ghost" id="btnQuit">Quit run</button></div>
+      <div class="row-actions" id="pauseActions"><button class="jelly" id="btnResume">Resume</button><button class="jelly ghost" id="btnPauseSettings">Settings</button><button class="jelly ghost" id="btnRestart">Restart run</button><button class="jelly ghost" id="btnQuit">Quit run</button></div>
+      <div class="panel confirm" id="restartConfirm" hidden><span>Start this run over? What you picked up in it is lost.</span><div class="row-actions"><button class="jelly danger" id="btnRestartYes">Restart</button><button class="jelly ghost" id="btnRestartNo">Keep playing</button></div></div>
       <div class="panel confirm" id="quitConfirm" hidden><span>Quit this run? You keep the coins you picked up.</span><div class="row-actions"><button class="jelly danger" id="btnQuitYes">Quit</button><button class="jelly ghost" id="btnQuitNo">Keep playing</button></div></div>
     </div>
   </section>
@@ -14245,6 +14266,27 @@ const META_UPGRADES = {
   magnet: { name: 'Magnet', per: 5, unit: '% pickup radius', sym: '%', base: 100, growth: 1.22, max: META_MAX, icon: { type: 11, colw: 4 } },
 };
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
+// (META_UPGRADES are only icons now: the Upgrades tab is gone, replaced by each color's own upgrades below)
+
+// Blob upgrades: every body color has three stats of its own to upgrade (Gear > Upgrade), up to level 20,
+// percent per level (regen: percent of max health a second). The plain blue blob has the all-rounders; a
+// color that specializes (its boost) gets more of its own stat and less health.
+const BLOB_UP_MAX = 20;
+const BLOB_UPS = {
+  none: [['dmg', 2.5], ['hp', 4], ['armor', 1]],
+  dmg: [['dmg', 3.2], ['hp', 2.5], ['cd', 0.7]],
+  hp: [['hp', 5.5], ['armor', 1.1], ['dmg', 1.5]],
+  armor: [['armor', 1.5], ['hp', 3], ['dmg', 1.4]],
+  speed: [['speed', 1.6], ['dmg', 1.8], ['hp', 2]],
+  cd: [['cd', 1.3], ['dmg', 1.8], ['hp', 2.2]],
+  area: [['area', 1.8], ['dmg', 1.8], ['hp', 2.2]],
+  xp: [['xp', 2.5], ['dmg', 1.8], ['hp', 2.5]],
+  regen: [['regen', 0.012], ['hp', 3], ['armor', 0.8]],
+  magnet: [['magnet', 5], ['dmg', 1.8], ['hp', 2.5]],
+  gold: [['gold', 2.5], ['dmg', 1.8], ['hp', 2.5]],
+};
+const blobUps = skin => BLOB_UPS[(skin && skin.boost && Object.keys(skin.boost)[0]) || 'none'] || BLOB_UPS.none;
+const blobUpCost = lvl => Math.round(60 * Math.pow(1.16, lvl));
 
 // Body colors. "top" makes a two-tone gradient from the feet up. "boost" is a small stat bonus (see STAT_INFO).
 const SKINS = [
@@ -15194,15 +15236,15 @@ function evolveSkill(id) {
   UI.toast(`★ ${E.name}!`, 2);
 }
 function recomputeStats() {
-  const run = G.run, meta = G.save.upgrades, lv = lvlOf;
+  const run = G.run, lv = lvlOf;
   const oldMax = run.maxHp;
   if (run.sea) { seaStats(run); return oldMax; }
   // skin, costume and artifact bonuses (percent), fixed for the run
   const gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
   run.stats = {
-    dmgMul: (1 + 0.05 * lv('power')) * (1 + 0.03 * meta.damage) * (1 + g('dmg')),
-    speedMul: (1 + 0.04 * lv('speed')) * (1 + 0.01 * meta.speed) * (1 + g('speed')),
-    magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + 0.05 * meta.magnet) * (1 + g('magnet')),
+    dmgMul: (1 + 0.05 * lv('power')) * (1 + g('dmg')),
+    speedMul: (1 + 0.04 * lv('speed')) * (1 + g('speed')),
+    magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + g('magnet')),
     armorMul: Math.pow(0.97, lv('armor')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('haste')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: (1 + 0.05 * lv('reach')) * (1 + g('area')),
@@ -15210,7 +15252,7 @@ function recomputeStats() {
     xpMul: (1 + 0.04 * lv('growth')) * (1 + g('xp')),
     regen: 0.002 * lv('regen') + g('regen'),
   };
-  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health) * (1 + g('hp'));
+  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = 1 + 0.01 * lv('thick');
@@ -23248,20 +23290,20 @@ function seaLeave() { const h = G.hero; if (h) { h.lounge = h.lng = 0; h.faceYaw
 // ---------- stats ----------
 // the sea's own upgrades in place of the land's passives (called by recomputeStats)
 function seaStats(run) {
-  const meta = G.save.upgrades, lv = lvlOf, gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
+  const lv = lvlOf, gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
   OC.stage = Math.max(0, lv('ship') - 1);
   const D = shipDef();
   run.stats = {
-    dmgMul: (1 + 0.03 * meta.damage) * (1 + g('dmg')),
-    speedMul: (1 + 0.05 * lv('propeller')) * (1 + 0.01 * meta.speed) * (1 + g('speed')),
-    magnet: (1.6 + D.len * 0.45) * (1 + 0.05 * meta.magnet) * (1 + g('magnet')),
+    dmgMul: 1 + g('dmg'),
+    speedMul: (1 + 0.05 * lv('propeller')) * (1 + g('speed')),
+    magnet: (1.6 + D.len * 0.45) * (1 + g('magnet')),
     armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: 1 + g('area'), extra: 0, xpMul: 1 + g('xp'),
     regen: 0.003 * lv('crew') + g('regen'),
     ramMul: 1 + 0.12 * lv('fort'),
   };
-  run.maxHp = 160 * (1 + D.hull) * (1 + 0.05 * meta.health) * (1 + g('hp'));
+  run.maxHp = 160 * (1 + D.hull) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = D.heroS; h.bubbles = 0; h.stretchMul = 1; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.topSpeed = 4.5;
@@ -25277,6 +25319,9 @@ const UI = {
     $('btnResume').addEventListener('click', () => resumeGame());
     $('btnPauseSettings').addEventListener('click', () => this.openSettings());
     $('btnQuit').addEventListener('click', () => { $('quitConfirm').hidden = false; $('pauseActions').hidden = true; });
+    $('btnRestart').addEventListener('click', () => { $('restartConfirm').hidden = false; $('pauseActions').hidden = true; });
+    $('btnRestartNo').addEventListener('click', () => { $('restartConfirm').hidden = true; $('pauseActions').hidden = false; });
+    $('btnRestartYes').addEventListener('click', () => { $('restartConfirm').hidden = true; $('pauseActions').hidden = false; restartRun(); });
     $('btnQuitNo').addEventListener('click', () => { $('quitConfirm').hidden = true; $('pauseActions').hidden = false; });
     $('btnQuitYes').addEventListener('click', () => { $('quitConfirm').hidden = true; $('pauseActions').hidden = false; finishRun(false); });
     $('btnReroll').addEventListener('click', () => this.reroll());
@@ -25332,10 +25377,9 @@ const UI = {
     const menu = s === 'home';
     this.show('loading', s === 'loading');
     this.show('home', menu && this.menuTab === 'home');
-    this.show('upgrades', menu && this.menuTab === 'upgrades');
     this.show('skins', menu && this.menuTab === 'skins');
     this.show('gear', menu && this.menuTab === 'gear');
-    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); this.show('fuseBox', false); }
+    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('blobUp', false); this.show('scrollChest', false); this.show('fuseBox', false); }
     this.show('chapters', menu && this.menuTab === 'chapters');
     this.show('goals', menu && this.menuTab === 'goals');
     const inRun = ['run', 'levelup', 'chest', 'pause', 'dying', 'revive', 'victory'].includes(s);
@@ -25358,7 +25402,6 @@ const UI = {
     if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-    if (tab === 'upgrades') this.renderUpgrades();
     if (tab === 'skins') this.renderSkins();
     if (tab === 'gear') this.renderGear();
     if (tab === 'chapters') this.renderChapters();
@@ -25454,8 +25497,7 @@ const UI = {
     const sv = G.save;
     const canBuy = list => list.some(s => s.cost > 0 && sv.coins >= s.cost);
     return {
-      upgrades: Object.keys(META_UPGRADES).some(id => (sv.upgrades[id] || 0) < META_UPGRADES[id].max && sv.coins >= upgradeCost(id, sv.upgrades[id] || 0)),
-      gear: sv.scrolls > 0 || canFuse() || canMythic(),
+      gear: sv.scrolls > 0 || canFuse() || canMythic() || blobUpAffordable(),
       skins: canBuy(SKINS.filter(s => !sv.skins.includes(s.id))) || canBuy(COSTUMES.filter(c => !sv.costumes.includes(c.id))),
       goals: goalsToClaim(sv) > 0,
     };
@@ -25473,35 +25515,6 @@ const UI = {
   },
 
   // ---------- upgrades ----------
-  renderUpgrades() {
-    const sv = G.save, list = $('upList');
-    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
-    list.replaceChildren(...Object.keys(META_UPGRADES).map(id => {
-      const u = META_UPGRADES[id], lvl = sv.upgrades[id] || 0, cost = upgradeCost(id, lvl), maxed = lvl >= u.max;
-      const row = document.createElement('div');
-      row.className = 'panel uprow';
-      row.innerHTML = `<span class="tile"><img alt=""></span><span><span class="nm"></span><span class="ds"></span></span><button class="jelly gold"></button>`;
-      row.querySelector('img').src = ICONS.get('meta-' + id);
-      row.querySelector('.nm').textContent = u.name;
-      row.querySelector('.ds').textContent = `Lv ${lvl} · +${fmtNum(u.per * lvl)}${u.sym}`;
-      const b = row.querySelector('button');
-      if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
-      else {
-        b.innerHTML = `<i class="coin"></i><span></span>`;
-        b.querySelector('span').textContent = fmtNum(cost);
-        b.disabled = sv.coins < cost;
-        b.addEventListener('click', () => {
-          if (sv.coins < cost) return;
-          sv.coins -= cost; sv.upgrades[id] = lvl + 1; saveGame();
-          AUDIO.play('coin'); this.toast(`${u.name} upgraded`);
-          this.renderUpgrades(); this.refreshHome();
-          G.hero.impulse(1.2);
-        });
-      }
-      return row;
-    }));
-  },
-
   // ---------- skins ----------
   skinIconsReady(keys) {
     document.querySelectorAll('#skinGrid img[data-hero-icon]').forEach(img => {
@@ -25827,7 +25840,7 @@ const UI = {
       d.querySelector('.dots').innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < s.lvl ? 'on' : ''}"></i>`).join('');
       return d;
     }));
-    $('quitConfirm').hidden = true; $('pauseActions').hidden = false;
+    $('quitConfirm').hidden = true; $('restartConfirm').hidden = true; $('pauseActions').hidden = false;
   },
   fillResults() {
     const run = G.run;
@@ -26102,7 +26115,11 @@ const slotIcon = id => GEAR_URL['slot-' + id] || (GEAR_URL['slot-' + id] = svgUr
 function gearStats(sv = G.save) {
   const out = {};
   const add = st => { if (st) for (const k in st) out[k] = (out[k] || 0) + st[k]; };
-  add((SKINS.find(s => s.id === sv.skin) || {}).boost);
+  const skin = SKINS.find(s => s.id === sv.skin) || {};
+  add(skin.boost);
+  // this color's own upgrades
+  const ups = (sv.blobUp || {})[sv.skin] || {};
+  for (const [k, per] of blobUps(skin)) if (ups[k]) add({ [k]: per * ups[k] });
   add((COSTUMES.find(c => c.id === sv.costume) || {}).boost);
   add((COSTUMES.find(c => c.id === sv.hat) || {}).boost);
   const g = sv.gear;
@@ -26111,8 +26128,8 @@ function gearStats(sv = G.save) {
 }
 // the attack and health numbers shown on the inventory screen
 function gearTotals(sv = G.save) {
-  const g = gearStats(sv), up = sv.upgrades;
-  return { atk: Math.round(100 * (1 + 0.03 * up.damage) * (1 + (g.dmg || 0) / 100)), hp: Math.round(140 * (1 + 0.05 * up.health) * (1 + (g.hp || 0) / 100)) };
+  const g = gearStats(sv);
+  return { atk: Math.round(100 * (1 + (g.dmg || 0) / 100)), hp: Math.round(140 * (1 + (g.hp || 0) / 100)) };
 }
 function rollArtifact() {
   const ids = Object.keys(ARTIFACTS), id = ids[Math.floor(Math.random() * ids.length)];
@@ -26166,6 +26183,13 @@ const STAT_SVG = {
 };
 const statIcon = k => `<svg class="sti" viewBox="0 0 24 24" fill="${STAT_SVG[k][0]}" aria-hidden="true">${STAT_SVG[k][1]}</svg>`;
 const statChips = st => Object.keys(st).map(k => `<span class="chip">${statIcon(k)}+${+st[k].toFixed(st[k] < 1 ? 2 : 1)}%</span>`).join('');
+// what an artifact sells for, by rarity (small on purpose)
+const SELL_PRICE = [5, 12, 30, 60, 120, 300];
+// can any of the worn color's upgrades be bought right now?
+function blobUpAffordable(sv = G.save) {
+  const skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp || {})[sv.skin] || {};
+  return blobUps(skin).some(([k]) => (ups[k] || 0) < BLOB_UP_MAX && sv.coins >= blobUpCost(ups[k] || 0));
+}
 const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
 
 // ---------- screens ----------
@@ -26178,6 +26202,9 @@ Object.assign(UI, {
     $('gChest').addEventListener('click', () => { AUDIO.play('click'); this.openScrollChest(); });
     $('gFuse').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(null, 'fuse'); });
     $('gMythic').addEventListener('click', () => { AUDIO.play('click'); this.openFuse(null, 'mythic'); });
+    $('gUpgrade').addEventListener('click', () => { AUDIO.play('click'); this.openBlobUp(); });
+    $('buClose').addEventListener('click', () => { AUDIO.play('click'); this.show('blobUp', false); this.renderGear(); });
+    $('gSell').addEventListener('click', () => { AUDIO.play('click'); this.selling = !this.selling; this.renderGear(); });
     $('fuseRow').addEventListener('click', e => {
       const b = e.target.closest('.fslot[data-i]');
       if (!b) return;
@@ -26253,8 +26280,54 @@ Object.assign(UI, {
     $('gearGrid').replaceChildren(...this.sortedArtKeys().map(k => {
       const { r, def } = artParse(k), worn = g.eq[def.slot] === k;
       const b = this.artButton(k, g.items[k], `${worn ? ' worn' : ''}${g.items[k] >= fuseNeed(r) && r < MYTHIC ? ' fusable' : ''}`);
-      b.addEventListener('click', () => { AUDIO.play('click'); this.openArtifact(k); });
+      // in sell mode a tap sells one copy (the price shows on each item)
+      if (this.selling) { const p = document.createElement('span'); p.className = 'price'; p.textContent = SELL_PRICE[r]; b.append(p); }
+      b.addEventListener('click', () => { AUDIO.play('click'); if (this.selling) this.sellOne(k); else this.openArtifact(k); });
       return b;
+    }));
+    $('gearGrid').classList.toggle('selling', !!this.selling);
+    $('gSell').textContent = this.selling ? 'DONE' : 'SELL'; $('gSellHint').hidden = !this.selling;
+    $('gUpgrade').querySelector('.dot').hidden = !blobUpAffordable();
+  },
+  // sell one copy of an artifact (an equipped last copy comes off first)
+  sellOne(k) {
+    const g = G.save.gear, { r, def } = artParse(k);
+    if (!(g.items[k] > 0)) return;
+    g.items[k]--;
+    if (g.items[k] <= 0) { delete g.items[k]; if (g.eq[def.slot] === k) g.eq[def.slot] = null; }
+    G.save.coins += SELL_PRICE[r];
+    saveGame(); AUDIO.play('coin');
+    this.toast(`Sold ${RARITIES[r].name} ${def.name} for ${SELL_PRICE[r]} coins`);
+    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(G.save.coins); });
+    this.renderGear();
+  },
+  // ---------- the blob's own upgrades (Gear > Upgrade) ----------
+  openBlobUp() { this.renderBlobUp(); this.show('blobUp', true); },
+  renderBlobUp() {
+    const sv = G.save, skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp[sv.skin] = sv.blobUp[sv.skin] || {});
+    $('buTitle').textContent = skin.name.toUpperCase();
+    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    $('buList').replaceChildren(...blobUps(skin).map(([k, per]) => {
+      const lvl = ups[k] || 0, cost = blobUpCost(lvl), maxed = lvl >= BLOB_UP_MAX, row = document.createElement('div');
+      row.className = 'panel bu-row';
+      row.innerHTML = `<span class="ic"></span><span><span class="nm"></span><span class="ds"></span><span class="bu-pips"></span></span><button class="jelly gold"></button>`;
+      row.querySelector('.ic').textContent = STAT_INFO[k].short;
+      row.querySelector('.nm').textContent = STAT_INFO[k].name.replace(/^./, c => c.toUpperCase());
+      row.querySelector('.ds').textContent = `+${+(per * lvl).toFixed(2)}% now · +${per}% a level · Lv ${lvl}/${BLOB_UP_MAX}`;
+      row.querySelector('.bu-pips').innerHTML = Array.from({ length: BLOB_UP_MAX }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');
+      const b = row.querySelector('button');
+      if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
+      else {
+        b.innerHTML = `<i class="coin"></i><span></span>`; b.querySelector('span').textContent = fmtNum(cost);
+        b.disabled = sv.coins < cost;
+        b.addEventListener('click', () => {
+          if (sv.coins < cost || (ups[k] || 0) >= BLOB_UP_MAX) return;
+          sv.coins -= cost; ups[k] = (ups[k] || 0) + 1; saveGame();
+          AUDIO.play('coin'); G.hero.impulse(1.4);
+          this.renderBlobUp(); this.refreshBadges && this.refreshBadges();
+        });
+      }
+      return row;
     }));
   },
   sortedArtKeys() {
@@ -26434,8 +26507,11 @@ const DEV = {
         const sv = G.save;
         sv.chapter = CHAPTER_COUNT;
         sv.skins = SKINS.map(s => s.id); sv.costumes = COSTUMES.map(c => c.id);
+        // the ocean's chapters too, and one mythic of every artifact (more with: gear <id|all> <rarity> [n])
+        sv.sea.chapter = SEA_COUNT;
+        for (const id in ARTIFACTS) addArtifact(artKey(id, MYTHIC));
         if (!sv.devUnlocked) { sv.devUnlocked = true; this.log('Dev console unlocked. Press ` (backtick) to open or close it. Type help for commands.', 'ok'); }
-        this.log('Every chapter and cosmetic unlocked.', 'ok');
+        this.log('Every chapter (land and ocean), cosmetic and a mythic of every item unlocked. Add any power-up in a run with: skill <id> [levels]; coins with: coins <n>.', 'ok');
         devRefresh();
         e.preventDefault();
         this.toggle(true);
@@ -26521,6 +26597,7 @@ const DEV_CMDS = {
     },
   },
   chapter: { args: '<n>', desc: 'unlock chapters up to n and select it', run: a => { const n = clamp(Math.round(devNum(a[0], G.save.chapter + 1)), 1, CHAPTER_COUNT); G.save.chapter = Math.max(G.save.chapter, n); for (let i = 1; i < n; i++) G.save.cleared[i] = true; G.save.selected = n; devRefresh(); return `Chapter ${n} selected`; } },
+  ocean: { args: '<n>', desc: 'unlock ocean chapters up to n and select it', run: a => { const S = G.save.sea, n = clamp(Math.round(devNum(a[0], S.chapter + 1)), 1, SEA_COUNT); S.chapter = Math.max(S.chapter, n); for (let i = 1; i < n; i++) S.cleared[i] = true; S.selected = n; devRefresh(); return `Ocean ${n} selected`; } },
   unlock: { args: '', desc: 'own every body color and costume', run: () => { G.save.skins = SKINS.map(s => s.id); G.save.costumes = COSTUMES.map(c => c.id); devRefresh(); return 'All colors and costumes unlocked'; } },
   god: { args: '', desc: 'toggle invulnerability', run: () => { DEV.god = !DEV.god; return `God mode ${DEV.god ? 'on' : 'off'}`; } },
   heal: { args: '', desc: 'refill health', run: () => { const r = devRun(); r.hp = r.maxHp; return 'Healed'; } },
@@ -26614,7 +26691,8 @@ const GOAL_VALUE = {
   gooblins: sv => sv.stats.gooblins || 0,
   colors: sv => sv.skins.length,
   costumes: sv => sv.costumes.filter(id => id !== 'none').length,
-  upgrades: sv => Object.values(sv.upgrades).reduce((a, b) => a + b, 0),
+  // (blob upgrade levels bought, across every color)
+  upgrades: sv => Object.values(sv.blobUp || {}).reduce((a, o) => a + Object.values(o).reduce((x, y) => x + y, 0), 0),
   geared: sv => Object.values(sv.gear.eq).filter(Boolean).length,
   fuses: sv => sv.stats.fuses || 0,
   rarity: sv => Math.max(0, ...Object.keys(sv.gear.items).map(k => artParse(k).r + 1)),
@@ -26644,8 +26722,8 @@ const GOALS = [
   { id: 'colors', group: 'collect', name: 'Fashionista', desc: 'Own {n} colors', stat: 'colors', n: 10, coins: 500 },
   { id: 'costumes1', group: 'collect', name: 'Wardrobe', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 15, coins: 1000 },
   { id: 'costumes2', group: 'collect', name: 'Collector', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 40, coins: 3000, scrolls: 2 },
-  { id: 'upg1', group: 'collect', name: 'Strong Roots', desc: 'Buy {n} upgrade levels', stat: 'upgrades', n: 25, coins: 600 },
-  { id: 'upg2', group: 'collect', name: 'Powered Up', desc: 'Buy {n} upgrade levels', stat: 'upgrades', n: 100, coins: 2500, scrolls: 1 },
+  { id: 'upg1', group: 'collect', name: 'Strong Roots', desc: 'Buy {n} blob upgrade levels', stat: 'upgrades', n: 25, coins: 600 },
+  { id: 'upg2', group: 'collect', name: 'Powered Up', desc: 'Buy {n} blob upgrade levels', stat: 'upgrades', n: 60, coins: 2500, scrolls: 1 },
   { id: 'geared', group: 'gear', name: 'Suited Up', desc: 'Wear gear in all four slots', stat: 'geared', n: 4, coins: 400, scrolls: 1 },
   { id: 'fuse1', group: 'gear', name: 'Fusion', desc: 'Fuse an artifact', stat: 'fuses', n: 1, coins: 300 },
   { id: 'fuse2', group: 'gear', name: 'Master Fuser', desc: 'Fuse {n} artifacts', stat: 'fuses', n: 20, coins: 2000, scrolls: 2 },
@@ -26741,7 +26819,7 @@ Object.assign(UI, {
 const SAVE_KEY = 'projectGel.save.v1';
 function defaultSave() {
   return {
-    v: 1, content: 3, coins: 0, chapter: 1, selected: 1, cleared: {}, best: {},
+    v: 1, content: 4, coins: 0, blobUp: {}, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {} }, devUnlocked: false,
@@ -26770,31 +26848,10 @@ function loadGame() {
         goals: { seen: { ...((s.goals && s.goals.seen) || {}) }, claimed: { ...((s.goals && s.goals.claimed) || {}) } },
         gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) }, hidden: { ...((s.gear && s.gear.hidden) || {}) } },
       };
-      // saves from before goals counted bosses: every cleared chapter took at least one
-      if (!s.stats || s.stats.bosses == null) out.stats.bosses = Object.keys(out.cleared).length;
-      // saves from before hats had their own slot: a hat worn as the costume moves over
-      if (HAT_IDS.includes(out.costume)) { out.hat = out.costume; out.costume = 'none'; }
-      // saves from before chapters 16-20 were remade (16+ used to repeat 1-15 with stronger enemies): anyone past
-      // chapter 15 goes back to it, and has to beat it again to open the new chapters
-      if (!(s.content >= 2)) {
-        if (out.chapter > 15) {
-          out.chapter = 15;
-          for (const k of Object.keys(out.cleared)) if (+k >= 15) delete out.cleared[k];
-          for (const k of Object.keys(out.best)) if (+k > 15) delete out.best[k];
-        }
-        out.selected = Math.min(out.selected || 1, out.chapter);
-        out.content = 2;
-      }
-      // saves from before the permanent upgrades stopped at level 20: anything past 20 is refunded in coins
-      if (!(s.content >= 3)) {
-        for (const id in META_UPGRADES) {
-          const lvl = out.upgrades[id] || 0, max = META_UPGRADES[id].max;
-          if (lvl <= max) continue;
-          for (let l = max; l < lvl; l++) out.coins += upgradeCost(id, l);
-          out.upgrades[id] = max;
-        }
-        out.content = 3;
-      }
+      // saves from before the blob upgrades replaced the Upgrades tab (content 4): everyone starts over,
+      // keeping only their settings
+      if (!(s.content >= 4)) { const fresh = defaultSave(); fresh.settings = out.settings; return fresh; }
+      out.blobUp = { ...(s.blobUp || {}) };
       return out;
     }
   } catch (_) { /* storage unavailable: play without saving */ }
@@ -26803,8 +26860,9 @@ function loadGame() {
 function saveGame() {
   try { G.save.lastSeen = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(G.save)); } catch (_) { /* ignore */ }
 }
+// (offline earnings came from an upgrade that no longer exists)
 function offlineEarnings() {
-  const sv = G.save, lvl = sv.upgrades.offline || 0;
+  const sv = G.save, lvl = 0;
   if (!lvl || !sv.lastSeen) return null;
   const hours = Math.min(8, Math.max(0, (Date.now() - sv.lastSeen) / 3.6e6));
   const coins = Math.floor(META_UPGRADES.offline.per * lvl * hours);
@@ -27247,6 +27305,18 @@ function beginSeaChapter(n) {
     else setTimeout(wait, 100);
   };
   wait();
+}
+// start the same run over (the same chapter, or the same mode): nothing from the abandoned run is kept
+function restartRun() {
+  const run = G.run;
+  if (!run) return;
+  const sea = !!run.sea, n = run.chapter, opts = run.endless ? 'endless' : run.rush ? 'rush' : null;
+  run.over = true;
+  goHome();
+  if (sea) beginSeaChapter(n);
+  else if (opts === 'endless') beginEndless();
+  else if (opts === 'rush') beginBossRush();
+  else beginChapter(n);
 }
 function pauseGame() { if (G.state !== 'run') return; UI.openPause(); setState('pause'); AUDIO.play('click'); }
 function resumeGame() { if (G.state !== 'pause') return; setState('run'); AUDIO.play('click'); }

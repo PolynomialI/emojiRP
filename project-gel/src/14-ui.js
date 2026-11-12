@@ -26,6 +26,9 @@ const UI = {
     $('btnResume').addEventListener('click', () => resumeGame());
     $('btnPauseSettings').addEventListener('click', () => this.openSettings());
     $('btnQuit').addEventListener('click', () => { $('quitConfirm').hidden = false; $('pauseActions').hidden = true; });
+    $('btnRestart').addEventListener('click', () => { $('restartConfirm').hidden = false; $('pauseActions').hidden = true; });
+    $('btnRestartNo').addEventListener('click', () => { $('restartConfirm').hidden = true; $('pauseActions').hidden = false; });
+    $('btnRestartYes').addEventListener('click', () => { $('restartConfirm').hidden = true; $('pauseActions').hidden = false; restartRun(); });
     $('btnQuitNo').addEventListener('click', () => { $('quitConfirm').hidden = true; $('pauseActions').hidden = false; });
     $('btnQuitYes').addEventListener('click', () => { $('quitConfirm').hidden = true; $('pauseActions').hidden = false; finishRun(false); });
     $('btnReroll').addEventListener('click', () => this.reroll());
@@ -81,10 +84,9 @@ const UI = {
     const menu = s === 'home';
     this.show('loading', s === 'loading');
     this.show('home', menu && this.menuTab === 'home');
-    this.show('upgrades', menu && this.menuTab === 'upgrades');
     this.show('skins', menu && this.menuTab === 'skins');
     this.show('gear', menu && this.menuTab === 'gear');
-    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('scrollChest', false); this.show('fuseBox', false); }
+    if (!(menu && this.menuTab === 'gear')) { this.show('artInfo', false); this.show('blobUp', false); this.show('scrollChest', false); this.show('fuseBox', false); }
     this.show('chapters', menu && this.menuTab === 'chapters');
     this.show('goals', menu && this.menuTab === 'goals');
     const inRun = ['run', 'levelup', 'chest', 'pause', 'dying', 'revive', 'victory'].includes(s);
@@ -107,7 +109,6 @@ const UI = {
     if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-    if (tab === 'upgrades') this.renderUpgrades();
     if (tab === 'skins') this.renderSkins();
     if (tab === 'gear') this.renderGear();
     if (tab === 'chapters') this.renderChapters();
@@ -203,8 +204,7 @@ const UI = {
     const sv = G.save;
     const canBuy = list => list.some(s => s.cost > 0 && sv.coins >= s.cost);
     return {
-      upgrades: Object.keys(META_UPGRADES).some(id => (sv.upgrades[id] || 0) < META_UPGRADES[id].max && sv.coins >= upgradeCost(id, sv.upgrades[id] || 0)),
-      gear: sv.scrolls > 0 || canFuse() || canMythic(),
+      gear: sv.scrolls > 0 || canFuse() || canMythic() || blobUpAffordable(),
       skins: canBuy(SKINS.filter(s => !sv.skins.includes(s.id))) || canBuy(COSTUMES.filter(c => !sv.costumes.includes(c.id))),
       goals: goalsToClaim(sv) > 0,
     };
@@ -222,35 +222,6 @@ const UI = {
   },
 
   // ---------- upgrades ----------
-  renderUpgrades() {
-    const sv = G.save, list = $('upList');
-    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
-    list.replaceChildren(...Object.keys(META_UPGRADES).map(id => {
-      const u = META_UPGRADES[id], lvl = sv.upgrades[id] || 0, cost = upgradeCost(id, lvl), maxed = lvl >= u.max;
-      const row = document.createElement('div');
-      row.className = 'panel uprow';
-      row.innerHTML = `<span class="tile"><img alt=""></span><span><span class="nm"></span><span class="ds"></span></span><button class="jelly gold"></button>`;
-      row.querySelector('img').src = ICONS.get('meta-' + id);
-      row.querySelector('.nm').textContent = u.name;
-      row.querySelector('.ds').textContent = `Lv ${lvl} · +${fmtNum(u.per * lvl)}${u.sym}`;
-      const b = row.querySelector('button');
-      if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
-      else {
-        b.innerHTML = `<i class="coin"></i><span></span>`;
-        b.querySelector('span').textContent = fmtNum(cost);
-        b.disabled = sv.coins < cost;
-        b.addEventListener('click', () => {
-          if (sv.coins < cost) return;
-          sv.coins -= cost; sv.upgrades[id] = lvl + 1; saveGame();
-          AUDIO.play('coin'); this.toast(`${u.name} upgraded`);
-          this.renderUpgrades(); this.refreshHome();
-          G.hero.impulse(1.2);
-        });
-      }
-      return row;
-    }));
-  },
-
   // ---------- skins ----------
   skinIconsReady(keys) {
     document.querySelectorAll('#skinGrid img[data-hero-icon]').forEach(img => {
@@ -576,7 +547,7 @@ const UI = {
       d.querySelector('.dots').innerHTML = Array.from({ length: max }, (_, i) => `<i class="${i < s.lvl ? 'on' : ''}"></i>`).join('');
       return d;
     }));
-    $('quitConfirm').hidden = true; $('pauseActions').hidden = false;
+    $('quitConfirm').hidden = true; $('restartConfirm').hidden = true; $('pauseActions').hidden = false;
   },
   fillResults() {
     const run = G.run;

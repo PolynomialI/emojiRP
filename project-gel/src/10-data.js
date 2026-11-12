@@ -611,6 +611,27 @@ const META_UPGRADES = {
   magnet: { name: 'Magnet', per: 5, unit: '% pickup radius', sym: '%', base: 100, growth: 1.22, max: META_MAX, icon: { type: 11, colw: 4 } },
 };
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
+// (META_UPGRADES are only icons now: the Upgrades tab is gone, replaced by each color's own upgrades below)
+
+// Blob upgrades: every body color has three stats of its own to upgrade (Gear > Upgrade), up to level 20,
+// percent per level (regen: percent of max health a second). The plain blue blob has the all-rounders; a
+// color that specializes (its boost) gets more of its own stat and less health.
+const BLOB_UP_MAX = 20;
+const BLOB_UPS = {
+  none: [['dmg', 2.5], ['hp', 4], ['armor', 1]],
+  dmg: [['dmg', 3.2], ['hp', 2.5], ['cd', 0.7]],
+  hp: [['hp', 5.5], ['armor', 1.1], ['dmg', 1.5]],
+  armor: [['armor', 1.5], ['hp', 3], ['dmg', 1.4]],
+  speed: [['speed', 1.6], ['dmg', 1.8], ['hp', 2]],
+  cd: [['cd', 1.3], ['dmg', 1.8], ['hp', 2.2]],
+  area: [['area', 1.8], ['dmg', 1.8], ['hp', 2.2]],
+  xp: [['xp', 2.5], ['dmg', 1.8], ['hp', 2.5]],
+  regen: [['regen', 0.012], ['hp', 3], ['armor', 0.8]],
+  magnet: [['magnet', 5], ['dmg', 1.8], ['hp', 2.5]],
+  gold: [['gold', 2.5], ['dmg', 1.8], ['hp', 2.5]],
+};
+const blobUps = skin => BLOB_UPS[(skin && skin.boost && Object.keys(skin.boost)[0]) || 'none'] || BLOB_UPS.none;
+const blobUpCost = lvl => Math.round(60 * Math.pow(1.16, lvl));
 
 // Body colors. "top" makes a two-tone gradient from the feet up. "boost" is a small stat bonus (see STAT_INFO).
 const SKINS = [

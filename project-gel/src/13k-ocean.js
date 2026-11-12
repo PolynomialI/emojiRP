@@ -111,20 +111,20 @@ function seaLeave() { const h = G.hero; if (h) { h.lounge = h.lng = 0; h.faceYaw
 // ---------- stats ----------
 // the sea's own upgrades in place of the land's passives (called by recomputeStats)
 function seaStats(run) {
-  const meta = G.save.upgrades, lv = lvlOf, gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
+  const lv = lvlOf, gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
   OC.stage = Math.max(0, lv('ship') - 1);
   const D = shipDef();
   run.stats = {
-    dmgMul: (1 + 0.03 * meta.damage) * (1 + g('dmg')),
-    speedMul: (1 + 0.05 * lv('propeller')) * (1 + 0.01 * meta.speed) * (1 + g('speed')),
-    magnet: (1.6 + D.len * 0.45) * (1 + 0.05 * meta.magnet) * (1 + g('magnet')),
+    dmgMul: 1 + g('dmg'),
+    speedMul: (1 + 0.05 * lv('propeller')) * (1 + g('speed')),
+    magnet: (1.6 + D.len * 0.45) * (1 + g('magnet')),
     armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: 1 + g('area'), extra: 0, xpMul: 1 + g('xp'),
     regen: 0.003 * lv('crew') + g('regen'),
     ramMul: 1 + 0.12 * lv('fort'),
   };
-  run.maxHp = 160 * (1 + D.hull) * (1 + 0.05 * meta.health) * (1 + g('hp'));
+  run.maxHp = 160 * (1 + D.hull) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = D.heroS; h.bubbles = 0; h.stretchMul = 1; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.topSpeed = 4.5;

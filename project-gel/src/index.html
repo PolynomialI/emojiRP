@@ -119,6 +119,22 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 @keyframes tabnudge { 50% { transform: translateX(4px); } }
 @keyframes tabnudgeL { 50% { transform: translateX(-4px); } }
 #home { position: relative; }
+/* gear: the blob's Upgrade button under it, the upgrade window, the sell mode */
+.blobup-btn { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 2; min-height: 48px; padding-inline: 26px; font-size: 20px; }
+.blobup-btn .dot { position: absolute; right: -6px; top: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px #fff; }
+.bu-sub { text-align: center; margin: -4px 0 4px; font-size: 16px; }
+.bu-list { display: grid; gap: 10px; }
+.bu-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; }
+.bu-row .ic { width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center; font: 800 15px/1 var(--font); color: #fff; background: linear-gradient(180deg, #8ad8ff, #2f8ff0); box-shadow: inset 0 -4px 0 rgba(0,0,0,.15); }
+.bu-row .nm { display: block; font-size: 21px; font-weight: 700; color: var(--ink); }
+.bu-row .ds { display: block; font-size: 15px; color: var(--ink-2, #5a6a8a); }
+.bu-row .jelly { min-width: 104px; font-size: 18px; }
+.bu-pips { display: flex; gap: 2px; margin-top: 4px; }
+.bu-pips i { flex: 1; height: 7px; border-radius: 3px; background: #d6e4f6; }
+.bu-pips i.on { background: var(--gold); }
+#gearGrid.selling .art { outline: 3px dashed var(--red); outline-offset: -3px; }
+#gearGrid .price { position: absolute; left: 4px; bottom: 4px; font: 800 13px/1 var(--font); color: #fff; background: var(--red); border-radius: 8px; padding: 3px 6px; }
+.sell-hint { margin: 6px 0 0; text-align: center; font-size: 15px; color: var(--red); font-weight: 700; }
 #home.sea .modes { display: none; }
 #btnPlay.sail { text-shadow: 0 2px 0 rgba(0, 70, 120, 0.6); background: linear-gradient(180deg, #8ff2f6 0%, #2fc4e8 52%, #1aa6d8 100%); box-shadow: inset 0 -7px 0 #0f7fb0, inset 0 3px 0 rgba(255,255,255,.5), 0 5px 0 #0b5f88, 0 10px 22px rgba(0,60,120,.3); }
 .home-stage { grid-area: stage; position: relative; min-height: 120px; cursor: grab; touch-action: none; }
@@ -546,7 +562,6 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <button class="jelly gold big" id="btnPlay">PLAY</button>
       <div class="modes"><button class="jelly violet" id="btnEndless" hidden>ENDLESS</button><button class="jelly danger" id="btnRush" hidden>BOSS RUSH</button></div>
       <nav class="mgrid" aria-label="Menu">
-        <button class="tab mbtn" data-tab="upgrades"><span class="ic up"><i class="dot" hidden></i><img alt="" data-icon="meta-damage"></span><span class="lb">Upgrades</span></button>
         <button class="tab mbtn" data-tab="gear"><span class="ic gr"><i class="dot" hidden></i><img alt="" data-icon="gear"></span><span class="lb">Gear</span></button>
         <button class="tab mbtn" data-tab="skins"><span class="ic bl"><i class="dot" hidden></i><img alt="" data-icon="costume-bunny"></span><span class="lb">Blobs</span></button>
         <button class="tab mbtn" data-tab="chapters"><span class="ic ch"><i class="dot" hidden></i><img alt="" data-icon="chapters"></span><span class="lb">Chapters</span></button>
@@ -555,12 +570,6 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     </div>
   </section>
 
-  <section id="upgrades" class="screen modal menu" hidden style="place-items:start center">
-    <div class="col" style="height:100%">
-      <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Upgrades</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
-      <div class="list" id="upList"></div>
-    </div>
-  </section>
 
   <section id="skins" class="screen" hidden>
     <div class="col subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Choose your blob</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
@@ -578,11 +587,22 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <div class="eqw" data-slot="armor"><button class="eq" data-slot="armor"></button><button class="eye" data-slot="armor"></button></div>
       <div class="eqw" data-slot="ring"><button class="eq" data-slot="ring"></button><button class="eye" data-slot="ring"></button></div>
       <div class="eqw" data-slot="necklace"><button class="eq" data-slot="necklace"></button><button class="eye" data-slot="necklace"></button></div>
+      <button class="jelly gold blobup-btn" id="gUpgrade"><i class="dot" hidden></i>UPGRADE</button>
     </div>
     <div class="col panel gear-panel">
       <div class="gear-stats"><span><img alt="Attack" data-icon="g-atk"><b id="gAtk">100</b></span><span><img alt="Health" data-icon="g-heart"><b id="gHp">140</b></span></div>
-      <div class="gear-btns"><button class="jelly ghost" id="gSort">RARITY</button><button class="jelly gold" id="gChest"><img alt="" data-icon="gear">CHEST</button><button class="jelly violet" id="gFuse">FUSE</button><button class="jelly mythic" id="gMythic">MYTHIC</button></div>
+      <div class="gear-btns"><button class="jelly ghost" id="gSort">RARITY</button><button class="jelly gold" id="gChest"><img alt="" data-icon="gear">CHEST</button><button class="jelly violet" id="gFuse">FUSE</button><button class="jelly mythic" id="gMythic">MYTHIC</button><button class="jelly danger" id="gSell">SELL</button></div>
+      <p class="sell-hint" id="gSellHint" hidden>Tap an item to sell one for coins. Tap SELL again when you are done.</p>
       <div class="gear-grid" id="gearGrid"></div>
+    </div>
+  </section>
+
+  <section id="blobUp" class="screen modal menu" hidden>
+    <div class="modal-body">
+      <h1 class="title outline" id="buTitle">CLASSIC</h1>
+      <p class="dim bu-sub">Each color has its own upgrades, up to level 20.</p>
+      <div class="bu-list" id="buList"></div>
+      <div class="row-actions"><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div><button class="jelly ghost" id="buClose">Done</button></div>
     </div>
   </section>
 
@@ -672,7 +692,8 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <h1 class="title outline">PAUSED</h1>
       <p class="dim" style="text-align:center;margin:-6px 0 0" id="pauseSub"></p>
       <div class="pause-list" id="pauseList"></div>
-      <div class="row-actions" id="pauseActions"><button class="jelly" id="btnResume">Resume</button><button class="jelly ghost" id="btnPauseSettings">Settings</button><button class="jelly ghost" id="btnQuit">Quit run</button></div>
+      <div class="row-actions" id="pauseActions"><button class="jelly" id="btnResume">Resume</button><button class="jelly ghost" id="btnPauseSettings">Settings</button><button class="jelly ghost" id="btnRestart">Restart run</button><button class="jelly ghost" id="btnQuit">Quit run</button></div>
+      <div class="panel confirm" id="restartConfirm" hidden><span>Start this run over? What you picked up in it is lost.</span><div class="row-actions"><button class="jelly danger" id="btnRestartYes">Restart</button><button class="jelly ghost" id="btnRestartNo">Keep playing</button></div></div>
       <div class="panel confirm" id="quitConfirm" hidden><span>Quit this run? You keep the coins you picked up.</span><div class="row-actions"><button class="jelly danger" id="btnQuitYes">Quit</button><button class="jelly ghost" id="btnQuitNo">Keep playing</button></div></div>
     </div>
   </section>

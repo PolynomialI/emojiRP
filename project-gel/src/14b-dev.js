@@ -24,8 +24,11 @@ const DEV = {
         const sv = G.save;
         sv.chapter = CHAPTER_COUNT;
         sv.skins = SKINS.map(s => s.id); sv.costumes = COSTUMES.map(c => c.id);
+        // the ocean's chapters too, and one mythic of every artifact (more with: gear <id|all> <rarity> [n])
+        sv.sea.chapter = SEA_COUNT;
+        for (const id in ARTIFACTS) addArtifact(artKey(id, MYTHIC));
         if (!sv.devUnlocked) { sv.devUnlocked = true; this.log('Dev console unlocked. Press ` (backtick) to open or close it. Type help for commands.', 'ok'); }
-        this.log('Every chapter and cosmetic unlocked.', 'ok');
+        this.log('Every chapter (land and ocean), cosmetic and a mythic of every item unlocked. Add any power-up in a run with: skill <id> [levels]; coins with: coins <n>.', 'ok');
         devRefresh();
         e.preventDefault();
         this.toggle(true);
@@ -111,6 +114,7 @@ const DEV_CMDS = {
     },
   },
   chapter: { args: '<n>', desc: 'unlock chapters up to n and select it', run: a => { const n = clamp(Math.round(devNum(a[0], G.save.chapter + 1)), 1, CHAPTER_COUNT); G.save.chapter = Math.max(G.save.chapter, n); for (let i = 1; i < n; i++) G.save.cleared[i] = true; G.save.selected = n; devRefresh(); return `Chapter ${n} selected`; } },
+  ocean: { args: '<n>', desc: 'unlock ocean chapters up to n and select it', run: a => { const S = G.save.sea, n = clamp(Math.round(devNum(a[0], S.chapter + 1)), 1, SEA_COUNT); S.chapter = Math.max(S.chapter, n); for (let i = 1; i < n; i++) S.cleared[i] = true; S.selected = n; devRefresh(); return `Ocean ${n} selected`; } },
   unlock: { args: '', desc: 'own every body color and costume', run: () => { G.save.skins = SKINS.map(s => s.id); G.save.costumes = COSTUMES.map(c => c.id); devRefresh(); return 'All colors and costumes unlocked'; } },
   god: { args: '', desc: 'toggle invulnerability', run: () => { DEV.god = !DEV.god; return `God mode ${DEV.god ? 'on' : 'off'}`; } },
   heal: { args: '', desc: 'refill health', run: () => { const r = devRun(); r.hp = r.maxHp; return 'Healed'; } },

@@ -211,6 +211,18 @@ function beginSeaChapter(n) {
   };
   wait();
 }
+// start the same run over (the same chapter, or the same mode): nothing from the abandoned run is kept
+function restartRun() {
+  const run = G.run;
+  if (!run) return;
+  const sea = !!run.sea, n = run.chapter, opts = run.endless ? 'endless' : run.rush ? 'rush' : null;
+  run.over = true;
+  goHome();
+  if (sea) beginSeaChapter(n);
+  else if (opts === 'endless') beginEndless();
+  else if (opts === 'rush') beginBossRush();
+  else beginChapter(n);
+}
 function pauseGame() { if (G.state !== 'run') return; UI.openPause(); setState('pause'); AUDIO.play('click'); }
 function resumeGame() { if (G.state !== 'pause') return; setState('run'); AUDIO.play('click'); }
 function resetHeroForHome() {

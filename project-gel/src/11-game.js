@@ -215,15 +215,15 @@ function evolveSkill(id) {
   UI.toast(`★ ${E.name}!`, 2);
 }
 function recomputeStats() {
-  const run = G.run, meta = G.save.upgrades, lv = lvlOf;
+  const run = G.run, lv = lvlOf;
   const oldMax = run.maxHp;
   if (run.sea) { seaStats(run); return oldMax; }
   // skin, costume and artifact bonuses (percent), fixed for the run
   const gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
   run.stats = {
-    dmgMul: (1 + 0.05 * lv('power')) * (1 + 0.03 * meta.damage) * (1 + g('dmg')),
-    speedMul: (1 + 0.04 * lv('speed')) * (1 + 0.01 * meta.speed) * (1 + g('speed')),
-    magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + 0.05 * meta.magnet) * (1 + g('magnet')),
+    dmgMul: (1 + 0.05 * lv('power')) * (1 + g('dmg')),
+    speedMul: (1 + 0.04 * lv('speed')) * (1 + g('speed')),
+    magnet: 1.6 * (1 + 0.15 * lv('magnet')) * (1 + g('magnet')),
     armorMul: Math.pow(0.97, lv('armor')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('haste')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: (1 + 0.05 * lv('reach')) * (1 + g('area')),
@@ -231,7 +231,7 @@ function recomputeStats() {
     xpMul: (1 + 0.04 * lv('growth')) * (1 + g('xp')),
     regen: 0.002 * lv('regen') + g('regen'),
   };
-  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + 0.05 * meta.health) * (1 + g('hp'));
+  run.maxHp = 140 * (1 + 0.1 * lv('thick')) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = 1 + 0.01 * lv('thick');
