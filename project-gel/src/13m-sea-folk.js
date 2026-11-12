@@ -130,7 +130,7 @@ function seaIsleTick(dt) {
       if (I.gunT <= 0 && d < 18) {
         I.gunT = rand(3.5, 5);
         const tx = S.x + S.vx * 1.1, tz = S.z + S.vz * 1.1;
-        OC.hz.push({ k: 'lob', sx: I.x, sy: 3.2 * I.r / 4, sz: I.z, tx, tz, x: I.x, y: 3, z: I.z, t: 0, dur: 1.3, r: 1.6, dmg: 16 * run.info.dmgMul, col: [1, 0.6, 0.3] });
+        OC.hz.push({ k: 'lob', sx: I.x, sy: 3.2 * I.r / 4, sz: I.z, tx, tz, x: I.x, y: 3, z: I.z, t: 0, dur: 1.3, r: 1.6, dmg: 11 * run.info.dmgMul, col: [1, 0.6, 0.3] });
         FX.smoke(I.x, 3.3 * I.r / 4, I.z, 0.7, [0.85, 0.85, 0.9], 0.9, 1); AUDIO.play('cannon', 0.8);
       }
     } else if (I.kind === 'ivolc') {
@@ -202,7 +202,7 @@ function seaWeather(dt) {
     OC.boltT = (OC.boltT ?? 5) - dt;
     if (OC.boltT <= 0 && st > 0.5) {
       OC.boltT = rand(3.5, 8);
-      if (C.zap) OC.hz.push({ k: 'zap', x: S.x + rand(-5, 5), z: S.z + rand(-5, 5), t: 0, dur: 1.1, r: 1.8, dmg: 14 * run.info.dmgMul });
+      if (C.zap) OC.hz.push({ k: 'zap', x: S.x + rand(-5, 5), z: S.z + rand(-5, 5), t: 0, dur: 1.2, r: 1.8, dmg: 9 * run.info.dmgMul });
       else { R.frame.flashW = 0.35; AUDIO.play('thunder', 0.7); }
     }
   }
