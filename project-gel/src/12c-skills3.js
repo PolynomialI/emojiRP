@@ -112,3 +112,61 @@ SKILL_HOOKS.spore = {
     }
   },
 };
+
+// ---------- Ptero Strike (chapter 18): pterodactyls swoop out of the sky onto enemies and slam into them and
+// everything around; evolved (Sky Flock), each one swoops onto a second target before flying off ----------
+const PTERO = { dive: 0.6, height: 7, hop: 0.45 };
+SKILL_HOOKS.ptero = {
+  update(s, L, dt) {
+    const st = s.st, h = G.hero.pos, rad = L.radius * areaMul();
+    st.birds = st.birds || [];
+    st.t = (st.t ?? 1) - dt;
+    if (st.t <= 0) {
+      const near = [];
+      enemiesInRadius(h[0], h[2], 10, e => near.push(e));
+      if (near.length) {
+        st.t = L.cd * cdMul();
+        for (let i = 0; i < L.count; i++) {
+          const tg = near[Math.floor(Math.random() * near.length)], a = rand(0, TAU);
+          st.birds.push({ sx: tg.x + Math.cos(a) * 9, sy: PTERO.height, sz: tg.z + Math.sin(a) * 9, tg, tx: tg.x, tz: tg.z, t: -i * 0.12, dur: PTERO.dive, state: 'dive', hits: s.evo ? 2 : 1, ph: rand(0, 10), x: tg.x, y: PTERO.height, z: tg.z, px: 0, py: 0, pz: 0 });
+        }
+        AUDIO.play('wind', 0.45);
+      } else st.t = 0.3;
+    }
+    for (const b of st.birds) {
+      b.ph += dt; b.t += dt; b.px = b.x; b.py = b.y; b.pz = b.z;
+      if (b.state === 'dive') {
+        if (b.t < 0) continue;
+        if (b.tg && !b.tg.dying) { b.tx = b.tg.x; b.tz = b.tg.z; }
+        const u = Math.min(1, b.t / b.dur);
+        b.x = lerp(b.sx, b.tx, u); b.z = lerp(b.sz, b.tz, u); b.y = lerp(b.sy, 0.7, u * u);
+        if (u < 1) continue;
+        enemiesInRadius(b.tx, b.tz, rad, e => hurtEnemy(e, e === b.tg ? L.dmg * 1.5 : L.dmg, (e.x - b.tx) * 3, (e.z - b.tz) * 3, { sound: false }));
+        FX.ring(b.tx, b.tz, rad * 1.3, s.evo ? [1, 0.85, 0.35] : [1, 0.6, 0.3], 0.35); FX.burst(b.tx, 0.4, b.tz, 10, [0.85, 0.75, 0.6], 4, 0.1, 0.4, 2); FX.crack(b.tx, b.tz, rad * 0.7, 1);
+        G.cam.shake = Math.max(G.cam.shake, 0.04); AUDIO.play('punch', 0.7);
+        // Sky Flock: hop up and swoop onto the next enemy nearby
+        let next = null;
+        if (--b.hits > 0) { let bd = 6; enemiesInRadius(b.tx, b.tz, 6, e => { const dd = Math.hypot(e.x - b.tx, e.z - b.tz); if (e !== b.tg && dd < bd && dd > 0.8) { bd = dd; next = e; } }); }
+        if (next) { Object.assign(b, { sx: b.x, sy: 3, sz: b.z, tg: next, tx: next.x, tz: next.z, t: 0, dur: PTERO.hop }); b.y = 3; }
+        else { b.state = 'leave'; b.t = 0; const a = rand(0, TAU); b.lx = Math.cos(a); b.lz = Math.sin(a); }
+      } else {
+        b.x += b.lx * 12 * dt; b.z += b.lz * 12 * dt; b.y += 9 * dt;
+        if (b.t > 0.8) b.done = true;
+      }
+    }
+    st.birds = st.birds.filter(b => !b.done);
+  },
+  emit(s) {
+    const st = s.st;
+    if (!st.birds) return;
+    for (const b of st.birds) {
+      if (b.state === 'dive' && b.t < 0) continue;
+      let dx = b.x - b.px, dy = b.y - b.py, dz = b.z - b.pz;
+      const l = Math.hypot(dx, dy, dz);
+      if (l < 1e-4) { dx = 0; dy = -1; dz = 0.01; } else { dx /= l; dy /= l; dz /= l; }
+      pushImp(b.x, b.y, b.z, 0.62, dx, dy * 0.6, dz, 1, 50, 0, 0.1, b.ph, s.evo ? 1 : 0, 0, 0, 1);
+      const g = clamp(1 - b.y / 8, 0.2, 1);
+      pushDecal(b.x, b.z, 0.9 * g, 0.5 * g, -Math.atan2(dx, dz), 1, 0, 0, 0.01, 0.03, 0.07, 0.4 * g);
+    }
+  },
+};

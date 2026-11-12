@@ -414,6 +414,23 @@ void main() {
     emis += vec3(0.5, 1.0, 0.9) * speck * (0.6 + 0.4 * sin(uTime * 2.0 + hash12(scl + 3.0) * 6.28));
     N = normalize(vec3((blades - 0.5) * 0.3 * (1.0 - loam), 1.0, (fine - 0.5) * 0.3 * (1.0 - loam)));
     ao = mix(0.78, 1.0, blades) * (1.0 - 0.15 * leaf);
+  } else if (style == 17) {
+    // dino valley: sunlit prehistoric grass in clumps, winding trails of reddish earth with pebbles, and fern
+    // fronds lying in the grass
+    float n0 = texture(uNoise, p * 0.025 + 0.4).r;
+    float trail = smoothstep(0.53, 0.56, n0) * (1.0 - smoothstep(0.6, 0.63, n0));
+    float blades = texture(uNoise, p * vec2(2.6, 3.1)).b, clump = texture(uNoise, p * 0.18).g;
+    alb = mix(mix(uStoneB, uStoneA, clump) * (0.8 + 0.35 * blades), uGrout * (0.9 + 0.25 * fine) * (0.9 + 0.2 * mott), trail);
+    vec2 fc = floor(p / 1.6), ff = fract(p / 1.6) - 0.5;
+    float fh = hash12(fc), fca = cos(fh * 6.28), fsa = sin(fh * 6.28);
+    vec2 fq = vec2(fca * ff.x - fsa * ff.y, fsa * ff.x + fca * ff.y);
+    float frond = step(0.78, fh) * step(abs(fq.x), 0.42) * (1.0 - smoothstep(0.0, 0.03, abs(fq.y) - 0.1 * (0.5 - abs(fq.x)) * (0.6 + 0.4 * sin(fq.x * 60.0))));
+    alb = mix(alb, uStoneA * 0.7, frond * (1.0 - trail) * 0.8);
+    vec2 pc = floor(p * 2.0), pf = fract(p * 2.0) - 0.5 - (vec2(hash12(pc + 1.7), hash12(pc + 5.3)) - 0.5) * 0.5;
+    float peb = step(0.88, hash12(pc)) * trail * (1.0 - smoothstep(0.06, 0.1, length(pf)));
+    alb = mix(alb, vec3(0.72, 0.64, 0.54), peb);
+    N = normalize(vec3((blades - 0.5) * 0.3 * (1.0 - trail) + peb * pf.x, 1.0, (fine - 0.5) * 0.3 * (1.0 - trail) + peb * pf.y));
+    ao = mix(0.78, 1.0, blades * (1.0 - trail) + trail) * (1.0 - 0.2 * frond);
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -1079,6 +1096,25 @@ vec2 mapImp(vec3 p, int type, vec4 P0, vec4 P1) {
     if (eye < d) { d = eye; m = length(e - vec3(-0.02, 0.0, 0.11)) < 0.085 ? 12.0 : 7.0; }
     float mouth = length(vec2(q.x * 1.3, q.y + 0.18)) - 0.11;
     if (mouth < 0.0 && q.z > 0.55 && d < 0.04) m = 12.0;
+    return vec2(d, m);
+  }
+  if (type == 50) {
+    // pterodactyl: a slim orange body flying along +z, a long beak, a red swept-back crest and wide flapping wings;
+    // P1.x > 0.5: golden
+    float fl = sin(ph * 10.0) * 0.45;
+    float body = sdRoundCone(p, vec3(0.0, 0.0, -0.4), vec3(0.0, 0.05, 0.22), 0.07, 0.14);
+    float head = length(p - vec3(0.0, 0.12, 0.36)) - 0.12;
+    float beak = sdRoundCone(p, vec3(0.0, 0.1, 0.42), vec3(0.0, 0.03, 0.92), 0.065, 0.008);
+    float crest = sdRoundCone(p, vec3(0.0, 0.2, 0.34), vec3(0.0, 0.32, -0.08), 0.05, 0.008);
+    vec3 w = vec3(abs(p.x), p.y, p.z);
+    w.y -= (w.x - 0.1) * fl;
+    float wing = max(sdEllipsoid(w - vec3(0.62, 0.0, 0.0), vec3(0.62, 0.03, 0.26)), (w.z - 0.18) - (w.x - 0.1) * 0.35);
+    float eye = length(vec3(abs(p.x) - 0.08, p.y - 0.16, p.z - 0.42)) - 0.035;
+    float d = min(min(min(body, head), min(beak, crest)), min(wing, eye));
+    float m = P1.x > 0.5 ? 2.0 : 13.3;
+    if (crest <= d + 1e-4 && P1.x < 0.5) m = 13.0;
+    if (beak <= d + 1e-4) m = P1.x > 0.5 ? 2.0 : 14.0;
+    if (eye <= d + 1e-4) m = 12.0;
     return vec2(d, m);
   }
   if (type == 49) {

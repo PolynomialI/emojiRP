@@ -237,6 +237,7 @@ function modelDefs() {
   westModels(defs);
   factoryModels(defs);
   shroomModels(defs);
+  dinoModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -295,6 +296,7 @@ const CLIPS = {
   } },
   slam: { frames: 24, fn(t, m) {
     if (m.quad) return quadBuck(t);
+    if (m.dino) return dinoStomp(t);
     const up = smoothstep(0, 0.55, t), down = smoothstep(0.55, 0.68, t), rec = smoothstep(0.8, 1, t);
     const arm = lerp(lerp(0, -2.7, up), -0.5, down) * (1 - rec) + rec * 0;
     const lean = lerp(lerp(0, -0.25, up), 0.45, down) * (1 - rec);
@@ -305,6 +307,7 @@ const CLIPS = {
   } },
   throw: { frames: 24, fn(t, m) {
     if (m.snake) return snakeStrike(t);
+    if (m.dino) return dinoRoar(t);
     const back = smoothstep(0, 0.55, t), fwd = smoothstep(0.55, 0.7, t), rec = smoothstep(0.75, 1, t);
     const k = 1 - rec;
     const armR = (lerp(0, -2.6, back) + 2.0 * fwd) * k;

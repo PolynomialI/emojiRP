@@ -21,6 +21,7 @@ const MINIBOSSES = {
   14: { name: 'Teddy Titan', type: 'teddy', scale: 2.2, hp: 1150, attacks: ['leap', 'slam'] },
   15: { name: 'Puffer King', type: 'puffer', scale: 2.4, hp: 1200, attacks: ['fan', 'charge'], shot: 'arrow' },
   16: { name: 'Foreman Bot', type: 'cogbot', scale: 2.6, hp: 1300, tint: '#e8a43a', attacks: ['charge', 'summon'], summon: 'gearling' },
+  18: { name: 'Raptor Alpha', type: 'raptor', scale: 2.6, hp: 1600, tint: '#c84a3a', attacks: ['leap', 'charge'] },
   17: { name: 'Sporeling Elder', type: 'sporeling', scale: 2.7, hp: 1450, tint: '#8a3ad8', attacks: ['leap', 'summon'], summon: 'sporeling' },
 };
 // the three visits: health and size
