@@ -724,7 +724,7 @@ function rollChoices() {
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
   // (the sea and the land each have their own upgrades)
   const open = def => !def.sea === !run.sea && (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
-  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
+  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) * (SKILLS[id].rare ? 0.3 : 1) });
   if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
   while (out.length < 3 && pool.length) {

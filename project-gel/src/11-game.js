@@ -303,6 +303,7 @@ function killEnemy(e) {
   FX.droplets(e.x, 0.55 * s, e.z, e.boss ? 30 : 5, 5, e.boss ? 7 : 3.2, 0.05 * Math.min(s, 2), null);
   FX.burst(e.x, 0.6 * s, e.z, e.boss ? 30 : 4, ORANGE, e.boss ? 7 : 3, 0.1, 0.4, 0);
   AUDIO.play('squish');
+  if (e.def.onKill) e.def.onKill(e);
   if (e.mini) { onMiniKilled(e); return; }
   if (e.boss) { onBossKilled(e); return; }
   if (e.def.flee) gooblinLoot(e);
@@ -914,7 +915,8 @@ function updatePickups(dt) {
       if (p.y <= 0.3) { p.y = 0.3; p.vy = 0; p.vx = 0; p.vz = 0; resolveCircle(p, 0.3); }
     }
     const dx = h[0] - p.x, dz = h[2] - p.z, d = Math.hypot(dx, dz);
-    if ((p.kind === 'coin' || p.kind === 'scroll') && !p.pull && d < mag) p.pull = true;
+    // (at sea everything floats over to the ship)
+    if ((p.kind === 'coin' || p.kind === 'scroll' || run.sea) && !p.pull && d < mag) p.pull = true;
     if (p.pull) { p.sp = Math.min(p.sp + 40 * dt, 30); const st = Math.max(4, p.sp) * dt; if (st < d) { p.x += dx / d * st; p.z += dz / d * st; } }
     if (d < (p.kind === 'chest' || p.kind === 'heart' ? 0.85 : 0.6) && p.t > 0.35) {
       p.dead = true;

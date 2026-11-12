@@ -4,16 +4,22 @@
 // ============================================================
 Object.assign(THEME_CLIPS, {
   raft: ['rock'], raft_p0: ['tilt'], raft_p1: ['tilt'], raft_p2: ['tilt'], scannon: ['still'], isle0: ['still'], isle1: ['still'],
-  pswim: ['paddle', 'hack'], pfloat: ['paddle', 'hack'], ptube: ['paddle', 'hack'],
+  pswim: ['paddle', 'hack'], pfloat: ['paddle', 'hack'], ptube: ['paddle', 'hack'], phat: ['paddle', 'hack'], pdiver: ['paddle', 'hack'], pbomb: ['paddle'], pparka: ['paddle', 'hack'],
+  pmusket: ['idle', 'aim'], pcapt: ['idle', 'throw', 'slam', 'run'],
 });
-Object.assign(THEME_CELLS, { scannon: 0.012, isle0: 0.05, isle1: 0.05, raft: 0.016, raft_p0: 0.022, raft_p1: 0.022, raft_p2: 0.022, pswim: 0.013, pfloat: 0.013, ptube: 0.013 });
+const SEA_ISLES = ['icoral', 'ikelp', 'ihut', 'iice', 'ivolc', 'ighost', 'ispire', 'iwreck', 'ifort'];
+for (const id of SEA_ISLES) { THEME_CLIPS[id] = ['still']; THEME_CELLS[id] = 0.1; }
+Object.assign(THEME_CELLS, { scannon: 0.016, isle0: 0.1, isle1: 0.1, raft: 0.024, raft_p0: 0.032, raft_p1: 0.032, raft_p2: 0.032, pswim: 0.017, pfloat: 0.017, ptube: 0.018, phat: 0.017, pdiver: 0.017, pbomb: 0.017, pparka: 0.017, pmusket: 0.016, pcapt: 0.015 });
 const SEA_MESHES = ['raft', 'pswim', 'scannon', 'isle0', 'isle1', 'pfloat', 'ptube', 'raft_p0', 'raft_p1', 'raft_p2'];
-MESH_ORDER.push(...SEA_MESHES);
+// the rest of the sea's folk (needed from chapter 2 on, or for minibosses)
+const SEA_FOLK = ['phat', 'pdiver', 'pbomb', 'pparka', 'pmusket', 'pcapt'];
+MESH_ORDER.push(...SEA_MESHES, ...SEA_FOLK, ...SEA_ISLES);
 
 // a ship rocks gently on the swell (bone 0 about the deck's middle): one loop of a slow roll and pitch
-CLIPS.rock = { frames: 32, fn(t) {
-  const a = t * TAU;
-  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [0.025 * Math.sin(a + 1.3), 0, 0.04 * Math.sin(a)] : [0, 0, 0])) };
+// (the bigger the ship, the less: m.rockAmp)
+CLIPS.rock = { frames: 32, fn(t, m) {
+  const a = t * TAU, k = m.rockAmp || 0.04;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [0.6 * k * Math.sin(a + 1.3), 0, k * Math.sin(a)] : [0, 0, 0])) };
 } };
 // a broken piece of hull keels over as it sinks (frame = how far over)
 CLIPS.tilt = { frames: 16, fn(t) {
@@ -63,8 +69,7 @@ function seaModels(defs) {
   const beams = zz => zz.flatMap(z => [
     { s: 'cyl', ax: 'x', c: [0, 0.2, z], r: 0.065, hh: 0.92, rd: 0.03, col: woodD, k: 0 },
     // rope wraps where the beam crosses every log
-    ...LOGX.map(x => ({ s: 'tor', ax: 'x', c: [x + 0.11, 0.13, z], R: 0.105, r: 0.022, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 })),
-    ...LOGX.map(x => ({ s: 'tor', ax: 'z', c: [x + 0.11, 0.13, z], R: 0.09, r: 0.018, a0: 0, a1: Math.PI, col: ropeD, k: 0 })),
+    ...LOGX.filter((_, i) => i % 2 === 0).map(x => ({ s: 'tor', ax: 'x', c: [x + 0.15, 0.13, z], R: 0.1, r: 0.03, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 })),
   ]);
   const ring = (c, R0, r0) => Array.from({ length: 8 }, (_, i) => ({ s: 'tor', ax: 'y', c, R: R0, r: r0, a0: (i / 8) * TAU - Math.PI, a1: ((i + 1) / 8) * TAU - Math.PI + 0.02, col: i % 2 ? white : red, k: 0 }));
   const lifeRing = [...ring([0, 0.25, -0.86], 0.24, 0.085), { s: 'tor', ax: 'y', c: [0, 0.25, -0.86], R: 0.24, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#f4e4c4'), k: 0 }];
@@ -116,6 +121,62 @@ function seaModels(defs) {
     m.parts.push({ s: 'tor', ax: 'x', c: [h[0], h[1] - 0.14, h[2] + 0.055], R: 0.055, r: 0.015, a0: -0.4, a1: 2.6, col: steel, bone: 6, k: 0 });
     m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.2, h[2] + 0.08], b: [h[0], h[1] - 0.17, h[2] + 0.12], r: 0.013, r2: 0.003, col: steel, bone: 6, k: 0 });
     m.crownLift = 0.08;
+    // (a swimmer's shins and feet are always under water)
+    if (!o.full) m.parts = m.parts.filter(p => !(p.bone === 8 || p.bone === 10));
+    // another hat instead of the bandana: drop the bandana's three parts (a cap, a knot, two tails)
+    const bandana = m.parts.filter(p => p.bone === 2 && !p.col);
+    if (o.hat) m.parts = m.parts.filter(p => !bandana.includes(p));
+    if (o.hat === 'tricorn') {
+      // a black tricorn with gold trim, three corners turned up
+      const y = hd[1] + 0.1, sc = o.big ? 1.3 : 1;
+      m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.06, hd[2]], rr: [0.172, 0.12, 0.178], col: C('#1e1a24'), bone: 2, k: 0.01 });
+      m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], y + 0.04, hd[2]], r: 0.13 * sc, hh: 0.07 * sc, rd: 0.05, col: C('#1e1a24'), bone: 2, k: 0.02 });
+      for (let i = 0; i < 3; i++) { const a = Math.PI / 2 + (i / 3) * TAU, a2 = a + TAU / 3; m.parts.push({ s: 'cap', a: [hd[0] + Math.cos(a) * 0.26 * sc, y + 0.05, hd[2] + Math.sin(a) * 0.26 * sc], b: [hd[0] + Math.cos(a2) * 0.26 * sc, y + 0.05, hd[2] + Math.sin(a2) * 0.26 * sc], r: 0.04 * sc, col: C('#1e1a24'), bone: 2, k: 0.03 }); }
+      for (let i = 0; i < 3; i++) { const a = Math.PI / 2 + (i / 3) * TAU; m.parts.push({ s: 'sph', c: [hd[0] + Math.cos(a) * 0.27 * sc, y + 0.08, hd[2] + Math.sin(a) * 0.27 * sc], r: 0.03 * sc, col: C('#e8b84a'), bone: 2, k: 0 }); }
+      if (o.big) for (let i = 0; i < 5; i++) { const u = i / 4; m.parts.push({ s: 'sph', c: [hd[0] - 0.12 + u * 0.05, y + 0.12 + Math.sin(u * 2.4) * 0.1, hd[2] - 0.05 - u * 0.25], r: 0.05 - u * 0.02, col: C('#ff5a6a'), bone: 2, k: 0.03 }); }
+    } else if (o.hat === 'parka') {
+      // a fur-lined parka hood (the hood takes the tint) and a knitted scarf
+      m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.03, hd[2] - 0.03], rr: [0.21, 0.21, 0.2], bone: 2, k: 0.02 });
+      m.parts.push({ s: 'ell', c: [hd[0], hd[1] - 0.01, hd[2] + 0.12], rr: [0.15, 0.15, 0.1], sub: true, bone: 2, k: 0.02 });
+      m.parts.push({ s: 'tor', ax: 'z', c: [hd[0], hd[1] - 0.01, hd[2] + 0.13], R: 0.15, r: 0.045, a0: -Math.PI, a1: Math.PI, col: C('#f4ecdc'), bone: 2, k: 0.02 });
+      m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.shY + 0.02, 0.01], R: 0.1, r: 0.045, a0: -Math.PI, a1: Math.PI, col: C('#e8414a'), bone: 1, k: 0.02 });
+    } else if (o.hat === 'cap') {
+      // a swim cap (tint) with a diving mask and a yellow snorkel
+      m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.04, hd[2] - 0.01], rr: [0.175, 0.14, 0.18], bone: 2, k: 0.01 });
+      m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.01, hd[2] + 0.15], hs: [0.12, 0.06, 0.03], rd: 0.03, col: C('#9fe6ff'), bone: 2, k: 0 });
+      m.parts.push({ s: 'tor', ax: 'z', c: [hd[0], hd[1] + 0.01, hd[2] + 0.02], R: 0.17, r: 0.014, a0: -Math.PI, a1: Math.PI, col: C('#2a2e38'), bone: 2, k: 0 });
+      m.parts.push({ s: 'cap', a: [hd[0] + 0.15, hd[1] - 0.06, hd[2] + 0.1], b: [hd[0] + 0.17, hd[1] + 0.3, hd[2] + 0.05], r: 0.022, col: C('#ffd34a'), bone: 2, k: 0 });
+      m.parts.push({ s: 'cap', a: [hd[0] + 0.15, hd[1] - 0.06, hd[2] + 0.1], b: [hd[0] + 0.03, hd[1] - 0.08, hd[2] + 0.17], r: 0.02, col: C('#ffd34a'), bone: 2, k: 0 });
+    }
+    if (o.coat) {
+      // a long coat over the shirt (it takes the tint), gold buttons, cuffs
+      m.parts = m.parts.filter(p => !(p.bone === 1 && p.col === stripe));
+      m.parts.push({ s: 'cap', a: [0, STICK.hipY - 0.05, 0], b: [0, STICK.shY - 0.01, 0], r: 0.12, r2: 0.124, bone: 1, k: 0.02 });
+      for (const [s, b] of [['L', 3], ['R', 5]]) m.parts.push({ s: 'cap', a: J['sh' + s], b: J['el' + s], r: 0.072, r2: 0.068, bone: b, k: 0.01 });
+      for (let i = 0; i < 3; i++) m.parts.push({ s: 'sph', c: [0, STICK.hipY + 0.06 + i * 0.07, 0.122], r: 0.018, col: C('#e8b84a'), bone: 1, k: 0 });
+      if (o.full) m.parts.push({ s: 'cap', a: [0, STICK.hipY - 0.02, -0.02], b: [0, STICK.hipY - 0.26, -0.06], r: 0.13, r2: 0.15, bone: 0, k: 0.03 });
+    }
+    if (o.cutlass) {
+      const hl = J.haL;
+      m.parts.push({ s: 'cap', a: [hl[0], hl[1] - 0.02, hl[2] - 0.02], b: [hl[0], hl[1] - 0.02, hl[2] + 0.06], r: 0.03, col: C('#e8b84a'), bone: 4, k: 0 });
+      m.parts.push({ s: 'cap', a: [hl[0], hl[1] - 0.02, hl[2] + 0.06], b: [hl[0], hl[1] + 0.06, hl[2] + 0.42], r: 0.03, r2: 0.012, col: steel, bone: 4, k: 0 });
+    }
+    if (o.keg) {
+      // a floating powder keg pushed along in front, its fuse fizzing
+      m.parts.push({ s: 'cyl', ax: 'x', c: [0, STICK.hipY + 0.13, 0.38], r: 0.15, hh: 0.17, rd: 0.05, col: C('#c0382c'), bone: 0, k: 0 });
+      for (const x of [-0.11, 0.11]) m.parts.push({ s: 'tor', ax: 'x', c: [x, STICK.hipY + 0.13, 0.38], R: 0.15, r: 0.014, a0: -Math.PI, a1: Math.PI, col: C('#3a3f4a'), bone: 0, k: 0 });
+      m.parts.push({ s: 'cap', a: [0, STICK.hipY + 0.27, 0.38], b: [0.03, STICK.hipY + 0.37, 0.4], r: 0.012, col: C('#3a2a1a'), bone: 0, k: 0 });
+      m.parts.push({ s: 'sph', c: [0.035, STICK.hipY + 0.39, 0.4], r: 0.026, col: C('#ffd34a'), bone: 0, k: 0 });
+    }
+    if (o.musket) {
+      // a long musket along the right forearm (pointing ahead when aimed)
+      const hr = J.haR;
+      m.parts = m.parts.filter(p => !(p.bone === 6 && p.col === steel) && !(p.s === 'cyl' && p.bone === 6));
+      m.parts.push({ s: 'sph', c: hr, r: STICK.handR, col: skin, bone: 6, k: 0.03 });
+      m.parts.push({ s: 'box', c: [hr[0], hr[1] - 0.05, hr[2] - 0.02], hs: [0.025, 0.09, 0.04], rd: 0.012, col: C('#7a4a26'), bone: 6, k: 0 });
+      m.parts.push({ s: 'cap', a: [hr[0], hr[1] - 0.12, hr[2]], b: [hr[0], hr[1] - 0.52, hr[2] + 0.02], r: 0.018, col: C('#3a3f4a'), bone: 6, k: 0 });
+      m.gun = 2;
+    }
     if (o.floats) {
       // inflatable arm bands (armed floats): orange with a white band, on both upper arms
       for (const [s, b] of [['L', 3], ['R', 5]]) {
@@ -127,13 +188,14 @@ function seaModels(defs) {
     if (o.tube) {
       // a big inner tube round the middle (full-body float) and swim goggles pushed up on the bandana
       const y = STICK.hipY + 0.17;
-      for (let i = 0; i < 6; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.25, r: 0.11, a0: (i / 6) * TAU - Math.PI, a1: ((i + 1) / 6) * TAU - Math.PI + 0.02, col: i % 2 ? C('#ff7eb8') : white, bone: 0, k: 0 });
+      for (let i = 0; i < 4; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.25, r: 0.11, a0: (i / 4) * TAU - Math.PI, a1: ((i + 1) / 4) * TAU - Math.PI + 0.02, col: i % 2 ? C('#ff7eb8') : white, bone: 0, k: 0 });
       for (const sx of [1, -1]) m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.065, hd[1] + 0.12, hd[2] + 0.12], R: 0.04, r: 0.014, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
       m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.1, hd[2]], R: 0.17, r: 0.01, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
     }
     return m;
   };
-  for (const [name, o] of [['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
+  for (const [name, o] of [['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
+    ['pbomb', { keg: true }], ['pparka', { hat: 'parka', floats: true }], ['pmusket', { hat: 'tricorn', musket: true, full: true }], ['pcapt', { hat: 'tricorn', big: true, coat: true, cutlass: true, full: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
 
   // ---------- the Homing Cannon: an iron barrel with brass bands on a little wheeled carriage, facing +z ----------
   {
@@ -157,7 +219,7 @@ function seaModels(defs) {
   // ---------- islands (radius 4; drawn at radius / 4): a sandy mound under a grassy top with a few flowers ----------
   {
     const sand = C('#f2dc9a'), sandD = C('#e2c47a'), grass = C('#6cc34a'), grassD = C('#4fa63a');
-    const flowers = (n, rr, seed) => Array.from({ length: n }, (_, i) => { const a = i * 2.4 + seed, d = rr * (0.3 + ((i * 37) % 10) / 14); return { s: 'sph', c: [Math.cos(a) * d, 0.62, Math.sin(a) * d], r: 0.09, col: [C('#ff6fa8'), C('#ffd34a'), C('#fff6e6')][i % 3], k: 0.02 }; });
+    const flowers = (n, rr, seed) => Array.from({ length: n }, (_, i) => { const a = i * 2.4 + seed, d = rr * (0.3 + ((i * 37) % 10) / 14); return { s: 'sph', c: [Math.cos(a) * d, 0.62, Math.sin(a) * d], r: 0.16, col: [C('#ff6fa8'), C('#ffd34a'), C('#fff6e6')][i % 3], k: 0.02 }; });
     P('isle0', [
       { s: 'ell', c: [0, -0.25, 0], rr: [4.0, 0.8, 4.0], col: sand, k: 0.3 },
       { s: 'ell', c: [0.6, -0.1, -0.4], rr: [2.6, 0.62, 2.4], col: sandD, k: 0.6 },
@@ -172,5 +234,64 @@ function seaModels(defs) {
       { s: 'ell', c: [-1.6, 0.22, 0.6], rr: [1.4, 0.38, 1.3], col: grassD, k: 0.4 },
       ...flowers(7, 1.6, 1.1),
     ], { ao: 0.4 });
+  }
+
+  // ---------- themed islands for the later chapters (radius 4 at scale 1, drawn at radius / 4) ----------
+  {
+    const sand = C('#f2dc9a'), sandD = C('#e2c47a'), rockG = C('#7a7a72'), rockD = C('#4a4a50');
+    const mound = (col, h = 0.8) => ({ s: 'ell', c: [0, -0.25, 0], rr: [4.0, h, 4.0], col, k: 0.3 });
+    const crag = (c, r, seed, col, sc) => ({ s: 'crag', c, r, seed, n: 10, col, sc, k: 0.15 });
+    // coral cove: a sand bar studded with pink and orange coral and a big shell
+    const coralB = (x, z, col, h) => [0, 1, 2, 3].map(i => { const a = i * 1.7 + x; return { s: 'cap', a: [x, 0.3, z], b: [x + Math.cos(a) * 0.5, 0.3 + h * (0.6 + 0.15 * i), z + Math.sin(a) * 0.5], r: 0.2, r2: 0.12, col, k: 0.15 }; });
+    P('icoral', [mound(sand, 0.7), { s: 'ell', c: [0.8, 0.05, 0.5], rr: [2.4, 0.4, 2.2], col: sandD, k: 0.5 },
+      ...coralB(-1.2, 0.6, C('#ff7aa8'), 1.2), ...coralB(1.0, -1.0, C('#ff9a4a'), 1.0), ...coralB(0.4, 1.4, C('#c86aff'), 0.9),
+      { s: 'ell', c: [-0.5, 0.45, -1.4], rr: [0.6, 0.35, 0.5], col: C('#fff0e0'), k: 0.1 }], { ao: 0.4 });
+    // kelp narrows: a mossy rock with tall kelp swaying round it
+    const kelp = (x, z, h) => [{ s: 'cap', a: [x, 0, z], b: [x + 0.2, h, z - 0.1], r: 0.16, r2: 0.1, col: C('#4a8a3a'), k: 0.05 },
+      ...[0.35, 0.6, 0.85].map(u => ({ s: 'ell', c: [x + 0.2 * u + 0.25, h * u, z - 0.1 * u], rr: [0.35, 0.1, 0.18], col: C('#6aa84a'), k: 0.05 }))];
+    P('ikelp', [mound(C('#c8b47a'), 0.6), crag([0, 0.4, 0], 2.2, 3, rockG, [1.2, 0.6, 1.0]), { s: 'ell', c: [0, 1.25, 0], rr: [1.6, 0.4, 1.4], col: C('#5a8a4a'), k: 0.4 },
+      ...kelp(2.4, 1.2, 2.6), ...kelp(-2.6, 0.4, 3.0), ...kelp(1.0, -2.6, 2.2), ...kelp(-1.4, 2.4, 2.4)], { ao: 0.4 });
+    // smugglers' strait: a sandy island with a stilt hut, crates and a pirate flag (musket pirates come out of it)
+    P('ihut', [mound(sand), { s: 'ell', c: [0, 0.2, 0], rr: [2.9, 0.42, 2.8], col: C('#6cc34a'), k: 0.4 },
+      ...[[-0.9, -0.7], [0.9, -0.7], [-0.9, 0.7], [0.9, 0.7]].map(([x, z]) => ({ s: 'cap', a: [x, 0.3, z], b: [x, 1.3, z], r: 0.12, col: C('#7a4f2a'), k: 0 })),
+      { s: 'box', c: [0, 1.75, 0], hs: [1.15, 0.5, 0.95], rd: 0.06, col: C('#a8693a'), k: 0 },
+      { s: 'gable', c: [0, 2.2, 0], w: 1.45, h: 0.9, hh: 1.2, ax: 'z', col: C('#c8a050'), k: 0 },
+      { s: 'box', c: [0, 1.6, 0.97], hs: [0.32, 0.4, 0.04], rd: 0.03, col: C('#2a1c16'), k: 0 },
+      { s: 'cap', a: [1.0, 2.6, -0.8], b: [1.0, 3.9, -0.8], r: 0.07, col: C('#5e3a20'), k: 0 },
+      { s: 'box', c: [1.0, 3.65, -1.25], hs: [0.04, 0.25, 0.42], rd: 0.02, col: C('#1e2230'), k: 0 },
+      { s: 'sph', c: [1.05, 3.68, -1.25], r: 0.14, col: C('#f4ecdc'), k: 0 },
+      ...[[1.6, 1.2], [1.95, 0.75], [-1.7, 1.0]].map(([x, z]) => ({ s: 'box', c: [x, 0.62, z], hs: [0.3, 0.3, 0.3], rd: 0.04, col: C('#b07a45'), k: 0 }))], { ao: 0.5 });
+    // glacier bay: an iceberg, pale blue-white facets under a snow cap
+    P('iice', [crag([0, 0.2, 0], 3.6, 7, C('#bfe6f6'), [1.1, 0.55, 1.0]), crag([1.2, 1.2, -0.6], 1.8, 11, C('#d8f2ff'), [1, 1.1, 1]),
+      { s: 'ell', c: [0.9, 2.2, -0.5], rr: [1.3, 0.35, 1.2], col: C('#ffffff'), k: 0.4 }, { s: 'ell', c: [-0.8, 1.3, 0.6], rr: [1.6, 0.3, 1.5], col: C('#ffffff'), k: 0.4 }], { ao: 0.3 });
+    // volcano atoll: a black cone with glowing lava at the top and down one side
+    P('ivolc', [crag([0, 0.1, 0], 3.8, 5, C('#3a3438'), [1.05, 0.45, 1.0]), { s: 'cap', a: [0, 0.6, 0], b: [0, 2.6, 0], r: 2.0, r2: 0.9, col: C('#2e282c'), k: 0.6 },
+      { s: 'cyl', ax: 'y', c: [0, 2.75, 0], r: 0.7, hh: 0.3, rd: 0.1, sub: true, k: 0.1 },
+      { s: 'cyl', ax: 'y', c: [0, 2.35, 0], r: 0.72, hh: 0.08, rd: 0.05, col: C('#ff6a1a'), k: 0 },
+      { s: 'cap', a: [0.5, 2.3, 0.4], b: [1.9, 0.6, 1.6], r: 0.18, col: C('#ff8a2a'), k: 0.1 }], { ao: 0.4 });
+    // ghost fog: a dark rock with a dead tree and leaning tombstones
+    P('ighost', [crag([0, 0.1, 0], 3.6, 9, C('#4a4650'), [1.1, 0.42, 1.0]), { s: 'ell', c: [0, 0.75, 0], rr: [2.4, 0.35, 2.2], col: C('#5a6a5a'), k: 0.4 },
+      { s: 'cap', a: [-0.6, 0.9, -0.4], b: [-0.4, 3.2, -0.2], r: 0.22, r2: 0.12, col: C('#3a3030'), k: 0.05 },
+      { s: 'cap', a: [-0.45, 2.4, -0.25], b: [0.7, 3.3, 0.1], r: 0.1, r2: 0.05, col: C('#3a3030'), k: 0.05 },
+      { s: 'cap', a: [-0.45, 2.7, -0.25], b: [-1.4, 3.5, -0.6], r: 0.09, r2: 0.04, col: C('#3a3030'), k: 0.05 },
+      ...[[1.2, 0.6, 0.15], [0.6, 1.5, -0.2], [1.8, -0.4, 0.3]].map(([x, z, t]) => ({ s: 'box', c: [x, 1.1, z], hs: [0.32, 0.45, 0.1], rd: 0.12, col: C('#9a9aa4'), k: 0 }))], { ao: 0.4 });
+    // thunder sea: a tall rock spire with a lightning rod on top
+    P('ispire', [crag([0, 0.1, 0], 3.5, 13, rockD, [1.1, 0.42, 1.0]), crag([0, 2.0, 0], 1.5, 17, C('#5a5a64'), [1, 2.2, 1]),
+      { s: 'cap', a: [0, 4.6, 0], b: [0, 6.2, 0], r: 0.09, col: C('#c8d0da'), k: 0 }, { s: 'sph', c: [0, 6.3, 0], r: 0.2, col: C('#ffe86a'), k: 0 }], { ao: 0.4 });
+    // kraken deep: rocks with a broken shipwreck lying across them
+    P('iwreck', [crag([0, 0.0, 0], 3.4, 19, rockD, [1.1, 0.35, 1.0]),
+      { s: 'ell', c: [0.4, 0.6, 0.2], rr: [1.1, 0.9, 2.6], col: C('#5a3a24'), k: 0 }, { s: 'box', c: [0.4, 1.6, 0.2], hs: [2, 1, 3], sub: true, k: 0 },
+      { s: 'ell', c: [0.4, 1.0, 0.2], rr: [0.85, 0.6, 2.3], sub: true, k: 0 },
+      { s: 'cap', a: [0.5, 0.6, 0.4], b: [1.6, 2.8, -0.6], r: 0.13, col: C('#4a3020'), k: 0 },
+      { s: 'box', c: [1.4, 2.3, -0.4], hs: [0.04, 0.5, 0.5], rd: 0.03, col: C('#d8ccb0'), k: 0 },
+      ...[[-1.6, 1.4], [2.0, -1.6]].map(([x, z]) => ({ s: 'cap', a: [x, 0.3, z], b: [x * 1.05, 1.2, z * 1.05], r: 0.15, r2: 0.05, col: C('#f4ecdc'), k: 0.05 }))], { ao: 0.4 });
+    // pirate fortress: a stone fort, a round cannon tower with battlements (the tower fires at you)
+    const bat = (r, y) => Array.from({ length: 8 }, (_, i) => { const a = i / 8 * TAU; return { s: 'box', c: [Math.cos(a) * r, y, Math.sin(a) * r], hs: [0.22, 0.2, 0.22], rd: 0.04, col: C('#a8a49a'), k: 0 }; });
+    P('ifort', [crag([0, 0.0, 0], 3.7, 23, rockG, [1.1, 0.4, 1.0]),
+      { s: 'box', c: [0, 0.9, 0], hs: [2.4, 0.6, 2.0], rd: 0.12, col: C('#b8b4aa'), k: 0 },
+      { s: 'cyl', ax: 'y', c: [0, 2.0, 0], r: 1.2, hh: 0.9, rd: 0.08, col: C('#c8c4ba'), k: 0 },
+      ...bat(1.05, 3.05), { s: 'cyl', ax: 'y', c: [0, 3.0, 0], r: 0.85, hh: 0.2, rd: 0.05, col: C('#8a867c'), k: 0 },
+      { s: 'cap', a: [0, 3.1, 0], b: [0, 4.4, 0], r: 0.06, col: C('#5e3a20'), k: 0 }, { s: 'box', c: [0, 4.15, -0.42], hs: [0.03, 0.22, 0.38], rd: 0.02, col: C('#1e2230'), k: 0 },
+      ...[[1, 1], [-1, 1], [1, -1], [-1, -1]].map(([sx, sz]) => ({ s: 'cyl', ax: 'y', c: [sx * 2.2, 1.7, sz * 1.8], r: 0.45, hh: 0.25, rd: 0.05, col: C('#a8a49a'), k: 0 }))], { ao: 0.4 });
   }
 }

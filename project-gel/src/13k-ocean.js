@@ -13,12 +13,12 @@
 // distance; wake: wake width; bob: how much it rides the swell
 const SHIPS = [
   { id: 'raft', name: 'Raft', model: 'raft', len: 2.5, wid: 1.9, deck: 0.17, spot: [0, -0.2], heroS: 0.8, speed: 4.6, accel: 5.5, turn: 3.0, hull: 0, ram: 16, grip: 6, zoom: 0.88, wake: 0.8, bob: 0.05 },
-  { id: 'canoe', name: 'Canoe', model: 'canoe', len: 3.8, wid: 1.05, deck: 0.12, spot: [0, -0.35], heroS: 0.82, speed: 5.4, accel: 6.5, turn: 2.7, hull: 0.15, ram: 24, grip: 7, zoom: 1.08, wake: 0.9, bob: 0.045 },
-  { id: 'sloop', name: 'Pirate Sloop', model: 'sloop', len: 5.6, wid: 2.1, deck: 0.62, spot: [0, -1.3], heroS: 0.9, speed: 5.6, accel: 5, turn: 2.2, hull: 0.35, ram: 36, grip: 9, zoom: 1.22, wake: 1.25, bob: 0.04 },
-  { id: 'galleon', name: 'Black Galleon', model: 'galleon', len: 7.6, wid: 2.7, deck: 0.85, spot: [0, -2.2], heroS: 1.0, speed: 5.8, accel: 4.2, turn: 1.8, hull: 0.6, ram: 50, grip: 11, zoom: 1.4, wake: 1.6, bob: 0.035 },
-  { id: 'yacht', name: 'Yacht', model: 'yacht', len: 9.4, wid: 3.0, deck: 1.0, spot: [0, 2.3], heroS: 1.1, speed: 6.8, accel: 5, turn: 1.7, hull: 0.85, ram: 64, grip: 12, zoom: 1.58, wake: 1.9, bob: 0.03 },
-  { id: 'cruise', name: 'Cruise Ship', model: 'cruise', len: 12, wid: 3.6, deck: 2.1, spot: [0, -3.4], heroS: 1.25, speed: 6.4, accel: 3.2, turn: 1.3, hull: 1.2, ram: 84, grip: 14, zoom: 1.8, wake: 2.3, bob: 0.02 },
-  { id: 'cargo', name: 'Cargo Ship', model: 'cargo', len: 14.5, wid: 3.9, deck: 2.5, spot: [0, 5.2], heroS: 1.4, speed: 6.2, accel: 2.6, turn: 1.05, hull: 1.6, ram: 110, grip: 16, zoom: 2.0, wake: 2.6, bob: 0.015 },
+  { id: 'canoe', name: 'Canoe', model: 'canoe', len: 3.8, wid: 1.05, deck: 0.125, spot: [0, -0.35], heroS: 0.82, speed: 5.4, accel: 6.5, turn: 2.7, hull: 0.15, ram: 24, grip: 7, zoom: 1.08, wake: 0.9, bob: 0.045 },
+  { id: 'sloop', name: 'Pirate Sloop', model: 'sloop', len: 5.6, wid: 2.1, deck: 0.655, spot: [0, -0.55], heroS: 0.9, speed: 5.6, accel: 5, turn: 2.2, hull: 0.35, ram: 36, grip: 9, zoom: 1.22, wake: 1.25, bob: 0.04 },
+  { id: 'galleon', name: 'Black Galleon', model: 'galleon', len: 7.6, wid: 2.7, deck: 0.885, spot: [0, 0.4], heroS: 1.0, speed: 5.8, accel: 4.2, turn: 1.8, hull: 0.6, ram: 50, grip: 11, zoom: 1.4, wake: 1.6, bob: 0.035 },
+  { id: 'yacht', name: 'Yacht', model: 'yacht', len: 9.4, wid: 3.0, deck: 1.19, spot: [0, 2.2], heroS: 1.1, speed: 6.8, accel: 5, turn: 1.7, hull: 0.85, ram: 64, grip: 12, zoom: 1.58, wake: 1.9, bob: 0.03 },
+  { id: 'cruise', name: 'Cruise Ship', model: 'cruise', len: 12, wid: 3.6, deck: 2.76, spot: [0, -1.0], heroS: 1.25, speed: 6.4, accel: 3.2, turn: 1.3, hull: 1.2, ram: 84, grip: 14, zoom: 1.8, wake: 2.3, bob: 0.02 },
+  { id: 'cargo', name: 'Cargo Ship', model: 'cargo', len: 14.5, wid: 3.9, deck: 3.19, spot: [0, 4.4], heroS: 1.4, speed: 6.2, accel: 2.6, turn: 1.05, hull: 1.6, ram: 110, grip: 16, zoom: 2.0, wake: 2.6, bob: 0.015 },
 ];
 // The ten sea chapters. rough: swell (0 calm .. 1 rough); storm: a storm blows from the start (1), or comes in with
 // the boss (0.5); deep/shallow/lines: the water's colors; isle: the islands' look; mix: [enemy, from second, weight]
@@ -40,11 +40,11 @@ const SEA = {
   sink: 0.52,       // how far a swimmer sits in the water (of its height): the water hides the rest
   ramMin: 1.1,      // closing speed that counts as a ram
   hackCd: 1.25,     // seconds between a boarder's hook blows
-  shake: 0.55,      // boarders are flung off when the ship turns faster than this share of its best turn rate
+  shake: 0.38,      // boarders are flung off when the ship turns faster than this share of its best turn rate
   view: 1,          // (set from the ship) camera zoom
 };
 // the live sea state of a run (G.run.sea === OC while sailing)
-const OC = { ship: null, wake: [], isles: [], chunks: new Map(), balls: [], sink: null, stage: 0, t: 0, wakeT: 0, storm: 0 };
+const OC = { ship: null, wake: [], isles: [], chunks: new Map(), balls: [], shot: [], mines: [], nets: [], crew: [], hz: [], look: null, sink: null, stage: 0, t: 0, wakeT: 0, storm: 0 };
 
 function seaInfo(n) {
   const k = clamp(n, 1, SEA_COUNT) - 1, C = SEA_CHAPTERS[k];
@@ -69,14 +69,15 @@ function seaLook(n) {
 
 // ---------- starting and leaving ----------
 function beginSea(n) {
-  prioritizeMeshes(SEA_MESHES);
+  // the first ships and every mount next (the first level-up offers them), the big ships after
+  prioritizeMeshes([...SEA_MESHES, 'canoe', ...MOUNT_MESHES, 'sloop', 'sloop_rig']);
   for (const m of ['raft', 'pswim']) ensureMeshNow(m);
   startSea(n);
 }
 function startSea(chapter) {
   const info = seaInfo(chapter);
   OC.ship = { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
-  OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.sink = null; OC.stage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
+  OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.shot.length = 0; OC.mines.length = 0; OC.nets.length = 0; OC.crew.length = 0; OC.hz.length = 0; OC.look = null; OC.boltT = 5; OC.sink = null; OC.stage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
   const run = G.run = {
     chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
@@ -177,6 +178,11 @@ function updateOcean(dt) {
   seaFoes(dt);
   updateSkills(dt);
   updateSeaBalls(dt);
+  updateSeaShots(dt);
+  seaPassives(dt);
+  seaIsleTick(dt);
+  updateSeaHazards(dt);
+  seaWeather(dt);
   updateProjectiles(dt);
   updateEnemyShots(dt);
   updatePickups(dt);
@@ -209,8 +215,9 @@ function seaSteer(dt) {
     thr = m * clamp(Math.cos(diff) * 0.75 + 0.45, 0.2, 1);
   }
   const want = thr * top;
-  S.speed += (want - S.speed) * (1 - Math.exp(-dt * (want > S.speed ? D.accel / top : 0.8)));
-  const tr = D.turn * (0.4 + 0.6 * clamp(S.speed / top, 0, 1));
+  const acc = D.accel * (1 + 0.06 * lvlOf('propeller')), turn = D.turn * (1 + 0.05 * lvlOf('sails'));
+  S.speed += (want - S.speed) * (1 - Math.exp(-dt * (want > S.speed ? acc / top : 0.8)));
+  const tr = turn * (0.4 + 0.6 * clamp(S.speed / top, 0, 1));
   S.yawV += (steer * tr - S.yawV) * (1 - Math.exp(-dt * 5));
   S.yaw += S.yawV * dt;
   const k = 1 - Math.exp(-dt * 4);
@@ -259,12 +266,14 @@ function seaIslands(first) {
   ARENA.obstacles = OC.isles.map(I => I.ob);
 }
 function seaMakeIsle(x, z, rnd) {
-  const r = 3.2 + rnd() * 3.4, kind = rnd() < 0.5 ? 'isle0' : 'isle1', yaw = rnd() * TAU;
+  const kinds = SEA_CHAPTERS[G.run.chapter - 1].isles || ['isle0', 'isle1'];
+  const r = 3.2 + rnd() * 3.4, kind = kinds[Math.floor(rnd() * kinds.length)], yaw = rnd() * TAU;
   const I = { x, z, r, kind, yaw, key: Math.floor(x / ISLE_CHUNK) + ',' + Math.floor(z / ISLE_CHUNK), deco: [], ob: { x, z, r: r * 0.92, shape: 'circle', shots: false, isle: true } };
   // palms and rocks on top (in the island's own frame, as a share of its radius)
-  const n = 1 + Math.floor(rnd() * 3);
+  // palms and rocks dress the plain sandy islands; the themed ones bring their own
+  const n = kind === 'isle0' || kind === 'isle1' ? 1 + Math.floor(rnd() * 3) : kind === 'ihut' ? 1 : 0;
   for (let i = 0; i < n; i++) { const a = rnd() * TAU, d = rnd() * 0.45; I.deco.push({ m: 'palm', x: x + Math.cos(a) * d * r, z: z + Math.sin(a) * d * r, s: 1.3 + rnd() * 0.5, yaw: rnd() * TAU }); }
-  for (let i = 0; i < 2; i++) { const a = rnd() * TAU, d = 0.55 + rnd() * 0.25; I.deco.push({ m: 'rock' + Math.floor(rnd() * 3), x: x + Math.cos(a) * d * r, z: z + Math.sin(a) * d * r, s: 0.9 + rnd() * 0.6, yaw: rnd() * TAU, y: 0.15 }); }
+  for (let i = 0; i < (n ? 2 : 0); i++) { const a = rnd() * TAU, d = 0.55 + rnd() * 0.25; I.deco.push({ m: 'rock' + Math.floor(rnd() * 3), x: x + Math.cos(a) * d * r, z: z + Math.sin(a) * d * r, s: 0.9 + rnd() * 0.6, yaw: rnd() * TAU, y: 0.15 }); }
   OC.isles.push(I);
 }
 function mulberry(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -297,7 +306,7 @@ function seaSpawnPoint() {
   return [G.cam.x + r, G.cam.z];
 }
 function seaSpawn() {
-  const run = G.run, t = run.t, C = SEA_CHAPTERS[run.chapter - 1], mix = C.mix || SEA_CHAPTERS[0].mix;
+  const run = G.run, t = run.t, C = SEA_CHAPTERS[run.chapter - 1], mix = C.mix;
   let total = 0;
   const w = mix.filter(m => t >= m[1]);
   for (const m of w) total += m[2];
@@ -305,32 +314,37 @@ function seaSpawn() {
   for (const m of w) { r -= m[2]; if (r <= 0) { type = m[0]; break; } }
   const [x, z] = seaSpawnPoint();
   // swimmers come in little groups
-  const n = type === 'pswim' ? (t < 60 ? randInt(1, 2) : randInt(2, 4)) : 1;
+  const n = type === mix[0][0] ? (t < 60 ? randInt(1, 2) : randInt(2, 4)) : type === 'pdiver' ? randInt(1, 2) : 1;
   for (let i = 0; i < n; i++) seaFoe(type, x + rand(-1, 1), z + rand(-1, 1));
 }
 function seaFoe(type, x, z, opts) {
   const e = spawnEnemy(type, x, z, opts);
   const D = e.def;
-  if (D.shell) e.shell = e.shellMax = D.shell * (e.maxHp / D.hp) * (e.elite ? 1 : 1);
+  if (D.shell) e.shell = e.shellMax = D.shell * (e.maxHp / D.hp);
   e.bobPh = rand(0, TAU);
+  if (type === 'pdiver') e.hidden = true;
   return e;
 }
 function seaEvents(chapter) {
-  return [{ t: 60, kind: 'swarm', n: 16 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 26 }, { t: 210, kind: 'swarm', n: 36 },
-    { t: 255, kind: 'surge', n: 30 }, { t: 280, kind: 'swarm', n: 44 }, { t: 300, kind: 'boss' }].sort((a, b) => a.t - b.t);
+  const ev = [{ t: 60, kind: 'swarm', n: 16 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 26 }, { t: 210, kind: 'swarm', n: 36 },
+    { t: 255, kind: 'surge', n: 30 }, { t: 280, kind: 'swarm', n: 44 }, { t: 300, kind: 'boss' }];
+  MINI_VISITS.forEach(([f], k) => ev.push({ t: 300 * f, kind: 'mini', k }));
+  return ev.sort((a, b) => a.t - b.t);
 }
 function seaEvent(ev) {
   const run = G.run, S = OC.ship;
   if (ev.kind === 'swarm') {
     // a ring of swimmers closing in, with a gap to sail out through
     const r = VIEW.radius + 2, off = rand(0, TAU), n = Math.round(ev.n * run.info.rateMul);
-    for (let i = 0; i < n; i++) { const a = off + (i / n) * TAU * 0.75, x = S.x + Math.cos(a) * r, z = S.z + Math.sin(a) * r; if (!inIsle(x, z, 0.5)) seaFoe('pswim', x, z); }
+    const type = seaTheme().mix[0][0];
+    for (let i = 0; i < n; i++) { const a = off + (i / n) * TAU * 0.75, x = S.x + Math.cos(a) * r, z = S.z + Math.sin(a) * r; if (!inIsle(x, z, 0.5)) seaFoe(type, x, z); }
   } else if (ev.kind === 'elite') {
     const [x, z] = seaSpawnPoint();
-    seaFoe(pick(['pswim', 'pfloat', 'ptube']), x, z, { elite: true });
+    seaFoe(pick(seaTheme().mix.filter(m => m[0] !== 'pdiver')).at(0), x, z, { elite: true });
   } else if (ev.kind === 'surge') {
     for (let i = 0; i < Math.round(ev.n * run.info.rateMul); i++) seaSpawn();
-  } else if (ev.kind === 'boss') seaBossStart();
+  } else if (ev.kind === 'mini') seaMini(ev.k);
+  else if (ev.kind === 'boss') seaBossStart();
 }
 // (until each chapter has its own boss vehicle: a giant tuber pirate)
 function seaBossStart() {
@@ -356,8 +370,12 @@ function seaFoes(dt) {
     e.spawnT = Math.max(0, e.spawnT - dt); e.ramCd = (e.ramCd || 0) - dt; e.stun = Math.max(0, (e.stun || 0) - dt);
     e.squashV += (300 * (1 - e.squash) - 14 * e.squashV) * dt;
     e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
+    e.slowT -= dt; if (e.slowT <= 0) e.slowMul = 1;
+    e.auraTint = Math.max(0, (e.auraTint || 0) - dt * 2);
     if (frozen) { e.phase += dt * 0.4; continue; }
     if (e.frozen > 0) { e.frozen -= dt; continue; }
+    // the sea's own creatures (island musketeers, divers, minibosses, bosses: 13m-sea-folk.js)
+    if (SEA_AI[e.type] && SEA_AI[e.type](e, dt, D)) continue;
     if (e.grab) {
       // aboard: ride along, hacking at the hull every so often
       const w = shipW(e.grab.lx, e.grab.lz);
@@ -372,10 +390,12 @@ function seaFoes(dt) {
       continue;
     }
     e.act = null;
+    // caught in a net: held where it is
+    if (e.netT > 0) { e.netT -= dt; e.vx = e.vz = 0; e.x += e.kx * dt; e.z += e.kz * dt; e.kx *= 0.9; e.kz *= 0.9; e.phase += dt * 2.5; }
     // swim for the nearest point of the hull
     const hd = hullDist(e.x, e.z, n);
     let dx = -n[0], dz = -n[1];
-    if (e.stun > 0) { dx = 0; dz = 0; }
+    if (e.stun > 0 || e.netT > 0) { dx = 0; dz = 0; }
     const sp = e.speed * e.slowMul;
     const k = 1 - Math.exp(-3 * dt);
     e.vx += (dx * sp - e.vx) * k; e.vz += (dz * sp - e.vz) * k;
@@ -385,10 +405,11 @@ function seaFoes(dt) {
     if (Math.hypot(e.vx, e.vz) > 0.2) e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 6));
     // against the hull: rammed, or aboard
     const d2 = hullDist(e.x, e.z, n), touch = d2 < e.radius * 0.6;
+    if (touch && e.def.keg) { seaKegBoom(e, true); continue; }
     if (touch) {
       const vn = -(S.vx * n[0] + S.vz * n[1]);   // how fast the hull closes on it
       if (vn > SEA.ramMin && e.ramCd <= 0) seaRam(e, n, vn, top);
-      else if (!e.boss && e.stun <= 0 && boarders < D.grip && e.spawnT <= 0) { seaBoard(e); boarders++; }
+      else if (!e.boss && e.stun <= 0 && !(e.netT > 0) && boarders < D.grip && e.spawnT <= 0) { seaBoard(e); boarders++; }
       else { e.x += n[0] * (e.radius * 0.6 - d2); e.z += n[1] * (e.radius * 0.6 - d2); }
     }
     // around the islands
@@ -400,7 +421,7 @@ function seaFoes(dt) {
   // keep a little room between swimmers
   const cell = GRID.cell, map = GRID.map;
   for (const e of run.enemies) {
-    if (e.dying || e.grab) continue;
+    if (e.dying || e.grab || e.y) continue;
     const x0 = Math.floor((e.x - 1) / cell), x1 = Math.floor((e.x + 1) / cell), z0 = Math.floor((e.z - 1) / cell), z1 = Math.floor((e.z + 1) / cell);
     let looks = 14;
     for (let cx = x0; cx <= x1 && looks > 0; cx++) for (let cz = z0; cz <= z1 && looks > 0; cz++) {
@@ -408,7 +429,7 @@ function seaFoes(dt) {
       if (!a) continue;
       for (let i = 0; i < a.length && looks > 0; i++) {
         const o = a[i]; looks--;
-        if (o === e || o.dying || o.grab || o.id < e.id) continue;
+        if (o === e || o.dying || o.grab || o.y || o.id < e.id) continue;
         const dx = o.x - e.x, dz = o.z - e.z, rr = e.radius + o.radius, d2 = dx * dx + dz * dz;
         if (d2 >= rr * rr || d2 < 1e-8) continue;
         const d = Math.sqrt(d2), ov = (rr - d) * 0.5, tot = e.mass + o.mass;
@@ -422,13 +443,15 @@ function seaFoes(dt) {
 // rammed: hit as hard as the ship was going, and thrown clear with a splash
 function seaRam(e, n, vn, top) {
   const run = G.run, S = OC.ship, D = shipDef();
-  const dmg = D.ram * run.stats.ramMul * clamp(0.35 + 0.65 * vn / top, 0.35, 1.2) / run.stats.dmgMul;
+  const fig = slotOf('figure'), figMul = fig ? 1 + skillL(fig).ram / 100 : 1;
+  const dmg = D.ram * run.stats.ramMul * figMul * (e.netT > 0 ? 1.5 : 1) * clamp(0.35 + 0.65 * vn / top, 0.35, 1.2) / run.stats.dmgMul;
   e.ramCd = 0.45; e.stun = 0.5;
   const push = (4 + vn * 1.6) / Math.sqrt(e.mass);
   hurtEnemy(e, dmg, n[0] * push * e.mass, n[1] * push * e.mass, { color: [1, 0.85, 0.4] });
   if (e.boss) { e.kx += n[0] * push * 0.3; e.kz += n[1] * push * 0.3; }
   FX.burst(e.x, 0.3, e.z, 8, [0.85, 0.95, 1], 4, 0.1, 0.45, 2, 2);
   FX.ring(e.x, e.z, 1.2, [0.85, 0.97, 1], 0.35, 0.6);
+  if (fig) figureSplash(e);
   // a heavy ship barely slows down; the raft feels every bump
   S.speed *= 1 - clamp(0.12 * e.mass / (1 + OC.stage * 1.5), 0, 0.3);
   G.cam.shake = Math.max(G.cam.shake, e.boss ? 0.2 : 0.05);
@@ -555,7 +578,8 @@ function seaCamera(dt, snap) {
 const SEA_WHITE = [1, 1, 1];
 function emitSea() {
   const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
-  f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view, 140 * SEA.view];
+  const fog = SEA_CHAPTERS[run.chapter - 1].fog || 1;
+  f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view * fog * fog, 140 * SEA.view * fog];
   SCENE.arenaBox = null; SCENE.pools = [];
   // the ship (or its pieces)
   if (OC.sink) {
@@ -563,6 +587,8 @@ function emitSea() {
       const m = MODELS.defs[P.m];
       if (m && R.enemyDraw[P.m]) pushEnemy(P.m, false, P.x, P.y, P.z, P.yaw, m.clips.tilt.row + Math.min(15, Math.floor(P.tilt * 15.99)), 1, 1, 0, 0, 0, 1, 1, 1);
     }
+    const rg = shipDef().model + '_rig', mid = OC.sink.pieces[1];
+    if (R.enemyDraw[rg]) pushEnemy(rg, false, mid.x, mid.y, mid.z, mid.yaw, MODELS.defs[rg].clips.tilt.row + Math.min(15, Math.floor(mid.tilt * 15.99)), 1, 1, 0, 0, 0, 1, 1, 1);
   } else seaDrawShip(S.x, S.y, S.z, S.yaw, OC.stage, t, run.hurtFlash > 0.4 ? 0.5 : 0);
   // the wake
   for (const w of OC.wake) {
@@ -587,32 +613,45 @@ function emitSea() {
     const br = 1.06 + 0.04 * Math.sin(t * 1.4 + I.x);
     pushDecal(I.x, I.z, I.r * br, I.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
     if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1);
-    for (const o of I.deco) if (R.enemyDraw[o.m]) pushEnemy(o.m, false, o.x, (o.y || 0) + I.r * 0.12, o.z, o.yaw, MODELS.defs[o.m].clips.still.row, o.s, 1, 0, 0, 0, PROP_WHITE[0], PROP_WHITE[1], PROP_WHITE[2]);
+    for (const o of I.deco) if (R.enemyDraw[o.m]) pushEnemy(o.m, false, o.x, (o.y || 0) + I.r * 0.145, o.z, o.yaw, MODELS.defs[o.m].clips.still.row, o.s, 1, 0, 0, 0, PROP_WHITE[0], PROP_WHITE[1], PROP_WHITE[2]);
   }
   // swimmers: only head and shoulders above the water, with a little foam ring
   for (const e of run.enemies) {
-    if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
+    if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale) + (e.mini || e.boss ? 4 : 0)) && !e.boss) continue;
+    if (SEA_DRAW[e.type] && SEA_DRAW[e.type](e)) continue;
     if (!R.enemyDraw[e.model]) continue;
     const dead = e.dying ? clamp(e.dying, 0, 1) : 0, appear = e.spawnT > 0 ? 1 - e.spawnT / 0.5 : 1;
     const bob = Math.sin(t * 2.4 + e.bobPh) * 0.04 * e.scale, M = MODELS.defs[e.model];
     const y = (e.grab ? -0.32 : -SEA.sink) * e.scale * (M.top || 1) * 0.9 + bob - dead * 0.6 * e.scale;
     const row = e.act && M.clips[e.act.clip] ? M.clips[e.act.clip].row + Math.floor(clamp(e.act.u, 0, 0.999) * M.clips[e.act.clip].frames) : M.clips.paddle.row + Math.floor((e.phase - Math.floor(e.phase)) * M.clips.paddle.frames);
     const tn = e.tint;
-    pushEnemy(e.model, e.elite, e.x, y, e.z, e.yaw, row, e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? 0.85 : 0, 0, tn[0], tn[1], tn[2]);
+    pushEnemy(e.model, e.elite, e.x, y, e.z, e.yaw, row, e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? 0.85 : 0, e.auraTint || 0, tn[0], tn[1], tn[2], e.def.ghost ? 0.35 : 0);
     const rr = e.radius * 1.15 * (1 + 0.05 * Math.sin(t * 3 + e.bobPh));
     pushDecal(e.x, e.z, rr, rr, 0, 3, 0, 0.5, 1, 1, 1, 0.42 * (1 - dead), true);
+    if (e.reel > 0) { const p = mountW(mountsOf(D).bow); R.ribStrip([p[0], p[1] + 0.3, p[2], e.x, 0.5, e.z], 2, 0.04, [0.95, 0.88, 0.65, 1], 1, 0, 1); }
   }
-  // cannonballs and the rest of the sea's shots
+  // cannonballs and the rest of the sea's shots, and the hazards
   emitSeaShots();
+  emitSeaHazards();
 }
 // a ship and everything mounted on it
 function seaDrawShip(x, y, z, yaw, stage, t, flash) {
-  const D = SHIPS[stage], model = R.enemyDraw[D.model] ? D.model : 'raft';
-  const M = MODELS.defs[model];
+  let D = SHIPS[stage];
+  while (!R.enemyDraw[D.model] && D !== SHIPS[0]) D = SHIPS[SHIPS.indexOf(D) - 1];
+  const model = D.model, M = MODELS.defs[model];
   if (!M || !R.enemyDraw[model]) return;
   const c = M.clips.rock, row = c.row + Math.floor(((t * 0.18) % 1) * c.frames);
   pushEnemy(model, false, x, y, z, yaw, row, 1, 1, 0, flash, 0, 1, 1, 1);
-  if (G.run && G.run.sea) seaDrawMounts(x, y, z, yaw, D);
+  const rg = model + '_rig';
+  if (R.enemyDraw[rg]) {
+    // masts and sails fade while they stand between the camera (to the south) and the blob
+    const h = G.hero.pos, Rm = MODELS.defs[rg], mx = x + Math.sin(yaw) * 0.6, mz = z + Math.cos(yaw) * 0.6;
+    const front = (mz - h[2]) > -0.5 && Math.abs(mx - h[0]) < 1.8 + Math.abs(Math.cos(yaw)) * 0.4;
+    OC.rigFade = clamp((OC.rigFade || 0) + (front ? 0.08 : -0.08), 0, 0.62);
+    const rc = Rm.clips.rock;
+    pushEnemy(rg, false, x, y, z, yaw, rc.row + Math.floor(((t * 0.18) % 1) * rc.frames), 1, 1, 0, flash, 0, 1, 1, 1, OC.rigFade);
+  }
+  if (G.run && G.run.sea && D === SHIPS[stage]) seaDrawMounts(x, y, z, yaw, D);
 }
 
 // ---------- the home screen's ocean page: the blob lounging on its best ship on a calm sea ----------
@@ -629,7 +668,8 @@ function seaIcons() {
   for (const [key, m, opts] of todo) {
     R.resetStreams();
     const M = MODELS.defs[m], c = M.clips.still || M.clips.rock || Object.values(M.clips)[0];
-    pushEnemy(m, false, 0, 0, 0, opts.yaw ?? 0.7, c.row, opts.s ?? 1, 1, 0, 0, 0, 1, 1, 1);
+    const g = opts.goo ? R.goo.base : [1, 1, 1];
+    pushEnemy(m, false, 0, 0, 0, opts.yaw ?? 0.7, c.row, opts.s ?? 1, 1, 0, 0, 0, g[0], g[1], g[2]);
     const top = (M.top || 1) * (opts.s ?? 1), mid = opts.mid ?? top * 0.5, dist = opts.d ?? Math.max(top, M.bmax[0] * (opts.s ?? 1)) * 2.4;
     ICONS.map[key] = ICONS.map[key + '!'] = iconCapture([0, mid + dist * 0.55, dist], [0, mid, 0], 0.62);
   }

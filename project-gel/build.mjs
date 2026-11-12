@@ -23,7 +23,7 @@ if (target === 'visual') {
 let html = template.replace('/*JS*/', () => js);
 if (target !== 'visual') {
   // the mesh-building worker reuses the util, SDF mesher and model files as plain text
-  const worker = ['00-util.js', '03-sdfmesh.js', '04-models.js', '04a-theme-models.js', '04b-theme-models2.js', '04c-theme-models3.js', '04d-west-models.js', '04e-factory-models.js', '04f-shroom-models.js', '04g-dino-models.js', '04h-kitchen-models.js', '04i-cave-models.js', '04j-bagger-models.js', '04k-sea-models.js'].map(f => fs.readFileSync(path.join(src, f), 'utf8')).join('\n');
+  const worker = ['00-util.js', '03-sdfmesh.js', '04-models.js', '04a-theme-models.js', '04b-theme-models2.js', '04c-theme-models3.js', '04d-west-models.js', '04e-factory-models.js', '04f-shroom-models.js', '04g-dino-models.js', '04h-kitchen-models.js', '04i-cave-models.js', '04j-bagger-models.js', '04k-sea-models.js', '04l-ship-models.js', '04m-mount-models.js', '04n-sea-boss-models.js'].map(f => fs.readFileSync(path.join(src, f), 'utf8')).join('\n');
   if (/<\/script/i.test(worker) || /<\/script/i.test(js)) throw new Error('source contains a closing script tag');
   html = html.replace('/*WORKER*/', () => worker);
 }
