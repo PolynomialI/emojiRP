@@ -12,7 +12,7 @@ Object.assign(ENEMY_TYPES, {
   phat: { model: 'phat', hp: 26, speed: 1.9, dmg: 6, xp: 3, radius: 0.46, scale: 1.3, tint: '#c8283a', mass: 1.6, sea: true },
   pdiver: { model: 'pdiver', hp: 12, speed: 2.5, dmg: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#ff8a2a', mass: 1, sea: true },
   pbomb: { model: 'pbomb', hp: 10, speed: 1.7, dmg: 4, xp: 2, radius: 0.5, scale: 1.25, tint: '#3a8a4a', mass: 1.2, sea: true, keg: 26, onKill: e => seaKegBoom(e, false) },
-  pparka: { model: 'pparka', hp: 16, shell: 12, speed: 1.8, dmg: 5, xp: 2, radius: 0.46, scale: 1.3, tint: '#3a8ad8', mass: 1.3, sea: true },
+  pparka: { model: 'pparka', hp: 14, speed: 1.9, dmg: 4, xp: 1, radius: 0.46, scale: 1.3, tint: '#3a8ad8', mass: 1.3, sea: true },
   pghost: { model: 'pswim', hp: 14, speed: 2.3, dmg: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#a8fff0', mass: 1, sea: true, ghost: true },
   pmusket: { model: 'pmusket', hp: 22, speed: 0, dmg: 7, xp: 3, radius: 0.4, scale: 1.3, tint: '#c8283a', mass: 99, sea: true },
   pcapt: { model: 'pcapt', hp: 40, speed: 3.2, dmg: 10, xp: 0, radius: 1.2, scale: 1.5, tint: '#8a2a3a', mass: 9, sea: true },

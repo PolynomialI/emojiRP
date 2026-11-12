@@ -50,9 +50,9 @@ function seaInfo(n) {
   const k = clamp(n, 1, SEA_COUNT) - 1, C = SEA_CHAPTERS[k];
   return {
     n, sea: true, arenaName: C.name, bosses: [C.boss],
-    // the sea starts about where the land's chapter 6 leaves off, then climbs
-    hpMul: 1 + 0.18 * k + 0.015 * k * k, dmgMul: 1 + 0.1 * k, rateMul: 0.7 + 0.1 * k, speedMul: 1 + 0.015 * k,
-    bossHpMul: Math.pow(1.2, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
+    // every run starts on a raft, so the chapters climb gently (their crowds, islands and bosses do the rest)
+    hpMul: 1 + 0.1 * k + 0.008 * k * k, dmgMul: 1 + 0.055 * k, rateMul: 0.7 + 0.055 * k, speedMul: 1 + 0.01 * k,
+    bossHpMul: Math.pow(1.15, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
   };
 }
 const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
@@ -124,7 +124,7 @@ function seaStats(run) {
     regen: 0.003 * lv('crew') + g('regen'),
     ramMul: 1 + 0.12 * lv('fort'),
   };
-  run.maxHp = 140 * (1 + D.hull) * (1 + 0.05 * meta.health) * (1 + g('hp'));
+  run.maxHp = 160 * (1 + D.hull) * (1 + 0.05 * meta.health) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = D.heroS; h.bubbles = 0; h.stretchMul = 1; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.topSpeed = 4.5;
@@ -378,7 +378,7 @@ function seaFoes(dt) {
       e.act = { clip: 'hack', u: clamp(1 - e.grab.t / SEA.hackCd, 0, 0.999) };
       if (e.grab.t <= 0) {
         e.grab.t = SEA.hackCd * rand(0.9, 1.1);
-        if (G.state === 'run') { hurtHero(e.dmg, e.x, e.z); FX.burst(e.x, D.deck * 0.6 + 0.3, e.z, 5, [0.75, 0.55, 0.35], 2.5, 0.06, 0.35, 2); AUDIO.play('chop'); }
+        if (G.state === 'run') { hurtHero(e.dmg * 0.7, e.x, e.z); FX.burst(e.x, D.deck * 0.6 + 0.3, e.z, 5, [0.75, 0.55, 0.35], 2.5, 0.06, 0.35, 2); AUDIO.play('chop'); }
       }
       if (fling > 0 && Math.random() < fling * 1.4 * dt) seaUnboard(e, 7 + Math.abs(S.yawV) * 2);
       continue;
@@ -403,7 +403,8 @@ function seaFoes(dt) {
     if (touch) {
       const vn = -(S.vx * n[0] + S.vz * n[1]);   // how fast the hull closes on it
       if (vn > SEA.ramMin && e.ramCd <= 0) seaRam(e, n, vn, top);
-      else if (!e.boss && e.stun <= 0 && !(e.netT > 0) && boarders < D.grip && e.spawnT <= 0) { seaBoard(e); boarders++; }
+      // (a ship under full sail can't be climbed: they bounce off it)
+      else if (!e.boss && e.stun <= 0 && !(e.netT > 0) && boarders < D.grip && e.spawnT <= 0 && S.speed < top * 0.6) { seaBoard(e); boarders++; }
       else { e.x += n[0] * (e.radius * 0.6 - d2); e.z += n[1] * (e.radius * 0.6 - d2); }
     }
     // around the islands

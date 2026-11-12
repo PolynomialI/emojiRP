@@ -195,7 +195,7 @@ function seaModels(defs) {
     return m;
   };
   for (const [name, o] of [['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
-    ['pbomb', { keg: true }], ['pparka', { hat: 'parka', floats: true }], ['pmusket', { hat: 'tricorn', musket: true, full: true }], ['pcapt', { hat: 'tricorn', big: true, coat: true, cutlass: true, full: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
+    ['pbomb', { keg: true }], ['pparka', { hat: 'parka' }], ['pmusket', { hat: 'tricorn', musket: true, full: true }], ['pcapt', { hat: 'tricorn', big: true, coat: true, cutlass: true, full: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
 
   // ---------- the Homing Cannon: an iron barrel with brass bands on a little wheeled carriage, facing +z ----------
   {

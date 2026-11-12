@@ -480,6 +480,7 @@ const UI = {
 
   // ---------- chest ----------
   openChest() {
+    this.chestRun = G.run;
     const run = G.run;
     run.chestQueued--;
     // a ready evolution comes first; otherwise one upgrade per chest
@@ -521,7 +522,7 @@ const UI = {
     setTimeout(() => this.revealChest(), 2000);
   },
   revealChest() {
-    if (!G.run) return; // the run ended while the chest was spinning
+    if (!G.run || G.run !== this.chestRun) return; // the run ended while the chest was spinning
     const res = $('chRes'), rows = [];
     if (this.chestEvo) {
       const id = this.chestEvo, E = EVOLUTIONS[id];
