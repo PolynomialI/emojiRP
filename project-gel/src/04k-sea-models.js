@@ -9,7 +9,7 @@ Object.assign(THEME_CLIPS, {
 });
 const SEA_ISLES = ['icoral', 'ikelp', 'ihut', 'iice', 'ivolc', 'ighost', 'ispire', 'iwreck', 'ifort'];
 for (const id of SEA_ISLES) { THEME_CLIPS[id] = ['still']; THEME_CELLS[id] = 0.1; }
-Object.assign(THEME_CELLS, { scannon: 0.016, isle0: 0.1, isle1: 0.1, raft: 0.024, raft_p0: 0.032, raft_p1: 0.032, raft_p2: 0.032, pswim: 0.017, pfloat: 0.017, ptube: 0.018, phat: 0.017, pdiver: 0.017, pbomb: 0.017, pparka: 0.017, pmusket: 0.016, pcapt: 0.015 });
+Object.assign(THEME_CELLS, { scannon: 0.012, isle0: 0.1, isle1: 0.1, raft: 0.024, raft_p0: 0.032, raft_p1: 0.032, raft_p2: 0.032, pswim: 0.017, pfloat: 0.017, ptube: 0.018, phat: 0.017, pdiver: 0.017, pbomb: 0.017, pparka: 0.017, pmusket: 0.016, pcapt: 0.015 });
 const SEA_MESHES = ['raft', 'pswim', 'scannon', 'isle0', 'isle1', 'pfloat', 'ptube', 'raft_p0', 'raft_p1', 'raft_p2'];
 // the rest of the sea's folk (needed from chapter 2 on, or for minibosses)
 const SEA_FOLK = ['phat', 'pdiver', 'pbomb', 'pparka', 'pmusket', 'pcapt'];
@@ -246,22 +246,49 @@ function seaModels(defs) {
   for (const [name, o] of [['pweed', { weed: true }], ['pmer', { mer: true, hat: 'crown', skin: C('#8ad8d0') }], ['pblink', { hat: 'pilot' }], ['pskel', { skel: true }], ['pballoon', { balloon: true, full: true }], ['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }], ['phat', { hat: 'tricorn', coat: true, cutlass: true }], ['pdiver', { hat: 'cap' }],
     ['pbomb', { keg: true }], ['pparka', { hat: 'parka' }], ['pmusket', { hat: 'tricorn', musket: true, full: true }], ['pcapt', { hat: 'tricorn', big: true, coat: true, cutlass: true, full: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
 
-  // ---------- the Homing Cannon: an iron barrel with brass bands on a little wheeled carriage, facing +z ----------
+  // ---------- the Homing Cannon: a naval gun on a stepped oak carriage with four iron-rimmed spoked wheels; an iron
+  // barrel with reinforcing rings, a swelled muzzle, a cascabel knob, brass bands and a brass homing sight on
+  // top; rope breeching, a quoin wedge, and three cannonballs ready at its side. Facing +z ----------
   {
-    const iron = C('#3a3f4a'), ironL = C('#5a6270'), brass = C('#e0b048');
+    const iron = C('#353a44'), ironL = C('#5a6270'), ironD = C('#22252c'), brass = C('#e8b84a'), oak = C('#9a5f32'), oakD = C('#6a3e1e');
+    const wheel = (sx, sz, r) => [
+      { s: 'cyl', ax: 'x', c: [sx * 0.175, r, sz], r, hh: 0.028, rd: 0.01, col: oakD, k: 0 },
+      { s: 'tor', ax: 'x', c: [sx * 0.178, r, sz], R: r - 0.008, r: 0.012, a0: -Math.PI, a1: Math.PI, col: iron, k: 0 },
+      { s: 'cyl', ax: 'x', c: [sx * 0.2, r, sz], r: 0.026, hh: 0.016, rd: 0.006, col: brass, k: 0 },
+      ...[0, 1, 2].map(i => { const a = i / 3 * Math.PI; return { s: 'cap', a: [sx * 0.205, r + Math.cos(a) * (r - 0.02), sz + Math.sin(a) * (r - 0.02)], b: [sx * 0.205, r - Math.cos(a) * (r - 0.02), sz - Math.sin(a) * (r - 0.02)], r: 0.009, col: oak, k: 0 }; })];
     P('scannon', [
-      { s: 'box', c: [0, 0.1, -0.02], hs: [0.15, 0.07, 0.24], rd: 0.03, col: wood, k: 0 },
-      { s: 'box', c: [0, 0.17, -0.1], hs: [0.12, 0.04, 0.12], rd: 0.02, col: woodD, k: 0 },
-      ...[[1, 1], [1, -1], [-1, 1], [-1, -1]].flatMap(([sx, sz]) => [
-        { s: 'cyl', ax: 'x', c: [sx * 0.17, 0.075, sz * 0.15], r: 0.075, hh: 0.03, rd: 0.012, col: woodD, k: 0 },
-        { s: 'cyl', ax: 'x', c: [sx * 0.195, 0.075, sz * 0.15], r: 0.025, hh: 0.012, rd: 0.005, col: iron, k: 0 }]),
-      { s: 'cap', a: [0, 0.25, -0.22], b: [0, 0.28, 0.42], r: 0.1, r2: 0.072, col: iron, k: 0.02 },
-      { s: 'sph', c: [0, 0.245, -0.27], r: 0.055, col: ironL, k: 0.02 },
-      { s: 'tor', ax: 'z', c: [0, 0.28, 0.42], R: 0.072, r: 0.026, a0: -Math.PI, a1: Math.PI, col: ironL, k: 0 },
-      { s: 'cyl', ax: 'z', c: [0, 0.28, 0.44], r: 0.05, hh: 0.03, rd: 0.005, col: C('#14161c'), sub: true, k: 0 },
-      { s: 'tor', ax: 'z', c: [0, 0.255, -0.05], R: 0.097, r: 0.016, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
-      { s: 'tor', ax: 'z', c: [0, 0.265, 0.2], R: 0.087, r: 0.014, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
-      ...[1, -1].map(sx => ({ s: 'cyl', ax: 'x', c: [sx * 0.105, 0.25, -0.05], r: 0.03, hh: 0.02, rd: 0.005, col: iron, k: 0 })),
+      // the carriage: two stepped cheeks, a transom, the bed and the axles
+      ...[1, -1].flatMap(sx => [
+        { s: 'box', c: [sx * 0.11, 0.13, -0.04], hs: [0.025, 0.06, 0.24], rd: 0.012, col: oak, k: 0 },
+        { s: 'box', c: [sx * 0.11, 0.21, -0.12], hs: [0.025, 0.04, 0.13], rd: 0.012, col: oak, k: 0 },
+        { s: 'box', c: [sx * 0.11, 0.27, -0.18], hs: [0.025, 0.03, 0.06], rd: 0.012, col: oak, k: 0 },
+        ...[-0.2, 0.06].map(z => ({ s: 'sph', c: [sx * 0.137, 0.15, z], r: 0.012, col: iron, k: 0 })),
+        { s: 'cap', a: [sx * 0.137, 0.26, -0.06], b: [sx * 0.137, 0.26, 0.04], r: 0.012, col: iron, k: 0 }]),
+      { s: 'box', c: [0, 0.09, 0.12], hs: [0.12, 0.035, 0.04], rd: 0.01, col: oakD, k: 0 },
+      { s: 'box', c: [0, 0.07, -0.05], hs: [0.1, 0.02, 0.2], rd: 0.008, col: oakD, k: 0 },
+      ...[0.15, -0.17].map(z => ({ s: 'cap', a: [-0.2, 0.075, z], b: [0.2, 0.075, z], r: 0.022, col: iron, k: 0 })),
+      ...wheel(1, 0.15, 0.075), ...wheel(-1, 0.15, 0.075), ...wheel(1, -0.17, 0.068), ...wheel(-1, -0.17, 0.068),
+      // the quoin wedge under the breech
+      { s: 'box', c: [0, 0.18, -0.2], hs: [0.06, 0.025, 0.07], rd: 0.008, col: oak, k: 0 },
+      // the barrel: breech, reinforce rings, chase, muzzle swell and bore
+      { s: 'cap', a: [0, 0.27, -0.24], b: [0, 0.3, 0.42], r: 0.105, r2: 0.07, col: iron, k: 0.02 },
+      { s: 'sph', c: [0, 0.265, -0.27], r: 0.06, col: ironL, k: 0.02 }, { s: 'sph', c: [0, 0.262, -0.34], r: 0.03, col: ironL, k: 0.01 },
+      ...[[-0.16, 0.112], [-0.02, 0.1], [0.12, 0.09]].map(([z, R2]) => ({ s: 'tor', ax: 'z', c: [0, 0.27 + (z + 0.24) * 0.045, z], R: R2, r: 0.014, a0: -Math.PI, a1: Math.PI, col: ironD, k: 0 })),
+      { s: 'tor', ax: 'z', c: [0, 0.285, -0.08], R: 0.104, r: 0.016, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.293, 0.26], R: 0.082, r: 0.014, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 0.3, 0.42], r: 0.088, hh: 0.035, rd: 0.02, col: iron, k: 0.01 },
+      { s: 'tor', ax: 'z', c: [0, 0.3, 0.455], R: 0.075, r: 0.018, a0: -Math.PI, a1: Math.PI, col: ironL, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 0.3, 0.46], r: 0.052, hh: 0.05, rd: 0.005, col: C('#0e1014'), sub: true, k: 0 },
+      // trunnions, the touch hole, the brass homing sight and its little gem
+      ...[1, -1].map(sx => ({ s: 'cyl', ax: 'x', c: [sx * 0.11, 0.27, -0.04], r: 0.032, hh: 0.03, rd: 0.008, col: ironL, k: 0 })),
+      { s: 'cyl', ax: 'y', c: [0, 0.37, -0.18], r: 0.018, hh: 0.012, rd: 0.004, col: brass, k: 0 },
+      { s: 'box', c: [0, 0.39, 0.02], hs: [0.012, 0.03, 0.05], rd: 0.008, col: brass, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.43, 0.04], R: 0.025, r: 0.007, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
+      { s: 'sph', c: [0, 0.43, 0.04], r: 0.013, col: C('#ff4a5a'), k: 0 },
+      // rope breeching looped through the cascabel, cannonballs at its side
+      { s: 'tor', ax: 'y', c: [0, 0.26, -0.34], R: 0.05, r: 0.012, a0: -Math.PI, a1: Math.PI, col: C('#e2c98f'), k: 0 },
+      ...[1, -1].map(sx => ({ s: 'cap', a: [0, 0.26, -0.38], b: [sx * 0.2, 0.2, -0.3], r: 0.011, col: C('#e2c98f'), k: 0 })),
+      ...[[0.27, 0.05, 0.08], [0.33, 0.05, 0.0], [0.3, 0.12, 0.04]].map(([x, y, z]) => ({ s: 'sph', c: [x, y, z], r: 0.05, col: iron, k: 0 })),
     ], { ao: 0.6 });
   }
 

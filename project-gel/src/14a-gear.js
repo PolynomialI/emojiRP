@@ -308,14 +308,14 @@ Object.assign(UI, {
       b.innerHTML = off ? EYE_OFF : EYE_ON;
       b.setAttribute('aria-label', (off ? 'Show ' : 'Hide ') + b.dataset.slot);
     });
-    $('gearGrid').replaceChildren(...this.sortedArtKeys().map(k => {
+    $('gearGrid').replaceChildren(...this.stagger(this.sortedArtKeys().map(k => {
       const { r, def } = artParse(k), worn = g.eq[def.slot] === k;
       const b = this.artButton(k, g.items[k], `${worn ? ' worn' : ''}${g.items[k] >= fuseNeed(r) && r < MYTHIC ? ' fusable' : ''}`);
       // in sell mode a tap sells one copy (the price shows on each item)
       if (this.selling) { const p = document.createElement('span'); p.className = 'price'; p.textContent = SELL_PRICE[r]; b.append(p); }
       b.addEventListener('click', () => { AUDIO.play('click'); if (this.selling) this.sellOne(k); else this.openArtifact(k); });
       return b;
-    }));
+    })));
     $('gearGrid').classList.toggle('selling', !!this.selling);
     $('gSell').textContent = this.selling ? 'DONE' : 'SELL'; $('gSellHint').hidden = !this.selling;
     $('gUpgrade').querySelector('.dot').hidden = !blobUpAffordable();
@@ -329,7 +329,7 @@ Object.assign(UI, {
     G.save.coins += SELL_PRICE[r];
     saveGame(); AUDIO.play('coin');
     this.toast(`Sold ${RARITIES[r].name} ${def.name} for ${SELL_PRICE[r]} coins`);
-    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(G.save.coins); });
+    this.syncCoins();
     this.renderGear();
   },
   // ---------- the blob's own upgrades (Gear > Upgrade) ----------
@@ -337,7 +337,7 @@ Object.assign(UI, {
   renderBlobUp() {
     const sv = G.save, skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp[sv.skin] = sv.blobUp[sv.skin] || {});
     $('buTitle').textContent = skin.name.toUpperCase();
-    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    this.syncCoins();
     $('buList').replaceChildren(...blobUps(skin).map(([k, per]) => {
       const lvl = ups[k] || 0, cost = blobUpCost(lvl), maxed = lvl >= BLOB_UP_MAX, row = document.createElement('div');
       row.className = 'panel bu-row';

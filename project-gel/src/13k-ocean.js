@@ -69,8 +69,8 @@ function seaInfo(n) {
   return {
     n, sea: true, arenaName: C.name, bosses: [C.boss],
     // every run starts on a raft, so the chapters climb gently (their crowds, islands and bosses do the rest)
-    hpMul: (1 + 0.08 * kk + 0.006 * kk * kk) * (1 + 0.07 * deep), dmgMul: (1 + 0.045 * kk) * (1 + 0.035 * deep), rateMul: 0.7 + 0.05 * kk + 0.02 * deep, speedMul: 1 + 0.01 * kk + 0.005 * deep,
-    bossHpMul: Math.pow(1.12, k) * (1 + 0.04 * deep), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
+    hpMul: (1 + 0.08 * kk + 0.006 * kk * kk) * (1 + 0.04 * deep + 0.002 * deep * deep), dmgMul: (1 + 0.045 * kk) * (1 + 0.025 * deep + 0.0015 * deep * deep), deep, rateMul: 0.7 + 0.05 * kk + 0.02 * deep, speedMul: 1 + 0.01 * kk + 0.005 * deep,
+    bossHpMul: Math.pow(1.12, kk) * (1 + 0.05 * deep), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
   };
 }
 const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
@@ -356,7 +356,10 @@ function seaSpawn() {
 }
 function seaFoe(type, x, z, opts) {
   const e = spawnEnemy(type, x, z, opts);
-  const D = e.def;
+  const D = e.def, info = G.run.info;
+  // (in the later oceans their bite eases in over the first three minutes, while the ship is still small: from
+  // 96% in ocean 11 to 60% in ocean 20)
+  if (info.deep) { const s0 = 1 - 0.04 * info.deep; e.dmg *= clamp(s0 + (1 - s0) * G.run.t / 180, s0, 1); }
   if (D.shell) e.shell = e.shellMax = D.shell * (e.maxHp / D.hp);
   e.bobPh = rand(0, TAU);
   if (type === 'pdiver') e.hidden = true;
@@ -715,6 +718,20 @@ const SEA_HOME = { t: 0 };
 const seaBossName = n => BOSS_TYPES[SEA_CHAPTERS[n - 1].boss].name;
 function seaHomeStage() { return clamp((G.save.sea && G.save.sea.ship) || 0, 0, SHIPS.length - 1); }
 
+// a camera that fits a model (its real mesh bounds, turned by yaw and scaled) snugly in an icon, looking down at
+// pitch: [eye, target, fov]
+function iconFrame(m, yaw, s, pitch, fov) {
+  const B = MESHB[m], M = MODELS.defs[m];
+  const lo = B ? B.lo : M.bmin, hi = B ? B.hi : M.bmax;
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), ex = [0, Math.sin(pitch), Math.cos(pitch)], up = [0, Math.cos(pitch), -Math.sin(pitch)];
+  const pts = [];
+  for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) pts.push([(x * cy + z * sy) * s, y * s, (-x * sy + z * cy) * s]);
+  const c = [0, 1, 2].map(a => (Math.min(...pts.map(p => p[a])) + Math.max(...pts.map(p => p[a]))) / 2);
+  let W = 0, H = 0, Z = 0;
+  for (const p of pts) { const d = [p[0] - c[0], p[1] - c[1], p[2] - c[2]]; W = Math.max(W, Math.abs(d[0])); H = Math.max(H, Math.abs(d[1] * up[1] + d[2] * up[2])); Z = Math.max(Z, d[1] * ex[1] + d[2] * ex[2]); }
+  const D = Math.max(W, H) * 1.14 / Math.tan(fov / 2) + Z;
+  return [[c[0], c[1] + ex[1] * D, c[2] + ex[2] * D], c, fov];
+}
 // sea upgrade icons are drawn from their own models once those are built
 function seaIcons() {
   const todo = SEA_ICON_SHOTS.filter(([k, m]) => !ICONS.map[k + '!'] && R.enemyDraw[m]);
@@ -723,10 +740,9 @@ function seaIcons() {
   for (const [key, m, opts] of todo) {
     R.resetStreams();
     const M = MODELS.defs[m], c = M.clips.still || M.clips.rock || Object.values(M.clips)[0];
-    const g = opts.goo ? R.goo.base : [1, 1, 1];
-    pushEnemy(m, false, 0, 0, 0, opts.yaw ?? 0.7, c.row, opts.s ?? 1, 1, 0, 0, 0, g[0], g[1], g[2]);
-    const top = (M.top || 1) * (opts.s ?? 1), mid = opts.mid ?? top * 0.5, dist = opts.d ?? Math.max(top, M.bmax[0] * (opts.s ?? 1)) * 2.4;
-    ICONS.map[key] = ICONS.map[key + '!'] = iconCapture([0, mid + dist * 0.55, dist], [0, mid, 0], 0.62);
+    const g = opts.goo ? R.goo.base : [1, 1, 1], yaw = opts.yaw ?? 0.7, s = opts.s ?? 1;
+    pushEnemy(m, false, 0, 0, 0, yaw, c.row, s, 1, 0, 0, 0, g[0], g[1], g[2]);
+    ICONS.map[key] = ICONS.map[key + '!'] = iconCapture(...iconFrame(m, yaw, s, opts.pitch ?? 0.5, 0.5), null, true);
   }
   iconEnd();
   R.resetStreams();

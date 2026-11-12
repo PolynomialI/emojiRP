@@ -78,7 +78,37 @@ const UI = {
     DEV.init();
   },
 
-  show(id, on) { const e = $(id); if (e) e.hidden = !on; },
+  show(id, on) {
+    const e = $(id);
+    if (!e) return;
+    // a menu screen coming into view slides in, its parts one after another
+    if (on && e.hidden && UI_ENTER.includes(id)) { e.classList.remove('enter'); void e.offsetWidth; e.classList.add('enter'); }
+    e.hidden = !on;
+  },
+  // children of a list cascade in (only just after the screen opened, not on every re-render)
+  stagger(nodes) {
+    if (performance.now() - (this.openedAt || 0) > 250) return nodes;
+    nodes.forEach((n, i) => { if (n.classList) { n.classList.add('cascade'); n.style.setProperty('--i', Math.min(i, 24)); } });
+    return nodes;
+  },
+  // coin counters roll from what they show to what you have
+  syncCoins() {
+    const want = G.save.coins;
+    document.querySelectorAll('#homeCoins, .coinsVal').forEach(el => {
+      const from = +(el.dataset.coins ?? want);
+      el.dataset.coins = want;
+      if (from === want) { el.textContent = fmtNum(want); return; }
+      const t0 = performance.now(), dur = 450, pill = el.closest('.pill');
+      if (pill) { pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump'); }
+      const step = () => { const u = Math.min(1, (performance.now() - t0) / dur), v = Math.round(from + (want - from) * (1 - (1 - u) ** 3)); el.textContent = fmtNum(v); if (u < 1 && +el.dataset.coins === want) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  },
+  // Escape: close what is open on top, else go back to the home screen
+  back() {
+    for (const id of ['blobUp', 'artInfo', 'fuseBox', 'scrollChest']) if ($(id) && !$(id).hidden) { this.show(id, false); AUDIO.play('click'); return; }
+    if (this.menuTab !== 'home') { AUDIO.play('click'); this.openTab('home'); }
+  },
 
   onState(s) {
     const menu = s === 'home';
@@ -106,6 +136,7 @@ const UI = {
   },
 
   openTab(tab) {
+    this.openedAt = performance.now();
     if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
@@ -119,7 +150,7 @@ const UI = {
   refreshHome() {
     const sv = G.save;
     sv.selected = clamp(sv.selected || 1, 1, sv.chapter);
-    document.querySelectorAll('#homeCoins, .coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    this.syncCoins();
     this.refreshPages();
     if (this.homePage === 'sea') { this.refreshSeaHome(); return; }
     const info = chapterInfo(sv.selected);
@@ -242,12 +273,12 @@ const UI = {
     if (!this.costumePreview) this.costumePreview = sv.costume;
     if (!this.hatPreview) this.hatPreview = sv.hat;
     const { tab, list, owned, worn, sel, key } = this.blobLists();
-    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    this.syncCoins();
     document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bt === tab)));
     if (tab === 'ships') { this.renderShipLooks(); return; }
     this.shipPreview = null; this.shipTabOn = false;
     queueHeroIcons(list.map(s => key + s.id), true);
-    grid.replaceChildren(...list.map(s => {
+    grid.replaceChildren(...this.stagger(list.map(s => {
       const b = document.createElement('button');
       b.className = 'skin' + (s.id === sel ? ' sel' : '') + (worn === s.id ? ' worn' : '');
       b.innerHTML = `<img alt=""><span></span><em class="boost"></em><small></small>`;
@@ -265,7 +296,7 @@ const UI = {
         applySkin(this.skinPreview, this.costumePreview, this.hatPreview); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins();
       });
       return b;
-    }));
+    })));
     const s = list.find(k => k.id === sel) || list[0], act = $('skinAction');
     if (worn === s.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
     else if (owned.includes(s.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
@@ -302,7 +333,7 @@ const UI = {
         cells.push(b);
       }
     }
-    grid.replaceChildren(...cells);
+    grid.replaceChildren(...this.stagger(cells));
     const K = SHIP_LOOK_KINDS.find(k => k.key === this.shipSel.key), it = K.list.find(x => x.id === this.shipSel.id), act = $('skinAction');
     if (S[K.key] === it.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
     else if (owns(K.key, it.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }
@@ -357,7 +388,7 @@ const UI = {
       b.addEventListener('click', () => { sv.selected = n; saveGame(); AUDIO.play('click'); this.openTab('home'); });
       nodes.push(b);
     }
-    map.replaceChildren(...nodes);
+    map.replaceChildren(...this.stagger(nodes));
     requestAnimationFrame(() => { const cur = map.querySelector('.current'); if (cur) cur.scrollIntoView({ block: 'center' }); });
   },
 
@@ -399,7 +430,8 @@ const UI = {
         for (let i = 0; i < SLOT_LIMIT[kind]; i++) {
           const s = list[i], d = document.createElement('div');
           if (s) {
-            d.className = 'slot ' + s.kind + (s.evo ? ' evo' : '');
+            d.className = 'slot ' + s.kind + seaTile(s.id) + (s.evo ? ' evo' : '');
+            d.title = `${(SKILLS[s.id] || PASSIVES[s.id]).name} · Lv ${s.lvl}/${maxLevel(s.id)}`;
             d.innerHTML = `<img alt=""><u><i style="width:${(s.lvl / maxLevel(s.id)) * 100}%"></i></u>`;
             d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
           } else d.className = 'slot empty-' + kind;
@@ -496,8 +528,8 @@ const UI = {
     const run = G.run;
     $('luCards').replaceChildren(...run.choices.map((c, i) => {
       const d = describeChoice(c), b = document.createElement('button');
-      b.className = 'card';
-      b.innerHTML = `<span class="tile ${d.kind}"><img alt=""></span><span><span class="nm"></span><span class="pips"></span><span class="ds"></span></span>`;
+      b.className = 'card'; b.style.setProperty('--i', i);
+      b.innerHTML = `<span class="tile ${d.kind}${seaTile(c.id)}"><img alt=""></span><span><span class="nm"></span><span class="pips"></span><span class="ds"></span></span>`;
       b.querySelector('img').src = ICONS.get(d.icon);
       b.querySelector('.nm').textContent = d.name + (d.evo ? ' ★' : '');
       // level dots: filled up to the level this pick reaches
@@ -619,10 +651,10 @@ const UI = {
   // ---------- pause / revive / results ----------
   openPause() {
     const run = G.run;
-    $('pauseSub').textContent = `${run.rush ? `Boss Rush ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'Endless' : 'Chapter ' + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
+    $('pauseSub').textContent = `${run.rush ? `Boss Rush ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'Endless' : (run.sea ? 'Ocean ' : 'Chapter ') + run.chapter} · ${fmtTime(run.t)} · Level ${run.level}`;
     $('pauseList').replaceChildren(...run.slots.map(s => {
       const d = document.createElement('div'), max = maxLevel(s.id);
-      d.innerHTML = `<span class="tile ${s.kind}"><img alt=""></span><span></span><span class="dots"></span>`;
+      d.innerHTML = `<span class="tile ${s.kind}${seaTile(s.id)}"><img alt=""></span><span></span><span class="dots"></span>`;
       d.querySelector('img').src = ICONS.get((s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
       d.querySelector('span:nth-child(2)').textContent = s.evo ? '★ ' + EVOLUTIONS[s.id].name : (SKILLS[s.id] || PASSIVES[s.id]).name;
       if (s.evo) d.querySelector('.tile').classList.add('evo');
@@ -807,6 +839,10 @@ function fmtStat(v, unit) {
 // a line under a card naming the evolution this skill or ability is part of
 // a level-up card: name, level dots and one short number line (no sentences); ★ marks a skill that can
 // evolve, or an ability that would evolve a skill you hold
+// the sea's upgrades sit on ocean-colored tiles (weapons) and gold ones (passives)
+// the menu screens that slide in when they appear
+const UI_ENTER = ['home', 'skins', 'gear', 'chapters', 'goals', 'results'];
+const seaTile = id => ((SKILLS[id] && SKILLS[id].sea) || (PASSIVES[id] && PASSIVES[id].sea) ? ' sea' : '');
 function describeChoice(c) {
   if (c.id === 'snack') return { name: 'Goo Snack', desc: '+12% health', icon: 'passive-regen', kind: 'passive', lvl: 1, max: 1 };
   const sk = SKILLS[c.id], ps = PASSIVES[c.id], lvl = lvlOf(c.id), max = maxLevel(c.id);
@@ -815,8 +851,9 @@ function describeChoice(c) {
     let line;
     if (!lvl) { const [k, label, unit] = fields[0]; line = `${label} <em>${fmtStat(sk.levels[0][k], unit)}</em>`; }
     else {
-      const f = fields.find(([k]) => sk.levels[lvl - 1][k] !== sk.levels[lvl][k]) || fields[0], [k, label, unit] = f;
-      line = `${label} <em>${fmtStat(sk.levels[lvl - 1][k], unit)} → ${fmtStat(sk.levels[lvl][k], unit)}</em>`;
+      // (the first two stats that change)
+      const ch = fields.filter(([k]) => sk.levels[lvl - 1][k] !== sk.levels[lvl][k]).slice(0, 2);
+      line = (ch.length ? ch : [fields[0]]).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[lvl - 1][k], unit)} → ${fmtStat(sk.levels[lvl][k], unit)}</em>`).join('<br>');
     }
     if (ABILITIES[c.id] && lvl + 1 === max) line += `<br><b class="abil-note">Max level: unlocks the ${ABILITIES[c.id].name} ability</b>`;
     return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id] };

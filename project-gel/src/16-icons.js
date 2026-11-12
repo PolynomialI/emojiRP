@@ -19,7 +19,7 @@ function iconEnd() {
   if (s.fov) R.setCamera(s.eye, s.target, s.fov);
 }
 // Draw the current impostor and enemy streams (and optionally a hero) into the icon target; returns a PNG data URL
-function iconCapture(eye, target, fov, heroOut) {
+function iconCapture(eye, target, fov, heroOut, sticker) {
   const S = ICONS.size, T = ICONS.target;
   const keepW = R.w, keepH = R.h;
   R.w = S; R.h = S;
@@ -81,14 +81,29 @@ function iconCapture(eye, target, fov, heroOut) {
     }
   }
   c2.putImageData(img, 0, 0);
-  return cv.toDataURL('image/png');
+  return sticker ? iconSticker(cv) : cv.toDataURL('image/png');
+}
+// the sticker finish of the upgrade icons: a dark outline round the shape (like the gear icons) over a soft shadow
+function iconSticker(cv) {
+  const S = cv.width, ol = Math.round(S * 0.026);
+  const sil = document.createElement('canvas'); sil.width = sil.height = S;
+  const sc = sil.getContext('2d');
+  sc.drawImage(cv, 0, 0); sc.globalCompositeOperation = 'source-in'; sc.fillStyle = '#23305a'; sc.fillRect(0, 0, S, S);
+  const ring = document.createElement('canvas'); ring.width = ring.height = S;
+  const rc = ring.getContext('2d');
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; rc.drawImage(sil, Math.cos(a) * ol, Math.sin(a) * ol); }
+  const out = document.createElement('canvas'); out.width = out.height = S;
+  const c = out.getContext('2d');
+  c.save(); c.shadowColor = 'rgba(8, 24, 60, 0.4)'; c.shadowBlur = S * 0.035; c.shadowOffsetY = S * 0.03; c.drawImage(ring, 0, 0); c.restore();
+  c.drawImage(cv, 0, 0);
+  return out.toDataURL('image/png');
 }
 
 function renderIcon(key, type, colw, opts = {}) {
   R.resetStreams();
   const ph = opts.phase ?? 0.6;
   pushImp(0, opts.y ?? 0, 0, opts.scale ?? 0.62, opts.ax ?? 0, opts.ay ?? 0, opts.az ?? 1, opts.stretch ?? 1, type, colw, opts.emissive ?? 0.12, ph, opts.p0 ?? 0, opts.p1 ?? 0, 0, 1);
-  ICONS.map[key] = iconCapture(opts.eye || [0.0, 0.7, 2.45], [0, 0.02, 0], 0.55);
+  ICONS.map[key] = iconCapture(opts.eye || [0.0, 0.7, 2.45], [0, 0.02, 0], 0.55, null, true);
 }
 
 function renderAllIcons() {

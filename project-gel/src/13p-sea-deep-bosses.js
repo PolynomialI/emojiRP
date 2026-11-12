@@ -6,16 +6,16 @@
 // ============================================================
 const SEA_DEEP_BOSS_IDS = ['sangler', 'switch', 'swyrm', 'stitan', 'ssugar', 'ssaucer', 'swhale', 'slevi', 'sjones', 'sneptune'];
 Object.assign(BOSS_TYPES, {
-  sangler: { name: 'The Lantern Angler', ride: 'bangler', len: 6.4, wid: 4.0, deck: 0, rs: 1, tint: '#1e2a44', noRider: true, hp: 4300, speed: 3.2, dmg: 13, atk: ['lure', 'pearls', 'summon', 'ram', 'lure'], glow: [0, 3.2, 3.35, [0.9, 1, 0.5], 1.6] },
-  switch: { name: 'The Weed Witch', ride: 'bbarge', len: 6.4, wid: 4.0, deck: 0.55, rs: 2.1, tint: '#2e5a26', hp: 4000, speed: 2.8, dmg: 13, atk: ['hex', 'snareb', 'summon', 'volley', 'hex'], glow: [0, 1.7, 1.4, [0.5, 1, 0.3], 1.2] },
+  sangler: { name: 'The Lantern Angler', ride: 'bangler', len: 6.4, wid: 4.0, deck: 0, rs: 1, tint: '#1e2a44', noRider: true, hp: 3700, speed: 3.2, dmg: 13, atk: ['lure', 'pearls', 'summon', 'ram', 'lure'], glow: [0, 3.2, 3.35, [0.9, 1, 0.5], 1.6] },
+  switch: { name: 'The Weed Witch', ride: 'bbarge', len: 6.4, wid: 4.0, deck: 0.55, rs: 2.1, tint: '#2e5a26', hp: 3600, speed: 2.8, dmg: 13, atk: ['hex', 'snareb', 'summon', 'volley', 'hex'], glow: [0, 1.7, 1.4, [0.5, 1, 0.3], 1.2] },
   swyrm: { name: 'The Whirl Wyrm', ride: 'bwyrm', len: 9, wid: 2.4, deck: 0, rs: 1, tint: '#2a8a7a', noRider: true, hp: 3800, speed: 3.6, dmg: 14, atk: ['whirlb', 'coil', 'ram', 'summon', 'coil'] },
-  stitan: { name: 'The Trident Titan', ride: 'btitan', len: 5.5, wid: 4.0, deck: 0, rs: 1, tint: '#5ab8a0', noRider: true, hp: 3600, speed: 2.4, dmg: 14, atk: ['trident', 'pillars', 'tidal', 'summon'], glow: [-2.35, 8.4, 0.45, [1, 0.85, 0.4], 1.3] },
-  ssugar: { name: 'Captain Sugarbeard', ride: 'bcake', len: 6.4, wid: 4.6, deck: 2.53, rs: 2.1, tint: '#ff5aa8', hp: 3400, speed: 3.0, dmg: 14, atk: ['sprinkles', 'cherry', 'fizzb', 'summon', 'ram'] },
-  ssaucer: { name: 'The Triangle Saucer', ride: 'bufo', len: 6, wid: 6, deck: 0, rs: 1, tint: '#8ae8ff', noRider: true, hp: 3200, speed: 3.8, dmg: 15, atk: ['beam', 'zaplines', 'blink', 'riftsb', 'beam'], glow: [0, 1.6, 0, [0.6, 1, 0.85], 2.2] },
-  swhale: { name: 'The Cloud Whale', ride: 'bwhale', len: 11, wid: 4.4, deck: 0, rs: 1, tint: '#7aa8e8', noRider: true, hp: 3000, speed: 3.0, dmg: 15, atk: ['gustb', 'spout', 'dive', 'summon', 'ram'] },
-  slevi: { name: 'The Leviathan', ride: 'blevi', len: 12, wid: 3.4, deck: 0, rs: 1, tint: '#1e3a4a', noRider: true, hp: 2900, speed: 2.8, dmg: 16, atk: ['breachb', 'maw', 'tail', 'summon', 'breachb'], glow: [0, 3.95, 3.6, [1, 0.55, 0.15], 1.4] },
-  sjones: { name: 'Davy Jones', ride: 'bjones', rig: 'bjones_rig', len: 7.6, wid: 2.7, deck: 0.885, rs: 2.4, tint: '#2a6a5a', hp: 2750, speed: 3.4, dmg: 16, atk: ['organ', 'fireb', 'summon', 'broadside', 'vanish'] },
-  sneptune: { name: 'Neptune', ride: 'bneptune', len: 8, wid: 4.4, deck: 0, rs: 1, tint: '#6ac8b8', noRider: true, hp: 2700, speed: 3.2, dmg: 17, atk: ['trident', 'whirlb', 'storm', 'tidal', 'barrage', 'summon', 'pillars'], glow: [-1.55, 7.2, 0.05, [1, 0.9, 0.5], 1.5] },
+  stitan: { name: 'The Trident Titan', ride: 'btitan', len: 5.5, wid: 4.0, deck: 0, rs: 1, tint: '#5ab8a0', noRider: true, hp: 4200, speed: 2.4, dmg: 14, atk: ['trident', 'pillars', 'tidal', 'summon'], glow: [-2.35, 8.4, 0.45, [1, 0.85, 0.4], 1.3] },
+  ssugar: { name: 'Captain Sugarbeard', ride: 'bcake', len: 6.4, wid: 4.6, deck: 2.53, rs: 2.1, tint: '#ff5aa8', hp: 3800, speed: 3.0, dmg: 14, atk: ['sprinkles', 'cherry', 'fizzb', 'summon', 'ram'] },
+  ssaucer: { name: 'The Triangle Saucer', ride: 'bufo', len: 6, wid: 6, deck: 0, rs: 1, tint: '#8ae8ff', noRider: true, hp: 3400, speed: 3.8, dmg: 15, atk: ['beam', 'zaplines', 'blink', 'riftsb', 'beam'], glow: [0, 1.6, 0, [0.6, 1, 0.85], 2.2] },
+  swhale: { name: 'The Cloud Whale', ride: 'bwhale', len: 11, wid: 4.4, deck: 0, rs: 1, tint: '#7aa8e8', noRider: true, hp: 4200, speed: 3.0, dmg: 15, atk: ['gustb', 'spout', 'dive', 'summon', 'ram'] },
+  slevi: { name: 'The Leviathan', ride: 'blevi', len: 12, wid: 3.4, deck: 0, rs: 1, tint: '#1e3a4a', noRider: true, hp: 4000, speed: 2.8, dmg: 16, atk: ['breachb', 'maw', 'tail', 'summon', 'breachb'], glow: [0, 3.95, 3.6, [1, 0.55, 0.15], 1.4] },
+  sjones: { name: 'Davy Jones', ride: 'bjones', rig: 'bjones_rig', len: 7.6, wid: 2.7, deck: 0.885, rs: 2.4, tint: '#2a6a5a', hp: 3700, speed: 3.4, dmg: 16, atk: ['organ', 'fireb', 'summon', 'broadside', 'vanish'] },
+  sneptune: { name: 'Neptune', ride: 'bneptune', len: 8, wid: 4.4, deck: 0, rs: 1, tint: '#6ac8b8', noRider: true, hp: 4000, speed: 3.2, dmg: 17, atk: ['trident', 'whirlb', 'storm', 'tidal', 'barrage', 'summon', 'pillars'], glow: [-1.55, 7.2, 0.05, [1, 0.9, 0.5], 1.5] },
 });
 for (const id of SEA_DEEP_BOSS_IDS) {
   const B = BOSS_TYPES[id];

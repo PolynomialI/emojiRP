@@ -46,9 +46,14 @@ function feedWorker(w) {
   w.job = name;
   w.postMessage({ name });
 }
+// each built mesh's real bounds (rest pose), for framing icons
+const MESHB = {};
 function onMeshBuilt(name, mesh) {
   if (MESHJOB.done.has(name)) return;
   MESHJOB.done.add(name);
+  const V = mesh.verts, lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+  for (let i = 0; i < mesh.nv; i++) for (let a = 0; a < 3; a++) { const v = V[i * 14 + a]; if (v < lo[a]) lo[a] = v; if (v > hi[a]) hi[a] = v; }
+  MESHB[name] = { lo, hi };
   R.addEnemyMesh(name, mesh);
 }
 function meshFallback() {
@@ -79,7 +84,15 @@ function ensureMeshNow(name) {
 }
 
 // ---------- input ----------
+// a little goo splash where a button is tapped (menus)
+function tapSplash(e) {
+  const b = e.target.closest && e.target.closest('button');
+  if (!b || b.disabled || G.state !== 'home' && !['levelup', 'pause', 'results', 'chest'].includes(G.state)) return;
+  const s = document.createElement('i'); s.className = 'tapfx'; s.style.left = e.clientX + 'px'; s.style.top = e.clientY + 'px';
+  document.body.append(s); setTimeout(() => s.remove(), 500);
+}
 function initInput(canvas) {
+  document.addEventListener('pointerdown', tapSplash, true);
   window.addEventListener('keydown', e => {
     if (DEV.onKey(e)) return;
     const k = e.key.toLowerCase();
@@ -88,6 +101,8 @@ function initInput(canvas) {
     AUDIO.unlock();
     if ((k === 'escape' || k === 'p') && !e.repeat) { if (G.state === 'run') pauseGame(); else if (G.state === 'pause') resumeGame(); }
     if (G.state === 'levelup' && (k === '1' || k === '2' || k === '3')) UI.pick(Number(k) - 1);
+    else if (G.state === 'levelup' && k === 'r' && !e.repeat) UI.reroll();
+    else if (G.state === 'home' && k === 'escape' && !e.repeat) UI.back();
     else if (G.state === 'run' && /^[1-5]$/.test(k) && !e.repeat) useAbility(Number(k) - 1);
   });
   window.addEventListener('keyup', e => INPUT.keys.delete(e.key.toLowerCase()));

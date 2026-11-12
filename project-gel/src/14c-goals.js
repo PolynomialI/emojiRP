@@ -97,13 +97,13 @@ const TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="
 Object.assign(UI, {
   renderGoals() {
     const sv = G.save, list = $('goalList');
-    document.querySelectorAll('.coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    this.syncCoins();
     const done = GOALS.filter(g => sv.goals.claimed[g.id]).length;
     $('goalSum').textContent = `${done} of ${GOALS.length} claimed`;
     // ready to claim first, then the nearest to done, claimed ones last
     const order = g => sv.goals.claimed[g.id] ? 2 : goalReached(g, sv) ? 0 : 1;
     const rows = GOALS.slice().sort((a, b) => order(a) - order(b) || (order(a) === 1 ? goalProgress(b, sv) / b.n - goalProgress(a, sv) / a.n : 0));
-    list.replaceChildren(...rows.map(g => {
+    list.replaceChildren(...this.stagger(rows.map(g => {
       const claimed = !!sv.goals.claimed[g.id], ready = !claimed && goalReached(g, sv), p = goalProgress(g, sv);
       const row = document.createElement('div');
       row.className = 'panel goalrow' + (ready ? ' ready' : '') + (claimed ? ' claimed' : '');
@@ -129,7 +129,7 @@ Object.assign(UI, {
       else if (ready) { b.textContent = 'Claim'; b.className = 'jelly gold'; b.addEventListener('click', () => this.claimGoal(g)); }
       else { b.textContent = Math.floor(p / g.n * 100) + '%'; b.disabled = true; }
       return row;
-    }));
+    })));
   },
   claimGoal(g) {
     const sv = G.save;

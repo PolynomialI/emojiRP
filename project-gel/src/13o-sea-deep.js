@@ -44,7 +44,7 @@ const SEA_DEEP_THEMES = [
     mini: { name: 'Abyssal Ahab', ride: 'canoe', tint: '#2a4a8a', atk: ['ram', 'call', 'bombs'] } },
   { mech: 'gfire', isles: ['ilocker'], fogK: 0.6, mix: [['pskel', 0, 1], ['pghost', 0, 0.6], ['phat', 20, 0.4], ['pdiver', 50, 0.4], ['pbomb', 80, 0.3]],
     mini: { name: 'Bosun Bones', ride: 'raft', tint: '#d8d8c0', ghost: true, atk: ['call', 'ram', 'volley'] } },
-  { mech: 'edge', isles: ['iedge', 'iruin'], current: 0.7, zap: true, mix: [['pswim', 0, 1], ['phat', 20, 0.6], ['pmer', 40, 0.45], ['pskel', 50, 0.45], ['pjelly', 60, 0.35], ['pgummy', 80, 0.35], ['pangler', 100, 0.35], ['pballoon', 120, 0.3], ['pweed', 140, 0.3]],
+  { mech: 'edge', isles: ['iedge', 'iruin'], current: 0.7, zap: true, mix: [['pswim', 0, 1], ['pfloat', 30, 0.4], ['phat', 60, 0.5], ['pmer', 80, 0.4], ['pskel', 90, 0.4], ['pjelly', 100, 0.35], ['pgummy', 110, 0.3], ['pangler', 120, 0.35], ['pballoon', 140, 0.3], ['pweed', 160, 0.3]],
     mini: { name: 'Herald Triton', ride: 'canoe', tint: '#ffd34a', atk: ['volley', 'ram', 'bombs', 'call'] } },
 ];
 SEA_DEEP_THEMES.forEach((T, i) => Object.assign(SEA_CHAPTERS[10 + i], T));
@@ -209,7 +209,7 @@ function seaDeepTick(dt) {
   const live = G.state === 'run';
   // the chapter's hazards come along every so often (after the first ten seconds)
   // (sparser early on: half again as long between them at the start, normal after two and a half minutes)
-  if (live && run.t > 15 && DEEP_SPAWN[C.mech]) { OC.mechT = (OC.mechT ?? 2) - dt; if (OC.mechT <= 0) OC.mechT = DEEP_SPAWN[C.mech]() * (1.5 - 0.5 * Math.min(1, run.t / 150)); }
+  if (live && run.t > (C.mech === 'edge' ? 45 : 15) && DEEP_SPAWN[C.mech]) { OC.mechT = (OC.mechT ?? 2) - dt; if (OC.mechT <= 0) OC.mechT = DEEP_SPAWN[C.mech]() * (1.5 - 0.5 * Math.min(1, run.t / 150)); }
   // weed-tangled boarders weigh the ship down
   let weedy = 0;
   for (const e of run.enemies) if (e.grab && e.def.weedy && !e.dying) weedy++;
