@@ -51,7 +51,7 @@ function seaInfo(n) {
   return {
     n, sea: true, arenaName: C.name, bosses: [C.boss],
     // every run starts on a raft, so the chapters climb gently (their crowds, islands and bosses do the rest)
-    hpMul: 1 + 0.1 * k + 0.008 * k * k, dmgMul: 1 + 0.055 * k, rateMul: 0.7 + 0.055 * k, speedMul: 1 + 0.01 * k,
+    hpMul: 1 + 0.08 * k + 0.006 * k * k, dmgMul: 1 + 0.045 * k, rateMul: 0.7 + 0.05 * k, speedMul: 1 + 0.01 * k,
     bossHpMul: Math.pow(1.15, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
   };
 }
