@@ -187,7 +187,7 @@ for (const id in SKILLS) {
   const m = SKILL_POWER[id] ?? 0.5;
   if (m !== 1) for (const L of SKILLS[id].levels) for (const k of ['dmg', 'burst', 'pop']) if (k in L) L[k] = Math.max(1, Math.round(L[k] * m * 10) / 10);
 }
-const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
+const maxLevel = id => (SKILLS[id] ? SKILLS[id].max || SKILL_MAX : PASSIVES[id].max);
 // the power-up a chapter's theme introduces (from: the first chapter it appears in)
 // Evolutions: a skill at max level plus its partner ability turns into a stronger, named form, through a chest.
 // boost(L) gets the skill's level-10 stats and returns the ones the evolved form changes.

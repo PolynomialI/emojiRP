@@ -3,17 +3,22 @@
 // ============================================================
 const $ = id => document.getElementById(id);
 const UI = {
-  menuTab: 'home', settingsFrom: null, lastHud: {}, slotSig: '', choiceLock: 0, reviveT: 0, skinPreview: null,
+  menuTab: 'home', homePage: 'land', settingsFrom: null, lastHud: {}, slotSig: '', choiceLock: 0, reviveT: 0, skinPreview: null,
   overlay: null, octx: null, toastT: 0,
 
   init() {
     this.overlay = $('overlay');
     this.octx = this.overlay.getContext('2d');
-    $('btnPlay').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginChapter(G.save.selected); });
+    $('btnPlay').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); if (this.homePage === 'sea') beginSeaChapter(G.save.sea.selected); else beginChapter(G.save.selected); });
     $('btnEndless').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginEndless(); });
     $('btnRush').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginBossRush(); });
-    $('chPrev').addEventListener('click', () => { G.save.selected = Math.max(1, G.save.selected - 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
-    $('chNext').addEventListener('click', () => { G.save.selected = Math.min(G.save.chapter, G.save.selected + 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
+    // the chapter arrows step through the page's own chapters (the land's, or the ocean's)
+    const pickOf = () => (this.homePage === 'sea' ? G.save.sea : G.save);
+    $('chPrev').addEventListener('click', () => { const P = pickOf(); P.selected = Math.max(1, P.selected - 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
+    $('chNext').addEventListener('click', () => { const P = pickOf(); P.selected = Math.min(P.chapter, P.selected + 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
+    document.querySelectorAll('#pageDots button').forEach(b => b.addEventListener('click', () => { AUDIO.unlock(); this.setHomePage(b.dataset.page); }));
+    $('pageTab').addEventListener('click', () => { AUDIO.unlock(); this.setHomePage(this.homePage === 'sea' ? 'land' : 'sea'); });
+    this.initSwipe();
     document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openTab(b.dataset.tab); }));
     document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => { AUDIO.play('click'); this.openTab('home'); }));
     $('btnSettings').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openSettings(); });
@@ -43,7 +48,7 @@ const UI = {
       el.addEventListener('pointerdown', e => {
         if (openOnly && e.target !== el) return;
         AUDIO.unlock(); el.setPointerCapture(e.pointerId);
-        HOME.drag = { x: e.clientX, t: performance.now(), moved: 0 }; HOME.yaw = G.hero.yaw; HOME.spinV = 0; HOME.aim = null;
+        HOME.drag = { x: e.clientX, t: performance.now(), moved: 0, x0: e.clientX, t0: performance.now(), yaw0: this.homePage === 'sea' ? HOME.yaw : G.hero.yaw }; HOME.yaw = HOME.drag.yaw0; HOME.spinV = 0; HOME.aim = null;
       });
       el.addEventListener('pointermove', e => {
         const d = HOME.drag;
@@ -56,6 +61,8 @@ const UI = {
         const d = HOME.drag;
         if (!d) return;
         HOME.drag = null; HOME.idle = 0;
+        // a long, quick swipe across the home stage turns the page instead of spinning the blob
+        if (!openOnly && Math.abs(d.x - d.x0) > Math.min(260, window.innerWidth * 0.3) && performance.now() - d.t0 < 450) { HOME.spinV = 0; HOME.yaw = d.yaw0; this.swipePage(); return; }
         if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
         else if (performance.now() - d.t > 90) HOME.spinV = 0;
       };
@@ -112,6 +119,8 @@ const UI = {
     const sv = G.save;
     sv.selected = clamp(sv.selected || 1, 1, sv.chapter);
     document.querySelectorAll('#homeCoins, .coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    this.refreshPages();
+    if (this.homePage === 'sea') { this.refreshSeaHome(); return; }
     const info = chapterInfo(sv.selected);
     $('chLabel').textContent = `Chapter ${sv.selected}${sv.cleared[sv.selected] ? ' · cleared' : ''}`;
     $('chName').textContent = info.arenaName;
@@ -131,6 +140,60 @@ const UI = {
     if (this.menuTab === 'home') goalsCheck();
     applyArena(info.arena);
   },
+  // ---------- the two home pages: the land and the ocean ----------
+  // The ocean page is always one swipe away; once chapter 20 is beaten it is also shown (page dots, a tab at the
+  // edge, and a note the first time). Both pages share the menu buttons; Play sails, and the picker lists the
+  // ocean's chapters.
+  setHomePage(p) {
+    if (p === this.homePage || G.state !== 'home') return;
+    this.homePage = p;
+    AUDIO.play(p === 'sea' ? 'splash' : 'click');
+    homePageChanged();
+    this.refreshHome();
+  },
+  refreshPages() {
+    const sea = this.homePage === 'sea', open = seaUnlocked();
+    $('home').classList.toggle('sea', sea);
+    $('pageDots').hidden = !open; $('pageTab').hidden = !open;
+    document.querySelectorAll('#pageDots button').forEach(b => b.setAttribute('aria-current', String(b.dataset.page === this.homePage)));
+    $('pageTab').setAttribute('aria-label', sea ? 'Back to the land' : 'Go to the ocean');
+    const pb = $('btnPlay');
+    pb.textContent = sea ? 'SAIL' : 'PLAY'; pb.classList.toggle('sail', sea); pb.classList.toggle('gold', !sea);
+    if (open && !G.save.sea.seen && this.menuTab === 'home') { G.save.sea.seen = true; saveGame(); this.toast('The ocean is open! Swipe right, or tap the arrow, to set sail.', 4); }
+  },
+  refreshSeaHome() {
+    const S = G.save.sea;
+    S.selected = clamp(S.selected || 1, 1, S.chapter);
+    const n = S.selected, C = SEA_CHAPTERS[n - 1], best = S.best[n];
+    $('chLabel').textContent = `Ocean ${n}${S.cleared[n] ? ' · cleared' : ''}`;
+    $('chName').textContent = C.name;
+    $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${seaBossName(n)}`;
+    $('chPrev').disabled = n <= 1;
+    $('chNext').disabled = n >= S.chapter;
+    $('chBoss').hidden = true;
+    this.refreshBadges();
+    if (this.menuTab === 'home') goalsCheck();
+    seaLook(n);
+  },
+  // a sideways swipe across the home screen turns the page (on the blob's stage only a long, quick one:
+  // a slow drag there spins the blob)
+  initSwipe() {
+    const home = $('home');
+    let sw = null;
+    home.addEventListener('pointerdown', e => {
+      if (e.target.closest('button, .home-stage, .panel')) { sw = null; return; }
+      sw = { x: e.clientX, y: e.clientY, t: performance.now() };
+    });
+    const end = e => {
+      if (!sw) return;
+      const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+      sw = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) this.swipePage();
+    };
+    home.addEventListener('pointerup', end); home.addEventListener('pointercancel', () => { sw = null; });
+  },
+  swipePage() { this.setHomePage(this.homePage === 'sea' ? 'land' : 'sea'); },
+
   // red dots on the home menu: an upgrade is affordable, a scroll or fuse is waiting, a new look is in reach
   menuAlerts() {
     const sv = G.save;
@@ -513,10 +576,10 @@ const UI = {
   fillResults() {
     const run = G.run;
     if (!run) return;
-    $('resEyebrow').textContent = run.rush ? `Boss Rush · ${run.info.arenaName}` : run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
+    $('resEyebrow').textContent = run.sea ? `Ocean ${run.chapter} · ${run.info.arenaName}` : run.rush ? `Boss Rush · ${run.info.arenaName}` : run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
     const t = $('resTitle');
     const special = run.endless || run.rush;
-    t.textContent = run.won ? (run.rush ? 'CHAMPION!' : 'CLEARED!') : special && run.newBest ? 'NEW BEST!' : 'YOU MELTED';
+    t.textContent = run.won ? (run.rush ? 'CHAMPION!' : 'CLEARED!') : special && run.newBest ? 'NEW BEST!' : run.sea ? 'SUNK!' : 'YOU MELTED';
     t.style.color = run.won || (special && run.newBest) ? 'var(--mint)' : 'var(--pink)';
     $('resTime').textContent = fmtTime(run.t);
     $('resKills').textContent = fmtNum(run.kills);
@@ -659,7 +722,8 @@ function rollChoices() {
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
-  const open = def => (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
+  // (the sea and the land each have their own upgrades)
+  const open = def => !def.sea === !run.sea && (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
   if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
   if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];

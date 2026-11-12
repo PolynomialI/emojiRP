@@ -48,7 +48,7 @@ const AUDIO = {
   play(name, p = 1) {
     if (!this.enabled || !this.ctx || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
-    const gap = { hit: 0.035, gem: 0.03, pop: 0.05, squish: 0.04, zap: 0.06, punch: 0.06, coin: 0.05, boom: 0.07, mine: 0.08, laser: 0.25, throw: 0.08, bang: 0.03, twang: 0.05, clang: 0.06, rumble: 0.5, crumble: 0.1, gooshot: 0.05 }[name] || 0.02;
+    const gap = { hit: 0.035, gem: 0.03, pop: 0.05, squish: 0.04, zap: 0.06, punch: 0.06, coin: 0.05, boom: 0.07, mine: 0.08, laser: 0.25, throw: 0.08, bang: 0.03, twang: 0.05, clang: 0.06, rumble: 0.5, crumble: 0.1, gooshot: 0.05, thud: 0.06, chop: 0.05, cannon: 0.07 }[name] || 0.02;
     if (this.last[name] && now - this.last[name] < gap) return;
     if (this.voices > 28 && !['levelup', 'boss', 'win', 'lose', 'hurt', 'click'].includes(name)) return;
     this.last[name] = now;
@@ -94,6 +94,10 @@ const AUDIO = {
       case 'gooshot': this._osc('sine', 340 * p, 140, 0.1, 0.13, t); this._noise(0.06, 0.06, t, 'bandpass', 1800, 900, 2); break;
       case 'whistle': this._osc('sine', 1200, 2100, 0.28, 0.07, t, 0.03); this._osc('sine', 2100, 1500, 0.32, 0.07, t + 0.32, 0.02); break;
       case 'cackle': [660, 590, 620, 520, 560, 440].forEach((f, i) => this._osc('square', f, f * 0.92, 0.07, 0.045, t + i * 0.08)); break;
+      // the sea: a hull ramming something (a hollow wooden knock and a splash), a hook biting wood, a cannon
+      case 'thud': this._osc('sine', 160 * p, 60, 0.18, 0.2, t); this._noise(0.08, 0.14, t, 'bandpass', 700, 300, 2); this._noise(0.3, 0.1, t + 0.03, 'bandpass', 1400, 400, 1); break;
+      case 'chop': this._noise(0.05, 0.16, t, 'bandpass', 1900, 1100, 3); this._osc('triangle', 300, 180, 0.06, 0.08, t); break;
+      case 'cannon': this._noise(0.08, 0.32, t, 'lowpass', 2400, 400, 1); this._osc('sine', 120 * p, 42, 0.32, 0.24, t); this._noise(0.5, 0.1, t + 0.04, 'lowpass', 600, 120, 1, 0.02); break;
     }
   },
 };

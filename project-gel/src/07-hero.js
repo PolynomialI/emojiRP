@@ -23,6 +23,22 @@ const ARM_SLOTS = [
   { side: -1, sh: [-0.22, 1.41, -0.15], el: [-0.42, 1.4, -0.28], fi: [-0.56, 1.28, -0.12] },
 ];
 
+// Lounge (the ocean): the blob lies back on deck, one leg out and one knee up, a hand behind its head and the
+// other (the weapon hand) resting at its side. The pose is written as it looks lying down (deck at y = 0, the
+// body facing +z, head toward -z), then turned back into the upright frame, since the whole rig is pitched
+// back by LOUNGE_TILT about the pelvis when drawn: costume, hat and gear shapes ride along with it.
+const LOUNGE_TILT = 1.2, LOUNGE_PIV = 0.3;
+const LOUNGE = (() => {
+  const c = Math.cos(LOUNGE_TILT), s = Math.sin(LOUNGE_TILT);
+  const up = (x, y, z) => { const yy = y - LOUNGE_PIV; return [x, c * yy - s * z + PELVIS_Y, s * yy + c * z]; };
+  return {
+    hipA: up(0.13, 0.27, 0.09), kneeA: up(0.16, 0.17, 0.44), footA: up(0.18, 0.09, 0.8),
+    hipB: up(-0.13, 0.27, 0.09), kneeB: up(-0.16, 0.48, 0.36), footB: up(-0.18, 0.09, 0.52),
+    // arm 0 rests at the side, arm 1 is folded behind the head
+    arm: [{ el: up(0.42, 0.3, -0.2), fi: up(0.44, 0.15, 0.1) }, { el: up(-0.43, 0.64, -0.6), fi: up(-0.1, 0.38, -0.8) }],
+  };
+})();
+
 class Spring3 {
   constructor(rest, k, z, inertia) {
     this.p = rest.slice(); this.v = [0, 0, 0]; this.t = rest.slice();
@@ -71,6 +87,7 @@ class Hero {
       chest: new Float32Array(4), pal: new Float32Array(42), grad: new Float32Array(4), groundY: 0,
     };
     this.costume = null; this.hat = null; this.hatLift = 0; this.gear = null;
+    this.lounge = 0; this.lng = 0; // lounge target and its eased blend (0 stands, 1 lies back on deck)
     this.shadow = { data: new Float32Array(14 * 4), count: 0, pos: [0, 0, 0] };
     this._w = [0, 0, 0];
   }
@@ -90,17 +107,27 @@ class Hero {
   setArmCount(n) { this.arms.forEach((a, i) => { a.growTarget = i < n ? 1 : 0; }); }
 
   // world <-> local
+  // lounging pitches the rig back about the pelvis and lowers it onto the deck
   toWorld(l, out) {
     const c = Math.cos(this.yaw), s = Math.sin(this.yaw), sc = this.scale;
-    out[0] = this.pos[0] + (c * l[0] + s * l[2]) * sc;
-    out[1] = this.pos[1] + l[1] * sc;
-    out[2] = this.pos[2] + (-s * l[0] + c * l[2]) * sc;
+    let ly = l[1], lz = l[2];
+    if (this.lng > 0) {
+      const a = this.lng * LOUNGE_TILT, cp = Math.cos(a), sp = Math.sin(a), yy = ly - PELVIS_Y;
+      ly = cp * yy + sp * lz + PELVIS_Y - this.lng * (PELVIS_Y - LOUNGE_PIV); lz = -sp * yy + cp * lz;
+    }
+    out[0] = this.pos[0] + (c * l[0] + s * lz) * sc;
+    out[1] = this.pos[1] + ly * sc;
+    out[2] = this.pos[2] + (-s * l[0] + c * lz) * sc;
     return out;
   }
   toLocal(w, out) {
     const c = Math.cos(this.yaw), s = Math.sin(this.yaw), sc = this.scale;
     const dx = (w[0] - this.pos[0]) / sc, dy = (w[1] - this.pos[1]) / sc, dz = (w[2] - this.pos[2]) / sc;
     out[0] = c * dx - s * dz; out[1] = dy; out[2] = s * dx + c * dz;
+    if (this.lng > 0) {
+      const a = this.lng * LOUNGE_TILT, cp = Math.cos(a), sp = Math.sin(a), yy = out[1] - PELVIS_Y + this.lng * (PELVIS_Y - LOUNGE_PIV), zz = out[2];
+      out[1] = cp * yy - sp * zz + PELVIS_Y; out[2] = sp * yy + cp * zz;
+    }
     return out;
   }
   forward() { return [Math.sin(this.yaw), 0, Math.cos(this.yaw)]; }
@@ -201,7 +228,11 @@ class Hero {
     const lax = clamp(c * ax - s * az, -60, 60), laz = clamp(s * ax + c * az, -60, 60);
 
     // targets
-    const sN = clamp(speed / this.topSpeed, 0, 1);
+    this.lng += (this.lounge - this.lng) * Math.min(1, dt * 4);
+    if (Math.abs(this.lounge - this.lng) < 1e-3) this.lng = this.lounge;
+    const lg = this.lng;
+    // a lounging blob rides along: no gait
+    const sN = clamp(speed / this.topSpeed, 0, 1) * (1 - lg);
     this.phase += dt * (speed / (STRIDE * this.scale)) * TAU;
     const ph = this.phase, t = this.time;
     // the body rises as a leg passes under it and dips when the legs are spread
@@ -226,6 +257,7 @@ class Hero {
       const dz = fz - hip.t[2], dy = fy - hip.t[1], d = Math.hypot(dz, dy) || 1e-3;
       const kb = Math.sqrt(Math.max(0, LEG_SEG * LEG_SEG - d * d / 4));
       V3.set(knee.t, sg * 0.15, hip.t[1] + dy * 0.5 + dz / d * kb, hip.t[2] + dz * 0.5 - dy / d * kb);
+      if (lg > 0) { const k = i ? 'B' : 'A'; V3.lerp(hip.t, hip.t, LOUNGE['hip' + k], lg); V3.lerp(knee.t, knee.t, LOUNGE['knee' + k], lg); V3.lerp(foot.t, foot.t, LOUNGE['foot' + k], lg); }
     }
     // arms
     for (const a of this.arms) {
@@ -237,6 +269,7 @@ class Hero {
         const swing = a.i < 2 ? sN * 0.32 * Math.sin(phi) : 0.05 * Math.sin(t * 2.2 + a.i);
         V3.set(a.fi.t, slot.fi[0] + 0.015 * Math.sin(t * 1.7 + a.i), slot.fi[1] + 0.02 * Math.sin(t * 2.1 + a.i) + bob, slot.fi[2] - swing);
         V3.set(a.el.t, (a.sh.t[0] + a.fi.t[0]) * 0.5 + sg * 0.06, (a.sh.t[1] + a.fi.t[1]) * 0.5 - 0.05, (a.sh.t[2] + a.fi.t[2]) * 0.5 - 0.02);
+        if (lg > 0 && a.i < 2) { const P = LOUNGE.arm[a.i]; V3.lerp(a.el.t, a.el.t, P.el, lg); V3.lerp(a.fi.t, a.fi.t, P.fi, lg); }
         a.fi.setK(a.fi.k0 + (a.fi.k - a.fi.k0) * Math.max(0, 1 - dt * 6)); a.el.setK(a.el.k0);
       } else this.runArmAction(a, dt);
       a.swell = Math.max(0, a.swell - dt * 3.5);
@@ -461,13 +494,14 @@ class Hero {
     o.count = n;
 
     // rotation for ellipsoids: world -> local (rotate by -yaw)
-    const c = Math.cos(this.yaw), s = Math.sin(this.yaw);
-    const m = o.rotInv; // column-major mat3 of R_y(-yaw)
-    m[0] = c; m[1] = 0; m[2] = s; m[3] = 0; m[4] = 1; m[5] = 0; m[6] = -s; m[7] = 0; m[8] = c;
+    // column-major mat3 of R_x(-pitch) * R_y(-yaw): the lounge pitch first undone after the yaw
+    const c = Math.cos(this.yaw), s = Math.sin(this.yaw), pa2 = this.lng * LOUNGE_TILT, cp = Math.cos(pa2), sp = Math.sin(pa2);
+    const m = o.rotInv;
+    m[0] = c; m[1] = -sp * s; m[2] = cp * s; m[3] = 0; m[4] = cp; m[5] = sp; m[6] = -s; m[7] = -sp * c; m[8] = cp * c;
 
     // bounds: a sphere around the middle of all the shapes, so a hat or a raised weapon grows it only as
     // much as it must (every pixel inside it is ray-marched, so its size is most of the blob's GPU cost)
-    const by = this.pos[1] + 0.85 * sc * sq;
+    const by = this.pos[1] + (0.85 * sq * (1 - this.lng) + 0.4 * this.lng) * sc;
     const lo = [this.pos[0] - 0.6 * sc, by - 0.6 * sc, this.pos[2] - 0.6 * sc], hi = [this.pos[0] + 0.6 * sc, by + 0.6 * sc, this.pos[2] + 0.6 * sc];
     const grow = (x, y, z, r) => {
       if (x - r < lo[0]) lo[0] = x - r; if (y - r < lo[1]) lo[1] = y - r; if (z - r < lo[2]) lo[2] = z - r;
@@ -496,7 +530,7 @@ class Hero {
     for (let i = 0; i < n; i++) if (pb[i * 4 + 3] > kMax) kMax = pb[i * 4 + 3];
     const pad = 0.06 + kMax * 0.25;
     for (let j = 0; j < 3; j++) { o.boxLo[j] = lo[j] - pad; o.boxHi[j] = hi[j] + pad; }
-    o.aoY = by - 0.9; // where the shading darkens toward the ground: from the body, whatever the bounds
+    o.aoY = by - 0.9 + this.lng * 0.4 * sc; // where the shading darkens toward the ground: from the body, whatever the bounds
     o.groundY = this.pos[1];
     o.flash = this.flash; o.glow = this.glow; o.wobble = 0.007 * this.wobbleMul; o.bubbles = this.bubbles; o.spark = this.spark; o.gloss = this.gloss;
     const ch = this.toWorld(J.chest.p, tmp);

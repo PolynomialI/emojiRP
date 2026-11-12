@@ -153,6 +153,7 @@ uniform vec3 uHeroPos;
 uniform vec3 uArenaBox; // half width, half depth, corner radius (0 = no walls)
 uniform float uFloorStyle; // the arena theme's ground (see ARENAS[].floor)
 uniform vec3 uAccent;
+uniform vec4 uSea; // the open sea (style 21): x roughness, y storm
 
 float sdRoundRect(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 
@@ -197,6 +198,14 @@ vec3 voro(vec2 p) {
     if (d < d1) { d2 = d1; d1 = d; h = hash12(c + 3.7); } else if (d < d2) d2 = d;
   }
   return vec3(d1, d2 - d1, h);
+}
+
+// the open sea's swell: a few long crossing waves and a slow noise drift (height in about -amp..amp)
+float seaH(vec2 p, float amp) {
+  float t = uTime;
+  float h = sin(dot(p, vec2(0.36, 0.12)) + t * 1.1) * 0.5 + sin(dot(p, vec2(-0.18, 0.31)) + t * 0.9) * 0.35
+          + sin(dot(p, vec2(0.52, -0.41)) + t * 1.6) * 0.18 + (texture(uNoise, p * 0.05 + vec2(t * 0.01, t * 0.013)).r - 0.5) * 1.2;
+  return h * amp * 0.6;
 }
 
 void main() {
@@ -500,6 +509,31 @@ void main() {
     emis = uAccent * fleck * 0.3 * (0.6 + 0.4 * sin(uTime * 2.0 + hash12(fc) * 30.0));
     ao = mix(0.6, 1.0, dome);
     gloss = 0.08 + wet * 0.85; sharp = 30.0 + wet * 90.0;
+  } else if (style == 21) {
+    // the open sea: soft rolling swells, thin wavering light lines drifting in patches, foam caps that come
+    // with rough water, and twinkling sun glints (colors: stoneA deep, stoneB shallow, grout the light lines)
+    float rough = uSea.x, storm = uSea.y, amp = 0.35 + rough * 0.6 + storm * 0.9;
+    const float e = 0.25;
+    float h0 = seaH(p, amp), hx = seaH(p + vec2(e, 0.0), amp), hz = seaH(p + vec2(0.0, e), amp);
+    N = normalize(vec3(-(hx - h0) / e * 0.3, 1.0, -(hz - h0) / e * 0.3));
+    float deep = texture(uNoise, p * 0.012 + 3.1).r, hn = clamp(h0 / (amp * 0.6), -1.0, 1.0);
+    alb = mix(uStoneA, uStoneB, clamp(smoothstep(0.3, 0.7, deep) * 0.5 + hn * 0.22 + 0.22, 0.0, 1.0));
+    // light lines: the contours of a slowly drifting field, shown only in patches
+    vec2 fl = vec2(uTime * 0.035, uTime * 0.025);
+    float fld = texture(uNoise, p * 0.03 + fl).r + 0.55 * texture(uNoise, p * 0.071 - fl * 1.3).g;
+    float cv = fld * 5.5, cw = fwidth(cv) * 1.3 + 0.02, cf = fract(cv);
+    float line = 1.0 - smoothstep(0.0, cw, min(cf, 1.0 - cf));
+    float mask = smoothstep(0.42, 0.62, texture(uNoise, p * 0.022 - fl * 0.6 + 5.7).g);
+    alb = mix(alb, uGrout, line * mask * 0.42 * (1.0 - storm * 0.5));
+    // foam caps on the crests: a few in rough water, many in a storm
+    float cap = smoothstep(0.78 - 0.32 * rough - 0.3 * storm, 0.95, hn * 0.5 + 0.5 + (fine - 0.5) * 0.35);
+    cap *= smoothstep(0.45, 0.62, texture(uNoise, p * 0.2 + fl * 3.0).r) * clamp(rough * 1.5 + storm, 0.0, 1.0);
+    alb = mix(alb, vec3(0.94, 0.98, 1.0), cap * 0.7);
+    alb = mix(alb, dot(alb, vec3(0.33)) * vec3(0.62, 0.7, 0.8), storm * 0.5);
+    vec2 gc = floor(p * 1.6), gf = fract(p * 1.6) - 0.5;
+    float gh = hash12(gc), tw = max(0.0, sin(uTime * 3.0 + gh * 40.0));
+    emis = vec3(1.0) * step(0.94, gh) * (1.0 - smoothstep(0.02, 0.08, length(gf))) * tw * tw * 0.7 * (1.0 - storm * 0.8);
+    gloss = 0.4; sharp = 60.0;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -529,7 +563,8 @@ void main() {
   vec3 V = normalize(uCamPos - vW);
   float sh = heroShadow(vW);
   float contact = mix(0.5, 1.0, smoothstep(0.15, 0.85, length(vW.xz - uHeroPos.xz)));
-  if (uShCount == 0) contact = 1.0;
+  if (uShCount == 0 || style == 21) contact = 1.0;
+  if (style == 21) sh = 1.0;
   float ndl = max(dot(N, uLightDir), 0.0);
   vec3 hemi = mix(uGroundCol, uSkyCol, N.y * 0.5 + 0.5);
   vec3 col = alb * (hemi * 0.55 + uLightCol * ndl * 0.75 * sh) * ao * contact;

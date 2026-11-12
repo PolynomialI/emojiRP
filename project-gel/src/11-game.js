@@ -217,6 +217,7 @@ function evolveSkill(id) {
 function recomputeStats() {
   const run = G.run, meta = G.save.upgrades, lv = lvlOf;
   const oldMax = run.maxHp;
+  if (run.sea) { seaStats(run); return oldMax; }
   // skin, costume and artifact bonuses (percent), fixed for the run
   const gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
   run.stats = {
@@ -273,6 +274,13 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   dmg *= G.run.stats.dmgMul;
   if (e.boss && e.dizzy > 0) dmg *= 1.5;
   if (e.frozen > 0 && G.run.absZero) dmg *= 1.2;
+  // a sea pirate's floats take the damage first (13k-ocean.js)
+  if (e.shell > 0) {
+    const a = Math.min(e.shell, dmg);
+    e.shell -= a; dmg -= a;
+    if (e.shell <= 0) seaPop(e);
+    if (dmg <= 0) { if (!(e.flashCd > 0)) { e.flash = 0.07; e.flashCd = 0.16; } e.squashV -= 1.6; addNumber(e, a, [1, 0.85, 0.55]); if (opts.sound !== false) AUDIO.play('boing'); return true; }
+  }
   e.hp -= dmg;
   // flash white on a hit, but under constant fire strobe instead of staying solid white
   if (!(e.flashCd > 0)) { e.flash = 0.07; e.flashCd = 0.16; }
@@ -339,6 +347,7 @@ function hurtHero(dmg, fromX, fromZ) {
 }
 function heroDown() {
   const run = G.run;
+  if (run.sea) { seaSinkStart(); return; }
   run.hp = 0;
   G.hero.meltTarget = 1;
   FX.droplets(G.hero.pos[0], 0.8, G.hero.pos[2], 16, 0, 4, 0.08, R.goo.base);
@@ -351,6 +360,7 @@ function reviveHero() {
   run.invuln = 1.2;
   G.hero.meltTarget = 0;
   G.hero.sqV += 3;
+  if (run.sea) seaRevive();
   const h = G.hero.pos;
   enemiesInRadius(h[0], h[2], 4.5, e => { const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz) || 1; if (!e.boss) { e.kx += dx / d * 14 / e.mass; e.kz += dz / d * 14 / e.mass; } });
   FX.ring(h[0], h[2], 5, COLORS.cyanHi, 0.6);
@@ -410,6 +420,8 @@ function setState(s) {
 function updateRun(dt) {
   // inside the cave (chapter 20) nothing of the arena runs: the cave is its own game (13i-cave.js)
   if (G.run.cave) { G.run.t += dt; updateCave(dt); return; }
+  // at sea (13k-ocean.js)
+  if (G.run.sea) { updateOcean(dt); return; }
   const run = G.run, hero = G.hero, h = hero.pos;
   const live = G.state === 'run';
   run.invuln = Math.max(0, run.invuln - dt);
@@ -919,6 +931,7 @@ function updatePickups(dt) {
 // ---------- camera ----------
 function updateCamera(dt, snap, noShake) {
   if (G.run && G.run.cave) { caveCamera(dt); return; }
+  if (G.run && G.run.sea) { seaCamera(dt, snap); return; }
   const c = G.cam, h = G.hero.pos, run = G.run;
   const vel = run ? run.vel : [0, 0, 0];
   const tx = h[0] + clamp(vel[0] * 0.17, -0.8, 0.8), tz = h[2] + clamp(vel[2] * 0.17, -0.8, 0.8);
@@ -973,14 +986,15 @@ function finishRun(won) {
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
-  if (run.endless) { run.newBest = run.t > (sv.endlessBest || 0); if (run.newBest) sv.endlessBest = Math.round(run.t); }
+  if (run.sea) seaFinish(run, won);
+  else if (run.endless) { run.newBest = run.t > (sv.endlessBest || 0); if (run.newBest) sv.endlessBest = Math.round(run.t); }
   else if (run.rush) {
     // best = most bosses beaten; a full clear also keeps its fastest time
     run.newBest = run.rushK > (sv.rushBest || 0) || (won && (!sv.rushTime || run.t < sv.rushTime));
     sv.rushBest = Math.max(sv.rushBest || 0, run.rushK);
     if (won && (!sv.rushTime || run.t < sv.rushTime)) sv.rushTime = Math.round(run.t);
   } else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
-  if (won && !run.rush && !run.endless) { sv.cleared[run.chapter] = true; sv.chapter = Math.min(CHAPTER_COUNT, Math.max(sv.chapter, run.chapter + 1)); }
+  if (won && !run.rush && !run.endless && !run.sea) { sv.cleared[run.chapter] = true; sv.chapter = Math.min(CHAPTER_COUNT, Math.max(sv.chapter, run.chapter + 1)); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   // achievements count chapter runs only
   if (!run.endless && !run.rush) { sv.stats.runs++; sv.stats.kills += run.kills; goalsAddRun(run); }

@@ -103,6 +103,24 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .home-top .pill { font-size: 19px; padding-right: 18px; }
 .home-top .coin { width: 30px; height: 30px; }
 .home-title { grid-area: title; text-align: center; font-size: clamp(36px, 9vw, 58px); line-height: 0.95; color: var(--sky); -webkit-text-stroke: 8px #fff; }
+.home-title { position: relative; }
+.home-sub { display: block; margin-top: 4px; font-size: 0.36em; letter-spacing: 0.08em; color: #ff8a3d; -webkit-text-stroke: 5px #fff; paint-order: stroke fill; text-transform: uppercase; }
+#home.sea .home-title { color: #1a9fe0; }
+#home.sea .home-sub { color: #2fc4c0; }
+/* two pages: the land and the ocean (swipe between them); dots show where you are once the ocean is open */
+.pagedots { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 22px); transform: translateX(-50%); display: flex; gap: 10px; z-index: 2; }
+.pagedots button { width: 13px; height: 13px; border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 2px 0 rgba(0,40,110,.25); transition: transform .2s, background .2s; }
+.pagedots button[aria-current="true"] { background: #fff; transform: scale(1.35); }
+.pagetab { position: absolute; right: 6px; top: 46%; z-index: 2; width: 44px; height: 64px; border-radius: 16px; display: grid; place-items: center;
+  background: linear-gradient(180deg, #5fe0e8, #1aa6d8); box-shadow: inset 0 -5px 0 #0f7fb0, 0 4px 0 #0b5f88, 0 8px 16px rgba(0,40,110,.25); animation: tabnudge 1.8s ease-in-out infinite; }
+.pagetab svg { width: 24px; height: 24px; }
+#home.sea .pagetab { left: 6px; right: auto; animation-name: tabnudgeL; }
+#home.sea .pagetab svg { transform: scaleX(-1); }
+@keyframes tabnudge { 50% { transform: translateX(4px); } }
+@keyframes tabnudgeL { 50% { transform: translateX(-4px); } }
+#home { position: relative; }
+#home.sea .modes { display: none; }
+#btnPlay.sail { text-shadow: 0 2px 0 rgba(0, 70, 120, 0.6); background: linear-gradient(180deg, #8ff2f6 0%, #2fc4e8 52%, #1aa6d8 100%); box-shadow: inset 0 -7px 0 #0f7fb0, inset 0 3px 0 rgba(255,255,255,.5), 0 5px 0 #0b5f88, 0 10px 22px rgba(0,60,120,.3); }
 .home-stage { grid-area: stage; position: relative; min-height: 120px; cursor: grab; touch-action: none; }
 .home-stage:active { cursor: grabbing; }
 #skins { cursor: grab; touch-action: none; pointer-events: auto; }
@@ -512,7 +530,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <div class="pill"><i class="coin"></i><span id="homeCoins">0</span></div>
       <button class="icon-btn gearbtn" id="btnSettings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></button>
     </div>
-    <div class="home-title">PROJECT GEL</div>
+    <div class="home-title">PROJECT GEL<small class="home-sub">The Ocean Update</small></div>
+    <div class="pagedots" id="pageDots" hidden><button data-page="land" aria-label="Land"></button><button data-page="sea" aria-label="Ocean"></button></div>
+    <button class="pagetab" id="pageTab" hidden aria-label="Go to the ocean"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
     <div class="home-stage" id="heroTap" aria-label="Your blob. Drag to spin it, tap to poke it."></div>
     <div class="chapter-pick">
       <button class="arrow" id="chPrev" aria-label="Previous chapter"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>

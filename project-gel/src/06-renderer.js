@@ -9,7 +9,7 @@ const R = {
     time: 0, lightDir: [-0.45, 0.82, 0.36], lightCol: [1, 0.97, 0.92], skyCol: [0.46, 0.62, 0.8], groundCol: [0.1, 0.16, 0.24], fogCol: [0.04, 0.11, 0.19],
     spot: [0, 0, 0, 13], fogRange: [10, 26], spotMin: 0.42, arena: 0, poolCol: [0.1, 0.4, 0.5], poolGlow: 0, rockCol: [0.5, 0.5, 0.55],
     stoneA: [0.17, 0.3, 0.41], stoneB: [0.25, 0.4, 0.53], grout: [0.05, 0.11, 0.17], accent: [0.3, 1, 0.5], shadowTint: [0.05, 0.12, 0.25],
-    bloom: 0.48, hurt: 0, lowHp: 0, flashW: 0, torches: new Float32Array(32), torchCol: [1.5, 0.85, 0.42],
+    bloom: 0.48, hurt: 0, lowHp: 0, flashW: 0, torches: new Float32Array(32), sea: new Float32Array(4), torchCol: [1.5, 0.85, 0.42],
   },
   goo: { base: hexToRgb('#18d2ff'), accent: hexToRgb('#7b55f5'), pink: hexToRgb('#ff5fb8'), rim: hexToRgb('#8ef3ff') },
   settings: { msaa: true, bloom: true, scale: 1 },
@@ -246,6 +246,7 @@ R.drawScene = function () {
     gl.uniform1f(u.uHalf, 80);
     gl.uniform3fv(u.uStoneA, f.stoneA); gl.uniform3fv(u.uStoneB, f.stoneB); gl.uniform3fv(u.uGrout, f.grout);
     gl.uniform3fv(u.uAccent, f.accent); gl.uniform1f(u.uFloorStyle, f.floorStyle || 0);
+    if (u.uSea) gl.uniform4fv(u.uSea, f.sea);
     gl.uniform3fv(u.uArenaBox, SCENE.arenaBox || [0, 0, 0]);
     const hs = SCENE.heroShadow;
     gl.uniform1i(u.uShCount, hs ? hs.count : 0);

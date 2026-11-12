@@ -11,6 +11,8 @@ function defaultSave() {
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0, bosses: 0, elites: 0, gooblins: 0, evos: 0, maxLevel: 0, fuses: 0, coinsEarned: 0 },
     goals: { seen: {}, claimed: {} }, tutorial: true,
+    // the Ocean Update's own chapters; ship: the biggest ship ever sailed (shown on the ocean page)
+    sea: { chapter: 1, selected: 1, cleared: {}, best: {}, ship: 0 },
   };
 }
 function loadGame() {
@@ -27,6 +29,7 @@ function loadGame() {
         skins: Array.isArray(s.skins) && s.skins.length ? s.skins : d.skins,
         costumes: Array.isArray(s.costumes) && s.costumes.length ? s.costumes : d.costumes,
         cleared: s.cleared || {}, best: s.best || {},
+        sea: { ...d.sea, ...(s.sea || {}), cleared: { ...((s.sea && s.sea.cleared) || {}) }, best: { ...((s.sea && s.sea.best) || {}) } },
         goals: { seen: { ...((s.goals && s.goals.seen) || {}) }, claimed: { ...((s.goals && s.goals.claimed) || {}) } },
         gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) }, hidden: { ...((s.gear && s.gear.hidden) || {}) } },
       };

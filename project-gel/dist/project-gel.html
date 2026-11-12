@@ -103,6 +103,24 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .home-top .pill { font-size: 19px; padding-right: 18px; }
 .home-top .coin { width: 30px; height: 30px; }
 .home-title { grid-area: title; text-align: center; font-size: clamp(36px, 9vw, 58px); line-height: 0.95; color: var(--sky); -webkit-text-stroke: 8px #fff; }
+.home-title { position: relative; }
+.home-sub { display: block; margin-top: 4px; font-size: 0.36em; letter-spacing: 0.08em; color: #ff8a3d; -webkit-text-stroke: 5px #fff; paint-order: stroke fill; text-transform: uppercase; }
+#home.sea .home-title { color: #1a9fe0; }
+#home.sea .home-sub { color: #2fc4c0; }
+/* two pages: the land and the ocean (swipe between them); dots show where you are once the ocean is open */
+.pagedots { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 22px); transform: translateX(-50%); display: flex; gap: 10px; z-index: 2; }
+.pagedots button { width: 13px; height: 13px; border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 2px 0 rgba(0,40,110,.25); transition: transform .2s, background .2s; }
+.pagedots button[aria-current="true"] { background: #fff; transform: scale(1.35); }
+.pagetab { position: absolute; right: 6px; top: 46%; z-index: 2; width: 44px; height: 64px; border-radius: 16px; display: grid; place-items: center;
+  background: linear-gradient(180deg, #5fe0e8, #1aa6d8); box-shadow: inset 0 -5px 0 #0f7fb0, 0 4px 0 #0b5f88, 0 8px 16px rgba(0,40,110,.25); animation: tabnudge 1.8s ease-in-out infinite; }
+.pagetab svg { width: 24px; height: 24px; }
+#home.sea .pagetab { left: 6px; right: auto; animation-name: tabnudgeL; }
+#home.sea .pagetab svg { transform: scaleX(-1); }
+@keyframes tabnudge { 50% { transform: translateX(4px); } }
+@keyframes tabnudgeL { 50% { transform: translateX(-4px); } }
+#home { position: relative; }
+#home.sea .modes { display: none; }
+#btnPlay.sail { text-shadow: 0 2px 0 rgba(0, 70, 120, 0.6); background: linear-gradient(180deg, #8ff2f6 0%, #2fc4e8 52%, #1aa6d8 100%); box-shadow: inset 0 -7px 0 #0f7fb0, inset 0 3px 0 rgba(255,255,255,.5), 0 5px 0 #0b5f88, 0 10px 22px rgba(0,60,120,.3); }
 .home-stage { grid-area: stage; position: relative; min-height: 120px; cursor: grab; touch-action: none; }
 .home-stage:active { cursor: grabbing; }
 #skins { cursor: grab; touch-action: none; pointer-events: auto; }
@@ -512,7 +530,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
       <div class="pill"><i class="coin"></i><span id="homeCoins">0</span></div>
       <button class="icon-btn gearbtn" id="btnSettings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></svg></button>
     </div>
-    <div class="home-title">PROJECT GEL</div>
+    <div class="home-title">PROJECT GEL<small class="home-sub">The Ocean Update</small></div>
+    <div class="pagedots" id="pageDots" hidden><button data-page="land" aria-label="Land"></button><button data-page="sea" aria-label="Ocean"></button></div>
+    <button class="pagetab" id="pageTab" hidden aria-label="Go to the ocean"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
     <div class="home-stage" id="heroTap" aria-label="Your blob. Drag to spin it, tap to poke it."></div>
     <div class="chapter-pick">
       <button class="arrow" id="chPrev" aria-label="Previous chapter"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
@@ -1408,6 +1428,7 @@ function modelDefs() {
   kitchenModels(defs);
   caveModels(defs);
   baggerModels(defs);
+  seaModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -4330,6 +4351,183 @@ function baggerModels(defs) {
     rig(P('bg_wheel', parts, { ao: 1.2 }), { 0: [0, cy, 0] });
   }
 }
+
+// ============================================================
+// The Ocean Update: ships, sea folk and their clips (see 13k-ocean.js). Built with prop() / makeHumanoid().
+// Ships are drawn at scale 1: model units are world units, +z is the bow, y = 0 the waterline.
+// ============================================================
+Object.assign(THEME_CLIPS, {
+  raft: ['rock'], raft_p0: ['tilt'], raft_p1: ['tilt'], raft_p2: ['tilt'], scannon: ['still'], isle0: ['still'], isle1: ['still'],
+  pswim: ['paddle', 'hack'], pfloat: ['paddle', 'hack'], ptube: ['paddle', 'hack'],
+});
+Object.assign(THEME_CELLS, { scannon: 0.012, isle0: 0.05, isle1: 0.05, raft: 0.016, raft_p0: 0.022, raft_p1: 0.022, raft_p2: 0.022, pswim: 0.013, pfloat: 0.013, ptube: 0.013 });
+const SEA_MESHES = ['raft', 'pswim', 'scannon', 'isle0', 'isle1', 'pfloat', 'ptube', 'raft_p0', 'raft_p1', 'raft_p2'];
+MESH_ORDER.push(...SEA_MESHES);
+
+// a ship rocks gently on the swell (bone 0 about the deck's middle): one loop of a slow roll and pitch
+CLIPS.rock = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [0.025 * Math.sin(a + 1.3), 0, 0.04 * Math.sin(a)] : [0, 0, 0])) };
+} };
+// a broken piece of hull keels over as it sinks (frame = how far over)
+CLIPS.tilt = { frames: 16, fn(t) {
+  const u = t * 16 / 15;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [-0.95 * u, 0, 0.4 * u] : [0, 0, 0])) };
+} };
+// treading water: a doggy paddle out in front, the hook arm a little higher, legs kicking under the surface
+CLIPS.paddle = { frames: 32, fn(t) {
+  const a = t * TAU, s = Math.sin(a), c = Math.cos(a);
+  return { root: [0, 0.03 * Math.sin(2 * a), 0], rot: [
+    [0.22, 0.06 * s, 0], [0.12, -0.1 * s, 0], [-0.32, 0.12 * s, 0],
+    [-1.15 + 0.35 * s, 0, 0.25], [-0.55 + 0.35 * c, 0, 0],
+    [-1.35 - 0.35 * s, 0, -0.25], [-0.5 - 0.35 * c, 0, 0],
+    [0.45 * s, 0, 0.05], [0.45 + 0.3 * c, 0, 0], [-0.45 * s, 0, -0.05], [0.45 - 0.3 * c, 0, 0],
+  ] };
+} };
+// clinging to a hull and hacking at it with the hook: the left hand holds on, the hook comes down hard
+CLIPS.hack = { frames: 16, fn(t) {
+  const up = smoothstep(0, 0.6, t), down = smoothstep(0.6, 0.78, t), rec = smoothstep(0.85, 1, t);
+  const arm = (-2.7 * up + 2.2 * down) * (1 - rec) - 0.5 * rec;
+  return { root: [0, -0.02 * down * (1 - rec), 0], rot: [
+    [0.35, 0, 0], [0.15 + 0.25 * down * (1 - rec), 0.15 * up * (1 - rec), 0], [-0.35, 0, 0],
+    [-1.55, 0, 0.1], [-0.4, 0, 0], [arm, 0, -0.15], [-0.3 * (1 - down), 0, 0],
+    [0.3, 0, 0.05], [0.5, 0, 0], [-0.2, 0, -0.05], [0.4, 0, 0],
+  ] };
+} };
+
+function seaModels(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const wood = C('#b07a45'), woodL = C('#c99358'), woodD = C('#7a4f2a'), bark = C('#8a5a30'), rope = C('#e2c98f'), ropeD = C('#b89a5e');
+  const white = C('#fbf6ee'), red = C('#e8414a'), pupil = C('#16101a');
+
+  // ---------- the raft: six lashed logs, two crossbeams, rope wraps, a life-ring pillow and a paddle ----------
+  const LOGX = [-0.75, -0.45, -0.15, 0.15, 0.45, 0.75];
+  const log = (x, i) => {
+    const len = 1.12 + ((i * 37) % 5) * 0.03, z0 = ((i * 53) % 7 - 3) * 0.015;
+    return [
+      { s: 'cyl', ax: 'z', c: [x, 0.02, z0], r: 0.15, hh: len, rd: 0.06, col: i % 2 ? wood : woodL, k: 0 },
+      // cut ends: lighter rings with a darker heart
+      { s: 'cyl', ax: 'z', c: [x, 0.02, z0 + len - 0.005], r: 0.118, hh: 0.012, rd: 0.004, col: C('#e8c690'), k: 0 },
+      { s: 'cyl', ax: 'z', c: [x, 0.02, z0 - len + 0.005], r: 0.118, hh: 0.012, rd: 0.004, col: C('#e8c690'), k: 0 },
+      { s: 'sph', c: [x, 0.02, z0 + len + 0.004], r: 0.03, col: woodD, k: 0 }, { s: 'sph', c: [x, 0.02, z0 - len - 0.004], r: 0.03, col: woodD, k: 0 },
+      // a knot or two on top
+      { s: 'ell', c: [x + 0.04, 0.165, z0 + 0.3 - (i % 3) * 0.35], rr: [0.035, 0.012, 0.045], col: bark, k: 0.01 },
+    ];
+  };
+  const beams = zz => zz.flatMap(z => [
+    { s: 'cyl', ax: 'x', c: [0, 0.2, z], r: 0.065, hh: 0.92, rd: 0.03, col: woodD, k: 0 },
+    // rope wraps where the beam crosses every log
+    ...LOGX.map(x => ({ s: 'tor', ax: 'x', c: [x + 0.11, 0.13, z], R: 0.105, r: 0.022, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 })),
+    ...LOGX.map(x => ({ s: 'tor', ax: 'z', c: [x + 0.11, 0.13, z], R: 0.09, r: 0.018, a0: 0, a1: Math.PI, col: ropeD, k: 0 })),
+  ]);
+  const ring = (c, R0, r0) => Array.from({ length: 8 }, (_, i) => ({ s: 'tor', ax: 'y', c, R: R0, r: r0, a0: (i / 8) * TAU - Math.PI, a1: ((i + 1) / 8) * TAU - Math.PI + 0.02, col: i % 2 ? white : red, k: 0 }));
+  const lifeRing = [...ring([0, 0.25, -0.86], 0.24, 0.085), { s: 'tor', ax: 'y', c: [0, 0.25, -0.86], R: 0.24, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#f4e4c4'), k: 0 }];
+  const paddle = [
+    { s: 'cap', a: [0.84, 0.24, -0.6], b: [0.84, 0.24, 0.5], r: 0.03, col: woodD, k: 0 },
+    { s: 'ell', c: [0.84, 0.23, 0.68], rr: [0.11, 0.025, 0.2], col: woodL, k: 0.02 },
+  ];
+  const bottle = [
+    { s: 'cap', a: [-0.84, 0.24, 0.62], b: [-0.84, 0.24, 0.88], r: 0.055, col: C('#7ad1b8'), k: 0.02 },
+    { s: 'cap', a: [-0.84, 0.24, 0.88], b: [-0.84, 0.24, 0.98], r: 0.02, col: C('#7ad1b8'), k: 0.01 },
+    { s: 'sph', c: [-0.84, 0.24, 0.99], r: 0.024, col: C('#a8763c'), k: 0 },
+  ];
+  const all = [...LOGX.flatMap(log), ...beams([-0.62, 0.62]), ...lifeRing, ...paddle, ...bottle];
+  rig(P('raft', all, { ao: 0.7 }), { 0: [0, 0.05, 0] });
+  // the pieces it breaks into: two logs each, with what was lashed to them
+  const piece = (xs, extra) => [...LOGX.map((x, i) => [x, i]).filter(([x]) => xs.includes(x)).flatMap(([x, i]) => log(x, i)),
+    ...[-0.62, 0.62].map(z => ({ s: 'cyl', ax: 'x', c: [(xs[0] + xs[1]) / 2, 0.2, z], r: 0.065, hh: 0.34, rd: 0.03, col: woodD, k: 0 })), ...extra];
+  rig(P('raft_p0', piece([-0.75, -0.45], bottle), { ao: 0.7 }), { 0: [-0.6, 0.05, 0] });
+  rig(P('raft_p1', piece([-0.15, 0.15], lifeRing), { ao: 0.7 }), { 0: [0, 0.05, 0] });
+  rig(P('raft_p2', piece([0.45, 0.75], paddle), { ao: 0.7 }), { 0: [0.6, 0.05, 0] });
+
+  // ---------- pirate swimmers: goo pirates treading water, a bandana (it takes the tint), an eye patch,
+  // a striped shirt and a hook for a right hand ----------
+  const skin = C('#f2a65a'), stripe = C('#2f5fb8'), shirt = C('#f6f1e6'), steel = C('#c8d4e0'), patch = C('#1c1820');
+  const pirate = (o = {}) => {
+    const m = makeHumanoid({ ...STICK, torsoR: 0.1, torsoR2: 0.11, headR: 0.165 }), J = m.J, hd = J.head;
+    for (const p of m.parts) p.col = skin;
+    // the shirt: white with blue rings, sleeves to the elbow
+    m.parts.push({ s: 'cap', a: [0, STICK.hipY + 0.04, 0], b: [0, STICK.shY - 0.01, 0], r: 0.108, r2: 0.116, col: shirt, bone: 1, k: 0.02 });
+    for (let i = 0; i < 4; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.hipY + 0.08 + i * 0.06, 0], R: 0.11 + i * 0.002, r: 0.014, a0: -Math.PI, a1: Math.PI, col: stripe, bone: 1, k: 0 });
+    for (const [s, b] of [['L', 3], ['R', 5]]) m.parts.push({ s: 'cap', a: J['sh' + s], b: J['el' + s], r: 0.068, r2: 0.064, col: shirt, bone: b, k: 0.01 });
+    // the bandana: a snug cap over the top of the head with a knot and two tails at the back (instance tint)
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.055, hd[2] - 0.01], rr: [0.172, 0.12, 0.178], bone: 2, k: 0.01 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + 0.03, hd[2] - 0.17], r: 0.04, bone: 2, k: 0.01 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [hd[0], hd[1] + 0.03, hd[2] - 0.18], b: [hd[0] + sx * 0.06, hd[1] - 0.09, hd[2] - 0.24], r: 0.028, r2: 0.012, bone: 2, k: 0.01 });
+    // big friendly eyes, one under a patch
+    m.parts.push({ s: 'ell', c: [hd[0] + 0.062, hd[1] + 0.01, hd[2] + 0.14], rr: [0.042, 0.05, 0.022], col: white, bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [hd[0] + 0.064, hd[1] + 0.005, hd[2] + 0.158], r: 0.022, col: pupil, bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0] - 0.062, hd[1] + 0.01, hd[2] + 0.145], rr: [0.05, 0.05, 0.022], col: patch, bone: 2, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'z', c: [hd[0], hd[1] + 0.005, hd[2] + 0.0], R: 0.168, r: 0.009, a0: 0.15, a1: 1.3, col: patch, bone: 2, k: 0 });
+    // a grin and a stubby nose
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - 0.075, hd[2] + 0.138], rr: [0.055, 0.016, 0.02], col: C('#5a1a10'), bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] - 0.025, hd[2] + 0.17], r: 0.03, col: C('#ee9450'), bone: 2, k: 0.01 });
+    // the hook: a steel cuff on the right wrist and a curved hook out in front
+    const h = J.haR;
+    m.parts = m.parts.filter(p => !(p.s === 'sph' && p.c === h));
+    m.parts.push({ s: 'cyl', ax: 'y', c: [h[0], h[1] + 0.02, h[2]], r: 0.05, hh: 0.035, rd: 0.012, col: C('#6a4a2a'), bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.01, h[2]], b: [h[0], h[1] - 0.09, h[2] + 0.01], r: 0.016, col: steel, bone: 6, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'x', c: [h[0], h[1] - 0.14, h[2] + 0.055], R: 0.055, r: 0.015, a0: -0.4, a1: 2.6, col: steel, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.2, h[2] + 0.08], b: [h[0], h[1] - 0.17, h[2] + 0.12], r: 0.013, r2: 0.003, col: steel, bone: 6, k: 0 });
+    m.crownLift = 0.08;
+    if (o.floats) {
+      // inflatable arm bands (armed floats): orange with a white band, on both upper arms
+      for (const [s, b] of [['L', 3], ['R', 5]]) {
+        const a = J['sh' + s], e = J['el' + s], c = [(a[0] + e[0]) / 2, (a[1] + e[1]) / 2, (a[2] + e[2]) / 2];
+        m.parts.push({ s: 'tor', ax: 'y', c, R: 0.085, r: 0.05, a0: -Math.PI, a1: Math.PI, col: C('#ff9a2e'), bone: b, k: 0.02 });
+        m.parts.push({ s: 'tor', ax: 'y', c: [c[0], c[1] + 0.005, c[2]], R: 0.088, r: 0.022, a0: -Math.PI, a1: Math.PI, col: white, bone: b, k: 0 });
+      }
+    }
+    if (o.tube) {
+      // a big inner tube round the middle (full-body float) and swim goggles pushed up on the bandana
+      const y = STICK.hipY + 0.17;
+      for (let i = 0; i < 6; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.25, r: 0.11, a0: (i / 6) * TAU - Math.PI, a1: ((i + 1) / 6) * TAU - Math.PI + 0.02, col: i % 2 ? C('#ff7eb8') : white, bone: 0, k: 0 });
+      for (const sx of [1, -1]) m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.065, hd[1] + 0.12, hd[2] + 0.12], R: 0.04, r: 0.014, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
+      m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.1, hd[2]], R: 0.17, r: 0.01, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
+    }
+    return m;
+  };
+  for (const [name, o] of [['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
+
+  // ---------- the Homing Cannon: an iron barrel with brass bands on a little wheeled carriage, facing +z ----------
+  {
+    const iron = C('#3a3f4a'), ironL = C('#5a6270'), brass = C('#e0b048');
+    P('scannon', [
+      { s: 'box', c: [0, 0.1, -0.02], hs: [0.15, 0.07, 0.24], rd: 0.03, col: wood, k: 0 },
+      { s: 'box', c: [0, 0.17, -0.1], hs: [0.12, 0.04, 0.12], rd: 0.02, col: woodD, k: 0 },
+      ...[[1, 1], [1, -1], [-1, 1], [-1, -1]].flatMap(([sx, sz]) => [
+        { s: 'cyl', ax: 'x', c: [sx * 0.17, 0.075, sz * 0.15], r: 0.075, hh: 0.03, rd: 0.012, col: woodD, k: 0 },
+        { s: 'cyl', ax: 'x', c: [sx * 0.195, 0.075, sz * 0.15], r: 0.025, hh: 0.012, rd: 0.005, col: iron, k: 0 }]),
+      { s: 'cap', a: [0, 0.25, -0.22], b: [0, 0.28, 0.42], r: 0.1, r2: 0.072, col: iron, k: 0.02 },
+      { s: 'sph', c: [0, 0.245, -0.27], r: 0.055, col: ironL, k: 0.02 },
+      { s: 'tor', ax: 'z', c: [0, 0.28, 0.42], R: 0.072, r: 0.026, a0: -Math.PI, a1: Math.PI, col: ironL, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 0.28, 0.44], r: 0.05, hh: 0.03, rd: 0.005, col: C('#14161c'), sub: true, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.255, -0.05], R: 0.097, r: 0.016, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.265, 0.2], R: 0.087, r: 0.014, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
+      ...[1, -1].map(sx => ({ s: 'cyl', ax: 'x', c: [sx * 0.105, 0.25, -0.05], r: 0.03, hh: 0.02, rd: 0.005, col: iron, k: 0 })),
+    ], { ao: 0.6 });
+  }
+
+  // ---------- islands (radius 4; drawn at radius / 4): a sandy mound under a grassy top with a few flowers ----------
+  {
+    const sand = C('#f2dc9a'), sandD = C('#e2c47a'), grass = C('#6cc34a'), grassD = C('#4fa63a');
+    const flowers = (n, rr, seed) => Array.from({ length: n }, (_, i) => { const a = i * 2.4 + seed, d = rr * (0.3 + ((i * 37) % 10) / 14); return { s: 'sph', c: [Math.cos(a) * d, 0.62, Math.sin(a) * d], r: 0.09, col: [C('#ff6fa8'), C('#ffd34a'), C('#fff6e6')][i % 3], k: 0.02 }; });
+    P('isle0', [
+      { s: 'ell', c: [0, -0.25, 0], rr: [4.0, 0.8, 4.0], col: sand, k: 0.3 },
+      { s: 'ell', c: [0.6, -0.1, -0.4], rr: [2.6, 0.62, 2.4], col: sandD, k: 0.6 },
+      { s: 'ell', c: [0, 0.2, 0], rr: [2.9, 0.42, 2.8], col: grass, k: 0.4 },
+      { s: 'ell', c: [-0.8, 0.35, 0.5], rr: [1.4, 0.35, 1.2], col: grassD, k: 0.5 },
+      ...flowers(9, 2.2, 0.3),
+    ], { ao: 0.4 });
+    P('isle1', [
+      { s: 'ell', c: [0, -0.25, 0], rr: [4.0, 0.8, 3.0], col: sand, k: 0.3 },
+      { s: 'ell', c: [-1.6, -0.15, 0.6], rr: [2.2, 0.62, 2.0], col: sand, k: 0.5 },
+      { s: 'ell', c: [1.0, 0.2, -0.2], rr: [2.3, 0.45, 1.9], col: grass, k: 0.4 },
+      { s: 'ell', c: [-1.6, 0.22, 0.6], rr: [1.4, 0.38, 1.3], col: grassD, k: 0.4 },
+      ...flowers(7, 1.6, 1.1),
+    ], { ao: 0.4 });
+  }
+}
 </script>
 <script>
 // ---- 00-util.js ----
@@ -5283,6 +5481,7 @@ function modelDefs() {
   kitchenModels(defs);
   caveModels(defs);
   baggerModels(defs);
+  seaModels(defs);
   return defs;
 }
 // Rigid scenery and creature parts on one bone (its pivot is the pelvis joint, 0.5 up)
@@ -8216,6 +8415,184 @@ function baggerModels(defs) {
   }
 }
 
+// ---- 04k-sea-models.js ----
+// ============================================================
+// The Ocean Update: ships, sea folk and their clips (see 13k-ocean.js). Built with prop() / makeHumanoid().
+// Ships are drawn at scale 1: model units are world units, +z is the bow, y = 0 the waterline.
+// ============================================================
+Object.assign(THEME_CLIPS, {
+  raft: ['rock'], raft_p0: ['tilt'], raft_p1: ['tilt'], raft_p2: ['tilt'], scannon: ['still'], isle0: ['still'], isle1: ['still'],
+  pswim: ['paddle', 'hack'], pfloat: ['paddle', 'hack'], ptube: ['paddle', 'hack'],
+});
+Object.assign(THEME_CELLS, { scannon: 0.012, isle0: 0.05, isle1: 0.05, raft: 0.016, raft_p0: 0.022, raft_p1: 0.022, raft_p2: 0.022, pswim: 0.013, pfloat: 0.013, ptube: 0.013 });
+const SEA_MESHES = ['raft', 'pswim', 'scannon', 'isle0', 'isle1', 'pfloat', 'ptube', 'raft_p0', 'raft_p1', 'raft_p2'];
+MESH_ORDER.push(...SEA_MESHES);
+
+// a ship rocks gently on the swell (bone 0 about the deck's middle): one loop of a slow roll and pitch
+CLIPS.rock = { frames: 32, fn(t) {
+  const a = t * TAU;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [0.025 * Math.sin(a + 1.3), 0, 0.04 * Math.sin(a)] : [0, 0, 0])) };
+} };
+// a broken piece of hull keels over as it sinks (frame = how far over)
+CLIPS.tilt = { frames: 16, fn(t) {
+  const u = t * 16 / 15;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [-0.95 * u, 0, 0.4 * u] : [0, 0, 0])) };
+} };
+// treading water: a doggy paddle out in front, the hook arm a little higher, legs kicking under the surface
+CLIPS.paddle = { frames: 32, fn(t) {
+  const a = t * TAU, s = Math.sin(a), c = Math.cos(a);
+  return { root: [0, 0.03 * Math.sin(2 * a), 0], rot: [
+    [0.22, 0.06 * s, 0], [0.12, -0.1 * s, 0], [-0.32, 0.12 * s, 0],
+    [-1.15 + 0.35 * s, 0, 0.25], [-0.55 + 0.35 * c, 0, 0],
+    [-1.35 - 0.35 * s, 0, -0.25], [-0.5 - 0.35 * c, 0, 0],
+    [0.45 * s, 0, 0.05], [0.45 + 0.3 * c, 0, 0], [-0.45 * s, 0, -0.05], [0.45 - 0.3 * c, 0, 0],
+  ] };
+} };
+// clinging to a hull and hacking at it with the hook: the left hand holds on, the hook comes down hard
+CLIPS.hack = { frames: 16, fn(t) {
+  const up = smoothstep(0, 0.6, t), down = smoothstep(0.6, 0.78, t), rec = smoothstep(0.85, 1, t);
+  const arm = (-2.7 * up + 2.2 * down) * (1 - rec) - 0.5 * rec;
+  return { root: [0, -0.02 * down * (1 - rec), 0], rot: [
+    [0.35, 0, 0], [0.15 + 0.25 * down * (1 - rec), 0.15 * up * (1 - rec), 0], [-0.35, 0, 0],
+    [-1.55, 0, 0.1], [-0.4, 0, 0], [arm, 0, -0.15], [-0.3 * (1 - down), 0, 0],
+    [0.3, 0, 0.05], [0.5, 0, 0], [-0.2, 0, -0.05], [0.4, 0, 0],
+  ] };
+} };
+
+function seaModels(defs) {
+  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const wood = C('#b07a45'), woodL = C('#c99358'), woodD = C('#7a4f2a'), bark = C('#8a5a30'), rope = C('#e2c98f'), ropeD = C('#b89a5e');
+  const white = C('#fbf6ee'), red = C('#e8414a'), pupil = C('#16101a');
+
+  // ---------- the raft: six lashed logs, two crossbeams, rope wraps, a life-ring pillow and a paddle ----------
+  const LOGX = [-0.75, -0.45, -0.15, 0.15, 0.45, 0.75];
+  const log = (x, i) => {
+    const len = 1.12 + ((i * 37) % 5) * 0.03, z0 = ((i * 53) % 7 - 3) * 0.015;
+    return [
+      { s: 'cyl', ax: 'z', c: [x, 0.02, z0], r: 0.15, hh: len, rd: 0.06, col: i % 2 ? wood : woodL, k: 0 },
+      // cut ends: lighter rings with a darker heart
+      { s: 'cyl', ax: 'z', c: [x, 0.02, z0 + len - 0.005], r: 0.118, hh: 0.012, rd: 0.004, col: C('#e8c690'), k: 0 },
+      { s: 'cyl', ax: 'z', c: [x, 0.02, z0 - len + 0.005], r: 0.118, hh: 0.012, rd: 0.004, col: C('#e8c690'), k: 0 },
+      { s: 'sph', c: [x, 0.02, z0 + len + 0.004], r: 0.03, col: woodD, k: 0 }, { s: 'sph', c: [x, 0.02, z0 - len - 0.004], r: 0.03, col: woodD, k: 0 },
+      // a knot or two on top
+      { s: 'ell', c: [x + 0.04, 0.165, z0 + 0.3 - (i % 3) * 0.35], rr: [0.035, 0.012, 0.045], col: bark, k: 0.01 },
+    ];
+  };
+  const beams = zz => zz.flatMap(z => [
+    { s: 'cyl', ax: 'x', c: [0, 0.2, z], r: 0.065, hh: 0.92, rd: 0.03, col: woodD, k: 0 },
+    // rope wraps where the beam crosses every log
+    ...LOGX.map(x => ({ s: 'tor', ax: 'x', c: [x + 0.11, 0.13, z], R: 0.105, r: 0.022, a0: -Math.PI, a1: Math.PI, col: rope, k: 0 })),
+    ...LOGX.map(x => ({ s: 'tor', ax: 'z', c: [x + 0.11, 0.13, z], R: 0.09, r: 0.018, a0: 0, a1: Math.PI, col: ropeD, k: 0 })),
+  ]);
+  const ring = (c, R0, r0) => Array.from({ length: 8 }, (_, i) => ({ s: 'tor', ax: 'y', c, R: R0, r: r0, a0: (i / 8) * TAU - Math.PI, a1: ((i + 1) / 8) * TAU - Math.PI + 0.02, col: i % 2 ? white : red, k: 0 }));
+  const lifeRing = [...ring([0, 0.25, -0.86], 0.24, 0.085), { s: 'tor', ax: 'y', c: [0, 0.25, -0.86], R: 0.24, r: 0.03, a0: -Math.PI, a1: Math.PI, col: C('#f4e4c4'), k: 0 }];
+  const paddle = [
+    { s: 'cap', a: [0.84, 0.24, -0.6], b: [0.84, 0.24, 0.5], r: 0.03, col: woodD, k: 0 },
+    { s: 'ell', c: [0.84, 0.23, 0.68], rr: [0.11, 0.025, 0.2], col: woodL, k: 0.02 },
+  ];
+  const bottle = [
+    { s: 'cap', a: [-0.84, 0.24, 0.62], b: [-0.84, 0.24, 0.88], r: 0.055, col: C('#7ad1b8'), k: 0.02 },
+    { s: 'cap', a: [-0.84, 0.24, 0.88], b: [-0.84, 0.24, 0.98], r: 0.02, col: C('#7ad1b8'), k: 0.01 },
+    { s: 'sph', c: [-0.84, 0.24, 0.99], r: 0.024, col: C('#a8763c'), k: 0 },
+  ];
+  const all = [...LOGX.flatMap(log), ...beams([-0.62, 0.62]), ...lifeRing, ...paddle, ...bottle];
+  rig(P('raft', all, { ao: 0.7 }), { 0: [0, 0.05, 0] });
+  // the pieces it breaks into: two logs each, with what was lashed to them
+  const piece = (xs, extra) => [...LOGX.map((x, i) => [x, i]).filter(([x]) => xs.includes(x)).flatMap(([x, i]) => log(x, i)),
+    ...[-0.62, 0.62].map(z => ({ s: 'cyl', ax: 'x', c: [(xs[0] + xs[1]) / 2, 0.2, z], r: 0.065, hh: 0.34, rd: 0.03, col: woodD, k: 0 })), ...extra];
+  rig(P('raft_p0', piece([-0.75, -0.45], bottle), { ao: 0.7 }), { 0: [-0.6, 0.05, 0] });
+  rig(P('raft_p1', piece([-0.15, 0.15], lifeRing), { ao: 0.7 }), { 0: [0, 0.05, 0] });
+  rig(P('raft_p2', piece([0.45, 0.75], paddle), { ao: 0.7 }), { 0: [0.6, 0.05, 0] });
+
+  // ---------- pirate swimmers: goo pirates treading water, a bandana (it takes the tint), an eye patch,
+  // a striped shirt and a hook for a right hand ----------
+  const skin = C('#f2a65a'), stripe = C('#2f5fb8'), shirt = C('#f6f1e6'), steel = C('#c8d4e0'), patch = C('#1c1820');
+  const pirate = (o = {}) => {
+    const m = makeHumanoid({ ...STICK, torsoR: 0.1, torsoR2: 0.11, headR: 0.165 }), J = m.J, hd = J.head;
+    for (const p of m.parts) p.col = skin;
+    // the shirt: white with blue rings, sleeves to the elbow
+    m.parts.push({ s: 'cap', a: [0, STICK.hipY + 0.04, 0], b: [0, STICK.shY - 0.01, 0], r: 0.108, r2: 0.116, col: shirt, bone: 1, k: 0.02 });
+    for (let i = 0; i < 4; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, STICK.hipY + 0.08 + i * 0.06, 0], R: 0.11 + i * 0.002, r: 0.014, a0: -Math.PI, a1: Math.PI, col: stripe, bone: 1, k: 0 });
+    for (const [s, b] of [['L', 3], ['R', 5]]) m.parts.push({ s: 'cap', a: J['sh' + s], b: J['el' + s], r: 0.068, r2: 0.064, col: shirt, bone: b, k: 0.01 });
+    // the bandana: a snug cap over the top of the head with a knot and two tails at the back (instance tint)
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.055, hd[2] - 0.01], rr: [0.172, 0.12, 0.178], bone: 2, k: 0.01 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + 0.03, hd[2] - 0.17], r: 0.04, bone: 2, k: 0.01 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [hd[0], hd[1] + 0.03, hd[2] - 0.18], b: [hd[0] + sx * 0.06, hd[1] - 0.09, hd[2] - 0.24], r: 0.028, r2: 0.012, bone: 2, k: 0.01 });
+    // big friendly eyes, one under a patch
+    m.parts.push({ s: 'ell', c: [hd[0] + 0.062, hd[1] + 0.01, hd[2] + 0.14], rr: [0.042, 0.05, 0.022], col: white, bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [hd[0] + 0.064, hd[1] + 0.005, hd[2] + 0.158], r: 0.022, col: pupil, bone: 2, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0] - 0.062, hd[1] + 0.01, hd[2] + 0.145], rr: [0.05, 0.05, 0.022], col: patch, bone: 2, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'z', c: [hd[0], hd[1] + 0.005, hd[2] + 0.0], R: 0.168, r: 0.009, a0: 0.15, a1: 1.3, col: patch, bone: 2, k: 0 });
+    // a grin and a stubby nose
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] - 0.075, hd[2] + 0.138], rr: [0.055, 0.016, 0.02], col: C('#5a1a10'), bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] - 0.025, hd[2] + 0.17], r: 0.03, col: C('#ee9450'), bone: 2, k: 0.01 });
+    // the hook: a steel cuff on the right wrist and a curved hook out in front
+    const h = J.haR;
+    m.parts = m.parts.filter(p => !(p.s === 'sph' && p.c === h));
+    m.parts.push({ s: 'cyl', ax: 'y', c: [h[0], h[1] + 0.02, h[2]], r: 0.05, hh: 0.035, rd: 0.012, col: C('#6a4a2a'), bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.01, h[2]], b: [h[0], h[1] - 0.09, h[2] + 0.01], r: 0.016, col: steel, bone: 6, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'x', c: [h[0], h[1] - 0.14, h[2] + 0.055], R: 0.055, r: 0.015, a0: -0.4, a1: 2.6, col: steel, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.2, h[2] + 0.08], b: [h[0], h[1] - 0.17, h[2] + 0.12], r: 0.013, r2: 0.003, col: steel, bone: 6, k: 0 });
+    m.crownLift = 0.08;
+    if (o.floats) {
+      // inflatable arm bands (armed floats): orange with a white band, on both upper arms
+      for (const [s, b] of [['L', 3], ['R', 5]]) {
+        const a = J['sh' + s], e = J['el' + s], c = [(a[0] + e[0]) / 2, (a[1] + e[1]) / 2, (a[2] + e[2]) / 2];
+        m.parts.push({ s: 'tor', ax: 'y', c, R: 0.085, r: 0.05, a0: -Math.PI, a1: Math.PI, col: C('#ff9a2e'), bone: b, k: 0.02 });
+        m.parts.push({ s: 'tor', ax: 'y', c: [c[0], c[1] + 0.005, c[2]], R: 0.088, r: 0.022, a0: -Math.PI, a1: Math.PI, col: white, bone: b, k: 0 });
+      }
+    }
+    if (o.tube) {
+      // a big inner tube round the middle (full-body float) and swim goggles pushed up on the bandana
+      const y = STICK.hipY + 0.17;
+      for (let i = 0; i < 6; i++) m.parts.push({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.25, r: 0.11, a0: (i / 6) * TAU - Math.PI, a1: ((i + 1) / 6) * TAU - Math.PI + 0.02, col: i % 2 ? C('#ff7eb8') : white, bone: 0, k: 0 });
+      for (const sx of [1, -1]) m.parts.push({ s: 'tor', ax: 'z', c: [hd[0] + sx * 0.065, hd[1] + 0.12, hd[2] + 0.12], R: 0.04, r: 0.014, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
+      m.parts.push({ s: 'tor', ax: 'y', c: [hd[0], hd[1] + 0.1, hd[2]], R: 0.17, r: 0.01, a0: -Math.PI, a1: Math.PI, col: C('#35c4e8'), bone: 2, k: 0 });
+    }
+    return m;
+  };
+  for (const [name, o] of [['pswim', {}], ['pfloat', { floats: true }], ['ptube', { tube: true }]]) { const m = pirate(o); m.name = name; defs[name] = m; }
+
+  // ---------- the Homing Cannon: an iron barrel with brass bands on a little wheeled carriage, facing +z ----------
+  {
+    const iron = C('#3a3f4a'), ironL = C('#5a6270'), brass = C('#e0b048');
+    P('scannon', [
+      { s: 'box', c: [0, 0.1, -0.02], hs: [0.15, 0.07, 0.24], rd: 0.03, col: wood, k: 0 },
+      { s: 'box', c: [0, 0.17, -0.1], hs: [0.12, 0.04, 0.12], rd: 0.02, col: woodD, k: 0 },
+      ...[[1, 1], [1, -1], [-1, 1], [-1, -1]].flatMap(([sx, sz]) => [
+        { s: 'cyl', ax: 'x', c: [sx * 0.17, 0.075, sz * 0.15], r: 0.075, hh: 0.03, rd: 0.012, col: woodD, k: 0 },
+        { s: 'cyl', ax: 'x', c: [sx * 0.195, 0.075, sz * 0.15], r: 0.025, hh: 0.012, rd: 0.005, col: iron, k: 0 }]),
+      { s: 'cap', a: [0, 0.25, -0.22], b: [0, 0.28, 0.42], r: 0.1, r2: 0.072, col: iron, k: 0.02 },
+      { s: 'sph', c: [0, 0.245, -0.27], r: 0.055, col: ironL, k: 0.02 },
+      { s: 'tor', ax: 'z', c: [0, 0.28, 0.42], R: 0.072, r: 0.026, a0: -Math.PI, a1: Math.PI, col: ironL, k: 0 },
+      { s: 'cyl', ax: 'z', c: [0, 0.28, 0.44], r: 0.05, hh: 0.03, rd: 0.005, col: C('#14161c'), sub: true, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.255, -0.05], R: 0.097, r: 0.016, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
+      { s: 'tor', ax: 'z', c: [0, 0.265, 0.2], R: 0.087, r: 0.014, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 },
+      ...[1, -1].map(sx => ({ s: 'cyl', ax: 'x', c: [sx * 0.105, 0.25, -0.05], r: 0.03, hh: 0.02, rd: 0.005, col: iron, k: 0 })),
+    ], { ao: 0.6 });
+  }
+
+  // ---------- islands (radius 4; drawn at radius / 4): a sandy mound under a grassy top with a few flowers ----------
+  {
+    const sand = C('#f2dc9a'), sandD = C('#e2c47a'), grass = C('#6cc34a'), grassD = C('#4fa63a');
+    const flowers = (n, rr, seed) => Array.from({ length: n }, (_, i) => { const a = i * 2.4 + seed, d = rr * (0.3 + ((i * 37) % 10) / 14); return { s: 'sph', c: [Math.cos(a) * d, 0.62, Math.sin(a) * d], r: 0.09, col: [C('#ff6fa8'), C('#ffd34a'), C('#fff6e6')][i % 3], k: 0.02 }; });
+    P('isle0', [
+      { s: 'ell', c: [0, -0.25, 0], rr: [4.0, 0.8, 4.0], col: sand, k: 0.3 },
+      { s: 'ell', c: [0.6, -0.1, -0.4], rr: [2.6, 0.62, 2.4], col: sandD, k: 0.6 },
+      { s: 'ell', c: [0, 0.2, 0], rr: [2.9, 0.42, 2.8], col: grass, k: 0.4 },
+      { s: 'ell', c: [-0.8, 0.35, 0.5], rr: [1.4, 0.35, 1.2], col: grassD, k: 0.5 },
+      ...flowers(9, 2.2, 0.3),
+    ], { ao: 0.4 });
+    P('isle1', [
+      { s: 'ell', c: [0, -0.25, 0], rr: [4.0, 0.8, 3.0], col: sand, k: 0.3 },
+      { s: 'ell', c: [-1.6, -0.15, 0.6], rr: [2.2, 0.62, 2.0], col: sand, k: 0.5 },
+      { s: 'ell', c: [1.0, 0.2, -0.2], rr: [2.3, 0.45, 1.9], col: grass, k: 0.4 },
+      { s: 'ell', c: [-1.6, 0.22, 0.6], rr: [1.4, 0.38, 1.3], col: grassD, k: 0.4 },
+      ...flowers(7, 1.6, 1.1),
+    ], { ao: 0.4 });
+  }
+}
+
 // ---- 05-glsl.js ----
 // ============================================================
 // GLSL sources
@@ -8372,6 +8749,7 @@ uniform vec3 uHeroPos;
 uniform vec3 uArenaBox; // half width, half depth, corner radius (0 = no walls)
 uniform float uFloorStyle; // the arena theme's ground (see ARENAS[].floor)
 uniform vec3 uAccent;
+uniform vec4 uSea; // the open sea (style 21): x roughness, y storm
 
 float sdRoundRect(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 
@@ -8416,6 +8794,14 @@ vec3 voro(vec2 p) {
     if (d < d1) { d2 = d1; d1 = d; h = hash12(c + 3.7); } else if (d < d2) d2 = d;
   }
   return vec3(d1, d2 - d1, h);
+}
+
+// the open sea's swell: a few long crossing waves and a slow noise drift (height in about -amp..amp)
+float seaH(vec2 p, float amp) {
+  float t = uTime;
+  float h = sin(dot(p, vec2(0.36, 0.12)) + t * 1.1) * 0.5 + sin(dot(p, vec2(-0.18, 0.31)) + t * 0.9) * 0.35
+          + sin(dot(p, vec2(0.52, -0.41)) + t * 1.6) * 0.18 + (texture(uNoise, p * 0.05 + vec2(t * 0.01, t * 0.013)).r - 0.5) * 1.2;
+  return h * amp * 0.6;
 }
 
 void main() {
@@ -8719,6 +9105,31 @@ void main() {
     emis = uAccent * fleck * 0.3 * (0.6 + 0.4 * sin(uTime * 2.0 + hash12(fc) * 30.0));
     ao = mix(0.6, 1.0, dome);
     gloss = 0.08 + wet * 0.85; sharp = 30.0 + wet * 90.0;
+  } else if (style == 21) {
+    // the open sea: soft rolling swells, thin wavering light lines drifting in patches, foam caps that come
+    // with rough water, and twinkling sun glints (colors: stoneA deep, stoneB shallow, grout the light lines)
+    float rough = uSea.x, storm = uSea.y, amp = 0.35 + rough * 0.6 + storm * 0.9;
+    const float e = 0.25;
+    float h0 = seaH(p, amp), hx = seaH(p + vec2(e, 0.0), amp), hz = seaH(p + vec2(0.0, e), amp);
+    N = normalize(vec3(-(hx - h0) / e * 0.3, 1.0, -(hz - h0) / e * 0.3));
+    float deep = texture(uNoise, p * 0.012 + 3.1).r, hn = clamp(h0 / (amp * 0.6), -1.0, 1.0);
+    alb = mix(uStoneA, uStoneB, clamp(smoothstep(0.3, 0.7, deep) * 0.5 + hn * 0.22 + 0.22, 0.0, 1.0));
+    // light lines: the contours of a slowly drifting field, shown only in patches
+    vec2 fl = vec2(uTime * 0.035, uTime * 0.025);
+    float fld = texture(uNoise, p * 0.03 + fl).r + 0.55 * texture(uNoise, p * 0.071 - fl * 1.3).g;
+    float cv = fld * 5.5, cw = fwidth(cv) * 1.3 + 0.02, cf = fract(cv);
+    float line = 1.0 - smoothstep(0.0, cw, min(cf, 1.0 - cf));
+    float mask = smoothstep(0.42, 0.62, texture(uNoise, p * 0.022 - fl * 0.6 + 5.7).g);
+    alb = mix(alb, uGrout, line * mask * 0.42 * (1.0 - storm * 0.5));
+    // foam caps on the crests: a few in rough water, many in a storm
+    float cap = smoothstep(0.78 - 0.32 * rough - 0.3 * storm, 0.95, hn * 0.5 + 0.5 + (fine - 0.5) * 0.35);
+    cap *= smoothstep(0.45, 0.62, texture(uNoise, p * 0.2 + fl * 3.0).r) * clamp(rough * 1.5 + storm, 0.0, 1.0);
+    alb = mix(alb, vec3(0.94, 0.98, 1.0), cap * 0.7);
+    alb = mix(alb, dot(alb, vec3(0.33)) * vec3(0.62, 0.7, 0.8), storm * 0.5);
+    vec2 gc = floor(p * 1.6), gf = fract(p * 1.6) - 0.5;
+    float gh = hash12(gc), tw = max(0.0, sin(uTime * 3.0 + gh * 40.0));
+    emis = vec3(1.0) * step(0.94, gh) * (1.0 - smoothstep(0.02, 0.08, length(gf))) * tw * tw * 0.7 * (1.0 - storm * 0.8);
+    gloss = 0.4; sharp = 60.0;
   } else {
     // stone plaza: large running-bond bricks
     vec2 bk = bricks(p);
@@ -8748,7 +9159,8 @@ void main() {
   vec3 V = normalize(uCamPos - vW);
   float sh = heroShadow(vW);
   float contact = mix(0.5, 1.0, smoothstep(0.15, 0.85, length(vW.xz - uHeroPos.xz)));
-  if (uShCount == 0) contact = 1.0;
+  if (uShCount == 0 || style == 21) contact = 1.0;
+  if (style == 21) sh = 1.0;
   float ndl = max(dot(N, uLightDir), 0.0);
   vec3 hemi = mix(uGroundCol, uSkyCol, N.y * 0.5 + 0.5);
   vec3 col = alb * (hemi * 0.55 + uLightCol * ndl * 0.75 * sh) * ao * contact;
@@ -10264,7 +10676,7 @@ const R = {
     time: 0, lightDir: [-0.45, 0.82, 0.36], lightCol: [1, 0.97, 0.92], skyCol: [0.46, 0.62, 0.8], groundCol: [0.1, 0.16, 0.24], fogCol: [0.04, 0.11, 0.19],
     spot: [0, 0, 0, 13], fogRange: [10, 26], spotMin: 0.42, arena: 0, poolCol: [0.1, 0.4, 0.5], poolGlow: 0, rockCol: [0.5, 0.5, 0.55],
     stoneA: [0.17, 0.3, 0.41], stoneB: [0.25, 0.4, 0.53], grout: [0.05, 0.11, 0.17], accent: [0.3, 1, 0.5], shadowTint: [0.05, 0.12, 0.25],
-    bloom: 0.48, hurt: 0, lowHp: 0, flashW: 0, torches: new Float32Array(32), torchCol: [1.5, 0.85, 0.42],
+    bloom: 0.48, hurt: 0, lowHp: 0, flashW: 0, torches: new Float32Array(32), sea: new Float32Array(4), torchCol: [1.5, 0.85, 0.42],
   },
   goo: { base: hexToRgb('#18d2ff'), accent: hexToRgb('#7b55f5'), pink: hexToRgb('#ff5fb8'), rim: hexToRgb('#8ef3ff') },
   settings: { msaa: true, bloom: true, scale: 1 },
@@ -10501,6 +10913,7 @@ R.drawScene = function () {
     gl.uniform1f(u.uHalf, 80);
     gl.uniform3fv(u.uStoneA, f.stoneA); gl.uniform3fv(u.uStoneB, f.stoneB); gl.uniform3fv(u.uGrout, f.grout);
     gl.uniform3fv(u.uAccent, f.accent); gl.uniform1f(u.uFloorStyle, f.floorStyle || 0);
+    if (u.uSea) gl.uniform4fv(u.uSea, f.sea);
     gl.uniform3fv(u.uArenaBox, SCENE.arenaBox || [0, 0, 0]);
     const hs = SCENE.heroShadow;
     gl.uniform1i(u.uShCount, hs ? hs.count : 0);
@@ -10832,6 +11245,22 @@ const ARM_SLOTS = [
   { side: -1, sh: [-0.22, 1.41, -0.15], el: [-0.42, 1.4, -0.28], fi: [-0.56, 1.28, -0.12] },
 ];
 
+// Lounge (the ocean): the blob lies back on deck, one leg out and one knee up, a hand behind its head and the
+// other (the weapon hand) resting at its side. The pose is written as it looks lying down (deck at y = 0, the
+// body facing +z, head toward -z), then turned back into the upright frame, since the whole rig is pitched
+// back by LOUNGE_TILT about the pelvis when drawn: costume, hat and gear shapes ride along with it.
+const LOUNGE_TILT = 1.2, LOUNGE_PIV = 0.3;
+const LOUNGE = (() => {
+  const c = Math.cos(LOUNGE_TILT), s = Math.sin(LOUNGE_TILT);
+  const up = (x, y, z) => { const yy = y - LOUNGE_PIV; return [x, c * yy - s * z + PELVIS_Y, s * yy + c * z]; };
+  return {
+    hipA: up(0.13, 0.27, 0.09), kneeA: up(0.16, 0.17, 0.44), footA: up(0.18, 0.09, 0.8),
+    hipB: up(-0.13, 0.27, 0.09), kneeB: up(-0.16, 0.48, 0.36), footB: up(-0.18, 0.09, 0.52),
+    // arm 0 rests at the side, arm 1 is folded behind the head
+    arm: [{ el: up(0.42, 0.3, -0.2), fi: up(0.44, 0.15, 0.1) }, { el: up(-0.43, 0.64, -0.6), fi: up(-0.1, 0.38, -0.8) }],
+  };
+})();
+
 class Spring3 {
   constructor(rest, k, z, inertia) {
     this.p = rest.slice(); this.v = [0, 0, 0]; this.t = rest.slice();
@@ -10880,6 +11309,7 @@ class Hero {
       chest: new Float32Array(4), pal: new Float32Array(42), grad: new Float32Array(4), groundY: 0,
     };
     this.costume = null; this.hat = null; this.hatLift = 0; this.gear = null;
+    this.lounge = 0; this.lng = 0; // lounge target and its eased blend (0 stands, 1 lies back on deck)
     this.shadow = { data: new Float32Array(14 * 4), count: 0, pos: [0, 0, 0] };
     this._w = [0, 0, 0];
   }
@@ -10899,17 +11329,27 @@ class Hero {
   setArmCount(n) { this.arms.forEach((a, i) => { a.growTarget = i < n ? 1 : 0; }); }
 
   // world <-> local
+  // lounging pitches the rig back about the pelvis and lowers it onto the deck
   toWorld(l, out) {
     const c = Math.cos(this.yaw), s = Math.sin(this.yaw), sc = this.scale;
-    out[0] = this.pos[0] + (c * l[0] + s * l[2]) * sc;
-    out[1] = this.pos[1] + l[1] * sc;
-    out[2] = this.pos[2] + (-s * l[0] + c * l[2]) * sc;
+    let ly = l[1], lz = l[2];
+    if (this.lng > 0) {
+      const a = this.lng * LOUNGE_TILT, cp = Math.cos(a), sp = Math.sin(a), yy = ly - PELVIS_Y;
+      ly = cp * yy + sp * lz + PELVIS_Y - this.lng * (PELVIS_Y - LOUNGE_PIV); lz = -sp * yy + cp * lz;
+    }
+    out[0] = this.pos[0] + (c * l[0] + s * lz) * sc;
+    out[1] = this.pos[1] + ly * sc;
+    out[2] = this.pos[2] + (-s * l[0] + c * lz) * sc;
     return out;
   }
   toLocal(w, out) {
     const c = Math.cos(this.yaw), s = Math.sin(this.yaw), sc = this.scale;
     const dx = (w[0] - this.pos[0]) / sc, dy = (w[1] - this.pos[1]) / sc, dz = (w[2] - this.pos[2]) / sc;
     out[0] = c * dx - s * dz; out[1] = dy; out[2] = s * dx + c * dz;
+    if (this.lng > 0) {
+      const a = this.lng * LOUNGE_TILT, cp = Math.cos(a), sp = Math.sin(a), yy = out[1] - PELVIS_Y + this.lng * (PELVIS_Y - LOUNGE_PIV), zz = out[2];
+      out[1] = cp * yy - sp * zz + PELVIS_Y; out[2] = sp * yy + cp * zz;
+    }
     return out;
   }
   forward() { return [Math.sin(this.yaw), 0, Math.cos(this.yaw)]; }
@@ -11010,7 +11450,11 @@ class Hero {
     const lax = clamp(c * ax - s * az, -60, 60), laz = clamp(s * ax + c * az, -60, 60);
 
     // targets
-    const sN = clamp(speed / this.topSpeed, 0, 1);
+    this.lng += (this.lounge - this.lng) * Math.min(1, dt * 4);
+    if (Math.abs(this.lounge - this.lng) < 1e-3) this.lng = this.lounge;
+    const lg = this.lng;
+    // a lounging blob rides along: no gait
+    const sN = clamp(speed / this.topSpeed, 0, 1) * (1 - lg);
     this.phase += dt * (speed / (STRIDE * this.scale)) * TAU;
     const ph = this.phase, t = this.time;
     // the body rises as a leg passes under it and dips when the legs are spread
@@ -11035,6 +11479,7 @@ class Hero {
       const dz = fz - hip.t[2], dy = fy - hip.t[1], d = Math.hypot(dz, dy) || 1e-3;
       const kb = Math.sqrt(Math.max(0, LEG_SEG * LEG_SEG - d * d / 4));
       V3.set(knee.t, sg * 0.15, hip.t[1] + dy * 0.5 + dz / d * kb, hip.t[2] + dz * 0.5 - dy / d * kb);
+      if (lg > 0) { const k = i ? 'B' : 'A'; V3.lerp(hip.t, hip.t, LOUNGE['hip' + k], lg); V3.lerp(knee.t, knee.t, LOUNGE['knee' + k], lg); V3.lerp(foot.t, foot.t, LOUNGE['foot' + k], lg); }
     }
     // arms
     for (const a of this.arms) {
@@ -11046,6 +11491,7 @@ class Hero {
         const swing = a.i < 2 ? sN * 0.32 * Math.sin(phi) : 0.05 * Math.sin(t * 2.2 + a.i);
         V3.set(a.fi.t, slot.fi[0] + 0.015 * Math.sin(t * 1.7 + a.i), slot.fi[1] + 0.02 * Math.sin(t * 2.1 + a.i) + bob, slot.fi[2] - swing);
         V3.set(a.el.t, (a.sh.t[0] + a.fi.t[0]) * 0.5 + sg * 0.06, (a.sh.t[1] + a.fi.t[1]) * 0.5 - 0.05, (a.sh.t[2] + a.fi.t[2]) * 0.5 - 0.02);
+        if (lg > 0 && a.i < 2) { const P = LOUNGE.arm[a.i]; V3.lerp(a.el.t, a.el.t, P.el, lg); V3.lerp(a.fi.t, a.fi.t, P.fi, lg); }
         a.fi.setK(a.fi.k0 + (a.fi.k - a.fi.k0) * Math.max(0, 1 - dt * 6)); a.el.setK(a.el.k0);
       } else this.runArmAction(a, dt);
       a.swell = Math.max(0, a.swell - dt * 3.5);
@@ -11270,13 +11716,14 @@ class Hero {
     o.count = n;
 
     // rotation for ellipsoids: world -> local (rotate by -yaw)
-    const c = Math.cos(this.yaw), s = Math.sin(this.yaw);
-    const m = o.rotInv; // column-major mat3 of R_y(-yaw)
-    m[0] = c; m[1] = 0; m[2] = s; m[3] = 0; m[4] = 1; m[5] = 0; m[6] = -s; m[7] = 0; m[8] = c;
+    // column-major mat3 of R_x(-pitch) * R_y(-yaw): the lounge pitch first undone after the yaw
+    const c = Math.cos(this.yaw), s = Math.sin(this.yaw), pa2 = this.lng * LOUNGE_TILT, cp = Math.cos(pa2), sp = Math.sin(pa2);
+    const m = o.rotInv;
+    m[0] = c; m[1] = -sp * s; m[2] = cp * s; m[3] = 0; m[4] = cp; m[5] = sp; m[6] = -s; m[7] = -sp * c; m[8] = cp * c;
 
     // bounds: a sphere around the middle of all the shapes, so a hat or a raised weapon grows it only as
     // much as it must (every pixel inside it is ray-marched, so its size is most of the blob's GPU cost)
-    const by = this.pos[1] + 0.85 * sc * sq;
+    const by = this.pos[1] + (0.85 * sq * (1 - this.lng) + 0.4 * this.lng) * sc;
     const lo = [this.pos[0] - 0.6 * sc, by - 0.6 * sc, this.pos[2] - 0.6 * sc], hi = [this.pos[0] + 0.6 * sc, by + 0.6 * sc, this.pos[2] + 0.6 * sc];
     const grow = (x, y, z, r) => {
       if (x - r < lo[0]) lo[0] = x - r; if (y - r < lo[1]) lo[1] = y - r; if (z - r < lo[2]) lo[2] = z - r;
@@ -11305,7 +11752,7 @@ class Hero {
     for (let i = 0; i < n; i++) if (pb[i * 4 + 3] > kMax) kMax = pb[i * 4 + 3];
     const pad = 0.06 + kMax * 0.25;
     for (let j = 0; j < 3; j++) { o.boxLo[j] = lo[j] - pad; o.boxHi[j] = hi[j] + pad; }
-    o.aoY = by - 0.9; // where the shading darkens toward the ground: from the body, whatever the bounds
+    o.aoY = by - 0.9 + this.lng * 0.4 * sc; // where the shading darkens toward the ground: from the body, whatever the bounds
     o.groundY = this.pos[1];
     o.flash = this.flash; o.glow = this.glow; o.wobble = 0.007 * this.wobbleMul; o.bubbles = this.bubbles; o.spark = this.spark; o.gloss = this.gloss;
     const ch = this.toWorld(J.chest.p, tmp);
@@ -11532,7 +11979,7 @@ const AUDIO = {
   play(name, p = 1) {
     if (!this.enabled || !this.ctx || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
-    const gap = { hit: 0.035, gem: 0.03, pop: 0.05, squish: 0.04, zap: 0.06, punch: 0.06, coin: 0.05, boom: 0.07, mine: 0.08, laser: 0.25, throw: 0.08, bang: 0.03, twang: 0.05, clang: 0.06, rumble: 0.5, crumble: 0.1, gooshot: 0.05 }[name] || 0.02;
+    const gap = { hit: 0.035, gem: 0.03, pop: 0.05, squish: 0.04, zap: 0.06, punch: 0.06, coin: 0.05, boom: 0.07, mine: 0.08, laser: 0.25, throw: 0.08, bang: 0.03, twang: 0.05, clang: 0.06, rumble: 0.5, crumble: 0.1, gooshot: 0.05, thud: 0.06, chop: 0.05, cannon: 0.07 }[name] || 0.02;
     if (this.last[name] && now - this.last[name] < gap) return;
     if (this.voices > 28 && !['levelup', 'boss', 'win', 'lose', 'hurt', 'click'].includes(name)) return;
     this.last[name] = now;
@@ -11578,6 +12025,10 @@ const AUDIO = {
       case 'gooshot': this._osc('sine', 340 * p, 140, 0.1, 0.13, t); this._noise(0.06, 0.06, t, 'bandpass', 1800, 900, 2); break;
       case 'whistle': this._osc('sine', 1200, 2100, 0.28, 0.07, t, 0.03); this._osc('sine', 2100, 1500, 0.32, 0.07, t + 0.32, 0.02); break;
       case 'cackle': [660, 590, 620, 520, 560, 440].forEach((f, i) => this._osc('square', f, f * 0.92, 0.07, 0.045, t + i * 0.08)); break;
+      // the sea: a hull ramming something (a hollow wooden knock and a splash), a hook biting wood, a cannon
+      case 'thud': this._osc('sine', 160 * p, 60, 0.18, 0.2, t); this._noise(0.08, 0.14, t, 'bandpass', 700, 300, 2); this._noise(0.3, 0.1, t + 0.03, 'bandpass', 1400, 400, 1); break;
+      case 'chop': this._noise(0.05, 0.16, t, 'bandpass', 1900, 1100, 3); this._osc('triangle', 300, 180, 0.06, 0.08, t); break;
+      case 'cannon': this._noise(0.08, 0.32, t, 'lowpass', 2400, 400, 1); this._osc('sine', 120 * p, 42, 0.32, 0.24, t); this._noise(0.5, 0.1, t + 0.04, 'lowpass', 600, 120, 1, 0.02); break;
     }
   },
 };
@@ -11772,7 +12223,7 @@ for (const id in SKILLS) {
   const m = SKILL_POWER[id] ?? 0.5;
   if (m !== 1) for (const L of SKILLS[id].levels) for (const k of ['dmg', 'burst', 'pop']) if (k in L) L[k] = Math.max(1, Math.round(L[k] * m * 10) / 10);
 }
-const maxLevel = id => (SKILLS[id] ? SKILL_MAX : PASSIVES[id].max);
+const maxLevel = id => (SKILLS[id] ? SKILLS[id].max || SKILL_MAX : PASSIVES[id].max);
 // the power-up a chapter's theme introduces (from: the first chapter it appears in)
 // Evolutions: a skill at max level plus its partner ability turns into a stronger, named form, through a chest.
 // boost(L) gets the skill's level-10 stats and returns the ones the evolved form changes.
@@ -13013,6 +13464,7 @@ function evolveSkill(id) {
 function recomputeStats() {
   const run = G.run, meta = G.save.upgrades, lv = lvlOf;
   const oldMax = run.maxHp;
+  if (run.sea) { seaStats(run); return oldMax; }
   // skin, costume and artifact bonuses (percent), fixed for the run
   const gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
   run.stats = {
@@ -13069,6 +13521,13 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   dmg *= G.run.stats.dmgMul;
   if (e.boss && e.dizzy > 0) dmg *= 1.5;
   if (e.frozen > 0 && G.run.absZero) dmg *= 1.2;
+  // a sea pirate's floats take the damage first (13k-ocean.js)
+  if (e.shell > 0) {
+    const a = Math.min(e.shell, dmg);
+    e.shell -= a; dmg -= a;
+    if (e.shell <= 0) seaPop(e);
+    if (dmg <= 0) { if (!(e.flashCd > 0)) { e.flash = 0.07; e.flashCd = 0.16; } e.squashV -= 1.6; addNumber(e, a, [1, 0.85, 0.55]); if (opts.sound !== false) AUDIO.play('boing'); return true; }
+  }
   e.hp -= dmg;
   // flash white on a hit, but under constant fire strobe instead of staying solid white
   if (!(e.flashCd > 0)) { e.flash = 0.07; e.flashCd = 0.16; }
@@ -13135,6 +13594,7 @@ function hurtHero(dmg, fromX, fromZ) {
 }
 function heroDown() {
   const run = G.run;
+  if (run.sea) { seaSinkStart(); return; }
   run.hp = 0;
   G.hero.meltTarget = 1;
   FX.droplets(G.hero.pos[0], 0.8, G.hero.pos[2], 16, 0, 4, 0.08, R.goo.base);
@@ -13147,6 +13607,7 @@ function reviveHero() {
   run.invuln = 1.2;
   G.hero.meltTarget = 0;
   G.hero.sqV += 3;
+  if (run.sea) seaRevive();
   const h = G.hero.pos;
   enemiesInRadius(h[0], h[2], 4.5, e => { const dx = e.x - h[0], dz = e.z - h[2], d = Math.hypot(dx, dz) || 1; if (!e.boss) { e.kx += dx / d * 14 / e.mass; e.kz += dz / d * 14 / e.mass; } });
   FX.ring(h[0], h[2], 5, COLORS.cyanHi, 0.6);
@@ -13206,6 +13667,8 @@ function setState(s) {
 function updateRun(dt) {
   // inside the cave (chapter 20) nothing of the arena runs: the cave is its own game (13i-cave.js)
   if (G.run.cave) { G.run.t += dt; updateCave(dt); return; }
+  // at sea (13k-ocean.js)
+  if (G.run.sea) { updateOcean(dt); return; }
   const run = G.run, hero = G.hero, h = hero.pos;
   const live = G.state === 'run';
   run.invuln = Math.max(0, run.invuln - dt);
@@ -13715,6 +14178,7 @@ function updatePickups(dt) {
 // ---------- camera ----------
 function updateCamera(dt, snap, noShake) {
   if (G.run && G.run.cave) { caveCamera(dt); return; }
+  if (G.run && G.run.sea) { seaCamera(dt, snap); return; }
   const c = G.cam, h = G.hero.pos, run = G.run;
   const vel = run ? run.vel : [0, 0, 0];
   const tx = h[0] + clamp(vel[0] * 0.17, -0.8, 0.8), tz = h[2] + clamp(vel[2] * 0.17, -0.8, 0.8);
@@ -13769,14 +14233,15 @@ function finishRun(won) {
   run.reward = reward;
   run.earned = run.coins + reward;
   sv.coins += run.earned;
-  if (run.endless) { run.newBest = run.t > (sv.endlessBest || 0); if (run.newBest) sv.endlessBest = Math.round(run.t); }
+  if (run.sea) seaFinish(run, won);
+  else if (run.endless) { run.newBest = run.t > (sv.endlessBest || 0); if (run.newBest) sv.endlessBest = Math.round(run.t); }
   else if (run.rush) {
     // best = most bosses beaten; a full clear also keeps its fastest time
     run.newBest = run.rushK > (sv.rushBest || 0) || (won && (!sv.rushTime || run.t < sv.rushTime));
     sv.rushBest = Math.max(sv.rushBest || 0, run.rushK);
     if (won && (!sv.rushTime || run.t < sv.rushTime)) sv.rushTime = Math.round(run.t);
   } else { const best = sv.best[run.chapter] || 0; if (run.t > best) sv.best[run.chapter] = Math.round(run.t); }
-  if (won && !run.rush && !run.endless) { sv.cleared[run.chapter] = true; sv.chapter = Math.min(CHAPTER_COUNT, Math.max(sv.chapter, run.chapter + 1)); }
+  if (won && !run.rush && !run.endless && !run.sea) { sv.cleared[run.chapter] = true; sv.chapter = Math.min(CHAPTER_COUNT, Math.max(sv.chapter, run.chapter + 1)); }
   sv.scrolls = (sv.scrolls || 0) + (run.scrolls || 0);
   // achievements count chapter runs only
   if (!run.endless && !run.rush) { sv.stats.runs++; sv.stats.kills += run.kills; goalsAddRun(run); }
@@ -20933,23 +21398,835 @@ BOSS_DRAW.bagger = function (e) {
   pushImp(hp[0], hp[1], hp[2], 0.32, 0, 0, 1, 1, 0, 4, 1.0, 0, 0, 0, 0, 1);
 };
 
+// ---- 13k-ocean.js ----
+// ============================================================
+// The Ocean Update: a sea of its own, sailed from the home screen's second page (swipe right).
+// The blob lounges on deck while you steer the ship: it rams swimmers, shakes off the ones that climb on to hack
+// at the hull, and grows from a raft into ever bigger ships (the Ship upgrade, always in the first slot). Every
+// other upgrade is mounted on the ship and moves to the next one. The hull's health is the run's health: when
+// it is gone the ship breaks up and the blob goes under.
+// Runs reuse the land game's run object, gems, level-up cards, chests and results; G.run.sea marks one.
+// ============================================================
+
+// The seven ships. len/wid: the hull's footprint (a capsule along the keel); deck: deck height; spot: where the
+// blob lies (local x, z; it faces the bow); heroS: the blob's size aboard; speed/accel/turn: handling;
+// hull: extra hull health; ram: ram damage at full speed; grip: how many boarders fit on; zoom: camera
+// distance; wake: wake width; bob: how much it rides the swell
+const SHIPS = [
+  { id: 'raft', name: 'Raft', model: 'raft', len: 2.5, wid: 1.9, deck: 0.17, spot: [0, -0.2], heroS: 0.8, speed: 4.6, accel: 5.5, turn: 3.0, hull: 0, ram: 16, grip: 6, zoom: 0.88, wake: 0.8, bob: 0.05 },
+  { id: 'canoe', name: 'Canoe', model: 'canoe', len: 3.8, wid: 1.05, deck: 0.12, spot: [0, -0.35], heroS: 0.82, speed: 5.4, accel: 6.5, turn: 2.7, hull: 0.15, ram: 24, grip: 7, zoom: 1.08, wake: 0.9, bob: 0.045 },
+  { id: 'sloop', name: 'Pirate Sloop', model: 'sloop', len: 5.6, wid: 2.1, deck: 0.62, spot: [0, -1.3], heroS: 0.9, speed: 5.6, accel: 5, turn: 2.2, hull: 0.35, ram: 36, grip: 9, zoom: 1.22, wake: 1.25, bob: 0.04 },
+  { id: 'galleon', name: 'Black Galleon', model: 'galleon', len: 7.6, wid: 2.7, deck: 0.85, spot: [0, -2.2], heroS: 1.0, speed: 5.8, accel: 4.2, turn: 1.8, hull: 0.6, ram: 50, grip: 11, zoom: 1.4, wake: 1.6, bob: 0.035 },
+  { id: 'yacht', name: 'Yacht', model: 'yacht', len: 9.4, wid: 3.0, deck: 1.0, spot: [0, 2.3], heroS: 1.1, speed: 6.8, accel: 5, turn: 1.7, hull: 0.85, ram: 64, grip: 12, zoom: 1.58, wake: 1.9, bob: 0.03 },
+  { id: 'cruise', name: 'Cruise Ship', model: 'cruise', len: 12, wid: 3.6, deck: 2.1, spot: [0, -3.4], heroS: 1.25, speed: 6.4, accel: 3.2, turn: 1.3, hull: 1.2, ram: 84, grip: 14, zoom: 1.8, wake: 2.3, bob: 0.02 },
+  { id: 'cargo', name: 'Cargo Ship', model: 'cargo', len: 14.5, wid: 3.9, deck: 2.5, spot: [0, 5.2], heroS: 1.4, speed: 6.2, accel: 2.6, turn: 1.05, hull: 1.6, ram: 110, grip: 16, zoom: 2.0, wake: 2.6, bob: 0.015 },
+];
+// The ten sea chapters. rough: swell (0 calm .. 1 rough); storm: a storm blows from the start (1), or comes in with
+// the boss (0.5); deep/shallow/lines: the water's colors; isle: the islands' look; mix: [enemy, from second, weight]
+const SEA_CHAPTERS = [
+  { name: 'Sunny Shallows', rough: 0.0, storm: 0, deep: '#1567c4', shallow: '#2b9be0', lines: '#bfeaff', fog: '#9fdcfa', isle: 'palm',
+    mix: [['pswim', 0, 1], ['pfloat', 50, 0.35], ['ptube', 140, 0.22]], boss: 'tuber' },
+  { name: 'Coral Cove', rough: 0.1, storm: 0, deep: '#178bc8', shallow: '#3fd6d6', lines: '#d0fff6', fog: '#79d6e6', isle: 'palm', mix: null },
+  { name: 'Kelp Narrows', rough: 0.2, storm: 0, deep: '#16799f', shallow: '#36b4a6', lines: '#c8f2e0', fog: '#6cbfc4', isle: 'palm', mix: null },
+  { name: "Smugglers' Strait", rough: 0.3, storm: 0, deep: '#1a6fae', shallow: '#3aa8d8', lines: '#c4e8ff', fog: '#74b6de', isle: 'palm', mix: null },
+  { name: 'Glacier Bay', rough: 0.35, storm: 0, deep: '#2a78b8', shallow: '#7cc8ec', lines: '#eef9ff', fog: '#a8d8f0', isle: 'palm', mix: null },
+  { name: 'Volcano Atoll', rough: 0.45, storm: 0.5, deep: '#1c5f8e', shallow: '#3d98b8', lines: '#ffd8b8', fog: '#8aa8b8', isle: 'palm', mix: null },
+  { name: 'Ghost Fog', rough: 0.5, storm: 0.5, deep: '#25506e', shallow: '#4a8098', lines: '#d8f0ff', fog: '#8aa6b4', isle: 'palm', mix: null },
+  { name: 'Thunder Sea', rough: 0.65, storm: 1, deep: '#1d4a6e', shallow: '#3a7898', lines: '#cfe6f6', fog: '#6e8a9e', isle: 'palm', mix: null },
+  { name: 'Kraken Deep', rough: 0.75, storm: 0.5, deep: '#173d63', shallow: '#2c6a8e', lines: '#bfe0f4', fog: '#5f7f96', isle: 'palm', mix: null },
+  { name: 'Pirate Fortress', rough: 0.85, storm: 1, deep: '#1a3f5e', shallow: '#336a88', lines: '#cfe2ee', fog: '#66808f', isle: 'palm', mix: null },
+];
+const SEA_COUNT = SEA_CHAPTERS.length;
+const SEA = {
+  sink: 0.52,       // how far a swimmer sits in the water (of its height): the water hides the rest
+  ramMin: 1.1,      // closing speed that counts as a ram
+  hackCd: 1.25,     // seconds between a boarder's hook blows
+  shake: 0.55,      // boarders are flung off when the ship turns faster than this share of its best turn rate
+  view: 1,          // (set from the ship) camera zoom
+};
+// the live sea state of a run (G.run.sea === OC while sailing)
+const OC = { ship: null, wake: [], isles: [], chunks: new Map(), balls: [], sink: null, stage: 0, t: 0, wakeT: 0, storm: 0 };
+
+function seaInfo(n) {
+  const k = clamp(n, 1, SEA_COUNT) - 1, C = SEA_CHAPTERS[k];
+  return {
+    n, sea: true, arenaName: C.name, bosses: [C.boss || 'tuber'],
+    // the sea starts about where the land's chapter 6 leaves off, then climbs
+    hpMul: 1 + 0.18 * k + 0.015 * k * k, dmgMul: 1 + 0.1 * k, rateMul: 0.7 + 0.1 * k, speedMul: 1 + 0.015 * k,
+    bossHpMul: Math.pow(1.2, k), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
+  };
+}
+const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
+const seaUnlocked = () => !!(G.save && G.save.cleared[CHAPTER_COUNT]);
+
+// ---------- the look of the water ----------
+function seaLook(n) {
+  const C = SEA_CHAPTERS[clamp(n, 1, SEA_COUNT) - 1], f = R.frame;
+  f.floorStyle = 21; f.stoneA = hexToRgb(C.deep); f.stoneB = hexToRgb(C.shallow); f.grout = hexToRgb(C.lines); f.accent = [1, 1, 1];
+  f.fogCol = hexToRgb(C.fog); f.skyCol = [0.8, 0.93, 1.0]; f.groundCol = hexToRgb(C.deep).map(v => v * 0.8); f.lightCol = [1.0, 0.97, 0.9];
+  f.spotMin = 1; f.shadowTint = [0.2, 0.35, 0.55];
+  f.sea[0] = C.rough; f.sea[1] = C.storm >= 1 ? 1 : 0;
+}
+
+// ---------- starting and leaving ----------
+function beginSea(n) {
+  prioritizeMeshes(SEA_MESHES);
+  for (const m of ['raft', 'pswim']) ensureMeshNow(m);
+  startSea(n);
+}
+function startSea(chapter) {
+  const info = seaInfo(chapter);
+  OC.ship = { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
+  OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.sink = null; OC.stage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
+  const run = G.run = {
+    chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
+    hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
+    slots: [], stats: null,
+    enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
+    nextId: 1, spawnAcc: 0, events: seaEvents(chapter), bosses: [], bossStarted: false, bossTotalHp: 0,
+    endless: false, rush: false, rushK: 0, powerCap: 99, tier: 0, sea: OC,
+    vel: [0, 0, 0], contactSlow: 0, gemCombo: 0, gemComboT: 0, hurtFlash: 0, bladeAngle: 0, shield: null, regenAcc: 0,
+  };
+  run.gear = gearStats();
+  seaLook(chapter);
+  // the open sea: no walls, no scenery but the islands (added as the ship explores)
+  ARENA.boxes = null; ARENA.hw = ARENA.hd = 1e5; ARENA.cr = 8; ARENA.theme = null; ARENA.props = []; ARENA.zones = []; ARENA.wall = []; ARENA.obstacles = []; ARENA.grid = null; ARENA.fx = null;
+  const hero = G.hero;
+  hero.reset(0, 0); hero.lounge = hero.lng = 1; hero.setArmCount(2);
+  FX.clear(); G.numbers.length = 0; G.bolts.length = 0;
+  addOrLevel('ship');
+  addOrLevel('cannon');
+  run.hp = run.maxHp;
+  seaPlaceHero(0);
+  G.cam.x = 0; G.cam.z = 0; G.cam.vx = 0; G.cam.vz = 0;
+  seaIslands(true);
+  seaIcons();
+  G.timeScale = 1;
+  setState('run');
+}
+// back to the home screen: the blob stands up again
+function seaLeave() { const h = G.hero; if (h) { h.lounge = h.lng = 0; h.faceYaw = null; h.pos[1] = 0; h.scale = 1; } }
+
+// ---------- stats ----------
+// the sea's own upgrades in place of the land's passives (called by recomputeStats)
+function seaStats(run) {
+  const meta = G.save.upgrades, lv = lvlOf, gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
+  OC.stage = Math.max(0, lv('ship') - 1);
+  const D = shipDef();
+  run.stats = {
+    dmgMul: (1 + 0.03 * meta.damage) * (1 + g('dmg')),
+    speedMul: (1 + 0.05 * lv('propeller')) * (1 + 0.01 * meta.speed) * (1 + g('speed')),
+    magnet: (1.6 + D.len * 0.45) * (1 + 0.05 * meta.magnet) * (1 + g('magnet')),
+    armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
+    cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
+    areaMul: 1 + g('area'), extra: 0, xpMul: 1 + g('xp'),
+    regen: 0.003 * lv('crew') + g('regen'),
+    ramMul: 1 + 0.12 * lv('fort'),
+  };
+  run.maxHp = 140 * (1 + D.hull) * (1 + 0.05 * meta.health) * (1 + g('hp'));
+  if (run.hp > run.maxHp) run.hp = run.maxHp;
+  const h = G.hero;
+  h.scale = D.heroS; h.bubbles = 0; h.stretchMul = 1; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.topSpeed = 4.5;
+}
+
+// ---------- ship geometry ----------
+// local (x across, z along the keel) to world; local +x is the port (left) side
+function shipW(lx, lz, out = [0, 0]) {
+  const S = OC.ship, c = Math.cos(S.yaw), s = Math.sin(S.yaw);
+  out[0] = S.x + c * lx + s * lz; out[1] = S.z - s * lx + c * lz;
+  return out;
+}
+function shipL(x, z, out = [0, 0]) {
+  const S = OC.ship, c = Math.cos(S.yaw), s = Math.sin(S.yaw), dx = x - S.x, dz = z - S.z;
+  out[0] = c * dx - s * dz; out[1] = s * dx + c * dz;
+  return out;
+}
+// the hull as a capsule: half the straight part's length and the radius
+const hullSeg = D => [Math.max(0, D.len / 2 - D.wid / 2), D.wid / 2];
+// distance from (x, z) to the hull's edge (negative inside) and the outward normal (world) in out
+const _hl = [0, 0];
+function hullDist(x, z, out) {
+  const D = shipDef(), [hl, hr] = hullSeg(D), L = shipL(x, z, _hl);
+  const cz = clamp(L[1], -hl, hl), dx = L[0], dz = L[1] - cz, d = Math.hypot(dx, dz) || 1e-4;
+  if (out) {
+    const S = OC.ship, c = Math.cos(S.yaw), s = Math.sin(S.yaw), nx = dx / d, nz = dz / d;
+    out[0] = c * nx + s * nz; out[1] = -s * nx + c * nz;
+  }
+  return d - hr;
+}
+
+// ---------- the run ----------
+function updateOcean(dt) {
+  const run = G.run, S = OC.ship, hero = G.hero;
+  const live = G.state === 'run';
+  run.invuln = Math.max(0, run.invuln - dt);
+  run.hurtFlash = Math.max(0, run.hurtFlash - dt * 1.8);
+  OC.t += dt;
+  if (live) {
+    run.t += dt;
+    while (run.events.length && run.t >= run.events[0].t) seaEvent(run.events.shift());
+    const rate = (run.bossStarted ? 2.2 : spawnRate(run.t)) * run.info.rateMul * 0.85;
+    run.spawnAcc += rate * dt;
+    while (run.spawnAcc >= 1) { run.spawnAcc -= 1; if (run.enemies.length < MAX_ALIVE) seaSpawn(); }
+  }
+  seaSteer(dt);
+  seaPlaceHero(dt);
+  run.vel[0] = S.vx; run.vel[2] = S.vz;
+  seaIslands(false);
+  seaWake(dt);
+  gridBuild(run.enemies);
+  seaFoes(dt);
+  updateSkills(dt);
+  updateSeaBalls(dt);
+  updateProjectiles(dt);
+  updateEnemyShots(dt);
+  updatePickups(dt);
+  if (run.stats.regen > 0 && run.hp > 0) run.hp = Math.min(run.maxHp, run.hp + run.maxHp * run.stats.regen * dt);
+  R.frame.lowHp = run.hp / run.maxHp < 0.25 ? 0.35 : 0;
+  // a storm rolls in with the boss in some chapters
+  const C = SEA_CHAPTERS[run.chapter - 1], want = C.storm >= 1 || (C.storm > 0 && run.bossStarted) ? 1 : 0;
+  OC.storm += (want - OC.storm) * Math.min(1, dt * 0.25);
+  R.frame.sea[1] = OC.storm;
+  const bossesDown = live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying);
+  if (bossesDown) {
+    run.won = true; run.endT = 0;
+    for (const e of run.enemies) if (!e.dying && !e.boss) e.dying = 0.0001;
+    for (const g of run.gems) g.pull = true;
+    for (const p of run.pickups) if (p.kind === 'coin' || p.kind === 'scroll') p.pull = true;
+    setState('victory');
+  }
+}
+
+// Boat handling: the stick points where you want to go; the ship turns toward it (better when under way),
+// eases off the throttle while turning hard, and slides only a little sideways
+function seaSteer(dt) {
+  const S = OC.ship, D = shipDef(), run = G.run;
+  const ix = G.input.x, iz = G.input.z, m = Math.min(1, Math.hypot(ix, iz));
+  const top = D.speed * run.stats.speedMul;
+  let steer = 0, thr = 0;
+  if (m > 0.12 && G.state === 'run') {
+    const diff = angleDiff(S.yaw, Math.atan2(ix, iz));
+    steer = clamp(diff * 2.4, -1, 1);
+    thr = m * clamp(Math.cos(diff) * 0.75 + 0.45, 0.2, 1);
+  }
+  const want = thr * top;
+  S.speed += (want - S.speed) * (1 - Math.exp(-dt * (want > S.speed ? D.accel / top : 0.8)));
+  const tr = D.turn * (0.4 + 0.6 * clamp(S.speed / top, 0, 1));
+  S.yawV += (steer * tr - S.yawV) * (1 - Math.exp(-dt * 5));
+  S.yaw += S.yawV * dt;
+  const k = 1 - Math.exp(-dt * 4);
+  S.vx += (Math.sin(S.yaw) * S.speed - S.vx) * k; S.vz += (Math.cos(S.yaw) * S.speed - S.vz) * k;
+  S.x += S.vx * dt; S.z += S.vz * dt;
+  // islands stop the ship (three circles along the keel)
+  const [hl, hr] = hullSeg(D), p = [0, 0];
+  for (const I of OC.isles) {
+    for (const u of [-1, 0, 1]) {
+      shipW(0, u * hl, p);
+      const dx = p[0] - I.x, dz = p[1] - I.z, d = Math.hypot(dx, dz) || 1e-4, ov = I.r + hr - d;
+      if (ov <= 0) continue;
+      S.x += dx / d * ov; S.z += dz / d * ov;
+      const vn = (S.vx * dx + S.vz * dz) / d;
+      if (vn < 0) { S.vx -= dx / d * vn; S.vz -= dz / d * vn; if (vn < -2) { S.speed *= 0.5; G.cam.shake = Math.max(G.cam.shake, 0.12); AUDIO.play('thud'); } }
+    }
+  }
+  S.y = Math.sin(OC.t * 1.6) * D.bob + Math.sin(OC.t * 2.7 + 1) * D.bob * 0.4;
+}
+// the blob lies on deck where the ship keeps it
+function seaPlaceHero(dt) {
+  const S = OC.ship, D = shipDef(), hero = G.hero, w = shipW(D.spot[0], D.spot[1]);
+  hero.pos[0] = w[0]; hero.pos[2] = w[1]; hero.pos[1] = D.deck + S.y;
+  hero.faceYaw = S.yaw; hero.lounge = 1;
+  if (dt > 0) hero.update(dt, [S.vx, 0, S.vz], true);
+  else { hero.yaw = S.yaw; hero.buildPrims(); }
+  HERO_PT.x = S.x; HERO_PT.z = S.z;
+}
+
+// ---------- islands: a few, scattered by area as the ship explores ----------
+const ISLE_CHUNK = 46;
+function seaIslands(first) {
+  const S = OC.ship, cx = Math.floor(S.x / ISLE_CHUNK), cz = Math.floor(S.z / ISLE_CHUNK);
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+    const key = (cx + i) + ',' + (cz + j);
+    if (OC.chunks.has(key)) continue;
+    OC.chunks.set(key, true);
+    const rnd = mulberry((cx + i) * 7919 + (cz + j) * 104729 + G.run.chapter * 31);
+    // islands aren't common: about one chunk in three has one, never right where the ship starts
+    if (rnd() > 0.36) continue;
+    const x = (cx + i + 0.2 + rnd() * 0.6) * ISLE_CHUNK, z = (cz + j + 0.2 + rnd() * 0.6) * ISLE_CHUNK;
+    if (Math.hypot(x, z) < 16) continue;
+    seaMakeIsle(x, z, rnd);
+  }
+  if (!first) OC.isles = OC.isles.filter(I => Math.hypot(I.x - S.x, I.z - S.z) < ISLE_CHUNK * 3.5 || !OC.chunks.delete(I.key));
+  ARENA.obstacles = OC.isles.map(I => I.ob);
+}
+function seaMakeIsle(x, z, rnd) {
+  const r = 3.2 + rnd() * 3.4, kind = rnd() < 0.5 ? 'isle0' : 'isle1', yaw = rnd() * TAU;
+  const I = { x, z, r, kind, yaw, key: Math.floor(x / ISLE_CHUNK) + ',' + Math.floor(z / ISLE_CHUNK), deco: [], ob: { x, z, r: r * 0.92, shape: 'circle', shots: false, isle: true } };
+  // palms and rocks on top (in the island's own frame, as a share of its radius)
+  const n = 1 + Math.floor(rnd() * 3);
+  for (let i = 0; i < n; i++) { const a = rnd() * TAU, d = rnd() * 0.45; I.deco.push({ m: 'palm', x: x + Math.cos(a) * d * r, z: z + Math.sin(a) * d * r, s: 1.3 + rnd() * 0.5, yaw: rnd() * TAU }); }
+  for (let i = 0; i < 2; i++) { const a = rnd() * TAU, d = 0.55 + rnd() * 0.25; I.deco.push({ m: 'rock' + Math.floor(rnd() * 3), x: x + Math.cos(a) * d * r, z: z + Math.sin(a) * d * r, s: 0.9 + rnd() * 0.6, yaw: rnd() * TAU, y: 0.15 }); }
+  OC.isles.push(I);
+}
+function mulberry(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const inIsle = (x, z, pad = 0) => OC.isles.some(I => Math.hypot(x - I.x, z - I.z) < I.r + pad);
+
+// ---------- the wake: foam dropped at the stern, spreading in a V ----------
+function seaWake(dt) {
+  const S = OC.ship, D = shipDef();
+  for (const w of OC.wake) w.t += dt;
+  while (OC.wake.length && OC.wake[0].t > 1.7) OC.wake.shift();
+  OC.wakeT -= dt;
+  const sp = Math.hypot(S.vx, S.vz);
+  if (OC.wakeT <= 0 && sp > 0.5 && !OC.sink) {
+    OC.wakeT = 0.07;
+    const p = shipW(0, -D.len / 2 + 0.1);
+    OC.wake.push({ x: p[0], z: p[1], yaw: S.yaw, t: 0, w: D.wake, k: clamp(sp / 4, 0.3, 1.2), seed: Math.random() * 10 });
+  }
+}
+
+// ---------- spawning ----------
+function seaSpawnPoint() {
+  const S = OC.ship, r = VIEW.radius + 2.5;
+  const sp = Math.hypot(S.vx, S.vz), head = Math.atan2(S.vx, S.vz);
+  for (let i = 0; i < 8; i++) {
+    // most come from ahead when sailing, from anywhere when still
+    const a = sp > 1 && Math.random() < 0.6 ? head + rand(-1.2, 1.2) : rand(0, TAU);
+    const x = G.cam.x + Math.sin(a) * r, z = G.cam.z + Math.cos(a) * r;
+    if (!inIsle(x, z, 1)) return [x, z];
+  }
+  return [G.cam.x + r, G.cam.z];
+}
+function seaSpawn() {
+  const run = G.run, t = run.t, C = SEA_CHAPTERS[run.chapter - 1], mix = C.mix || SEA_CHAPTERS[0].mix;
+  let total = 0;
+  const w = mix.filter(m => t >= m[1]);
+  for (const m of w) total += m[2];
+  let r = Math.random() * total, type = w[0][0];
+  for (const m of w) { r -= m[2]; if (r <= 0) { type = m[0]; break; } }
+  const [x, z] = seaSpawnPoint();
+  // swimmers come in little groups
+  const n = type === 'pswim' ? (t < 60 ? randInt(1, 2) : randInt(2, 4)) : 1;
+  for (let i = 0; i < n; i++) seaFoe(type, x + rand(-1, 1), z + rand(-1, 1));
+}
+function seaFoe(type, x, z, opts) {
+  const e = spawnEnemy(type, x, z, opts);
+  const D = e.def;
+  if (D.shell) e.shell = e.shellMax = D.shell * (e.maxHp / D.hp) * (e.elite ? 1 : 1);
+  e.bobPh = rand(0, TAU);
+  return e;
+}
+function seaEvents(chapter) {
+  return [{ t: 60, kind: 'swarm', n: 16 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 26 }, { t: 210, kind: 'swarm', n: 36 },
+    { t: 255, kind: 'surge', n: 30 }, { t: 280, kind: 'swarm', n: 44 }, { t: 300, kind: 'boss' }].sort((a, b) => a.t - b.t);
+}
+function seaEvent(ev) {
+  const run = G.run, S = OC.ship;
+  if (ev.kind === 'swarm') {
+    // a ring of swimmers closing in, with a gap to sail out through
+    const r = VIEW.radius + 2, off = rand(0, TAU), n = Math.round(ev.n * run.info.rateMul);
+    for (let i = 0; i < n; i++) { const a = off + (i / n) * TAU * 0.75, x = S.x + Math.cos(a) * r, z = S.z + Math.sin(a) * r; if (!inIsle(x, z, 0.5)) seaFoe('pswim', x, z); }
+  } else if (ev.kind === 'elite') {
+    const [x, z] = seaSpawnPoint();
+    seaFoe(pick(['pswim', 'pfloat', 'ptube']), x, z, { elite: true });
+  } else if (ev.kind === 'surge') {
+    for (let i = 0; i < Math.round(ev.n * run.info.rateMul); i++) seaSpawn();
+  } else if (ev.kind === 'boss') seaBossStart();
+}
+// (until each chapter has its own boss vehicle: a giant tuber pirate)
+function seaBossStart() {
+  const run = G.run, [x, z] = seaSpawnPoint();
+  run.bossStarted = true;
+  const e = seaFoe('ptube', x, z, { elite: true, scale: 1.8 });
+  e.hp = e.maxHp = 900 * run.info.bossHpMul; e.shell = e.shellMax = 300 * run.info.bossHpMul; e.radius = 1.0; e.mass = 12; e.speed *= 1.3; e.dmg *= 2;
+  run.bosses.push(e); run.bossTotalHp = e.maxHp;
+  UI.banner('THE BIG TUBER', true); AUDIO.play('boss'); G.cam.shake = 0.15;
+}
+
+// ---------- swimmers: paddle in, get rammed, or climb on and hack at the hull ----------
+function seaFoes(dt) {
+  const run = G.run, S = OC.ship, D = shipDef(), n = [0, 0];
+  const top = D.speed * run.stats.speedMul, frozen = !!OC.sink;
+  // turning hard flings boarders off
+  const fling = Math.abs(S.yawV) - SEA.shake * D.turn;
+  let boarders = 0;
+  for (const e of run.enemies) if (e.grab && !e.dying) boarders++;
+  for (const e of run.enemies) {
+    if (e.dying) { e.dying += dt / (e.boss ? 0.6 : 0.2); continue; }
+    e.flash = Math.max(0, e.flash - dt); e.flashCd = (e.flashCd || 0) - dt;
+    e.spawnT = Math.max(0, e.spawnT - dt); e.ramCd = (e.ramCd || 0) - dt; e.stun = Math.max(0, (e.stun || 0) - dt);
+    e.squashV += (300 * (1 - e.squash) - 14 * e.squashV) * dt;
+    e.squash = clamp(e.squash + e.squashV * dt, 0.6, 1.3);
+    if (frozen) { e.phase += dt * 0.4; continue; }
+    if (e.frozen > 0) { e.frozen -= dt; continue; }
+    if (e.grab) {
+      // aboard: ride along, hacking at the hull every so often
+      const w = shipW(e.grab.lx, e.grab.lz);
+      e.x = w[0]; e.z = w[1]; e.yaw = S.yaw + e.grab.yaw;
+      e.grab.t -= dt;
+      e.act = { clip: 'hack', u: clamp(1 - e.grab.t / SEA.hackCd, 0, 0.999) };
+      if (e.grab.t <= 0) {
+        e.grab.t = SEA.hackCd * rand(0.9, 1.1);
+        if (G.state === 'run') { hurtHero(e.dmg, e.x, e.z); FX.burst(e.x, D.deck * 0.6 + 0.3, e.z, 5, [0.75, 0.55, 0.35], 2.5, 0.06, 0.35, 2); AUDIO.play('chop'); }
+      }
+      if (fling > 0 && Math.random() < fling * 1.4 * dt) seaUnboard(e, 7 + Math.abs(S.yawV) * 2);
+      continue;
+    }
+    e.act = null;
+    // swim for the nearest point of the hull
+    const hd = hullDist(e.x, e.z, n);
+    let dx = -n[0], dz = -n[1];
+    if (e.stun > 0) { dx = 0; dz = 0; }
+    const sp = e.speed * e.slowMul;
+    const k = 1 - Math.exp(-3 * dt);
+    e.vx += (dx * sp - e.vx) * k; e.vz += (dz * sp - e.vz) * k;
+    e.x += (e.vx + e.kx) * dt; e.z += (e.vz + e.kz) * dt;
+    const kd = Math.exp(-3.5 * dt); e.kx *= kd; e.kz *= kd;
+    e.phase += dt * 0.9;
+    if (Math.hypot(e.vx, e.vz) > 0.2) e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 6));
+    // against the hull: rammed, or aboard
+    const d2 = hullDist(e.x, e.z, n), touch = d2 < e.radius * 0.6;
+    if (touch) {
+      const vn = -(S.vx * n[0] + S.vz * n[1]);   // how fast the hull closes on it
+      if (vn > SEA.ramMin && e.ramCd <= 0) seaRam(e, n, vn, top);
+      else if (!e.boss && e.stun <= 0 && boarders < D.grip && e.spawnT <= 0) { seaBoard(e); boarders++; }
+      else { e.x += n[0] * (e.radius * 0.6 - d2); e.z += n[1] * (e.radius * 0.6 - d2); }
+    }
+    // around the islands
+    for (const I of OC.isles) {
+      const ix = e.x - I.x, iz = e.z - I.z, id = Math.hypot(ix, iz) || 1e-4, ov = I.ob.r + e.radius - id;
+      if (ov > 0) { e.x += ix / id * ov; e.z += iz / id * ov; }
+    }
+  }
+  // keep a little room between swimmers
+  const cell = GRID.cell, map = GRID.map;
+  for (const e of run.enemies) {
+    if (e.dying || e.grab) continue;
+    const x0 = Math.floor((e.x - 1) / cell), x1 = Math.floor((e.x + 1) / cell), z0 = Math.floor((e.z - 1) / cell), z1 = Math.floor((e.z + 1) / cell);
+    let looks = 14;
+    for (let cx = x0; cx <= x1 && looks > 0; cx++) for (let cz = z0; cz <= z1 && looks > 0; cz++) {
+      const a = map.get(gkey(cx, cz));
+      if (!a) continue;
+      for (let i = 0; i < a.length && looks > 0; i++) {
+        const o = a[i]; looks--;
+        if (o === e || o.dying || o.grab || o.id < e.id) continue;
+        const dx = o.x - e.x, dz = o.z - e.z, rr = e.radius + o.radius, d2 = dx * dx + dz * dz;
+        if (d2 >= rr * rr || d2 < 1e-8) continue;
+        const d = Math.sqrt(d2), ov = (rr - d) * 0.5, tot = e.mass + o.mass;
+        e.x -= dx / d * ov * (o.mass / tot) * 2; e.z -= dz / d * ov * (o.mass / tot) * 2;
+        o.x += dx / d * ov * (e.mass / tot) * 2; o.z += dz / d * ov * (e.mass / tot) * 2;
+      }
+    }
+  }
+  run.enemies = run.enemies.filter(e => !(e.dying >= 1));
+}
+// rammed: hit as hard as the ship was going, and thrown clear with a splash
+function seaRam(e, n, vn, top) {
+  const run = G.run, S = OC.ship, D = shipDef();
+  const dmg = D.ram * run.stats.ramMul * clamp(0.35 + 0.65 * vn / top, 0.35, 1.2) / run.stats.dmgMul;
+  e.ramCd = 0.45; e.stun = 0.5;
+  const push = (4 + vn * 1.6) / Math.sqrt(e.mass);
+  hurtEnemy(e, dmg, n[0] * push * e.mass, n[1] * push * e.mass, { color: [1, 0.85, 0.4] });
+  if (e.boss) { e.kx += n[0] * push * 0.3; e.kz += n[1] * push * 0.3; }
+  FX.burst(e.x, 0.3, e.z, 8, [0.85, 0.95, 1], 4, 0.1, 0.45, 2, 2);
+  FX.ring(e.x, e.z, 1.2, [0.85, 0.97, 1], 0.35, 0.6);
+  // a heavy ship barely slows down; the raft feels every bump
+  S.speed *= 1 - clamp(0.12 * e.mass / (1 + OC.stage * 1.5), 0, 0.3);
+  G.cam.shake = Math.max(G.cam.shake, e.boss ? 0.2 : 0.05);
+  AUDIO.play('thud');
+}
+function seaBoard(e) {
+  const S = OC.ship, D = shipDef(), L = shipL(e.x, e.z), [hl, hr] = hullSeg(D);
+  // clamp onto the hull's edge where it touched, facing in
+  const cz = clamp(L[1], -hl, hl), dx = L[0], dz = L[1] - cz, d = Math.hypot(dx, dz) || 1;
+  const lx = dx / d * (hr + 0.12), lz = cz + dz / d * (hr + 0.12);
+  e.grab = { lx, lz, yaw: Math.atan2(-dx, -dz), t: SEA.hackCd * rand(0.5, 1) };
+  e.vx = e.vz = e.kx = e.kz = 0;
+  AUDIO.play('pop', 0.6);
+}
+function seaUnboard(e, speed) {
+  const n = [0, 0];
+  hullDist(e.x, e.z, n);
+  e.grab = null; e.act = null; e.stun = 1.0;
+  e.kx = n[0] * speed; e.kz = n[1] * speed;
+  FX.burst(e.x, 0.5, e.z, 6, [0.85, 0.95, 1], 3, 0.08, 0.4, 2, 2);
+}
+// floats (arm bands, inner tubes) soak up damage first and pop when used up: the pirate swims on without them
+function seaPop(e) {
+  e.shell = 0;
+  FX.burst(e.x, 0.6 * e.scale, e.z, 14, e.model === 'ptube' ? [1, 0.5, 0.75] : [1, 0.62, 0.2], 5, 0.1, 0.5, 1, 2);
+  FX.ring(e.x, e.z, 1.4 * e.scale, [1, 1, 1], 0.3, 0.7);
+  AUDIO.play('pop');
+  if (R.enemyDraw.pswim) e.model = 'pswim';
+}
+
+// ---------- sinking ----------
+// the hull is gone: the ship breaks into pieces that drift apart and keel over, and the blob, dumped in the
+// water, flails its arms and goes under
+function seaSinkStart() {
+  const run = G.run, S = OC.ship, D = shipDef(), hero = G.hero;
+  run.hp = 0;
+  const parts = D.model === 'raft' || !R.enemyDraw[D.model + '_p0'] ? 'raft' : D.model;
+  OC.sink = { t: 0, pieces: [0, 1, 2].map(i => ({ m: parts + '_p' + i, x: S.x, z: S.z, yaw: S.yaw, vx: 0, vz: 0, y: S.y, tilt: 0, spin: rand(-0.5, 0.5), dir: i - 1, delay: 0.25 + i * 0.12 })), flail: 0, ph: 0 };
+  for (const e of run.enemies) if (e.grab) seaUnboard(e, 3);
+  S.vx = S.vz = S.speed = S.yawV = 0;
+  G.cam.shake = 0.35;
+  FX.burst(S.x, D.deck, S.z, 30, [0.75, 0.55, 0.35], 6, 0.12, 0.7, 2, 2);
+  FX.burst(S.x, 0.3, S.z, 24, [0.85, 0.95, 1], 6, 0.12, 0.6, 2, 3);
+  AUDIO.play('crumble'); AUDIO.play('lose');
+  setState('dying');
+}
+const SINK_T = 4.2;
+function updateSeaDying(dt) {
+  const K = OC.sink, S = OC.ship, D = shipDef(), hero = G.hero;
+  if (!K) return;
+  K.t += dt; OC.t += dt;
+  const fw = [Math.sin(S.yaw), Math.cos(S.yaw)], side = [Math.cos(S.yaw), -Math.sin(S.yaw)];
+  for (const P of K.pieces) {
+    const u = K.t - P.delay;
+    if (u <= 0) continue;
+    // apart, then over and down
+    const go = Math.min(u, 2.2) * 0.3 * D.wid;
+    P.x = S.x + side[0] * P.dir * go + fw[0] * (P.dir === 0 ? -0.25 * go : 0);
+    P.z = S.z + side[1] * P.dir * go + fw[1] * (P.dir === 0 ? -0.25 * go : 0);
+    P.yaw = S.yaw + P.spin * u * 0.4;
+    P.tilt = clamp(u / 1.6, 0, 1);
+    P.y = S.y - Math.max(0, u - 0.8) * 0.55 * (1 + D.deck);
+    if (Math.random() < 0.3 && u < 2.6) FX.part(P.x + rand(-0.5, 0.5), 0.05, P.z + rand(-0.5, 0.5), 0, rand(0.6, 1.2), 0, 0.09, 0.03, 0.6, [0.85, 0.95, 1], 0.8, 0, -1);
+  }
+  // the blob: tipped into the water, flailing, then gone
+  hero.lounge = 0; hero.faceYaw = null;
+  const t = K.t;
+  const drop = t < 0.5 ? easeInOutQuad(t / 0.5) : 1;
+  const under = t > 2.6 ? easeInOutQuad(clamp((t - 2.6) / 1.2, 0, 1)) : 0;
+  hero.pos[1] = lerp(D.deck + S.y, -0.75 * hero.scale, drop) - under * 2.4 * hero.scale;
+  if (t > 0.5 && t < 2.9) {
+    K.flail -= dt;
+    if (K.flail <= 0) {
+      K.flail = 0.2; K.ph ^= 1;
+      const a = hero.arms[K.ph];
+      if (!a.action) hero.punch(K.ph, hero.toWorld([a.side * rand(0.45, 0.7), 2.1, rand(-0.1, 0.3)], [0, 0, 0]), 0.75, null);
+      FX.burst(hero.pos[0] + rand(-0.4, 0.4), 0.05, hero.pos[2] + rand(-0.4, 0.4), 4, [0.85, 0.95, 1], 3, 0.08, 0.4, 2, 2.5);
+      if (Math.random() < 0.4) AUDIO.play('pop', 0.5);
+    }
+    if (Math.random() < 0.3) hero.impulse(rand(-1, 1));
+  }
+  if (t > 2.6 && Math.random() < 0.6) FX.part(hero.pos[0] + rand(-0.3, 0.3), 0.02, hero.pos[2] + rand(-0.3, 0.3), 0, rand(0.4, 0.9), 0, rand(0.05, 0.1), 0.02, 0.5, [0.9, 0.97, 1], 0.9, 4, -0.5);
+  hero.update(dt, [0, 0, 0], true);
+  seaFoes(dt);
+  for (const w of OC.wake) w.t += dt;
+}
+// back up with a fresh hull: the ship pops back together, everything near is shoved off
+function seaRevive() {
+  const run = G.run, S = OC.ship, hero = G.hero;
+  OC.sink = null;
+  hero.lounge = 1; hero.lng = 1;
+  seaPlaceHero(0);
+  for (const e of run.enemies) {
+    const dx = e.x - S.x, dz = e.z - S.z, d = Math.hypot(dx, dz) || 1;
+    if (d < 7 && !e.boss) { e.kx += dx / d * 12; e.kz += dz / d * 12; e.stun = 1; }
+  }
+  FX.ring(S.x, S.z, 6, [0.85, 0.97, 1], 0.6, 1);
+  FX.burst(S.x, 0.4, S.z, 30, [0.85, 0.95, 1], 6, 0.12, 0.6, 2, 3);
+}
+
+// ---------- camera ----------
+function seaCamera(dt, snap) {
+  const c = G.cam, S = OC.ship, D = shipDef(), K = OC.sink, h = G.hero.pos;
+  const tx = K ? h[0] : S.x + clamp(S.vx * 0.3, -2.5, 2.5), tz = K ? h[2] : S.z + clamp(S.vz * 0.3, -2.5, 2.5);
+  if (snap) { c.x = tx; c.z = tz; c.vx = c.vz = 0; }
+  const w = 2 / 0.25;
+  c.vx += (w * w * (tx - c.x) - 2 * w * c.vx) * dt; c.vz += (w * w * (tz - c.z) - 2 * w * c.vz) * dt;
+  c.x += c.vx * dt; c.z += c.vz * dt;
+  c.shake = Math.max(0, c.shake - dt * 0.6);
+  const sh = G.save && G.save.settings.shake ? c.shake : 0;
+  const sx = (Math.random() * 2 - 1) * sh, sz = (Math.random() * 2 - 1) * sh;
+  const aspect = R.w / R.h, fov = 0.55, pitch = 54 * Math.PI / 180, half = Math.tan(fov / 2);
+  // the camera pulls back as the ship grows; in close for the sinking
+  const want = K ? 0.62 : D.zoom;
+  SEA.view = snap ? want : SEA.view + (want - SEA.view) * Math.min(1, dt * (K ? 1.5 : 0.8));
+  const dist = (aspect < 1 ? 11 / (2 * half * aspect) : 12.5 / (2 * half)) * SEA.view;
+  c.dist = dist;
+  c.target = [c.x + sx, 0.3, c.z + sz];
+  c.eye = [c.target[0], c.target[1] + Math.sin(pitch) * dist, c.target[2] + Math.cos(pitch) * dist];
+  R.setCamera(c.eye, c.target, fov);
+}
+
+// ---------- drawing ----------
+const SEA_WHITE = [1, 1, 1];
+function emitSea() {
+  const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
+  f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view, 140 * SEA.view];
+  SCENE.arenaBox = null; SCENE.pools = [];
+  // the ship (or its pieces)
+  if (OC.sink) {
+    for (const P of OC.sink.pieces) {
+      const m = MODELS.defs[P.m];
+      if (m && R.enemyDraw[P.m]) pushEnemy(P.m, false, P.x, P.y, P.z, P.yaw, m.clips.tilt.row + Math.min(15, Math.floor(P.tilt * 15.99)), 1, 1, 0, 0, 0, 1, 1, 1);
+    }
+  } else seaDrawShip(S.x, S.y, S.z, S.yaw, OC.stage, t, run.hurtFlash > 0.4 ? 0.5 : 0);
+  // the wake
+  for (const w of OC.wake) {
+    const u = w.t / 1.7, a = (1 - u) * 0.55 * w.k, sp = w.w * (0.45 + u * 1.6), c = Math.cos(w.yaw), s = Math.sin(w.yaw);
+    for (const sd of [-1, 1]) {
+      const x = w.x + c * sd * sp - Math.sin(w.yaw) * u * 0.6, z = w.z - s * sd * sp - Math.cos(w.yaw) * u * 0.6, r = (0.28 + u * 0.5) * w.w;
+      pushDecal(x, z, r, r * 0.8, w.yaw + w.seed, 0, w.seed + sd, 0, 0.95, 0.99, 1, a);
+    }
+    const r = (0.45 + u * 0.4) * w.w;
+    pushDecal(w.x, w.z, r, r, w.seed, 0, w.seed * 3, 0, 0.9, 0.97, 1, a * 0.7);
+  }
+  // the bow wave
+  if (!OC.sink) {
+    const sp = Math.hypot(S.vx, S.vz);
+    if (sp > 1) { const p = shipW(0, D.len / 2 + 0.1); pushDecal(p[0], p[1], D.wid * 0.6, 0.4, -S.yaw, 0, t * 3 % 10, 0, 0.95, 0.99, 1, clamp(sp / 6, 0, 0.5)); }
+  }
+  // islands
+  for (const I of OC.isles) {
+    if (!onScreen(I.x, I.z, I.r + 4)) continue;
+    // shallow light water and a foam ring that breathes
+    pushDecal(I.x, I.z, I.r * 1.7, I.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, 0.38, true);
+    const br = 1.06 + 0.04 * Math.sin(t * 1.4 + I.x);
+    pushDecal(I.x, I.z, I.r * br, I.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
+    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1);
+    for (const o of I.deco) if (R.enemyDraw[o.m]) pushEnemy(o.m, false, o.x, (o.y || 0) + I.r * 0.12, o.z, o.yaw, MODELS.defs[o.m].clips.still.row, o.s, 1, 0, 0, 0, PROP_WHITE[0], PROP_WHITE[1], PROP_WHITE[2]);
+  }
+  // swimmers: only head and shoulders above the water, with a little foam ring
+  for (const e of run.enemies) {
+    if (!onScreen(e.x, e.z, 2.5 * Math.max(1, e.scale)) && !e.boss) continue;
+    if (!R.enemyDraw[e.model]) continue;
+    const dead = e.dying ? clamp(e.dying, 0, 1) : 0, appear = e.spawnT > 0 ? 1 - e.spawnT / 0.5 : 1;
+    const bob = Math.sin(t * 2.4 + e.bobPh) * 0.04 * e.scale, M = MODELS.defs[e.model];
+    const y = (e.grab ? -0.32 : -SEA.sink) * e.scale * (M.top || 1) * 0.9 + bob - dead * 0.6 * e.scale;
+    const row = e.act && M.clips[e.act.clip] ? M.clips[e.act.clip].row + Math.floor(clamp(e.act.u, 0, 0.999) * M.clips[e.act.clip].frames) : M.clips.paddle.row + Math.floor((e.phase - Math.floor(e.phase)) * M.clips.paddle.frames);
+    const tn = e.tint;
+    pushEnemy(e.model, e.elite, e.x, y, e.z, e.yaw, row, e.scale * clamp(appear, 0.2, 1), e.squash, dead, e.flash > 0 ? 0.85 : 0, 0, tn[0], tn[1], tn[2]);
+    const rr = e.radius * 1.15 * (1 + 0.05 * Math.sin(t * 3 + e.bobPh));
+    pushDecal(e.x, e.z, rr, rr, 0, 3, 0, 0.5, 1, 1, 1, 0.42 * (1 - dead), true);
+  }
+  // cannonballs and the rest of the sea's shots
+  emitSeaShots();
+}
+// a ship and everything mounted on it
+function seaDrawShip(x, y, z, yaw, stage, t, flash) {
+  const D = SHIPS[stage], model = R.enemyDraw[D.model] ? D.model : 'raft';
+  const M = MODELS.defs[model];
+  if (!M || !R.enemyDraw[model]) return;
+  const c = M.clips.rock, row = c.row + Math.floor(((t * 0.18) % 1) * c.frames);
+  pushEnemy(model, false, x, y, z, yaw, row, 1, 1, 0, flash, 0, 1, 1, 1);
+  if (G.run && G.run.sea) seaDrawMounts(x, y, z, yaw, D);
+}
+
+// ---------- the home screen's ocean page: the blob lounging on its best ship on a calm sea ----------
+const SEA_HOME = { t: 0 };
+// (each chapter's boss vehicle comes later; until then the Big Tuber)
+const seaBossName = n => 'The Big Tuber';
+function seaHomeStage() { return clamp((G.save.sea && G.save.sea.ship) || 0, 0, SHIPS.length - 1); }
+
+// sea upgrade icons are drawn from their own models once those are built
+function seaIcons() {
+  const todo = SEA_ICON_SHOTS.filter(([k, m]) => !ICONS.map[k + '!'] && R.enemyDraw[m]);
+  if (!todo.length) return;
+  iconBegin();
+  for (const [key, m, opts] of todo) {
+    R.resetStreams();
+    const M = MODELS.defs[m], c = M.clips.still || M.clips.rock || Object.values(M.clips)[0];
+    pushEnemy(m, false, 0, 0, 0, opts.yaw ?? 0.7, c.row, opts.s ?? 1, 1, 0, 0, 0, 1, 1, 1);
+    const top = (M.top || 1) * (opts.s ?? 1), mid = opts.mid ?? top * 0.5, dist = opts.d ?? Math.max(top, M.bmax[0] * (opts.s ?? 1)) * 2.4;
+    ICONS.map[key] = ICONS.map[key + '!'] = iconCapture([0, mid + dist * 0.55, dist], [0, mid, 0], 0.62);
+  }
+  iconEnd();
+  R.resetStreams();
+}
+
+// the run is over: the sea keeps its own chapter progress (coins, cosmetics and gear are shared with the land)
+function seaFinish(run, won) {
+  const S = G.save.sea, n = run.chapter;
+  S.ship = Math.max(S.ship || 0, OC.stage);
+  if (won) { S.cleared[n] = true; S.chapter = Math.min(SEA_COUNT, Math.max(S.chapter, n + 1)); }
+  if (run.t > (S.best[n] || 0)) S.best[n] = Math.round(run.t);
+  G.save.stats.runs++; G.save.stats.kills += run.kills;
+}
+
+// ---- 13l-sea-upgrades.js ----
+// ============================================================
+// The sea's enemies and upgrades. Every upgrade is mounted on the ship: each ship lists where its mounts
+// go (SHIP_MOUNTS), so a new ship takes all of them along, each in its own place.
+// ============================================================
+Object.assign(ENEMY_TYPES, {
+  // goo pirates treading water; floats (arm bands, an inner tube) soak up damage until they pop
+  pswim: { model: 'pswim', hp: 11, speed: 2.0, dmg: 4, xp: 1, radius: 0.42, scale: 1.25, tint: '#e8414a', mass: 1, sea: true },
+  pfloat: { model: 'pfloat', hp: 12, shell: 14, speed: 1.85, dmg: 5, xp: 2, radius: 0.46, scale: 1.25, tint: '#8a5ad8', mass: 1.3, sea: true },
+  ptube: { model: 'ptube', hp: 14, shell: 30, speed: 1.6, dmg: 6, xp: 3, radius: 0.58, scale: 1.3, tint: '#2fae6a', mass: 2, sea: true },
+});
+
+// Where things go on each ship (local x across, z along the keel, y height above the waterline).
+// guns: cannon spots in the order they fill; ms: how big the mounted things are drawn
+const SHIP_MOUNTS = {
+  raft: { ms: 0.78, guns: [[0.55, 0.78, 0.17], [-0.55, 0.78, 0.17], [0.55, -0.6, 0.17], [-0.55, -0.6, 0.17]] },
+  canoe: { ms: 0.8, guns: [[0, 1.25, 0.14], [0, -1.35, 0.14], [0, 0.8, 0.14], [0, -0.95, 0.14]] },
+  sloop: { ms: 1.0, guns: [[0.75, 1.0, 0.62], [-0.75, 1.0, 0.62], [0.75, -0.2, 0.62], [-0.75, -0.2, 0.62]] },
+  galleon: { ms: 1.12, guns: [[1.0, 1.6, 0.85], [-1.0, 1.6, 0.85], [1.0, 0.2, 0.85], [-1.0, 0.2, 0.85]] },
+  yacht: { ms: 1.2, guns: [[1.0, -1.2, 1.0], [-1.0, -1.2, 1.0], [1.0, -2.6, 1.0], [-1.0, -2.6, 1.0]] },
+  cruise: { ms: 1.35, guns: [[1.2, 3.5, 2.1], [-1.2, 3.5, 2.1], [1.2, 0.5, 2.1], [-1.2, 0.5, 2.1]] },
+  cargo: { ms: 1.5, guns: [[1.3, 2.0, 2.5], [-1.3, 2.0, 2.5], [1.3, -2.0, 2.5], [-1.3, -2.0, 2.5]] },
+};
+const mountsOf = D => SHIP_MOUNTS[D.id] || SHIP_MOUNTS.raft;
+
+// ---------- the upgrades ----------
+Object.assign(SKILLS, {
+  // the ship itself: always in the first slot; every level is a bigger, tougher ship that rams harder
+  ship: {
+    sea: true, max: SHIPS.length, name: 'Ship', intro: 'Your ship. Each level builds a bigger, tougher one that rams harder; everything mounted on it comes along.', icon: { type: 13, colw: 0 },
+    fields: [['name', 'Ship'], ['hull', 'Hull', '%'], ['ram', 'Ram']],
+    levels: SHIPS.map(D => ({ name: D.name, hull: Math.round(100 * (1 + D.hull)), ram: D.ram })),
+  },
+  cannon: {
+    sea: true, name: 'Homing Cannon', intro: 'Deck cannons that turn to fire cannonballs which curve onto their target.', icon: { type: 13, colw: 0 },
+    fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Cannons'], ['splash', 'Splash', 'm']],
+    levels: L10({ dmg: [10, 11, 12, 13, 15, 16, 18, 20, 22, 25], cd: [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.95, 0.9, 0.85], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0.8, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4] }),
+  },
+});
+
+SKILL_HOOKS.ship = {
+  update() {},
+  // a new ship: the old one bursts apart in a splash and the new one rises out of it
+  onLevel(s) {
+    const run = G.run, S = OC.ship;
+    if (!run || !run.sea || s.lvl < 2) return;
+    const before = run.maxHp;
+    seaStats(run);
+    run.hp = Math.min(run.maxHp, run.hp + (run.maxHp - before) + run.maxHp * 0.25);
+    const D = shipDef();
+    FX.ring(S.x, S.z, D.len * 0.9, [0.85, 0.97, 1], 0.7, 1);
+    FX.burst(S.x, 0.4, S.z, 40, [0.85, 0.95, 1], 7, 0.14, 0.7, 2, 3);
+    FX.burst(S.x, D.deck + 0.3, S.z, 26, [1, 0.85, 0.4], 5, 0.1, 0.6, 3, 2);
+    for (const e of run.enemies) if (e.grab) seaUnboard(e, 6);
+    G.cam.shake = Math.max(G.cam.shake, 0.2);
+    AUDIO.play('splash'); AUDIO.play('levelup', 0.8);
+    UI.banner(D.name.toUpperCase() + '!');
+  },
+};
+
+// the cannons: each turns toward its own target and fires a ball that arcs up and curves onto it
+SKILL_HOOKS.cannon = {
+  update(s, L, dt) {
+    const run = G.run, D = shipDef(), M = mountsOf(D), S = OC.ship;
+    s.st.cd = (s.st.cd ?? 0.5) - dt;
+    s.st.aim = s.st.aim || [];
+    const n = Math.min(L.count, M.guns.length);
+    for (let i = 0; i < n; i++) {
+      const g = M.guns[i], w = shipW(g[0], g[1]);
+      const tgt = nearestEnemy(w[0], w[1], 15, s.st.taken);
+      const want = tgt ? Math.atan2(tgt.x - w[0], tgt.z - w[1]) - S.yaw : (g[1] < 0 ? Math.PI : 0);
+      s.st.aim[i] = angleLerp(s.st.aim[i] ?? want, want, Math.min(1, dt * 8));
+    }
+    if (s.st.cd > 0 || OC.sink) return;
+    const taken = new Set();
+    let fired = false;
+    for (let i = 0; i < n; i++) {
+      const g = M.guns[i], w = shipW(g[0], g[1]);
+      const tgt = nearestEnemy(w[0], w[1], 15, taken) || nearestEnemy(w[0], w[1], 15);
+      if (!tgt) continue;
+      taken.add(tgt);
+      const a = S.yaw + s.st.aim[i], ms = M.ms;
+      const mx = w[0] + Math.sin(a) * 0.45 * ms, mz = w[1] + Math.cos(a) * 0.45 * ms, my = g[2] + 0.32 * ms + S.y;
+      OC.balls.push({ x: mx, y: my, z: mz, vx: Math.sin(a) * 11, vy: 3.2, vz: Math.cos(a) * 11, tgt, t: 0, dmg: L.dmg, splash: L.splash, spin: rand(0, TAU) });
+      FX.smoke(mx, my, mz, 0.3, [0.9, 0.9, 0.92], 0.6, 0.8);
+      FX.glow(mx, my, mz, 0.5, [1, 0.75, 0.35], 0.08);
+      s.st.kick = s.st.kick || []; s.st.kick[i] = 1;
+      fired = true;
+    }
+    if (fired) { AUDIO.play('cannon'); s.st.cd = L.cd * cdMul(); }
+    else s.st.cd = 0.15;
+    if (s.st.kick) for (let i = 0; i < s.st.kick.length; i++) s.st.kick[i] = Math.max(0, (s.st.kick[i] || 0) - dt * 5);
+  },
+};
+// cannonballs: homing, with a little arc; they splash into the sea if they lose their target
+function updateSeaBalls(dt) {
+  const run = G.run;
+  for (const b of OC.balls) {
+    b.t += dt;
+    const T = b.tgt && !b.tgt.dying ? b.tgt : null;
+    if (T) {
+      const dx = T.x - b.x, dz = T.z - b.z, d = Math.hypot(dx, dz) || 1, sp = Math.max(11, Math.hypot(b.vx, b.vz) + dt * 10);
+      const turn = Math.min(1, dt * (4 + b.t * 10));
+      b.vx += (dx / d * sp - b.vx) * turn; b.vz += (dz / d * sp - b.vz) * turn;
+      // drop onto it as it closes in
+      const want = (0.45 - b.y) * sp / Math.max(d, 0.5);
+      b.vy += (want - b.vy) * Math.min(1, dt * 6);
+    } else b.vy -= 14 * dt;
+    b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
+    if (Math.random() < 0.5) FX.part(b.x, b.y, b.z, 0, 0.3, 0, 0.12, 0.3, 0.4, [0.85, 0.85, 0.9], 0.35, 2, 0, 1);
+    let hit = null;
+    if (T && Math.hypot(T.x - b.x, T.z - b.z) < T.radius + 0.25 && b.y < 1.4 * T.scale) hit = T;
+    if (!hit) enemiesInRadius(b.x, b.z, 0.5, e => { if (!hit && !e.dying && b.y < 1.2) hit = e; });
+    if (hit) {
+      b.dead = true;
+      const d = Math.hypot(b.vx, b.vz) || 1;
+      hurtEnemy(hit, b.dmg, b.vx / d * 3, b.vz / d * 3);
+      if (b.splash > 0) enemiesInRadius(b.x, b.z, b.splash * areaMul(), e => { if (e !== hit) hurtEnemy(e, b.dmg * 0.5, 0, 0, { sound: false }); });
+      FX.burst(b.x, 0.4, b.z, 10, [1, 0.7, 0.3], 4, 0.1, 0.35, 1, 1.5);
+      FX.burst(b.x, 0.2, b.z, 8, [0.85, 0.95, 1], 4, 0.1, 0.45, 2, 2.5);
+      if (b.splash > 0) FX.ring(b.x, b.z, b.splash * areaMul() * 1.2, [1, 0.8, 0.5], 0.3, 0.7);
+    } else if (b.y < 0 || b.t > 2.2) {
+      b.dead = true;
+      FX.burst(b.x, 0.1, b.z, 10, [0.85, 0.95, 1], 3.5, 0.1, 0.5, 2, 3);
+      FX.ring(b.x, b.z, 0.9, [0.85, 0.97, 1], 0.4, 0.6);
+      if (Math.random() < 0.5) AUDIO.play('splash', 0.6);
+    }
+  }
+  OC.balls = OC.balls.filter(b => !b.dead);
+}
+function emitSeaShots() {
+  for (const b of OC.balls) {
+    pushImp(b.x, b.y, b.z, 0.26, Math.sin(b.spin + b.t * 6), Math.cos(b.spin + b.t * 6), 0.3, 1, 13, 0, 0, 0, 0, 0, 0, 1);
+    pushDecal(b.x + 0.1, b.z + 0.08, 0.22, 0.2, 0, 1, 0, 0, 0.02, 0.06, 0.12, 0.3);
+  }
+}
+
+// everything mounted on the ship, drawn where this ship keeps it
+function seaDrawMounts(x, y, z, yaw, D) {
+  const run = G.run, M = mountsOf(D), c = Math.cos(yaw), s = Math.sin(yaw);
+  const at = (lx, lz) => [x + c * lx + s * lz, z - s * lx + c * lz];
+  const cs = slotOf('cannon');
+  if (cs && R.enemyDraw.scannon) {
+    const L = skillL(cs), n = Math.min(L.count, M.guns.length), row = MODELS.defs.scannon.clips.still.row;
+    for (let i = 0; i < n; i++) {
+      const g = M.guns[i], a = yaw + ((cs.st.aim && cs.st.aim[i]) ?? (g[1] < 0 ? Math.PI : 0)), k = (cs.st.kick && cs.st.kick[i]) || 0;
+      const p = at(g[0], g[1]);
+      pushEnemy('scannon', false, p[0] - Math.sin(a) * k * 0.08, y + g[2], p[1] - Math.cos(a) * k * 0.08, a, row, M.ms * (1 + k * 0.06), 1, 0, 0, 0, 1, 1, 1);
+    }
+  }
+}
+
+// icons for the sea's upgrades: [icon key, model, framing]
+const SEA_ICON_SHOTS = [
+  ['skill-ship', 'raft', { yaw: 0.6, s: 1, d: 3.2, mid: 0.1 }],
+  ['skill-cannon', 'scannon', { yaw: 0.9, s: 1.6, d: 1.9, mid: 0.35 }],
+];
+
 // ---- 14-ui.js ----
 // ============================================================
 // UI: screens, HUD, level-up cards, chest roulette, overlay drawing
 // ============================================================
 const $ = id => document.getElementById(id);
 const UI = {
-  menuTab: 'home', settingsFrom: null, lastHud: {}, slotSig: '', choiceLock: 0, reviveT: 0, skinPreview: null,
+  menuTab: 'home', homePage: 'land', settingsFrom: null, lastHud: {}, slotSig: '', choiceLock: 0, reviveT: 0, skinPreview: null,
   overlay: null, octx: null, toastT: 0,
 
   init() {
     this.overlay = $('overlay');
     this.octx = this.overlay.getContext('2d');
-    $('btnPlay').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginChapter(G.save.selected); });
+    $('btnPlay').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); if (this.homePage === 'sea') beginSeaChapter(G.save.sea.selected); else beginChapter(G.save.selected); });
     $('btnEndless').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginEndless(); });
     $('btnRush').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); beginBossRush(); });
-    $('chPrev').addEventListener('click', () => { G.save.selected = Math.max(1, G.save.selected - 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
-    $('chNext').addEventListener('click', () => { G.save.selected = Math.min(G.save.chapter, G.save.selected + 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
+    // the chapter arrows step through the page's own chapters (the land's, or the ocean's)
+    const pickOf = () => (this.homePage === 'sea' ? G.save.sea : G.save);
+    $('chPrev').addEventListener('click', () => { const P = pickOf(); P.selected = Math.max(1, P.selected - 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
+    $('chNext').addEventListener('click', () => { const P = pickOf(); P.selected = Math.min(P.chapter, P.selected + 1); AUDIO.play('click'); this.refreshHome(); saveGame(); });
+    document.querySelectorAll('#pageDots button').forEach(b => b.addEventListener('click', () => { AUDIO.unlock(); this.setHomePage(b.dataset.page); }));
+    $('pageTab').addEventListener('click', () => { AUDIO.unlock(); this.setHomePage(this.homePage === 'sea' ? 'land' : 'sea'); });
+    this.initSwipe();
     document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openTab(b.dataset.tab); }));
     document.querySelectorAll('.back').forEach(b => b.addEventListener('click', () => { AUDIO.play('click'); this.openTab('home'); }));
     $('btnSettings').addEventListener('click', () => { AUDIO.unlock(); AUDIO.play('click'); this.openSettings(); });
@@ -20979,7 +22256,7 @@ const UI = {
       el.addEventListener('pointerdown', e => {
         if (openOnly && e.target !== el) return;
         AUDIO.unlock(); el.setPointerCapture(e.pointerId);
-        HOME.drag = { x: e.clientX, t: performance.now(), moved: 0 }; HOME.yaw = G.hero.yaw; HOME.spinV = 0; HOME.aim = null;
+        HOME.drag = { x: e.clientX, t: performance.now(), moved: 0, x0: e.clientX, t0: performance.now(), yaw0: this.homePage === 'sea' ? HOME.yaw : G.hero.yaw }; HOME.yaw = HOME.drag.yaw0; HOME.spinV = 0; HOME.aim = null;
       });
       el.addEventListener('pointermove', e => {
         const d = HOME.drag;
@@ -20992,6 +22269,8 @@ const UI = {
         const d = HOME.drag;
         if (!d) return;
         HOME.drag = null; HOME.idle = 0;
+        // a long, quick swipe across the home stage turns the page instead of spinning the blob
+        if (!openOnly && Math.abs(d.x - d.x0) > Math.min(260, window.innerWidth * 0.3) && performance.now() - d.t0 < 450) { HOME.spinV = 0; HOME.yaw = d.yaw0; this.swipePage(); return; }
         if (d.moved < 8) { HOME.spinV = 0; pokeHero(); }
         else if (performance.now() - d.t > 90) HOME.spinV = 0;
       };
@@ -21048,6 +22327,8 @@ const UI = {
     const sv = G.save;
     sv.selected = clamp(sv.selected || 1, 1, sv.chapter);
     document.querySelectorAll('#homeCoins, .coinsVal').forEach(e => { e.textContent = fmtNum(sv.coins); });
+    this.refreshPages();
+    if (this.homePage === 'sea') { this.refreshSeaHome(); return; }
     const info = chapterInfo(sv.selected);
     $('chLabel').textContent = `Chapter ${sv.selected}${sv.cleared[sv.selected] ? ' · cleared' : ''}`;
     $('chName').textContent = info.arenaName;
@@ -21067,6 +22348,60 @@ const UI = {
     if (this.menuTab === 'home') goalsCheck();
     applyArena(info.arena);
   },
+  // ---------- the two home pages: the land and the ocean ----------
+  // The ocean page is always one swipe away; once chapter 20 is beaten it is also shown (page dots, a tab at the
+  // edge, and a note the first time). Both pages share the menu buttons; Play sails, and the picker lists the
+  // ocean's chapters.
+  setHomePage(p) {
+    if (p === this.homePage || G.state !== 'home') return;
+    this.homePage = p;
+    AUDIO.play(p === 'sea' ? 'splash' : 'click');
+    homePageChanged();
+    this.refreshHome();
+  },
+  refreshPages() {
+    const sea = this.homePage === 'sea', open = seaUnlocked();
+    $('home').classList.toggle('sea', sea);
+    $('pageDots').hidden = !open; $('pageTab').hidden = !open;
+    document.querySelectorAll('#pageDots button').forEach(b => b.setAttribute('aria-current', String(b.dataset.page === this.homePage)));
+    $('pageTab').setAttribute('aria-label', sea ? 'Back to the land' : 'Go to the ocean');
+    const pb = $('btnPlay');
+    pb.textContent = sea ? 'SAIL' : 'PLAY'; pb.classList.toggle('sail', sea); pb.classList.toggle('gold', !sea);
+    if (open && !G.save.sea.seen && this.menuTab === 'home') { G.save.sea.seen = true; saveGame(); this.toast('The ocean is open! Swipe right, or tap the arrow, to set sail.', 4); }
+  },
+  refreshSeaHome() {
+    const S = G.save.sea;
+    S.selected = clamp(S.selected || 1, 1, S.chapter);
+    const n = S.selected, C = SEA_CHAPTERS[n - 1], best = S.best[n];
+    $('chLabel').textContent = `Ocean ${n}${S.cleared[n] ? ' · cleared' : ''}`;
+    $('chName').textContent = C.name;
+    $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${seaBossName(n)}`;
+    $('chPrev').disabled = n <= 1;
+    $('chNext').disabled = n >= S.chapter;
+    $('chBoss').hidden = true;
+    this.refreshBadges();
+    if (this.menuTab === 'home') goalsCheck();
+    seaLook(n);
+  },
+  // a sideways swipe across the home screen turns the page (on the blob's stage only a long, quick one:
+  // a slow drag there spins the blob)
+  initSwipe() {
+    const home = $('home');
+    let sw = null;
+    home.addEventListener('pointerdown', e => {
+      if (e.target.closest('button, .home-stage, .panel')) { sw = null; return; }
+      sw = { x: e.clientX, y: e.clientY, t: performance.now() };
+    });
+    const end = e => {
+      if (!sw) return;
+      const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+      sw = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) this.swipePage();
+    };
+    home.addEventListener('pointerup', end); home.addEventListener('pointercancel', () => { sw = null; });
+  },
+  swipePage() { this.setHomePage(this.homePage === 'sea' ? 'land' : 'sea'); },
+
   // red dots on the home menu: an upgrade is affordable, a scroll or fuse is waiting, a new look is in reach
   menuAlerts() {
     const sv = G.save;
@@ -21449,10 +22784,10 @@ const UI = {
   fillResults() {
     const run = G.run;
     if (!run) return;
-    $('resEyebrow').textContent = run.rush ? `Boss Rush · ${run.info.arenaName}` : run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
+    $('resEyebrow').textContent = run.sea ? `Ocean ${run.chapter} · ${run.info.arenaName}` : run.rush ? `Boss Rush · ${run.info.arenaName}` : run.endless ? `Endless · ${run.info.arenaName}` : `Chapter ${run.chapter} · ${run.info.arenaName}`;
     const t = $('resTitle');
     const special = run.endless || run.rush;
-    t.textContent = run.won ? (run.rush ? 'CHAMPION!' : 'CLEARED!') : special && run.newBest ? 'NEW BEST!' : 'YOU MELTED';
+    t.textContent = run.won ? (run.rush ? 'CHAMPION!' : 'CLEARED!') : special && run.newBest ? 'NEW BEST!' : run.sea ? 'SUNK!' : 'YOU MELTED';
     t.style.color = run.won || (special && run.newBest) ? 'var(--mint)' : 'var(--pink)';
     $('resTime').textContent = fmtTime(run.t);
     $('resKills').textContent = fmtNum(run.kills);
@@ -21595,7 +22930,8 @@ function rollChoices() {
     if (s.lvl < max) pool.push({ id: s.id, w: many ? 1.6 : 1.1 });
   }
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
-  const open = def => (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
+  // (the sea and the land each have their own upgrades)
+  const open = def => !def.sea === !run.sea && (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
   if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) });
   if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
@@ -22363,6 +23699,8 @@ function defaultSave() {
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0, bosses: 0, elites: 0, gooblins: 0, evos: 0, maxLevel: 0, fuses: 0, coinsEarned: 0 },
     goals: { seen: {}, claimed: {} }, tutorial: true,
+    // the Ocean Update's own chapters; ship: the biggest ship ever sailed (shown on the ocean page)
+    sea: { chapter: 1, selected: 1, cleared: {}, best: {}, ship: 0 },
   };
 }
 function loadGame() {
@@ -22379,6 +23717,7 @@ function loadGame() {
         skins: Array.isArray(s.skins) && s.skins.length ? s.skins : d.skins,
         costumes: Array.isArray(s.costumes) && s.costumes.length ? s.costumes : d.costumes,
         cleared: s.cleared || {}, best: s.best || {},
+        sea: { ...d.sea, ...(s.sea || {}), cleared: { ...((s.sea && s.sea.cleared) || {}) }, best: { ...((s.sea && s.sea.best) || {}) } },
         goals: { seen: { ...((s.goals && s.goals.seen) || {}) }, claimed: { ...((s.goals && s.goals.claimed) || {}) } },
         gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) }, hidden: { ...((s.gear && s.gear.hidden) || {}) } },
       };
@@ -22643,7 +23982,7 @@ function renderBossPortrait(model, bossId) {
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
 const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, cap: 60, software: false };
 // home scene: camera framing, the blob's spin (drag) and aim, and the faded foes it shoots in the background
-const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], shots: [], portT: 0 };
+const HOME = { view: () => (UI.homePage === 'sea' ? Math.max(1, shipDef().len / 3) : 1), t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], shots: [], portT: 0 };
 const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
@@ -22832,6 +24171,22 @@ function beginChapter(n, opts) {
   };
   wait();
 }
+// set sail: the sea's meshes first (a progress bar while any are still building)
+function beginSeaChapter(n) {
+  if (G.state !== 'home') return;
+  const req = SEA_MESHES.concat(['palm', 'rock0', 'rock1', 'rock2']);
+  prioritizeMeshes(req);
+  const go = () => { beginSea(n); updateCamera(0, true); updateView(); };
+  if (req.every(m => R.enemyDraw[m])) { go(); return; }
+  $('prep').hidden = false;
+  const wait = () => {
+    const done = req.filter(m => R.enemyDraw[m]).length;
+    $('prepFill').style.width = (done / req.length * 100) + '%';
+    if (done === req.length) { $('prep').hidden = true; go(); }
+    else setTimeout(wait, 100);
+  };
+  wait();
+}
 function pauseGame() { if (G.state !== 'run') return; UI.openPause(); setState('pause'); AUDIO.play('click'); }
 function resumeGame() { if (G.state !== 'pause') return; setState('run'); AUDIO.play('click'); }
 function resetHeroForHome() {
@@ -22839,9 +24194,17 @@ function resetHeroForHome() {
   h.reset(0, 0); h.pos[1] = 0; h.scale = 1; h.setArmCount(2); h.auraLevel = 0;
   h.bubbles = 0; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.stretchMul = 1; h.topSpeed = 4.5;
   h.arms.forEach((a, i) => { a.grow = a.growTarget = i < 2 ? 1 : 0; });
+  // on the ocean page the blob lounges on its ship
+  h.lounge = h.lng = UI.homePage === 'sea' ? 1 : 0; h.faceYaw = null;
+}
+function homePageChanged() {
+  resetHeroForHome();
+  HOME.yaw = UI.homePage === 'sea' ? 1.9 : 0; HOME.spinV = 0; HOME.aim = null; HOME.shots.length = 0; HOME.frac = 0;
+  if (UI.homePage === 'sea') { prioritizeMeshes(SEA_MESHES); OC.stage = seaHomeStage(); }
 }
 function goHome() {
   if (G.run && G.run.cave) caveLeave();
+  if (G.run && G.run.sea) seaLeave();
   G.run = null; G.numbers.length = 0; G.bolts.length = 0; FX.clear();
   HOME.yaw = HOME.spinV = 0; HOME.aim = null; HOME.shots.length = 0;
   R.frame.hurt = 0; R.frame.lowHp = 0;
@@ -22856,6 +24219,8 @@ function goHome() {
 function updateHome(dt) {
   HOME.t += dt; HOME.idle += dt;
   const hero = G.hero, onHome = UI.menuTab === 'home';
+  if (onHome && UI.homePage === 'sea') { updateSeaHome(dt); return; }
+  if (hero.lounge) { hero.lounge = hero.lng = 0; hero.faceYaw = null; hero.scale = 1; }
   hero.pos[0] = 0; hero.pos[1] = 0; hero.pos[2] = 0;
   if (!HOME.drag) { HOME.yaw += HOME.spinV * dt; HOME.spinV *= Math.exp(-dt * 2.5); }
   if (!onHome) HOME.aim = null;
@@ -22869,6 +24234,23 @@ function updateHome(dt) {
   // the chapter picker's boss portrait appears once the boss meshes have loaded
   if (onHome && $('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1; UI.homePortrait(); }
   hero.update(dt, [0, 0, 0], true);
+  FX.update(dt);
+}
+// the ocean page: the blob lounges on its best ship, rocking on a calm sea; drag to turn the ship
+function updateSeaHome(dt) {
+  const hero = G.hero;
+  if (!HOME.drag) { HOME.yaw += HOME.spinV * dt; HOME.spinV *= Math.exp(-dt * 2.5); }
+
+  OC.stage = seaHomeStage(); OC.t += dt;
+  const D = shipDef();
+  OC.ship = OC.ship || { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
+  const S = OC.ship;
+  // side on to the camera, swaying a little on the swell
+  S.x = 0; S.z = 0; S.vx = S.vz = S.speed = 0; S.yaw = HOME.yaw + Math.sin(OC.t * 0.35) * 0.18;
+  S.y = Math.sin(OC.t * 1.6) * D.bob * 1.4 + Math.sin(OC.t * 2.7 + 1) * D.bob * 0.5;
+  hero.scale = D.heroS;
+  seaPlaceHero(dt);
+  if ((HOME.actT -= dt) <= 0) { HOME.actT = rand(3, 6); hero.impulse(rand(-1.5, 2)); seaIcons(); }
   FX.update(dt);
 }
 // Background foes: faded orange and purple grunts walk in from behind; the blob turns and shoots goo at them
@@ -22969,7 +24351,15 @@ function homeAction(loud) {
     if (loud) AUDIO.play('pop', 0.7);
   }
 }
-function pokeHero() { if (G.state === 'home') { homeAction(true); FX.droplets(0, 1.0, 0, 3, 0, 1.5, 0.04, null); } }
+function pokeHero() {
+  if (G.state !== 'home') return;
+  if (UI.homePage === 'sea' && UI.menuTab === 'home') {
+    const h = G.hero.pos; G.hero.impulse(2.6); AUDIO.play('splash', 0.8);
+    FX.burst(h[0], 0.2, h[2], 14, [0.85, 0.95, 1], 4, 0.08, 0.5, 2, 3); FX.droplets(h[0], h[1] + 0.5, h[2], 3, 0, 1.5, 0.04, null);
+    return;
+  }
+  homeAction(true); FX.droplets(0, 1.0, 0, 3, 0, 1.5, 0.04, null);
+}
 function homeCamera(dt) {
   const aspect = R.w / R.h, portrait = aspect < 0.9;
   const fov = 0.5, half = Math.tan(fov / 2);
@@ -22990,9 +24380,11 @@ function homeCamera(dt) {
   }
   const k = HOME.frac ? 1 - Math.exp(-dt * 6) : 1;
   HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
-  const viewH = 2.2 / HOME.frac, d = viewH / (2 * half);
-  const tgt = [HOME.side * viewH * aspect, (portrait ? 1.15 : 1.1) - HOME.lift * viewH, 0];
-  const pitch = 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
+  // the ocean page frames the whole ship from a little higher up
+  const sea = UI.homePage === 'sea' && UI.menuTab === 'home', D = sea ? shipDef() : null;
+  const viewH = (sea ? Math.max(1.9, D.len * 0.62 + D.deck * 0.5) : 2.2) / HOME.frac, d = viewH / (2 * half);
+  const tgt = [HOME.side * viewH * aspect, (sea ? D.deck * 0.6 + 0.25 : portrait ? 1.15 : 1.1) - HOME.lift * viewH, 0];
+  const pitch = sea ? 0.6 : 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
   R.setCamera([tgt[0] + Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);
 }
 
@@ -23009,10 +24401,19 @@ function renderFrame() {
     emitCave();
     if (CV.phase === 'fork') { SCENE.hero = null; SCENE.heroShadow = null; }
     f.hurt = Math.max(G.run.hurtFlash, CV.vig * 0.6);
+  } else if (G.run && G.state !== 'home' && G.run.sea) {
+    emitSea();
+    f.hurt = G.run.hurtFlash;
   } else if (G.run && G.state !== 'home') {
     f.spot = [h[0], 0, h[2], 13]; f.fogRange = [10, 26];
     emitRunScene();
     f.hurt = G.run.hurtFlash;
+  } else if (UI.homePage === 'sea' && UI.menuTab === 'home' && G.state === 'home') {
+    // the ocean page: the ship at anchor on open water that fades into the sky
+    SCENE.arenaBox = null;
+    f.spot = [0, 0, 0, 1e4]; f.fogRange = [22 * HOME.view(), 60 * HOME.view()]; f.hurt = 0; f.lowHp = 0;
+    const S = OC.ship;
+    if (S) seaDrawShip(0, S.y, 0, S.yaw, OC.stage, OC.t, 0);
   } else {
     // menus: the hero stands on a bright sky backdrop with a soft shadow
     SCENE.floor = false;
@@ -23057,6 +24458,13 @@ function loop(now) {
     if (G.state === 'run' && G.run.pending > 0) UI.openLevelUp();
     else if (G.state === 'run' && G.run.chestQueued > 0) UI.openChest();
     if (s === 'victory') { G.stateT += dt; if (G.stateT > 2.6) finishRun(true); }
+  } else if (s === 'dying' && G.run && G.run.sea) {
+    // the ship breaks up and the blob goes under (13k-ocean.js)
+    G.stateT += dt;
+    updateSeaDying(dt);
+    FX.update(dt);
+    updateCamera(dt);
+    if (G.stateT > SINK_T) { if (!G.run.revived) setState('revive'); else finishRun(false); }
   } else if (s === 'dying') {
     G.stateT += dt;
     G.hero.update(dt, [0, 0, 0], false);

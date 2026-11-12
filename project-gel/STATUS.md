@@ -179,6 +179,35 @@ near each point (`binnedSdf`); the meshes come out the same, about twice as fast
 **Tests:** `test/_cave.mjs` plays chapter 20 end to end (BR=L or R) with screenshots; `test/_save.mjs` checks the
 migration (both git-ignored scratch).
 
+## The Ocean Update (in progress)
+
+A second game mode on the home screen's second page. Done so far:
+- **Home:** "The Ocean Update" sits under the title on both pages. A sideways swipe turns the page (anywhere but the
+  buttons; on the blob's stage only a long, quick swipe, since a drag there spins the blob). Once chapter 20 is
+  beaten, page dots and an edge arrow show too, with a note the first time. The ocean page keeps the menu buttons;
+  Play becomes SAIL, the picker lists the ocean's chapters (`save.sea`), and the stage shows the blob lounging on
+  the biggest ship it has sailed, rocking on the water.
+- **Sailing** (`src/13k-ocean.js`): runs reuse the land's run object (`G.run.sea`), gems, cards, chests, revive and
+  results; `updateRun`, `updateCamera`, `renderFrame`, `heroDown`, `reviveHero` and `recomputeStats` hand over.
+  The stick points where to go: the ship turns toward it (better under way), eases off while turning hard, and
+  drifts only a little. The sea is open (islands are scattered by area, about one 46 m square in three, and block
+  the ship). Floor style 21 is the water: soft swells, thin drifting light lines in patches, glints; `uSea` carries
+  roughness and storm for later chapters. A foam wake trails in a V.
+- **The blob** lies back on deck (`hero.lounge`, `src/07-hero.js`): one leg out, one knee up, a hand behind its
+  head, the weapon hand at its side. The whole rig pitches back about the pelvis, so costumes, hats and gear stay on.
+- **Swimmers** (`src/04k-sea-models.js`): goo pirates in bandanas with eye patches, striped shirts and hooks, treading
+  water. Arm-band and inner-tube floaters soak up damage until the floats pop (`e.shell`). They swim for the hull;
+  a fast enough hull rams them away (damage grows with closing speed and ship), otherwise they climb on and hack at
+  it. Turning hard flings boarders off.
+- **Upgrades** (`src/13l-sea-upgrades.js`): the Ship (always slot 1; levels are the seven ships) and the Homing
+  Cannon (starting weapon: deck cannons that turn and lob homing balls). Mount points per ship (`SHIP_MOUNTS`).
+- **Sinking:** the raft breaks into three pieces that drift apart and keel over (`tilt` clip), the blob drops in,
+  flails and goes under. Reviving rebuilds the ship.
+- Test: `test/_sea.mjs` (git-ignored scratch; `ONLY=home|run`).
+
+Still to come: the other six ships and fourteen upgrades, more sea enemies, miniboss canoes and rafts, themed
+islands, rougher water and storms, ten chapters with boss vehicles, and ocean cosmetics.
+
 ## Evolutions, Golden Gooblin, Endless
 
 **Evolutions** (`EVOLUTIONS` in `src/10-data.js`; logic in `src/11-game.js`):

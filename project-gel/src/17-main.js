@@ -4,7 +4,7 @@
 const INPUT = { keys: new Set(), stick: { active: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 }, moved: false };
 const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, cap: 60, software: false };
 // home scene: camera framing, the blob's spin (drag) and aim, and the faded foes it shoots in the background
-const HOME = { t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], shots: [], portT: 0 };
+const HOME = { view: () => (UI.homePage === 'sea' ? Math.max(1, shipDef().len / 3) : 1), t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], shots: [], portT: 0 };
 const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
@@ -193,6 +193,22 @@ function beginChapter(n, opts) {
   };
   wait();
 }
+// set sail: the sea's meshes first (a progress bar while any are still building)
+function beginSeaChapter(n) {
+  if (G.state !== 'home') return;
+  const req = SEA_MESHES.concat(['palm', 'rock0', 'rock1', 'rock2']);
+  prioritizeMeshes(req);
+  const go = () => { beginSea(n); updateCamera(0, true); updateView(); };
+  if (req.every(m => R.enemyDraw[m])) { go(); return; }
+  $('prep').hidden = false;
+  const wait = () => {
+    const done = req.filter(m => R.enemyDraw[m]).length;
+    $('prepFill').style.width = (done / req.length * 100) + '%';
+    if (done === req.length) { $('prep').hidden = true; go(); }
+    else setTimeout(wait, 100);
+  };
+  wait();
+}
 function pauseGame() { if (G.state !== 'run') return; UI.openPause(); setState('pause'); AUDIO.play('click'); }
 function resumeGame() { if (G.state !== 'pause') return; setState('run'); AUDIO.play('click'); }
 function resetHeroForHome() {
@@ -200,9 +216,17 @@ function resetHeroForHome() {
   h.reset(0, 0); h.pos[1] = 0; h.scale = 1; h.setArmCount(2); h.auraLevel = 0;
   h.bubbles = 0; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.stretchMul = 1; h.topSpeed = 4.5;
   h.arms.forEach((a, i) => { a.grow = a.growTarget = i < 2 ? 1 : 0; });
+  // on the ocean page the blob lounges on its ship
+  h.lounge = h.lng = UI.homePage === 'sea' ? 1 : 0; h.faceYaw = null;
+}
+function homePageChanged() {
+  resetHeroForHome();
+  HOME.yaw = UI.homePage === 'sea' ? 1.9 : 0; HOME.spinV = 0; HOME.aim = null; HOME.shots.length = 0; HOME.frac = 0;
+  if (UI.homePage === 'sea') { prioritizeMeshes(SEA_MESHES); OC.stage = seaHomeStage(); }
 }
 function goHome() {
   if (G.run && G.run.cave) caveLeave();
+  if (G.run && G.run.sea) seaLeave();
   G.run = null; G.numbers.length = 0; G.bolts.length = 0; FX.clear();
   HOME.yaw = HOME.spinV = 0; HOME.aim = null; HOME.shots.length = 0;
   R.frame.hurt = 0; R.frame.lowHp = 0;
@@ -217,6 +241,8 @@ function goHome() {
 function updateHome(dt) {
   HOME.t += dt; HOME.idle += dt;
   const hero = G.hero, onHome = UI.menuTab === 'home';
+  if (onHome && UI.homePage === 'sea') { updateSeaHome(dt); return; }
+  if (hero.lounge) { hero.lounge = hero.lng = 0; hero.faceYaw = null; hero.scale = 1; }
   hero.pos[0] = 0; hero.pos[1] = 0; hero.pos[2] = 0;
   if (!HOME.drag) { HOME.yaw += HOME.spinV * dt; HOME.spinV *= Math.exp(-dt * 2.5); }
   if (!onHome) HOME.aim = null;
@@ -230,6 +256,23 @@ function updateHome(dt) {
   // the chapter picker's boss portrait appears once the boss meshes have loaded
   if (onHome && $('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1; UI.homePortrait(); }
   hero.update(dt, [0, 0, 0], true);
+  FX.update(dt);
+}
+// the ocean page: the blob lounges on its best ship, rocking on a calm sea; drag to turn the ship
+function updateSeaHome(dt) {
+  const hero = G.hero;
+  if (!HOME.drag) { HOME.yaw += HOME.spinV * dt; HOME.spinV *= Math.exp(-dt * 2.5); }
+
+  OC.stage = seaHomeStage(); OC.t += dt;
+  const D = shipDef();
+  OC.ship = OC.ship || { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
+  const S = OC.ship;
+  // side on to the camera, swaying a little on the swell
+  S.x = 0; S.z = 0; S.vx = S.vz = S.speed = 0; S.yaw = HOME.yaw + Math.sin(OC.t * 0.35) * 0.18;
+  S.y = Math.sin(OC.t * 1.6) * D.bob * 1.4 + Math.sin(OC.t * 2.7 + 1) * D.bob * 0.5;
+  hero.scale = D.heroS;
+  seaPlaceHero(dt);
+  if ((HOME.actT -= dt) <= 0) { HOME.actT = rand(3, 6); hero.impulse(rand(-1.5, 2)); seaIcons(); }
   FX.update(dt);
 }
 // Background foes: faded orange and purple grunts walk in from behind; the blob turns and shoots goo at them
@@ -330,7 +373,15 @@ function homeAction(loud) {
     if (loud) AUDIO.play('pop', 0.7);
   }
 }
-function pokeHero() { if (G.state === 'home') { homeAction(true); FX.droplets(0, 1.0, 0, 3, 0, 1.5, 0.04, null); } }
+function pokeHero() {
+  if (G.state !== 'home') return;
+  if (UI.homePage === 'sea' && UI.menuTab === 'home') {
+    const h = G.hero.pos; G.hero.impulse(2.6); AUDIO.play('splash', 0.8);
+    FX.burst(h[0], 0.2, h[2], 14, [0.85, 0.95, 1], 4, 0.08, 0.5, 2, 3); FX.droplets(h[0], h[1] + 0.5, h[2], 3, 0, 1.5, 0.04, null);
+    return;
+  }
+  homeAction(true); FX.droplets(0, 1.0, 0, 3, 0, 1.5, 0.04, null);
+}
 function homeCamera(dt) {
   const aspect = R.w / R.h, portrait = aspect < 0.9;
   const fov = 0.5, half = Math.tan(fov / 2);
@@ -351,9 +402,11 @@ function homeCamera(dt) {
   }
   const k = HOME.frac ? 1 - Math.exp(-dt * 6) : 1;
   HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
-  const viewH = 2.2 / HOME.frac, d = viewH / (2 * half);
-  const tgt = [HOME.side * viewH * aspect, (portrait ? 1.15 : 1.1) - HOME.lift * viewH, 0];
-  const pitch = 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
+  // the ocean page frames the whole ship from a little higher up
+  const sea = UI.homePage === 'sea' && UI.menuTab === 'home', D = sea ? shipDef() : null;
+  const viewH = (sea ? Math.max(1.9, D.len * 0.62 + D.deck * 0.5) : 2.2) / HOME.frac, d = viewH / (2 * half);
+  const tgt = [HOME.side * viewH * aspect, (sea ? D.deck * 0.6 + 0.25 : portrait ? 1.15 : 1.1) - HOME.lift * viewH, 0];
+  const pitch = sea ? 0.6 : 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
   R.setCamera([tgt[0] + Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);
 }
 
@@ -370,10 +423,19 @@ function renderFrame() {
     emitCave();
     if (CV.phase === 'fork') { SCENE.hero = null; SCENE.heroShadow = null; }
     f.hurt = Math.max(G.run.hurtFlash, CV.vig * 0.6);
+  } else if (G.run && G.state !== 'home' && G.run.sea) {
+    emitSea();
+    f.hurt = G.run.hurtFlash;
   } else if (G.run && G.state !== 'home') {
     f.spot = [h[0], 0, h[2], 13]; f.fogRange = [10, 26];
     emitRunScene();
     f.hurt = G.run.hurtFlash;
+  } else if (UI.homePage === 'sea' && UI.menuTab === 'home' && G.state === 'home') {
+    // the ocean page: the ship at anchor on open water that fades into the sky
+    SCENE.arenaBox = null;
+    f.spot = [0, 0, 0, 1e4]; f.fogRange = [22 * HOME.view(), 60 * HOME.view()]; f.hurt = 0; f.lowHp = 0;
+    const S = OC.ship;
+    if (S) seaDrawShip(0, S.y, 0, S.yaw, OC.stage, OC.t, 0);
   } else {
     // menus: the hero stands on a bright sky backdrop with a soft shadow
     SCENE.floor = false;
@@ -418,6 +480,13 @@ function loop(now) {
     if (G.state === 'run' && G.run.pending > 0) UI.openLevelUp();
     else if (G.state === 'run' && G.run.chestQueued > 0) UI.openChest();
     if (s === 'victory') { G.stateT += dt; if (G.stateT > 2.6) finishRun(true); }
+  } else if (s === 'dying' && G.run && G.run.sea) {
+    // the ship breaks up and the blob goes under (13k-ocean.js)
+    G.stateT += dt;
+    updateSeaDying(dt);
+    FX.update(dt);
+    updateCamera(dt);
+    if (G.stateT > SINK_T) { if (!G.run.revived) setState('revive'); else finishRun(false); }
   } else if (s === 'dying') {
     G.stateT += dt;
     G.hero.update(dt, [0, 0, 0], false);
