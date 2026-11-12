@@ -5,6 +5,41 @@ Play it by opening `dist/project-gel.html` in a recent Chrome, Edge, Firefox or 
 
 Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `last-ember.html` (the earlier prototype).
 
+## Standing rules (apply to every change)
+- **Text fills its space.** Every menu, title, button and label is sized to fill the box it sits in, never small
+  text in a big box: titles and headers large (the PROJECT GEL logo largest of all), button text near the button's
+  height, card text readable at a glance. A label that could overflow its box (a long stat name, a big number) is
+  scaled to fit instead of spilling out. Check new UI in a screenshot against this before committing.
+- Buttons slide a little to the left under the pointer (CSS `translate`, so it stacks with each button's own
+  `transform`); a new button with its own `transition` list must add `translate` to it.
+
+## Blob upgrades, boss immunities, abilities (latest)
+- **Fresh start.** Saves from before this update (`content` < 4) are reset to a new save; settings are kept.
+- **Upgrades moved to the blob.** The Upgrades tab is gone and the old permanent upgrades no longer count. In Gear,
+  the Upgrade button under the blob opens that color's own upgrades (`BLOB_UPS`, 10-data.js): three stats each,
+  up to level 20, matched to the color's bonus (a speed color gets a lot of speed and less health; Classic gets
+  plain damage, health and armor). The cost is `blobUpCost`.
+- **Selling gear.** Gear has a Sell button: tap an item to sell it for `SELL_PRICE` by rarity (5, 12, 30, 60, 120,
+  300 coins).
+- **Restart run** in the pause menu (with a confirm); it starts the same chapter, sea chapter, Endless or Boss Rush.
+- **Boss immunities.** 18 bosses (`BOSS_RESIST`, 10-data.js) shrug off one or two attacks (an IMMUNE tag, no
+  damage) and take 1.8x from others (orange numbers); every boss immune to something is weak to something. The
+  skill dealing damage is tracked in `DMG_SRC` (set around each skill, its projectiles and blasts). The boss card
+  lists both.
+- **Balance.** At most 300 enemies at once. Goo Snack heals 12%, and when everything is maxed it is offered every
+  other level only. Goo Wave, Laser and Bouncy Ball were cut harder; Regen, Thick Goo, Armor and Thorns were raised.
+  New passives: Lucky Splat (crits), Goo Leech (heal on kill), Slippery (dodge), Second Wind (a heal when you
+  drop under 30% health, once every 45 s).
+- **Evolutions are rarer.** A chest is a random roll: an evolution you are ready for comes up 1 time in 8, and skills
+  already at level 8 or more are offered less often, in chests and in level-ups. Reaching an evolution shows a toast;
+  it no longer drops a golden chest.
+- **Abilities** (12d-abilities.js). A maxed Blob Mine, Lightning, Meteor, Frost Nova or Bubble Shield gives an
+  ability, fired with keys 1-5 or its button at the bottom left: Mega Mine (45 s), Storm Call (40 s), Starfall (50 s),
+  Deep Freeze (60 s), Bubble Fortress (55 s). The cooldowns are fixed. An ability with nothing to hit is refused and
+  keeps its charge. Land runs only.
+- `specimen` (dev console) also opens every sea chapter and gives a mythic of every gear item; `ocean <n>` opens sea
+  chapters up to n.
+
 ## Done
 - **Rendering:**
   - The hero is a raymarched jelly blob with spring physics: soft translucency, a bright candy rim, arms that stretch to punch, and goo buds for skills.
@@ -244,7 +279,7 @@ A second game mode with ten chapters of its own, on the home screen's second pag
 - Tests (git-ignored scratch): `test/_seach.mjs` (each chapter's crowd, island, miniboss and boss),
   `test/_seabot.mjs` (an autopilot plays whole chapters).
 
-## Upgrade cap, Endless and Boss Rush economy (latest)
+## Upgrade cap, Endless and Boss Rush economy
 - Every permanent upgrade stops at level 20 (`META_MAX`). Saves past 20 are set back to 20 and refunded the coins
   for the levels above it (save `content: 3`).
 - Endless and Boss Rush: 40% of the XP (`gainXp`), a quarter of the coins (half of what they paid before), a quarter

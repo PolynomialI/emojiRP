@@ -269,7 +269,9 @@ Object.assign(UI, {
       const lvl = ups[k] || 0, cost = blobUpCost(lvl), maxed = lvl >= BLOB_UP_MAX, row = document.createElement('div');
       row.className = 'panel bu-row';
       row.innerHTML = `<span class="ic"></span><span><span class="nm"></span><span class="ds"></span><span class="bu-pips"></span></span><button class="jelly gold"></button>`;
-      row.querySelector('.ic').textContent = STAT_INFO[k].short;
+      // the short label is sized to fill its tile without spilling out (MAGNET is twice as long as HP)
+      const ic = row.querySelector('.ic'), sh = STAT_INFO[k].short;
+      ic.textContent = sh; ic.style.fontSize = Math.min(17, Math.floor(54 / (sh.length * 0.75))) + 'px';
       row.querySelector('.nm').textContent = STAT_INFO[k].name.replace(/^./, c => c.toUpperCase());
       row.querySelector('.ds').textContent = `+${+(per * lvl).toFixed(2)}% now · +${per}% a level · Lv ${lvl}/${BLOB_UP_MAX}`;
       row.querySelector('.bu-pips').innerHTML = Array.from({ length: BLOB_UP_MAX }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');

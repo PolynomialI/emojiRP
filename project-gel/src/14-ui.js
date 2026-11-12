@@ -127,7 +127,7 @@ const UI = {
     $('chName').textContent = info.arenaName;
     const bossNames = [...new Set(info.bosses)].map(b => BOSS_TYPES[b].name).join(' + ');
     const best = sv.best[sv.selected];
-    $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${bossNames}`;
+    $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + bossNames;
     const eb = $('btnEndless');
     eb.hidden = !endlessUnlocked();
     eb.innerHTML = sv.endlessBest ? `ENDLESS<small>best ${fmtTime(sv.endlessBest)}</small>` : 'ENDLESS';
@@ -168,7 +168,7 @@ const UI = {
     const n = S.selected, C = SEA_CHAPTERS[n - 1], best = S.best[n];
     $('chLabel').textContent = `Ocean ${n}${S.cleared[n] ? ' · cleared' : ''}`;
     $('chName').textContent = C.name;
-    $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + `Boss: ${seaBossName(n)}`;
+    $('chInfo').textContent = (best ? `Best ${fmtTime(best)} · ` : '') + seaBossName(n);
     $('chPrev').disabled = n <= 1;
     $('chNext').disabled = n >= S.chapter;
     // the boss's portrait, once its meshes are built
