@@ -63,12 +63,13 @@ const OC = { ship: null, wake: [], isles: [], chunks: new Map(), balls: [], shot
 
 function seaInfo(n) {
   const k = clamp(n, 1, SEA_COUNT) - 1, C = SEA_CHAPTERS[k];
-  // (oceans 11-20 are for those who beat the Pirate King: a little steeper on top of the climb)
-  const deep = Math.max(0, k - 9);
+  // (oceans 11-20, for those who beat the Pirate King, build on ocean 10's numbers a step at a time: every run
+  // still starts on a raft, and their crowds, hazards and bosses are the harder part)
+  const deep = Math.max(0, k - 9), kk = Math.min(k, 9);
   return {
     n, sea: true, arenaName: C.name, bosses: [C.boss],
     // every run starts on a raft, so the chapters climb gently (their crowds, islands and bosses do the rest)
-    hpMul: (1 + 0.08 * k + 0.006 * k * k) * (1 + 0.03 * deep), dmgMul: (1 + 0.045 * k) * (1 + 0.03 * deep), rateMul: 0.7 + 0.05 * k + 0.02 * deep, speedMul: 1 + 0.01 * k + 0.005 * deep,
+    hpMul: (1 + 0.08 * kk + 0.006 * kk * kk) * (1 + 0.07 * deep), dmgMul: (1 + 0.045 * kk) * (1 + 0.035 * deep), rateMul: 0.7 + 0.05 * kk + 0.02 * deep, speedMul: 1 + 0.01 * kk + 0.005 * deep,
     bossHpMul: Math.pow(1.12, k) * (1 + 0.04 * deep), grand: 1 + 0.03 * k, reward: Math.round(220 * Math.pow(1.1, k)), has: {},
   };
 }

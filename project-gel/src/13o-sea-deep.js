@@ -14,12 +14,12 @@
 //   20 World's Edge      a bit of everything, and a current toward the edge of the world
 // ============================================================
 Object.assign(ENEMY_TYPES, {
-  pjelly: { model: 'pjelly', hp: 14, speed: 1.3, dmg: 7, xp: 2, radius: 0.5, scale: 1.3, tint: '#5affd8', mass: 0.8, sea: true, onTouch: e => seaJellySting(e) },
+  pjelly: { model: 'pjelly', hp: 12, speed: 1.3, dmg: 4, xp: 2, radius: 0.5, scale: 1.3, tint: '#5affd8', mass: 0.8, sea: true, onTouch: e => seaJellySting(e) },
   pweed: { model: 'pweed', hp: 20, speed: 1.8, dmg: 5, xp: 2, radius: 0.46, scale: 1.3, tint: '#4a7a2a', mass: 1.4, sea: true, weedy: true },
   pmer: { model: 'pmer', hp: 18, speed: 2.4, dmg: 6, xp: 3, radius: 0.45, scale: 1.3, tint: '#2ac8b0', mass: 1.2, sea: true },
   pgummy: { model: 'pgummy', hp: 16, speed: 2.0, dmg: 5, xp: 2, radius: 0.48, scale: 1.3, tint: '#ff4a7a', mass: 1.1, sea: true, onKill: e => seaGummySplit(e) },
   pblink: { model: 'pblink', hp: 14, speed: 2.2, dmg: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#7a5a3a', mass: 1, sea: true },
-  pballoon: { model: 'pballoon', hp: 16, speed: 2.1, dmg: 8, xp: 3, radius: 0.5, scale: 1.3, tint: '#ff8a3a', mass: 1, sea: true },
+  pballoon: { model: 'pballoon', hp: 14, speed: 2.1, dmg: 6, xp: 3, radius: 0.5, scale: 1.3, tint: '#ff8a3a', mass: 1, sea: true },
   pangler: { model: 'pangler', hp: 13, speed: 2.5, dmg: 6, xp: 2, radius: 0.5, scale: 1.4, tint: '#2a3a5a', mass: 1, sea: true },
   pskel: { model: 'pskel', hp: 14, speed: 2.1, dmg: 5, xp: 2, radius: 0.42, scale: 1.25, tint: '#9a2a2a', mass: 1, sea: true, onKill: e => seaSkelCollapse(e) },
 });
@@ -44,7 +44,7 @@ const SEA_DEEP_THEMES = [
     mini: { name: 'Abyssal Ahab', ride: 'canoe', tint: '#2a4a8a', atk: ['ram', 'call', 'bombs'] } },
   { mech: 'gfire', isles: ['ilocker'], fogK: 0.6, mix: [['pskel', 0, 1], ['pghost', 0, 0.6], ['phat', 20, 0.4], ['pdiver', 50, 0.4], ['pbomb', 80, 0.3]],
     mini: { name: 'Bosun Bones', ride: 'raft', tint: '#d8d8c0', ghost: true, atk: ['call', 'ram', 'volley'] } },
-  { mech: 'edge', isles: ['iedge', 'iruin'], current: 0.7, zap: true, mix: [['phat', 0, 1], ['pmer', 0, 0.6], ['pskel', 20, 0.5], ['pjelly', 40, 0.4], ['pgummy', 60, 0.35], ['pangler', 80, 0.4], ['pballoon', 100, 0.35], ['pweed', 120, 0.3]],
+  { mech: 'edge', isles: ['iedge', 'iruin'], current: 0.7, zap: true, mix: [['pswim', 0, 1], ['phat', 20, 0.6], ['pmer', 40, 0.45], ['pskel', 50, 0.45], ['pjelly', 60, 0.35], ['pgummy', 80, 0.35], ['pangler', 100, 0.35], ['pballoon', 120, 0.3], ['pweed', 140, 0.3]],
     mini: { name: 'Herald Triton', ride: 'canoe', tint: '#ffd34a', atk: ['volley', 'ram', 'bombs', 'call'] } },
 ];
 SEA_DEEP_THEMES.forEach((T, i) => Object.assign(SEA_CHAPTERS[10 + i], T));
@@ -76,9 +76,9 @@ SEA_AI.pmer = (e, dt) => {
   e.yaw = angleLerp(e.yaw, Math.atan2(S.x - e.x, S.z - e.z), Math.min(1, dt * 5));
   e.phase += dt * 0.6;
   if (e.throwT <= 0 && !OC.sink) {
-    e.throwT = rand(2.8, 3.8); e.actT = 0.5;
+    e.throwT = rand(4, 5.5); e.actT = 0.5;
     const tx = S.x + S.vx * 0.5, tz = S.z + S.vz * 0.5, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
-    OC.hz.push({ k: 'ball', trident: true, x: e.x, y: 0.9, z: e.z, vx: dx / l * 11, vz: dz / l * 11, life: 1.6, dmg: e.dmg });
+    OC.hz.push({ k: 'ball', trident: true, x: e.x, y: 0.9, z: e.z, vx: dx / l * 11, vz: dz / l * 11, life: 1.6, dmg: e.dmg * 0.7 });
     AUDIO.play('throw');
   }
   e.act = e.actT > 0 ? { clip: 'throw', u: clamp(1 - e.actT / 0.5, 0, 0.999) } : null;
@@ -124,7 +124,7 @@ SEA_AI.pballoon = (e, dt) => {
   e.phase += dt * 0.5;
   e.bombT = (e.bombT ?? rand(2, 4)) - dt;
   if (e.bombT <= 0 && l < 4 && !OC.sink) {
-    e.bombT = rand(3.2, 4.5);
+    e.bombT = rand(4, 5.5);
     OC.hz.push({ k: 'lob', sx: e.x, sy: e.y - 0.3, sz: e.z, tx: S.x + S.vx * 0.9, tz: S.z + S.vz * 0.9, x: e.x, y: e.y, z: e.z, t: 0, dur: 1.0, r: 1.3, dmg: e.dmg, col: [1, 0.6, 0.25] });
     AUDIO.play('throw', 0.8);
   }
@@ -145,7 +145,7 @@ SEA_AI.pangler = (e, dt) => {
     e.x += e.vx * dt; e.z += e.vz * dt;
     const n = [0, 0];
     if (hullDist(e.x, e.z, n) < e.radius * 0.6) {
-      if (!OC.sink) { hurtHero(e.dmg * 1.3, e.x, e.z); AUDIO.play('chop'); FX.burst(e.x, 0.5, e.z, 8, [0.85, 0.95, 1], 3, 0.08, 0.35, 2, 1); }
+      if (!OC.sink) { hurtHero(e.dmg, e.x, e.z); AUDIO.play('chop'); FX.burst(e.x, 0.5, e.z, 8, [0.85, 0.95, 1], 3, 0.08, 0.35, 2, 1); }
       e.lungeT = 0; e.vx = n[0] * 5; e.vz = n[1] * 5; e.stun = 0.8;
     }
     return true;
@@ -153,7 +153,7 @@ SEA_AI.pangler = (e, dt) => {
   e.lungeCd = (e.lungeCd ?? rand(1, 3)) - dt;
   const d = hullDist(e.x, e.z);
   if (e.lungeCd <= 0 && d < 6 && d > 1.2 && !e.grab && e.stun <= 0) {
-    e.lungeCd = rand(2.6, 3.6); e.lungeT = 0.45;
+    e.lungeCd = rand(3.2, 4.4); e.lungeT = 0.45;
     const S = OC.ship, dx = S.x - e.x, dz = S.z - e.z, l = Math.hypot(dx, dz) || 1;
     e.vx = dx / l * 13; e.vz = dz / l * 13; e.yaw = Math.atan2(dx, dz);
     seaSplash(e.x, e.z, 0.5); AUDIO.play('splash', 1.3);
@@ -208,7 +208,8 @@ function seaDeepTick(dt) {
   if (!C.mech || OC.sink) return;
   const live = G.state === 'run';
   // the chapter's hazards come along every so often (after the first ten seconds)
-  if (live && run.t > 10 && DEEP_SPAWN[C.mech]) { OC.mechT = (OC.mechT ?? 2) - dt; if (OC.mechT <= 0) OC.mechT = DEEP_SPAWN[C.mech](); }
+  // (sparser early on: half again as long between them at the start, normal after two and a half minutes)
+  if (live && run.t > 15 && DEEP_SPAWN[C.mech]) { OC.mechT = (OC.mechT ?? 2) - dt; if (OC.mechT <= 0) OC.mechT = DEEP_SPAWN[C.mech]() * (1.5 - 0.5 * Math.min(1, run.t / 150)); }
   // weed-tangled boarders weigh the ship down
   let weedy = 0;
   for (const e of run.enemies) if (e.grab && e.def.weedy && !e.dying) weedy++;
@@ -223,7 +224,7 @@ function seaDeepTick(dt) {
         const k = (1 - d / (R2 + D.len * 0.3)) * grow;
         S.vx += (dx / d * 3.2 + dz / d * 4.5) * k * dt; S.vz += (dz / d * 3.2 - dx / d * 4.5) * k * dt;
         S.yaw += 0.9 * k * dt;
-        if (d < h.r * 0.45 && (h.tick -= dt) <= 0) { h.tick = 0.7; hurtHero(seaDmg(5), h.x, h.z); AUDIO.play('splash', 0.7); }
+        if (d < h.r * 0.45 && (h.tick -= dt) <= 0) { h.tick = 0.7; hurtHero(seaDmg(3), h.x, h.z); AUDIO.play('splash', 0.7); }
       }
       enemiesInRadius(h.x, h.z, R2, e => { if (!e.boss && !e.grab && !e.y) { const ex = h.x - e.x, ez = h.z - e.z, ed = Math.hypot(ex, ez) || 1; e.kx += (ex / ed * 2 + ez / ed * 3) * dt * 3; e.kz += (ez / ed * 2 - ex / ed * 3) * dt * 3; } });
       if (Math.random() < dt * 20 * grow) { const a = rand(0, TAU), rr = rand(0.5, R2); FX.part(h.x + Math.cos(a) * rr, 0.1, h.z + Math.sin(a) * rr, -Math.sin(a) * 4, 0.3, Math.cos(a) * 4, 0.12, 0.04, 0.5, [0.92, 0.97, 1], 0.9, 2, 0); }
@@ -231,7 +232,7 @@ function seaDeepTick(dt) {
       h.t += dt;
       if (!h.done && h.t >= h.dur) {
         h.done = true; h.dead = true;
-        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(9), h.x, h.z); const n = [0, 0]; hullDist(h.x, h.z, n); S.vx -= n[0] * 6; S.vz -= n[1] * 6; G.cam.shake = Math.max(G.cam.shake, 0.25); }
+        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(6), h.x, h.z); const n = [0, 0]; hullDist(h.x, h.z, n); S.vx -= n[0] * 6; S.vz -= n[1] * 6; G.cam.shake = Math.max(G.cam.shake, 0.25); }
         enemiesInRadius(h.x, h.z, h.r, e => { if (!e.boss) hurtEnemy(e, 60, 0, 0, { sound: false }); });
         if (hullDist(h.x, h.z) > h.r * 0.6) {
           const I = { x: h.x, z: h.z, r: h.r, kind: 'icol', yaw: rand(0, TAU), key: 'col' + Math.random(), deco: [], floe: 9, rise: 0, ob: { x: h.x, z: h.z, r: h.r * 0.9, shape: 'circle', shots: false, isle: true } };
@@ -243,7 +244,7 @@ function seaDeepTick(dt) {
       h.t += dt;
       if (h.t >= 0 && !h.done && h.t >= h.dur) {
         h.done = true; h.end = h.t + 0.9;
-        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(8), h.x, h.z); S.speed *= 0.3; G.cam.shake = Math.max(G.cam.shake, 0.2); }
+        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(5), h.x, h.z); S.speed *= 0.3; G.cam.shake = Math.max(G.cam.shake, 0.2); }
         enemiesInRadius(h.x, h.z, h.r, e => { if (!e.boss) hurtEnemy(e, 40, 0, 0, { sound: false }); });
         AUDIO.play('splash'); AUDIO.play('pop', 0.7);
       }
@@ -279,14 +280,14 @@ function seaDeepTick(dt) {
       h.t += dt;
       if (!h.done && h.t >= h.dur) {
         h.done = true; h.end = h.t + 1.2;
-        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(14), h.x, h.z); S.speed *= 0.4; G.cam.shake = Math.max(G.cam.shake, 0.45); }
+        if (hullDist(h.x, h.z) < h.r) { hurtHero(seaDmg(10), h.x, h.z); S.speed *= 0.4; G.cam.shake = Math.max(G.cam.shake, 0.45); }
         enemiesInRadius(h.x, h.z, h.r, e => { if (!e.boss) hurtEnemy(e, 80, 0, 0, { sound: false }); });
         seaSplash(h.x, h.z, h.r * 1.4); FX.ring(h.x, h.z, h.r * 1.6, [0.85, 0.95, 1], 0.6, 1); AUDIO.play('splash'); AUDIO.play('roar', 0.6);
       }
       if (h.done && h.t > h.end) h.dead = true;
     } else if (h.k === 'gfire') {
       h.t += dt; if (h.t > h.life) h.dead = true;
-      if (hullDist(h.x, h.z) < h.r * 0.8 && (h.tick -= dt) <= 0) { h.tick = 0.6; hurtHero(seaDmg(3.5), h.x, h.z); }
+      if (hullDist(h.x, h.z) < h.r * 0.8 && (h.tick -= dt) <= 0) { h.tick = 0.7; hurtHero(seaDmg(2.5), h.x, h.z); }
       if (Math.random() < 0.6) FX.part(h.x + rand(-h.r, h.r) * 0.7, 0.15, h.z + rand(-h.r, h.r) * 0.7, 0, rand(1.5, 3), 0, rand(0.15, 0.3), 0.05, 0.6, [0.4, 1, 0.55], 1, 0);
     } else if (h.k === 'bones') {
       h.t += dt;
