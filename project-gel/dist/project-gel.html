@@ -5574,10 +5574,21 @@ function shipModels(defs) {
 // Everything the sea's upgrades mount on a ship (drawn at each ship's mount scale), and the creatures they send
 // out: seagulls, sharks, the crew. Facing +z; y = 0 is where it stands on deck (or the waterline).
 // ============================================================
-const MOUNT_MESHES = ['smusket', 'sharpoon', 'sgunner', 'sanchor', 'sbarrel', 'slamp', 'snetrack', 'snet', 'sgull', 'sshark', 'shose', 'sfigure', 'sfort', 'sprop', 'screw', 'ssail'];
+const MOUNT_MESHES = ['smusket', 'sharpoon', 'sgunner', 'sanchor', 'sbarrel', 'slamp', 'snetrack', 'snet', 'sgull', 'sshark', 'shose', 'sfigure', 'sfort', 'sprop', 'screw', 'ssail',
+  'swhirl', 'scloud', 'stent', 'sdolph', 'splate', 'spowder', 'schest'];
 MESH_ORDER.push(...MOUNT_MESHES, ...SHIP_PIECES);
-Object.assign(THEME_CLIPS, { sgull: ['flap'], sshark: ['swim'], sprop: ['pspin'], screw: ['run', 'slam', 'idle'], ssail: ['rock'] });
-Object.assign(THEME_CELLS, { smusket: 0.013, sharpoon: 0.012, sgunner: 0.014, sanchor: 0.014, sbarrel: 0.013, slamp: 0.013, snetrack: 0.013, snet: 0.03, sgull: 0.015, sshark: 0.02, shose: 0.015, sfigure: 0.018, sfort: 0.016, sprop: 0.015, screw: 0.013, ssail: 0.022 });
+Object.assign(THEME_CLIPS, { sgull: ['flap'], sshark: ['swim'], sprop: ['pspin'], screw: ['run', 'slam', 'idle'], ssail: ['rock'], sdolph: ['swim', 'dleap'], stent: ['tcurl'] });
+Object.assign(THEME_CELLS, { smusket: 0.013, sharpoon: 0.012, sgunner: 0.014, sanchor: 0.014, sbarrel: 0.013, slamp: 0.013, snetrack: 0.013, snet: 0.03, sgull: 0.015, sshark: 0.02, shose: 0.015, sfigure: 0.018, sfort: 0.016, sprop: 0.015, screw: 0.013, ssail: 0.022,
+  swhirl: 0.016, scloud: 0.022, stent: 0.014, sdolph: 0.016, splate: 0.012, spowder: 0.012, schest: 0.012 });
+// a dolphin's leap: the whole body pitching from nose-up to nose-down (bone 0 about its middle)
+CLIPS.dleap = { frames: 12, fn(t) {
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [lerp(-0.9, 0.9, t * 12 / 11), 0, 0] : b === 7 ? [0, 0.4 * Math.sin(t * TAU * 2), 0] : [0, 0, 0])) };
+} };
+// a kraken arm curling: its upper half (bone 1) and tip (bone 2) bend over, from upright to slammed down
+CLIPS.tcurl = { frames: 12, fn(t) {
+  const u = t * 12 / 11;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0.2 + u * 1.1, 0, 0] : b === 2 ? [0.3 + u * 1.2, 0, 0] : b === 0 ? [u * 0.5, 0, 0] : [0, 0, 0])) };
+} };
 // a gull's wings beat (bones 3 and 5 about their shoulders)
 CLIPS.flap = { frames: 16, fn(t) {
   const a = Math.sin(t * TAU) * 0.75;
@@ -5904,6 +5915,83 @@ function mountModels(defs) {
     { s: 'cap', a: [0, 1.85, -0.06], b: [0, 1.85, -0.44], r: 0.006, col: woodD, k: 0 },
     { s: 'box', c: [0, 1.82, -0.28], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
   ], { ao: 0.4 });
+
+  // ---------- Whirlpool (the upgrade's picture): a funnel of water spiralling down, foam on its rim, bits of
+  // flotsam caught in it ----------
+  {
+    // (an open funnel: the capsules' round tops are cut away above the rim)
+    const p = [{ s: 'cap', a: [0, 0.02, 0], b: [0, -0.5, 0], r: 0.62, r2: 0.12, col: C('#1f6fc8'), k: 0 }, { s: 'cap', a: [0, 0.06, 0], b: [0, -0.46, 0], r: 0.56, r2: 0.08, sub: true, k: 0 }, { s: 'box', c: [0, 0.62, 0], hs: [1, 0.6, 1], sub: true, k: 0 }];
+    for (let i = 0; i < 3; i++) p.push({ s: 'tor', ax: 'y', c: [0, -0.06 - i * 0.14, 0], R: 0.5 - i * 0.14, r: 0.035 - i * 0.006, a0: i, a1: i + 4.2, col: i ? C('#8fdcff') : C('#f2fbff'), k: 0 });
+    p.push({ s: 'tor', ax: 'y', c: [0, 0.02, 0], R: 0.6, r: 0.05, a0: -Math.PI, a1: Math.PI, col: C('#f2fbff'), k: 0 });
+    p.push({ s: 'box', c: [0.32, -0.08, 0.18], hs: [0.08, 0.02, 0.03], rd: 0.01, col: wood, k: 0 }, { s: 'sph', c: [-0.24, -0.2, -0.12], r: 0.05, col: C('#ff8a3a'), k: 0 });
+    P('swhirl', p, { ao: 0.4 });
+  }
+  // ---------- Storm Cloud: a dark billowing cloud with a paler top, rain streaks and a gold lightning bolt ----------
+  P('scloud', [
+    ...[[0, 0, 0, 0.36], [0.32, -0.04, 0.05, 0.28], [-0.32, -0.04, -0.02, 0.27], [0.12, 0.18, -0.05, 0.27], [-0.14, 0.14, 0.08, 0.24], [0.5, -0.1, -0.06, 0.18], [-0.5, -0.1, 0.06, 0.18]].map(([x, y, z, r], i) => ({ s: 'sph', c: [x, y, z], r, col: i > 2 ? C('#8a92a8') : C('#5a6278'), k: 0.08 })),
+    ...[-0.3, -0.1, 0.12, 0.34].map(x => ({ s: 'cap', a: [x, -0.32, 0.05], b: [x - 0.05, -0.62, 0.05], r: 0.012, col: C('#9fd8ff'), k: 0 })),
+    { s: 'cap', a: [0.02, -0.25, 0.2], b: [-0.08, -0.48, 0.22], r: 0.035, col: yel, k: 0 }, { s: 'cap', a: [-0.08, -0.48, 0.22], b: [0.06, -0.52, 0.22], r: 0.035, col: yel, k: 0 }, { s: 'cap', a: [0.06, -0.52, 0.22], b: [-0.06, -0.82, 0.22], r: 0.03, r2: 0.008, col: yel, k: 0 },
+  ], { ao: 0.5 });
+  // ---------- Kraken Arm: a purple tentacle rising from a ring of foam, curling over at the top (three bones: base,
+  // upper half, tip), with rows of pale suckers on its inner side ----------
+  {
+    const pur = C('#8a3ad8'), purD = C('#5a1fa0'), suck = C('#f4c8ff');
+    const segs = [[0, 0.0, 0, 0.16, 0], [0, 0.45, 0.02, 0.13, 0], [0, 0.85, 0.06, 0.1, 1], [0, 1.2, 0.12, 0.075, 1], [0, 1.5, 0.2, 0.05, 2], [0, 1.72, 0.3, 0.025, 2]];
+    const p = [];
+    for (let i = 0; i < segs.length - 1; i++) { const [x, y, z, r, b] = segs[i], [x2, y2, z2, r2] = segs[i + 1]; p.push({ s: 'cap', a: [x, y, z], b: [x2, y2, z2], r, r2, col: i % 2 ? pur : purD, bone: b, k: 0.05 }); }
+    for (let i = 0; i < 8; i++) { const u = (i + 0.5) / 8, y = 0.1 + u * 1.5, r = 0.15 - u * 0.11; p.push({ s: 'sph', c: [0, y, 0.02 + u * 0.25 + r * 0.85], r: 0.03 - u * 0.015, col: suck, bone: y > 1.35 ? 2 : y > 0.75 ? 1 : 0, k: 0 }); }
+    p.push({ s: 'tor', ax: 'y', c: [0, 0.0, 0], R: 0.24, r: 0.05, a0: -Math.PI, a1: Math.PI, col: C('#f2fbff'), k: 0 });
+    const m = P('stent', p, { ao: 0.4 });
+    rig(m, { 0: [0, 0, 0], 1: [0, 0.8, 0.05], 2: [0, 1.38, 0.17] });
+    // (bones 1 and 2 hang off 0 and 1: the curl adds up along the arm)
+  }
+  // ---------- Dolphin Pod: a sleek grey-blue dolphin with a pale belly, a curved dorsal fin, flippers, a beak, a
+  // smile and bright eyes; its tail flukes on their own bone ----------
+  {
+    const dk = C('#6a8eb8'), dkD = C('#4a6e98'), belly = C('#e8f0f8');
+    const m = P('sdolph', [
+      { s: 'ell', c: [0, 0.0, 0.0], rr: [0.2, 0.2, 0.62], col: dk, k: 0 },
+      { s: 'ell', c: [0, 0.08, -0.02], rr: [0.14, 0.11, 0.55], col: dkD, k: 0.08 },
+      { s: 'ell', c: [0, -0.07, 0.06], rr: [0.16, 0.12, 0.52], col: belly, k: 0.06 },
+      { s: 'cap', a: [0, 0.0, 0.55], b: [0, -0.03, 0.82], r: 0.075, r2: 0.04, col: dk, k: 0.06 },
+      { s: 'cap', a: [0, -0.04, 0.6], b: [0, -0.06, 0.8], r: 0.05, r2: 0.03, col: belly, k: 0.03 },
+      { s: 'cap', a: [0, 0.15, 0.0], b: [0, 0.4, -0.2], r: 0.07, r2: 0.015, col: dkD, k: 0.04 },
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.15, -0.08, 0.2], b: [sx * 0.34, -0.17, 0.05], r: 0.05, r2: 0.02, col: dkD, k: 0.03 })),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.12, 0.05, 0.5], r: 0.035, col: white, k: 0 }, { s: 'sph', c: [sx * 0.13, 0.055, 0.52], r: 0.02, col: dark, k: 0 }]),
+      { s: 'cap', a: [0.05, -0.05, 0.76], b: [-0.05, -0.05, 0.76], r: 0.01, col: dkD, k: 0 },
+      { s: 'cap', a: [0, 0.0, -0.5], b: [0, 0.02, -0.8], r: 0.1, r2: 0.045, col: dk, bone: 7, k: 0.04 },
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.15, 0.02, -0.86], rr: [0.17, 0.025, 0.08], col: dkD, bone: 7, k: 0.03 })),
+    ], { ao: 0.4 });
+    rig(m, { 0: [0, 0, 0], 7: [0, 0, -0.5] });
+  }
+  // ---------- Hull Plating: a riveted steel plate leaning on a crate, a hammer beside it ----------
+  P('splate', [
+    { s: 'box', c: [0, 0.32, 0], hs: [0.3, 0.3, 0.03], rd: 0.04, col: steel, k: 0 },
+    { s: 'box', c: [0, 0.32, 0.03], hs: [0.24, 0.24, 0.01], rd: 0.03, col: C('#c4d0de'), k: 0 },
+    ...[-0.23, 0.23].flatMap(x => [-0.23, 0.23].map(y => ({ s: 'sph', c: [x, 0.32 + y, 0.035], r: 0.025, col: ironL, k: 0 }))),
+    ...[-0.12, 0, 0.12].map(x => ({ s: 'sph', c: [x, 0.09, 0.035], r: 0.018, col: ironL, k: 0 })),
+    { s: 'cap', a: [0.38, 0.02, 0.15], b: [0.38, 0.32, 0.12], r: 0.02, col: woodD, k: 0 },
+    { s: 'box', c: [0.38, 0.33, 0.12], hs: [0.08, 0.035, 0.035], rd: 0.012, col: iron, k: 0 },
+  ], { ao: 0.6 });
+  // ---------- Gunpowder: a squat black keg with brass hoops, a skull and crossbones, a lit fuse and spilled powder ----------
+  P('spowder', [
+    { s: 'cyl', ax: 'y', c: [0, 0.22, 0], r: 0.22, hh: 0.2, rd: 0.06, col: C('#2a2630'), k: 0 },
+    ...[0.08, 0.36].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.225, r: 0.016, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 })),
+    { s: 'sph', c: [0, 0.24, 0.215], r: 0.06, col: white, k: 0 }, ...[-0.022, 0.022].map(x => ({ s: 'sph', c: [x, 0.25, 0.268], r: 0.014, col: dark, k: 0 })),
+    ...[[-1, 1], [1, -1]].map(([a, b]) => ({ s: 'cap', a: [a * 0.07, 0.16, 0.215], b: [b * 0.07, 0.2, 0.215], r: 0.012, col: white, k: 0 })),
+    { s: 'cap', a: [0.06, 0.42, 0], b: [0.12, 0.55, 0.03], r: 0.012, col: C('#3a2a1a'), k: 0 },
+    { s: 'sph', c: [0.125, 0.57, 0.03], r: 0.035, col: yel, k: 0 }, { s: 'sph', c: [0.125, 0.57, 0.03], r: 0.02, col: C('#fff8d0'), k: 0 },
+    { s: 'ell', c: [-0.24, 0.0, 0.16], rr: [0.14, 0.02, 0.09], col: C('#3a3540'), k: 0 },
+  ], { ao: 0.5 });
+  // ---------- Treasure Hunter: an open chest of gold coins and a gem, a rolled map on top ----------
+  P('schest', [
+    { s: 'box', c: [0, 0.14, 0], hs: [0.28, 0.13, 0.18], rd: 0.03, col: wood, k: 0 },
+    ...[-0.18, 0.18].map(x => ({ s: 'box', c: [x, 0.14, 0], hs: [0.025, 0.135, 0.185], rd: 0.01, col: brass, k: 0 })),
+    { s: 'box', c: [0, 0.4, -0.16], hs: [0.28, 0.14, 0.03], rd: 0.03, col: woodD, k: 0 },
+    ...Array.from({ length: 9 }, (_, i) => ({ s: 'cyl', ax: 'y', c: [-0.18 + (i % 3) * 0.18 + (i > 5 ? 0.05 : 0), 0.28 + Math.floor(i / 3) * 0.025, -0.08 + Math.floor(i / 3) * 0.08], r: 0.06, hh: 0.012, rd: 0.006, col: yel, k: 0 })),
+    { s: 'sph', c: [0.08, 0.36, 0.06], r: 0.05, col: C('#3ad0ff'), k: 0 },
+    { s: 'cap', a: [-0.2, 0.33, 0.1], b: [0.05, 0.36, 0.14], r: 0.04, col: C('#f0e0b8'), k: 0 }, { s: 'tor', ax: 'z', c: [-0.08, 0.345, 0.12], R: 0.042, r: 0.008, a0: -Math.PI, a1: Math.PI, col: red, k: 0 },
+  ], { ao: 0.5 });
 }
 
 // ============================================================
@@ -11593,10 +11681,21 @@ function shipModels(defs) {
 // Everything the sea's upgrades mount on a ship (drawn at each ship's mount scale), and the creatures they send
 // out: seagulls, sharks, the crew. Facing +z; y = 0 is where it stands on deck (or the waterline).
 // ============================================================
-const MOUNT_MESHES = ['smusket', 'sharpoon', 'sgunner', 'sanchor', 'sbarrel', 'slamp', 'snetrack', 'snet', 'sgull', 'sshark', 'shose', 'sfigure', 'sfort', 'sprop', 'screw', 'ssail'];
+const MOUNT_MESHES = ['smusket', 'sharpoon', 'sgunner', 'sanchor', 'sbarrel', 'slamp', 'snetrack', 'snet', 'sgull', 'sshark', 'shose', 'sfigure', 'sfort', 'sprop', 'screw', 'ssail',
+  'swhirl', 'scloud', 'stent', 'sdolph', 'splate', 'spowder', 'schest'];
 MESH_ORDER.push(...MOUNT_MESHES, ...SHIP_PIECES);
-Object.assign(THEME_CLIPS, { sgull: ['flap'], sshark: ['swim'], sprop: ['pspin'], screw: ['run', 'slam', 'idle'], ssail: ['rock'] });
-Object.assign(THEME_CELLS, { smusket: 0.013, sharpoon: 0.012, sgunner: 0.014, sanchor: 0.014, sbarrel: 0.013, slamp: 0.013, snetrack: 0.013, snet: 0.03, sgull: 0.015, sshark: 0.02, shose: 0.015, sfigure: 0.018, sfort: 0.016, sprop: 0.015, screw: 0.013, ssail: 0.022 });
+Object.assign(THEME_CLIPS, { sgull: ['flap'], sshark: ['swim'], sprop: ['pspin'], screw: ['run', 'slam', 'idle'], ssail: ['rock'], sdolph: ['swim', 'dleap'], stent: ['tcurl'] });
+Object.assign(THEME_CELLS, { smusket: 0.013, sharpoon: 0.012, sgunner: 0.014, sanchor: 0.014, sbarrel: 0.013, slamp: 0.013, snetrack: 0.013, snet: 0.03, sgull: 0.015, sshark: 0.02, shose: 0.015, sfigure: 0.018, sfort: 0.016, sprop: 0.015, screw: 0.013, ssail: 0.022,
+  swhirl: 0.016, scloud: 0.022, stent: 0.014, sdolph: 0.016, splate: 0.012, spowder: 0.012, schest: 0.012 });
+// a dolphin's leap: the whole body pitching from nose-up to nose-down (bone 0 about its middle)
+CLIPS.dleap = { frames: 12, fn(t) {
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [lerp(-0.9, 0.9, t * 12 / 11), 0, 0] : b === 7 ? [0, 0.4 * Math.sin(t * TAU * 2), 0] : [0, 0, 0])) };
+} };
+// a kraken arm curling: its upper half (bone 1) and tip (bone 2) bend over, from upright to slammed down
+CLIPS.tcurl = { frames: 12, fn(t) {
+  const u = t * 12 / 11;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0.2 + u * 1.1, 0, 0] : b === 2 ? [0.3 + u * 1.2, 0, 0] : b === 0 ? [u * 0.5, 0, 0] : [0, 0, 0])) };
+} };
 // a gull's wings beat (bones 3 and 5 about their shoulders)
 CLIPS.flap = { frames: 16, fn(t) {
   const a = Math.sin(t * TAU) * 0.75;
@@ -11923,6 +12022,83 @@ function mountModels(defs) {
     { s: 'cap', a: [0, 1.85, -0.06], b: [0, 1.85, -0.44], r: 0.006, col: woodD, k: 0 },
     { s: 'box', c: [0, 1.82, -0.28], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
   ], { ao: 0.4 });
+
+  // ---------- Whirlpool (the upgrade's picture): a funnel of water spiralling down, foam on its rim, bits of
+  // flotsam caught in it ----------
+  {
+    // (an open funnel: the capsules' round tops are cut away above the rim)
+    const p = [{ s: 'cap', a: [0, 0.02, 0], b: [0, -0.5, 0], r: 0.62, r2: 0.12, col: C('#1f6fc8'), k: 0 }, { s: 'cap', a: [0, 0.06, 0], b: [0, -0.46, 0], r: 0.56, r2: 0.08, sub: true, k: 0 }, { s: 'box', c: [0, 0.62, 0], hs: [1, 0.6, 1], sub: true, k: 0 }];
+    for (let i = 0; i < 3; i++) p.push({ s: 'tor', ax: 'y', c: [0, -0.06 - i * 0.14, 0], R: 0.5 - i * 0.14, r: 0.035 - i * 0.006, a0: i, a1: i + 4.2, col: i ? C('#8fdcff') : C('#f2fbff'), k: 0 });
+    p.push({ s: 'tor', ax: 'y', c: [0, 0.02, 0], R: 0.6, r: 0.05, a0: -Math.PI, a1: Math.PI, col: C('#f2fbff'), k: 0 });
+    p.push({ s: 'box', c: [0.32, -0.08, 0.18], hs: [0.08, 0.02, 0.03], rd: 0.01, col: wood, k: 0 }, { s: 'sph', c: [-0.24, -0.2, -0.12], r: 0.05, col: C('#ff8a3a'), k: 0 });
+    P('swhirl', p, { ao: 0.4 });
+  }
+  // ---------- Storm Cloud: a dark billowing cloud with a paler top, rain streaks and a gold lightning bolt ----------
+  P('scloud', [
+    ...[[0, 0, 0, 0.36], [0.32, -0.04, 0.05, 0.28], [-0.32, -0.04, -0.02, 0.27], [0.12, 0.18, -0.05, 0.27], [-0.14, 0.14, 0.08, 0.24], [0.5, -0.1, -0.06, 0.18], [-0.5, -0.1, 0.06, 0.18]].map(([x, y, z, r], i) => ({ s: 'sph', c: [x, y, z], r, col: i > 2 ? C('#8a92a8') : C('#5a6278'), k: 0.08 })),
+    ...[-0.3, -0.1, 0.12, 0.34].map(x => ({ s: 'cap', a: [x, -0.32, 0.05], b: [x - 0.05, -0.62, 0.05], r: 0.012, col: C('#9fd8ff'), k: 0 })),
+    { s: 'cap', a: [0.02, -0.25, 0.2], b: [-0.08, -0.48, 0.22], r: 0.035, col: yel, k: 0 }, { s: 'cap', a: [-0.08, -0.48, 0.22], b: [0.06, -0.52, 0.22], r: 0.035, col: yel, k: 0 }, { s: 'cap', a: [0.06, -0.52, 0.22], b: [-0.06, -0.82, 0.22], r: 0.03, r2: 0.008, col: yel, k: 0 },
+  ], { ao: 0.5 });
+  // ---------- Kraken Arm: a purple tentacle rising from a ring of foam, curling over at the top (three bones: base,
+  // upper half, tip), with rows of pale suckers on its inner side ----------
+  {
+    const pur = C('#8a3ad8'), purD = C('#5a1fa0'), suck = C('#f4c8ff');
+    const segs = [[0, 0.0, 0, 0.16, 0], [0, 0.45, 0.02, 0.13, 0], [0, 0.85, 0.06, 0.1, 1], [0, 1.2, 0.12, 0.075, 1], [0, 1.5, 0.2, 0.05, 2], [0, 1.72, 0.3, 0.025, 2]];
+    const p = [];
+    for (let i = 0; i < segs.length - 1; i++) { const [x, y, z, r, b] = segs[i], [x2, y2, z2, r2] = segs[i + 1]; p.push({ s: 'cap', a: [x, y, z], b: [x2, y2, z2], r, r2, col: i % 2 ? pur : purD, bone: b, k: 0.05 }); }
+    for (let i = 0; i < 8; i++) { const u = (i + 0.5) / 8, y = 0.1 + u * 1.5, r = 0.15 - u * 0.11; p.push({ s: 'sph', c: [0, y, 0.02 + u * 0.25 + r * 0.85], r: 0.03 - u * 0.015, col: suck, bone: y > 1.35 ? 2 : y > 0.75 ? 1 : 0, k: 0 }); }
+    p.push({ s: 'tor', ax: 'y', c: [0, 0.0, 0], R: 0.24, r: 0.05, a0: -Math.PI, a1: Math.PI, col: C('#f2fbff'), k: 0 });
+    const m = P('stent', p, { ao: 0.4 });
+    rig(m, { 0: [0, 0, 0], 1: [0, 0.8, 0.05], 2: [0, 1.38, 0.17] });
+    // (bones 1 and 2 hang off 0 and 1: the curl adds up along the arm)
+  }
+  // ---------- Dolphin Pod: a sleek grey-blue dolphin with a pale belly, a curved dorsal fin, flippers, a beak, a
+  // smile and bright eyes; its tail flukes on their own bone ----------
+  {
+    const dk = C('#6a8eb8'), dkD = C('#4a6e98'), belly = C('#e8f0f8');
+    const m = P('sdolph', [
+      { s: 'ell', c: [0, 0.0, 0.0], rr: [0.2, 0.2, 0.62], col: dk, k: 0 },
+      { s: 'ell', c: [0, 0.08, -0.02], rr: [0.14, 0.11, 0.55], col: dkD, k: 0.08 },
+      { s: 'ell', c: [0, -0.07, 0.06], rr: [0.16, 0.12, 0.52], col: belly, k: 0.06 },
+      { s: 'cap', a: [0, 0.0, 0.55], b: [0, -0.03, 0.82], r: 0.075, r2: 0.04, col: dk, k: 0.06 },
+      { s: 'cap', a: [0, -0.04, 0.6], b: [0, -0.06, 0.8], r: 0.05, r2: 0.03, col: belly, k: 0.03 },
+      { s: 'cap', a: [0, 0.15, 0.0], b: [0, 0.4, -0.2], r: 0.07, r2: 0.015, col: dkD, k: 0.04 },
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.15, -0.08, 0.2], b: [sx * 0.34, -0.17, 0.05], r: 0.05, r2: 0.02, col: dkD, k: 0.03 })),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.12, 0.05, 0.5], r: 0.035, col: white, k: 0 }, { s: 'sph', c: [sx * 0.13, 0.055, 0.52], r: 0.02, col: dark, k: 0 }]),
+      { s: 'cap', a: [0.05, -0.05, 0.76], b: [-0.05, -0.05, 0.76], r: 0.01, col: dkD, k: 0 },
+      { s: 'cap', a: [0, 0.0, -0.5], b: [0, 0.02, -0.8], r: 0.1, r2: 0.045, col: dk, bone: 7, k: 0.04 },
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.15, 0.02, -0.86], rr: [0.17, 0.025, 0.08], col: dkD, bone: 7, k: 0.03 })),
+    ], { ao: 0.4 });
+    rig(m, { 0: [0, 0, 0], 7: [0, 0, -0.5] });
+  }
+  // ---------- Hull Plating: a riveted steel plate leaning on a crate, a hammer beside it ----------
+  P('splate', [
+    { s: 'box', c: [0, 0.32, 0], hs: [0.3, 0.3, 0.03], rd: 0.04, col: steel, k: 0 },
+    { s: 'box', c: [0, 0.32, 0.03], hs: [0.24, 0.24, 0.01], rd: 0.03, col: C('#c4d0de'), k: 0 },
+    ...[-0.23, 0.23].flatMap(x => [-0.23, 0.23].map(y => ({ s: 'sph', c: [x, 0.32 + y, 0.035], r: 0.025, col: ironL, k: 0 }))),
+    ...[-0.12, 0, 0.12].map(x => ({ s: 'sph', c: [x, 0.09, 0.035], r: 0.018, col: ironL, k: 0 })),
+    { s: 'cap', a: [0.38, 0.02, 0.15], b: [0.38, 0.32, 0.12], r: 0.02, col: woodD, k: 0 },
+    { s: 'box', c: [0.38, 0.33, 0.12], hs: [0.08, 0.035, 0.035], rd: 0.012, col: iron, k: 0 },
+  ], { ao: 0.6 });
+  // ---------- Gunpowder: a squat black keg with brass hoops, a skull and crossbones, a lit fuse and spilled powder ----------
+  P('spowder', [
+    { s: 'cyl', ax: 'y', c: [0, 0.22, 0], r: 0.22, hh: 0.2, rd: 0.06, col: C('#2a2630'), k: 0 },
+    ...[0.08, 0.36].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.225, r: 0.016, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 })),
+    { s: 'sph', c: [0, 0.24, 0.215], r: 0.06, col: white, k: 0 }, ...[-0.022, 0.022].map(x => ({ s: 'sph', c: [x, 0.25, 0.268], r: 0.014, col: dark, k: 0 })),
+    ...[[-1, 1], [1, -1]].map(([a, b]) => ({ s: 'cap', a: [a * 0.07, 0.16, 0.215], b: [b * 0.07, 0.2, 0.215], r: 0.012, col: white, k: 0 })),
+    { s: 'cap', a: [0.06, 0.42, 0], b: [0.12, 0.55, 0.03], r: 0.012, col: C('#3a2a1a'), k: 0 },
+    { s: 'sph', c: [0.125, 0.57, 0.03], r: 0.035, col: yel, k: 0 }, { s: 'sph', c: [0.125, 0.57, 0.03], r: 0.02, col: C('#fff8d0'), k: 0 },
+    { s: 'ell', c: [-0.24, 0.0, 0.16], rr: [0.14, 0.02, 0.09], col: C('#3a3540'), k: 0 },
+  ], { ao: 0.5 });
+  // ---------- Treasure Hunter: an open chest of gold coins and a gem, a rolled map on top ----------
+  P('schest', [
+    { s: 'box', c: [0, 0.14, 0], hs: [0.28, 0.13, 0.18], rd: 0.03, col: wood, k: 0 },
+    ...[-0.18, 0.18].map(x => ({ s: 'box', c: [x, 0.14, 0], hs: [0.025, 0.135, 0.185], rd: 0.01, col: brass, k: 0 })),
+    { s: 'box', c: [0, 0.4, -0.16], hs: [0.28, 0.14, 0.03], rd: 0.03, col: woodD, k: 0 },
+    ...Array.from({ length: 9 }, (_, i) => ({ s: 'cyl', ax: 'y', c: [-0.18 + (i % 3) * 0.18 + (i > 5 ? 0.05 : 0), 0.28 + Math.floor(i / 3) * 0.025, -0.08 + Math.floor(i / 3) * 0.08], r: 0.06, hh: 0.012, rd: 0.006, col: yel, k: 0 })),
+    { s: 'sph', c: [0.08, 0.36, 0.06], r: 0.05, col: C('#3ad0ff'), k: 0 },
+    { s: 'cap', a: [-0.2, 0.33, 0.1], b: [0.05, 0.36, 0.14], r: 0.04, col: C('#f0e0b8'), k: 0 }, { s: 'tor', ax: 'z', c: [-0.08, 0.345, 0.12], R: 0.042, r: 0.008, a0: -Math.PI, a1: Math.PI, col: red, k: 0 },
+  ], { ao: 0.5 });
 }
 
 // ---- 04n-sea-boss-models.js ----
@@ -17942,6 +18118,179 @@ function hslRgb(h, s, l) {
   return [f(0), f(8), f(4)];
 }
 
+// ---- 10d-costumes2.js ----
+// ============================================================
+// More looks for the blob: whole-body costumes (armor, shells, capes, wings, packs, suits, outfits: they change the
+// body, not just the head) and more hats. Same part format as COSTUMES (10-data.js): offsets from the head, chest or
+// pelvis joint, +z the front; col 'b' the body color or 0-3 this look's palette. Flat parts are not blended (k 0).
+// ============================================================
+const MORE_COSTUMES = [
+  // ---------- whole-body costumes ----------
+  { id: 'knight', name: 'Knight Armor', cost: 1800, boost: { hp: 8 }, pal: ['#c8d2de', '#f2c440', '#d8323c', '#3a3f4a'], parts: [
+    ['ell', 'chest', [0, 0, 0.03], [0.375, 0.335, 0.3], 0.01, 0],
+    ...[1, -1].flatMap(sx => [['sph', 'chest', [sx * 0.33, 0.15, 0], 0.15, 0.02, 0], ['ell', 'chest', [sx * 0.33, 0.06, 0], [0.165, 0.03, 0.165], 0, 1]]),
+    ['ell', 'chest', [0, -0.1, 0.3], [0.12, 0.2, 0.025], 0, 2], ['ell', 'pelvis', [0, -0.06, 0.25], [0.11, 0.16, 0.03], 0, 2],
+    ['ell', 'chest', [0, 0.0, 0.33], [0.022, 0.09, 0.01], 0, 1], ['ell', 'chest', [0, 0.03, 0.33], [0.065, 0.022, 0.01], 0, 1],
+    ['ell', 'pelvis', [0, 0.08, 0], [0.29, 0.05, 0.29], 0, 3], ['sph', 'pelvis', [0, 0.08, 0.28], 0.04, 0.005, 1],
+  ] },
+  { id: 'samurai', name: 'Samurai Armor', cost: 2200, boost: { dmg: 5 }, pal: ['#c8283a', '#1c1a22', '#f2c440'], parts: [
+    ['ell', 'chest', [0, 0, 0.02], [0.37, 0.33, 0.295], 0.01, 0],
+    ...[1, -1].flatMap(sx => [['ell', 'chest', [sx * 0.37, 0.1, 0], [0.15, 0.035, 0.18], 0, 0], ['ell', 'chest', [sx * 0.39, 0.02, 0], [0.16, 0.035, 0.19], 0, 1]]),
+    ['ell', 'pelvis', [0, -0.1, 0], [0.33, 0.13, 0.31], 0.01, 1], ['ell', 'pelvis', [0, -0.08, 0.3], [0.12, 0.14, 0.025], 0, 0],
+    ['ell', 'pelvis', [0, 0.08, 0], [0.3, 0.045, 0.3], 0, 2], ['sph', 'chest', [0, 0.06, 0.31], 0.05, 0.005, 2],
+  ] },
+  { id: 'shell', name: 'Turtle Shell', cost: 1400, boost: { armor: 4 }, back: true, pal: ['#3a8a4a', '#6ac06a', '#f0e0a8', '#1f5a2e'], parts: [
+    ['ell', 'chest', [0, -0.1, -0.2], [0.42, 0.44, 0.27], 0.02, 0],
+    ['sph', 'chest', [0, 0.06, -0.43], 0.11, 0.02, 1], ['sph', 'chest', [0.19, -0.08, -0.4], 0.095, 0.02, 1], ['sph', 'chest', [-0.19, -0.08, -0.4], 0.095, 0.02, 1], ['sph', 'chest', [0, -0.27, -0.39], 0.095, 0.02, 1],
+    ['ell', 'chest', [0, -0.1, 0.24], [0.24, 0.32, 0.06], 0.01, 2],
+    ['ell', 'chest', [0, -0.1, 0.29], [0.012, 0.25, 0.012], 0, 3], ['ell', 'chest', [0, -0.08, 0.29], [0.18, 0.012, 0.012], 0, 3],
+    ['cap', 'pelvis', [0, -0.05, -0.25], [0, -0.12, -0.42], 0.06, 0.02, 0.03, 'b', 0.02],
+  ] },
+  { id: 'supercape', name: 'Super Cape', cost: 1600, boost: { speed: 5 }, back: true, pal: ['#e8283a', '#ffd23a', '#2a5ad8'], parts: [
+    ...[1, -1].map(sx => ['cap', 'chest', [sx * 0.2, 0.18, -0.2], [sx * 0.34, -0.85, -0.44], 0.05, 0.12, 0.02, 0, 0.04]),
+    ['ell', 'chest', [0, -0.38, -0.36], [0.33, 0.48, 0.035], 0, 0],
+    ['ell', 'chest', [0, 0.22, 0.04], [0.3, 0.06, 0.27], 0.01, 0],
+    ['ell', 'chest', [0, 0.02, 0.305], [0.13, 0.11, 0.02], 0, 1], ['ell', 'chest', [0, 0.02, 0.32], [0.07, 0.06, 0.012], 0, 2],
+    ['ell', 'pelvis', [0, 0.08, 0], [0.29, 0.05, 0.29], 0, 1],
+  ] },
+  { id: 'angelwings', name: 'Angel Wings', cost: 2400, boost: { regen: 0.12 }, back: true, pal: ['#ffffff', '#ffe08a', '#e8f0ff'], parts: [
+    ...[1, -1].flatMap(sx => [[0.5, 0.06], [0.3, 0.07], [0.06, 0.065], [-0.16, 0.055]].map(([y, r], i) => ['cap', 'chest', [sx * 0.14, 0.18, -0.24], [sx * (0.62 - i * 0.04), y, -0.34 - i * 0.01], r, 0.03, 0.02, i % 2 ? 2 : 0, 0.02])),
+    ['ell', 'chest', [0, 0.05, 0.27], [0.05, 0.27, 0.02], 0, 1],
+  ] },
+  { id: 'fairy', name: 'Fairy', cost: 1500, boost: { xp: 6 }, back: true, pal: ['#c8f0ff', '#ff7ac8', '#ffb3e6', '#fff4b0'], parts: [
+    ...[1, -1].flatMap(sx => [['cap', 'chest', [sx * 0.12, 0.12, -0.25], [sx * 0.5, 0.42, -0.33], 0.04, 0.11, 0.02, 0, 0.03], ['cap', 'chest', [sx * 0.12, 0.0, -0.25], [sx * 0.4, -0.25, -0.31], 0.035, 0.08, 0.02, 0, 0.03]]),
+    ['ell', 'pelvis', [0, 0.04, 0], [0.43, 0.055, 0.43], 0.005, 1], ['ell', 'pelvis', [0, -0.02, 0], [0.38, 0.05, 0.38], 0.005, 2],
+    ['sph', 'chest', [0, 0.2, 0.25], 0.04, 0.005, 3],
+  ] },
+  { id: 'jetpack', name: 'Jetpack', cost: 2600, boost: { speed: 6 }, back: true, pal: ['#c0c8d4', '#e0283a', '#ffb020', '#3a3f4a'], parts: [
+    ...[1, -1].flatMap(sx => [
+      ['cap', 'chest', [sx * 0.13, 0.12, -0.31], [sx * 0.13, -0.28, -0.31], 0.11, 0.11, 0.01, 0],
+      ['sph', 'chest', [sx * 0.13, 0.2, -0.31], 0.1, 0.005, 1],
+      ['cap', 'chest', [sx * 0.13, -0.3, -0.31], [sx * 0.13, -0.42, -0.31], 0.07, 0.05, 0.005, 3],
+      ['cap', 'chest', [sx * 0.13, -0.45, -0.31], [sx * 0.13, -0.72, -0.33], 0.06, 0.01, 0.01, 2, 0.03],
+      ['ell', 'chest', [sx * 0.15, 0.05, 0.28], [0.035, 0.25, 0.025], 0, 3],
+    ]),
+  ] },
+  { id: 'adventurer', name: 'Adventurer', cost: 1200, boost: { magnet: 20 }, back: true, pal: ['#c8a868', '#6e4426', '#3a8a5a', '#c8d0da'], parts: [
+    ['ell', 'chest', [0, -0.06, -0.36], [0.24, 0.28, 0.14], 0.01, 0], ['ell', 'chest', [0, 0.12, -0.41], [0.24, 0.1, 0.12], 0.005, 1],
+    ['cap', 'chest', [-0.25, 0.3, -0.36], [0.25, 0.3, -0.36], 0.09, 0.09, 0.005, 2],
+    ...[1, -1].map(sx => ['ell', 'chest', [sx * 0.17, 0.05, 0.28], [0.035, 0.26, 0.025], 0, 1]),
+    ['ell', 'pelvis', [0, 0.08, 0], [0.29, 0.05, 0.29], 0, 1], ['sph', 'pelvis', [0.27, 0.0, 0.1], 0.08, 0.01, 3],
+  ] },
+  { id: 'tuxedo', name: 'Tuxedo', cost: 2000, boost: { gold: 10 }, pal: ['#1c1a22', '#ffffff', '#c8283a'], parts: [
+    ['ell', 'chest', [0, 0, 0], [0.37, 0.33, 0.3], 0.01, 0],
+    ['ell', 'pelvis', [0, 0, 0], [0.305, 0.285, 0.305], 0.01, 0],
+    ['ell', 'chest', [0, 0.0, 0.285], [0.11, 0.26, 0.035], 0, 1],
+    ['sph', 'chest', [0.055, 0.22, 0.31], 0.045, 0.005, 2], ['sph', 'chest', [-0.055, 0.22, 0.31], 0.045, 0.005, 2], ['sph', 'chest', [0, 0.22, 0.32], 0.025, 0.005, 2],
+    ...[0.05, -0.08].map(y => ['sph', 'chest', [0, y, 0.32], 0.018, 0.003, 0]),
+    ...[1, -1].map(sx => ['cap', 'pelvis', [sx * 0.1, 0.06, -0.26], [sx * 0.13, -0.36, -0.31], 0.07, 0.05, 0.01, 0, 0.02]),
+  ] },
+  { id: 'hula', name: 'Hula', cost: 1100, boost: { regen: 0.1 }, pal: ['#8ac04a', '#5a8a2a', '#ff5a8a', '#ffd23a'], parts: [
+    ...Array.from({ length: 11 }, (_, i) => { const a = i / 11 * TAU; return ['cap', 'pelvis', [Math.sin(a) * 0.27, 0.06, Math.cos(a) * 0.27], [Math.sin(a) * 0.38, -0.4, Math.cos(a) * 0.38], 0.075, 0.035, 0.015, i % 2, 0.02]; }),
+    ['ell', 'pelvis', [0, 0.07, 0], [0.3, 0.05, 0.3], 0.01, 1],
+    ...Array.from({ length: 6 }, (_, i) => { const a = (i / 6 - 0.5) * Math.PI * 1.4; return ['sph', 'chest', [Math.sin(a) * 0.24, 0.27 - Math.abs(Math.sin(a)) * 0.04, Math.cos(a) * 0.2], 0.05, 0.005, i % 2 ? 3 : 2]; }),
+  ] },
+  { id: 'snowman', name: 'Snowman', cost: 900, boost: { hp: 6 }, pal: ['#1c1a22', '#ff7a1a', '#d8323c', '#ffffff'], parts: [
+    ...[0.12, -0.04, -0.2].map(y => ['sph', 'chest', [0, y, 0.285 - Math.abs(y) * 0.08], 0.035, 0.003, 0]),
+    ['ell', 'chest', [0, 0.27, 0], [0.28, 0.065, 0.26], 0.01, 2], ['ell', 'chest', [0, 0.27, 0], [0.285, 0.015, 0.265], 0, 3],
+    ['cap', 'chest', [0.13, 0.25, 0.22], [0.2, -0.08, 0.28], 0.05, 0.04, 0.005, 2, 0.02],
+    ['cap', 'head', [0, -0.01, 0.21], [0, -0.03, 0.38], 0.04, 0.008, 0.005, 1],
+  ] },
+  { id: 'captaincoat', name: 'Captain Coat', cost: 2300, boost: { gold: 8 }, pal: ['#a81c2a', '#f2c440', '#1c1a22', '#fff4e0'], parts: [
+    ['ell', 'chest', [0, 0, 0], [0.37, 0.33, 0.3], 0.01, 0],
+    ...[1, -1].map(sx => ['ell', 'chest', [sx * 0.11, 0.05, 0.285], [0.05, 0.22, 0.03], 0, 1]),
+    ...[0.08, -0.04, -0.16].map(y => ['sph', 'chest', [0, y, 0.315], 0.022, 0.003, 1]),
+    ['ell', 'chest', [0, 0.22, 0.295], [0.07, 0.07, 0.04], 0.005, 3],
+    ['ell', 'pelvis', [0, 0.08, 0], [0.29, 0.05, 0.29], 0, 2], ['ell', 'pelvis', [0, 0.08, 0.285], [0.05, 0.04, 0.015], 0, 1],
+    ...[1, -1].map(sx => ['cap', 'pelvis', [sx * 0.12, 0.05, -0.26], [sx * 0.15, -0.38, -0.3], 0.08, 0.06, 0.01, 0, 0.02]),
+  ] },
+  { id: 'mech', name: 'Mech Suit', cost: 3200, boost: { dmg: 6 }, back: true, pal: ['#9aa8bc', '#3a3f4a', '#4ad8ff', '#ffc21f'], parts: [
+    ['ell', 'chest', [0, 0, 0.02], [0.375, 0.335, 0.3], 0.01, 0],
+    ['sph', 'chest', [0, 0.02, 0.31], 0.08, 0.005, 2], ['ell', 'chest', [0, 0.02, 0.3], [0.12, 0.12, 0.02], 0, 1],
+    ...[1, -1].flatMap(sx => [['sph', 'chest', [sx * 0.34, 0.2, 0], 0.13, 0.01, 0], ['cap', 'chest', [sx * 0.34, 0.2, 0], [sx * 0.44, -0.02, 0.02], 0.07, 0.06, 0.005, 1], ['cap', 'chest', [sx * 0.12, 0.1, -0.28], [sx * 0.14, 0.46, -0.33], 0.05, 0.04, 0.005, 1]]),
+    ['ell', 'pelvis', [0, 0.08, 0], [0.295, 0.05, 0.295], 0, 3],
+  ] },
+  { id: 'spacesuit', name: 'Space Suit', cost: 2800, boost: { cd: 5 }, back: true, pal: ['#f4f6fa', '#ff8a2a', '#2a5ad8', '#9aa8bc'], parts: [
+    ['ell', 'chest', [0, 0, 0], [0.375, 0.335, 0.305], 0.01, 0], ['ell', 'pelvis', [0, 0, 0], [0.315, 0.29, 0.315], 0.01, 0],
+    ['ell', 'chest', [0, 0.0, -0.35], [0.24, 0.27, 0.12], 0.01, 3],
+    ['ell', 'chest', [0, 0.02, 0.305], [0.11, 0.075, 0.02], 0, 3],
+    ['sph', 'chest', [-0.05, 0.03, 0.325], 0.022, 0.003, 1], ['sph', 'chest', [0.0, 0.03, 0.325], 0.022, 0.003, 2], ['sph', 'chest', [0.05, 0.03, 0.325], 0.022, 0.003, 1],
+    ...[1, -1].map(sx => ['ell', 'chest', [sx * 0.3, 0.12, 0.05], [0.05, 0.05, 0.2], 0, 1]),
+  ] },
+  { id: 'duckfloat', name: 'Duck Float', cost: 1000, boost: { speed: 4 }, pal: ['#ffd23a', '#ff8a1a', '#1c1a22'], parts: [
+    ...Array.from({ length: 8 }, (_, i) => { const a = i / 8 * TAU; return ['sph', 'pelvis', [Math.sin(a) * 0.36, 0.0, Math.cos(a) * 0.36], 0.13, 0.03, 0]; }),
+    ['sph', 'pelvis', [0, 0.2, 0.47], 0.12, 0.03, 0],
+    ['cap', 'pelvis', [0, 0.18, 0.57], [0, 0.17, 0.68], 0.05, 0.03, 0.01, 1],
+    ...[1, -1].map(sx => ['sph', 'pelvis', [sx * 0.05, 0.24, 0.57], 0.02, 0.003, 2]),
+  ] },
+  { id: 'scarecrow', name: 'Scarecrow', cost: 1300, boost: { xp: 5 }, pal: ['#e8c060', '#c8283a', '#4a6aa8', '#a8743e'], parts: [
+    ['ell', 'pelvis', [0, 0.02, 0], [0.29, 0.27, 0.29], 0.01, 2],
+    ['ell', 'chest', [0, -0.12, 0.28], [0.2, 0.17, 0.035], 0, 2],
+    ...[1, -1].map(sx => ['ell', 'chest', [sx * 0.15, 0.1, 0.28], [0.035, 0.16, 0.025], 0, 2]),
+    ['ell', 'pelvis', [0.12, -0.02, 0.27], [0.07, 0.07, 0.02], 0, 1],
+    ...[-0.12, -0.04, 0.04, 0.12].map((x, i) => ['cap', 'chest', [x, 0.25, 0.14], [x * 1.6, 0.36 + (i % 2) * 0.04, 0.24], 0.03, 0.008, 0.005, 0, 0.02]),
+    ['ell', 'pelvis', [0, 0.08, 0], [0.295, 0.035, 0.295], 0, 3],
+  ] },
+  // ---------- hats ----------
+  { id: 'gradcap', name: 'Graduation Cap', cost: 900, boost: { xp: 5 }, pal: ['#1c1a22', '#ffd23a'], parts: [
+    ['ell', 'head', [0, 0.19, 0], [0.2, 0.07, 0.2], 0.01, 0], ['ell', 'head', [0, 0.27, 0], [0.27, 0.016, 0.27], 0, 0],
+    ['sph', 'head', [0, 0.29, 0], 0.025, 0.003, 1], ['cap', 'head', [0, 0.29, 0], [0.22, 0.2, 0.1], 0.01, 0.01, 0.003, 1, 0.02], ['sph', 'head', [0.23, 0.12, 0.12], 0.03, 0.003, 1, 0.02],
+  ] },
+  { id: 'fez', name: 'Fez', cost: 700, boost: { gold: 6 }, pal: ['#c8283a', '#1c1a22'], parts: [
+    ['cap', 'head', [0, 0.16, 0], [0, 0.34, 0], 0.14, 0.11, 0.01, 0],
+    ['cap', 'head', [0, 0.35, 0], [0.13, 0.28, 0.05], 0.012, 0.012, 0.003, 1, 0.02], ['sph', 'head', [0.14, 0.22, 0.06], 0.03, 0.003, 1, 0.02],
+  ] },
+  { id: 'beret', name: 'Beret', cost: 600, boost: { cd: 3 }, pal: ['#d8323c'], parts: [
+    ['ell', 'head', [0.04, 0.2, 0], [0.25, 0.07, 0.23], 0.01, 0], ['cap', 'head', [0.04, 0.26, 0], [0.04, 0.3, 0], 0.02, 0.01, 0.003, 0],
+  ] },
+  { id: 'hardhat', name: 'Hard Hat', cost: 800, boost: { armor: 3 }, pal: ['#ffc21f', '#fffbe0'], parts: [
+    ['ell', 'head', [0, 0.13, 0], [0.245, 0.15, 0.245], 0.01, 0], ['ell', 'head', [0, 0.1, 0.06], [0.26, 0.02, 0.3], 0, 0],
+    ['cap', 'head', [0, 0.15, -0.2], [0, 0.29, 0.1], 0.025, 0.025, 0.005, 0], ['sph', 'head', [0, 0.18, 0.235], 0.04, 0.005, 1],
+  ] },
+  { id: 'baseball', name: 'Ball Cap', cost: 500, boost: { speed: 3 }, pal: ['#2a5ad8', '#ffffff'], parts: [
+    ['ell', 'head', [0, 0.14, -0.01], [0.235, 0.14, 0.235], 0.01, 0], ['ell', 'head', [0, 0.08, 0.24], [0.14, 0.015, 0.13], 0, 1],
+    ['sph', 'head', [0, 0.28, 0], 0.02, 0.003, 1],
+  ] },
+  { id: 'cone', name: 'Traffic Cone', cost: 650, boost: { hp: 4 }, pal: ['#ff7a1a', '#ffffff'], parts: [
+    ['cap', 'head', [0, 0.16, 0], [0, 0.62, 0], 0.17, 0.025, 0.01, 0], ['ell', 'head', [0, 0.16, 0], [0.22, 0.025, 0.22], 0, 0],
+    ['ell', 'head', [0, 0.3, 0], [0.137, 0.035, 0.137], 0, 1], ['ell', 'head', [0, 0.44, 0], [0.092, 0.03, 0.092], 0, 1],
+  ] },
+  { id: 'tiara', name: 'Tiara', cost: 1400, boost: { magnet: 20 }, pal: ['#e8eef6', '#ff5ab4', '#4ad8ff'], parts: [
+    ['ell', 'head', [0, 0.17, 0.06], [0.21, 0.03, 0.18], 0.005, 0],
+    ...[-0.12, -0.06, 0, 0.06, 0.12].map(x => ['cap', 'head', [x, 0.18, 0.2 - Math.abs(x) * 0.5], [x, x ? 0.28 - Math.abs(x) * 0.3 : 0.34, 0.19 - Math.abs(x) * 0.5], 0.02, 0.006, 0.003, 0]),
+    ['sph', 'head', [0, 0.26, 0.2], 0.03, 0.003, 1], ...[1, -1].map(sx => ['sph', 'head', [sx * 0.09, 0.22, 0.17], 0.02, 0.003, 2]),
+  ] },
+  { id: 'pharaoh', name: 'Pharaoh', cost: 2200, boost: { gold: 10 }, pal: ['#2a4ab8', '#f2c440'], parts: [
+    ['ell', 'head', [0, 0.07, -0.03], [0.25, 0.22, 0.25], 0.02, 0],
+    ...[1, -1].flatMap(sx => [['ell', 'head', [sx * 0.2, -0.15, 0.05], [0.06, 0.18, 0.08], 0.01, 0], ...[-0.08, -0.2].map(y => ['ell', 'head', [sx * 0.21, y, 0.06], [0.065, 0.02, 0.085], 0, 1])]),
+    ['ell', 'head', [0, 0.12, 0.13], [0.21, 0.03, 0.12], 0, 1], ['cap', 'head', [0, 0.14, 0.22], [0, 0.24, 0.23], 0.025, 0.035, 0.003, 1],
+  ] },
+  { id: 'buckethat', name: 'Bucket Hat', cost: 550, boost: { regen: 0.06 }, pal: ['#c8b07a', '#6e4426'], parts: [
+    ['ell', 'head', [0, 0.16, 0], [0.22, 0.1, 0.22], 0.01, 0], ['ell', 'head', [0, 0.1, 0], [0.31, 0.025, 0.31], 0, 0],
+    ['ell', 'head', [0, 0.12, 0], [0.226, 0.03, 0.226], 0, 1],
+  ] },
+  { id: 'bulb', name: 'Bright Idea', cost: 1600, boost: { xp: 7 }, pal: ['#fff8c0', '#c0c8d4', '#ffd23a'], parts: [
+    ['sph', 'head', [0, 0.43, 0], 0.15, 0.01, 0], ['cap', 'head', [0, 0.2, 0], [0, 0.3, 0], 0.075, 0.07, 0.005, 1],
+    ...[0.22, 0.26].map(y => ['ell', 'head', [0, y, 0], [0.08, 0.012, 0.08], 0, 1]), ['sph', 'head', [0, 0.42, 0], 0.035, 0.003, 2],
+  ] },
+  { id: 'flowerpot', name: 'Flower Pot', cost: 1000, boost: { regen: 0.08 }, pal: ['#c8643a', '#3aa84a', '#ff6aa8', '#ffd23a'], parts: [
+    ['cap', 'head', [0, 0.17, 0], [0, 0.32, 0], 0.13, 0.16, 0.01, 0], ['ell', 'head', [0, 0.33, 0], [0.17, 0.03, 0.17], 0, 0],
+    ['cap', 'head', [0, 0.34, 0], [0, 0.5, 0.02], 0.015, 0.015, 0.003, 1, 0.02],
+    ...[1, -1].map(sx => ['ell', 'head', [sx * 0.06, 0.42, 0.01], [0.05, 0.015, 0.025], 0, 1]),
+    ...Array.from({ length: 5 }, (_, i) => { const a = i / 5 * TAU; return ['sph', 'head', [Math.cos(a) * 0.045, 0.52 + Math.sin(a) * 0.045, 0.04], 0.035, 0.003, 2, 0.02]; }),
+    ['sph', 'head', [0, 0.52, 0.05], 0.025, 0.003, 3, 0.02],
+  ] },
+  { id: 'chickhat', name: 'Chick Buddy', cost: 1200, boost: { magnet: 15 }, pal: ['#ffe14a', '#ff8a1a', '#1c1a22'], parts: [
+    ['sph', 'head', [0, 0.3, 0], 0.11, 0.02, 0], ['sph', 'head', [0, 0.41, 0.06], 0.07, 0.02, 0],
+    ['cap', 'head', [0, 0.4, 0.12], [0, 0.39, 0.17], 0.025, 0.008, 0.003, 1],
+    ...[1, -1].flatMap(sx => [['sph', 'head', [sx * 0.03, 0.43, 0.12], 0.012, 0.002, 2], ['ell', 'head', [sx * 0.1, 0.3, 0], [0.03, 0.05, 0.07], 0.005, 0]]),
+  ] },
+];
+COSTUMES.push(...MORE_COSTUMES);
+HAT_IDS.push('gradcap', 'fez', 'beret', 'hardhat', 'baseball', 'cone', 'tiara', 'pharaoh', 'buckethat', 'bulb', 'flowerpot', 'chickhat');
+for (const c of MORE_COSTUMES) c.slot = HAT_IDS.includes(c.id) ? 'hat' : 'hood';
+COSTUMES.sort((a, b) => a.cost - b.cost);
+
 // ---- 11-game.js ----
 // ============================================================
 // Game state, runs, spawning, combat, pickups, camera
@@ -18909,7 +19258,7 @@ function updatePickups(dt) {
     if (p.pull) { p.sp = Math.min(p.sp + 40 * dt, 30); const st = Math.max(4, p.sp) * dt; if (st < d) { p.x += dx / d * st; p.z += dz / d * st; } }
     if (d < (p.kind === 'chest' || p.kind === 'heart' ? 0.85 : 0.6) && p.t > 0.35) {
       p.dead = true;
-      if (p.kind === 'coin') { run.coins += p.value; AUDIO.play('coin'); FX.star(p.x, 0.6, p.z, 0.35, COLORS.gold); }
+      if (p.kind === 'coin') { const cv = p.value * (run.sea ? 1 + 0.08 * lvlOf('treasure') : 1); run.coins += Math.floor(cv) + (Math.random() < cv % 1 ? 1 : 0); AUDIO.play('coin'); FX.star(p.x, 0.6, p.z, 0.35, COLORS.gold); }
       else if (p.kind === 'heart') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.3); AUDIO.play('levelup'); FX.burst(h[0], 1, h[2], 12, [1, 0.4, 0.55], 3, 0.12, 0.6, 3); addNumberAt(h[0], 2.1, h[2], run.maxHp * 0.3, [0.4, 1, 0.6]); }
       else if (p.kind === 'magnet') { for (const g of run.gems) g.pull = true; for (const q of run.pickups) if (q.kind === 'coin' || q.kind === 'scroll') q.pull = true; AUDIO.play('shield'); FX.ring(h[0], h[2], 3, COLORS.mint, 0.5); }
       else if (p.kind === 'chest') { run.chestQueued = (run.chestQueued || 0) + 1; AUDIO.play('chest'); }
@@ -26893,16 +27242,16 @@ function seaStats(run) {
   if (OC.wantStage <= OC.stage || seaShipReady(OC.wantStage)) OC.stage = OC.wantStage;
   const D = shipDef();
   run.stats = {
-    dmgMul: 1 + g('dmg'),
+    dmgMul: (1 + g('dmg')) * (1 + 0.05 * lv('powder')),
     speedMul: (1 + 0.07 * lv('propeller')) * (1 + g('speed')),
-    magnet: (1.6 + D.len * 0.2) * (1 + g('magnet')),
+    magnet: (1.6 + D.len * 0.2) * (1 + g('magnet')) * (1 + 0.1 * lv('treasure')),
     armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: 1 + g('area'), extra: 0, xpMul: 1 + g('xp'),
     regen: 0.003 * lv('crew') + g('regen'),
     ramMul: 1 + 0.12 * lv('fort'),
   };
-  run.maxHp = 160 * (1 + D.hull * 0.7) * (1 + g('hp'));
+  run.maxHp = 160 * (1 + D.hull * 0.7) * (1 + g('hp')) * (1 + 0.07 * lv('plating'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = D.heroS; h.bubbles = 0; h.stretchMul = 1; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.topSpeed = 4.5;
@@ -26941,6 +27290,8 @@ function updateOcean(dt) {
   run.invuln = Math.max(0, run.invuln - dt);
   run.hurtFlash = Math.max(0, run.hurtFlash - dt * 1.8);
   OC.t += dt;
+  // an upgrade whose model was still being built when the run began gets its picture once the model is in
+  if ((OC.iconT = (OC.iconT ?? 2) - dt) <= 0) { OC.iconT = 2; if (SEA_ICON_SHOTS.some(([k, m]) => !ICONS.map[k + '!'] && R.enemyDraw[m])) { seaIcons(); UI.slotSig = ''; } }
   if (live) {
     run.t += dt;
     while (run.events.length && run.t >= run.events[0].t) seaEvent(run.events.shift());
@@ -28253,6 +28604,7 @@ function hullPoint(u, hl, hr) {
 // everything that flies, swims or floats out from the ship
 function emitSeaShots() {
   const S = OC.ship, D = shipDef(), ms = mountsOf(D).ms;
+  emitSeaMore();
   for (const b of OC.balls) {
     pushImp(b.x, b.y, b.z, 0.26, Math.sin(b.spin + b.t * 6), Math.cos(b.spin + b.t * 6), 0.3, 1, 13, 0, b.gold ? 0.5 : 0, 0, 0, 0, 0, 1);
     pushDecal(b.x + 0.1, b.z + 0.08, 0.22, 0.2, 0, 1, 0, 0, 0.02, 0.06, 0.12, 0.3);
@@ -29586,6 +29938,241 @@ function seaDeepBossFx(e) {
     R.ribStrip([e.x, 1.8, e.z, S.x, 0.6, S.z], 2, w, [0.5, 1, 0.8, 0.6], 0, 0, 1);
     pushDecal(S.x, S.z, 2.2, 2.2, 0, 3, 0, (OC.t * 2) % 1, 0.5, 1, 0.8, 0.6, true);
     if (Math.random() < 0.6) FX.part(S.x + rand(-1, 1), 0.5, S.z + rand(-1, 1), (e.x - S.x) * 0.4, 1.5, (e.z - S.z) * 0.4, 0.1, 0.04, 0.6, [0.5, 1, 0.8], 1, 3);
+  }
+}
+
+// ---- 13q-sea-more.js ----
+// ============================================================
+// More sea upgrades: four weapons that fight from the water and the sky rather than the deck (Whirlpool, Storm
+// Cloud, Kraken Arms, Dolphin Pod), and three passives (Hull Plating, Gunpowder, Treasure Hunter). Their numbers
+// sit beside the first sea weapons' (test/_seadps.mjs measures them all the same way).
+// ============================================================
+Object.assign(SKILLS, {
+  whirl: {
+    sea: true, name: 'Whirlpool', intro: 'Whips up whirlpools under the thickest crowds: swimmers are dragged into the eye and ground down.', icon: { type: 13, colw: 0 },
+    fields: [['dmg', 'Damage/tick'], ['count', 'Whirlpools'], ['radius', 'Radius', 'm'], ['life', 'Lasts', 's']],
+    levels: L10({ dmg: [2.5, 2.5, 3, 3, 3.5, 3.5, 4, 4.5, 5, 5.5], count: [1, 1, 1, 1, 1, 2, 2, 2, 2, 2], radius: [1.5, 1.55, 1.6, 1.65, 1.7, 1.75, 1.8, 1.9, 2.0, 2.2], life: [3, 3.2, 3.4, 3.6, 3.8, 4, 4.2, 4.4, 4.7, 5], cd: [7.5, 7.3, 7.1, 6.9, 6.7, 6.5, 6.2, 5.9, 5.6, 5.2] }),
+  },
+  storm: {
+    sea: true, name: 'Storm Cloud', intro: 'A thundercloud follows the ship and strikes swimmers with lightning that leaps from one to the next.', icon: { type: 13, colw: 0 },
+    fields: [['dmg', 'Damage'], ['cd', 'Strikes every', 's'], ['chain', 'Leaps'], ['range', 'Range', 'm']],
+    levels: L10({ dmg: [9, 10, 12, 14, 16, 18, 20, 22, 25, 29], cd: [2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.4], chain: [1, 1, 1, 2, 2, 2, 3, 3, 3, 4], range: [7, 7, 7.5, 7.5, 8, 8, 8.5, 8.5, 9, 9.5] }),
+  },
+  kraken: {
+    sea: true, name: 'Kraken Arms', intro: 'Great tentacles burst out of the sea under swimmers and slam down on them.', icon: { type: 13, colw: 0 },
+    fields: [['dmg', 'Slam'], ['count', 'Arms'], ['radius', 'Slam', 'm'], ['cd', 'Cooldown', 's']],
+    levels: L10({ dmg: [18, 20, 22, 25, 28, 31, 35, 39, 44, 50], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], radius: [1.3, 1.35, 1.4, 1.45, 1.5, 1.6, 1.7, 1.8, 1.9, 2.1], cd: [4.2, 4.1, 3.9, 3.8, 3.6, 3.4, 3.2, 3.0, 2.8, 2.5] }),
+  },
+  dolphin: {
+    sea: true, name: 'Dolphin Pod', intro: 'Dolphins race alongside, leap high over swimmers and crash down on them in a splash.', icon: { type: 13, colw: 0 },
+    fields: [['count', 'Dolphins'], ['dmg', 'Splash'], ['radius', 'Splash', 'm'], ['cd', 'Leaps every', 's']],
+    levels: L10({ dmg: [11, 12, 13, 15, 17, 19, 21, 24, 27, 31], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], radius: [1.0, 1.05, 1.1, 1.15, 1.2, 1.3, 1.35, 1.4, 1.5, 1.6], cd: [2.8, 2.7, 2.6, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.8] }),
+  },
+});
+Object.assign(PASSIVES, {
+  plating: { sea: true, name: 'Hull Plating', short: '+7% hull', desc: 'Steel plates bolted over the hull: +7% max hull.', max: 10, icon: { type: 21, colw: 0 } },
+  powder: { sea: true, name: 'Gunpowder', short: '+5% damage', desc: 'Better powder for everything aboard: +5% damage.', max: 10, icon: { type: 20, colw: 0 } },
+  treasure: { sea: true, name: 'Treasure Hunter', short: '+8% coins', desc: 'A nose for loot: +8% coins and +10% pickup reach at sea.', max: 10, icon: { type: 11, colw: 4 } },
+});
+Object.assign(EVOLUTIONS, {
+  whirl: { with: 'sails', name: 'Maelstrom', desc: 'Wider whirlpools that bite a quarter harder.', boost: L => ({ radius: +(L.radius * 1.3).toFixed(1), dmg: Math.round(L.dmg * 1.25) }) },
+  storm: { with: 'powder', name: 'Thunderhead', desc: 'Lightning leaps two more times, a little harder.', boost: L => ({ chain: L.chain + 2, dmg: Math.round(L.dmg * 1.2) }) },
+  kraken: { with: 'fort', name: 'Leviathan', desc: 'One more arm, and every slam is much harder.', boost: L => ({ count: L.count + 1, dmg: Math.round(L.dmg * 1.35) }) },
+  dolphin: { with: 'propeller', name: 'Orca Pod', desc: 'One more, bigger and heavier.', boost: L => ({ count: L.count + 1, dmg: Math.round(L.dmg * 1.3), radius: +(L.radius * 1.15).toFixed(1) }) },
+});
+SEA_ICON_SHOTS.push(
+  ['skill-whirl', 'swhirl', { yaw: 0.4, s: 1.6, pitch: 0.9 }],
+  ['skill-storm', 'scloud', { yaw: 0.3, s: 1.4, pitch: 0.25 }],
+  ['skill-kraken', 'stent', { yaw: 1.4, s: 1.0, pitch: 0.3 }],
+  ['skill-dolphin', 'sdolph', { yaw: 1.1, s: 1.4, pitch: 0.45 }],
+  ['passive-plating', 'splate', { yaw: -0.5, s: 2.0, pitch: 0.3 }],
+  ['passive-powder', 'spowder', { yaw: 0.4, s: 2.0, pitch: 0.4 }],
+  ['passive-treasure', 'schest', { yaw: 0.5, s: 2.0, pitch: 0.55 }],
+);
+
+// ---------- Whirlpool: spinning pools that pull swimmers in and grind them ----------
+SKILL_HOOKS.whirl = {
+  update(s, L, dt) {
+    const st = s.st, S = OC.ship;
+    st.pools = st.pools || [];
+    st.t = (st.t ?? 1.5) - dt;
+    if (st.t <= 0 && !OC.sink) {
+      const e = nearestEnemy(S.x, S.z, 11);
+      if (e) {
+        st.t = L.cd * cdMul();
+        for (let i = 0; i < L.count; i++) {
+          // the first under the nearest crowd, the others under other swimmers close by
+          const t = i ? nearestEnemy(e.x + rand(-5, 5), e.z + rand(-5, 5), 6) || e : e;
+          st.pools.push({ x: t.x + rand(-0.5, 0.5), z: t.z + rand(-0.5, 0.5), t: 0, life: L.life, r: L.radius * areaMul(), dmg: L.dmg, tick: 0.2, ph: rand(0, TAU) });
+        }
+        AUDIO.play('splash', 0.7);
+      } else st.t = 0.4;
+    }
+    for (const w of st.pools) {
+      w.t += dt;
+      enemiesInRadius(w.x, w.z, w.r * 1.3, e => {
+        if (e.boss) return;
+        const ex = w.x - e.x, ez = w.z - e.z, ed = Math.hypot(ex, ez) || 1;
+        e.kx += (ex / ed * 8 - ez / ed * 6) * dt / (e.mass || 1); e.kz += (ez / ed * 8 + ex / ed * 6) * dt / (e.mass || 1);
+      });
+      w.tick -= dt;
+      if (w.tick <= 0) { w.tick = 0.4; enemiesInRadius(w.x, w.z, w.r, e => { hurtEnemy(e, w.dmg, 0, 0, { sound: false, color: [0.6, 0.9, 1] }); if (e.grab) seaUnboard(e, 2); }); }
+    }
+    st.pools = st.pools.filter(w => w.t < w.life);
+  },
+};
+// ---------- Storm Cloud: a cloud over the ship that strikes with chained lightning ----------
+SKILL_HOOKS.storm = {
+  update(s, L, dt) {
+    const st = s.st, S = OC.ship, D = shipDef();
+    // the cloud trails a little behind and above the ship, drifting
+    st.ph = (st.ph || 0) + dt;
+    const back = D.len * 0.2, tx = S.x - Math.sin(S.yaw) * back + Math.sin(st.ph * 0.7) * 0.8, tz = S.z - Math.cos(S.yaw) * back + Math.cos(st.ph * 0.5) * 0.8;
+    if (st.x === undefined) { st.x = tx; st.z = tz; }
+    const k = Math.min(1, dt * 2.5); st.x += (tx - st.x) * k; st.z += (tz - st.z) * k;
+    st.y = 3.2 + D.deck * 0.8 + Math.sin(st.ph * 1.3) * 0.15;
+    st.bolts = (st.bolts || []).filter(b => (b.life -= dt) > 0);
+    st.t = (st.t ?? 1) - dt;
+    if (st.t > 0 || OC.sink) return;
+    const first = nearestEnemy(st.x, st.z, L.range * areaMul());
+    if (!first) { st.t = 0.3; return; }
+    st.t = L.cd * cdMul();
+    let from = [st.x, st.y - 0.5, st.z], e = first, dmg = L.dmg;
+    const hit = new Set();
+    for (let j = 0; j <= L.chain && e; j++) {
+      hit.add(e);
+      const to = [e.x, 0.5 * (e.scale || 1), e.z];
+      st.bolts.push({ a: from, b: to, life: 0.22, seed: rand(0, 100) });
+      hurtEnemy(e, dmg, 0, 0, { color: [1, 0.95, 0.5] }); if (e.grab) seaUnboard(e, 3);
+      FX.glow(to[0], to[1], to[2], 0.9, [1, 0.95, 0.6], 0.15); FX.burst(to[0], to[1], to[2], 6, [1, 0.95, 0.6], 4, 0.06, 0.25, 1);
+      from = to; dmg *= 0.8;
+      let best = null, bd = 4.5;
+      enemiesInRadius(e.x, e.z, 4.5, o => { if (hit.has(o) || o.dying) return; const d = Math.hypot(o.x - e.x, o.z - e.z); if (d < bd) { bd = d; best = o; } });
+      e = best;
+    }
+    G.cam.shake = Math.max(G.cam.shake, 0.05); AUDIO.play('zap', 0.9);
+  },
+};
+// ---------- Kraken Arms: a tentacle rises under a swimmer, then slams down ----------
+const KARM = { rise: 0.55, slam: 0.35, sink: 0.6 };
+SKILL_HOOKS.kraken = {
+  update(s, L, dt) {
+    const st = s.st, S = OC.ship;
+    st.arms = st.arms || [];
+    st.t = (st.t ?? 2) - dt;
+    if (st.t <= 0 && !OC.sink) {
+      const e = nearestEnemy(S.x, S.z, 10);
+      if (e) {
+        st.t = L.cd * cdMul();
+        const used = new Set();
+        for (let i = 0; i < L.count; i++) {
+          let t = e;
+          if (i) { let best = null, bd = 1e9; enemiesInRadius(S.x, S.z, 10, o => { if (used.has(o) || o.dying) return; const d = Math.hypot(o.x - S.x, o.z - S.z) + rand(0, 3); if (d < bd) { bd = d; best = o; } }); t = best || e; }
+          used.add(t);
+          // it comes up beside the swimmer and falls across it
+          const a = rand(0, TAU), off = L.radius * 0.6;
+          st.arms.push({ x: t.x + Math.cos(a) * off, z: t.z + Math.sin(a) * off, yaw: Math.atan2(t.x - (t.x + Math.cos(a) * off), t.z - (t.z + Math.sin(a) * off)), tx: t.x, tz: t.z, t: -i * 0.15, slammed: false, r: L.radius * areaMul(), dmg: L.dmg });
+        }
+      } else st.t = 0.4;
+    }
+    for (const A of st.arms) {
+      A.t += dt;
+      if (!A.slammed && A.t >= KARM.rise + KARM.slam) {
+        A.slammed = true;
+        enemiesInRadius(A.tx, A.tz, A.r, e => { hurtEnemy(e, A.dmg, (e.x - A.x) * 2, (e.z - A.z) * 2); e.slowMul = Math.min(e.slowMul || 1, 0.4); e.slowT = 1.2; if (e.grab) seaUnboard(e, 6); });
+        seaSplash(A.tx, A.tz, 1.6); FX.ring(A.tx, A.tz, A.r * 1.3, [0.8, 0.6, 1], 0.4);
+        G.cam.shake = Math.max(G.cam.shake, 0.1); AUDIO.play('thud', 0.8);
+      }
+    }
+    st.arms = st.arms.filter(A => A.t < KARM.rise + KARM.slam + KARM.sink);
+  },
+};
+// ---------- Dolphin Pod: dolphins swim alongside and leap onto swimmers ----------
+SKILL_HOOKS.dolphin = {
+  update(s, L, dt) {
+    const st = s.st, S = OC.ship, D = shipDef();
+    const P = st.pod = st.pod || [];
+    while (P.length < L.count) P.push({ k: P.length, x: S.x, z: S.z, yaw: S.yaw, y: -0.1, cd: rand(0.6, 1.6), leap: null, ph: rand(0, 1) });
+    const R = D.wid / 2 + 1.6;
+    P.forEach(d => {
+      d.ph += dt * 1.6;
+      if (d.leap) {
+        const J = d.leap, u = (J.t += dt) / J.dur;
+        if (u < 1) {
+          d.x = lerp(J.x0, J.x1, u); d.z = lerp(J.z0, J.z1, u); d.y = Math.sin(u * Math.PI) * J.h - 0.1; d.yaw = J.yaw;
+          if (Math.random() < 0.4) FX.part(d.x, d.y, d.z, 0, -1, 0, 0.08, 0.02, 0.4, [0.85, 0.95, 1], 0.8, 0, -6);
+        } else {
+          d.leap = null; d.y = -0.1; d.cd = L.cd * cdMul() * rand(0.85, 1.15);
+          enemiesInRadius(J.x1, J.z1, L.radius * areaMul() * (s.evo ? 1.15 : 1), e => { hurtEnemy(e, L.dmg, (e.x - J.x1) * 3, (e.z - J.z1) * 3); if (e.grab) seaUnboard(e, 4); });
+          seaSplash(J.x1, J.z1, 1.3); AUDIO.play('splash', 1.1);
+        }
+        return;
+      }
+      // keep pace with the ship in a loose ring, porpoising
+      const a = S.yaw + Math.PI / 2 + (d.k / Math.max(1, P.length)) * TAU + Math.sin(d.ph * 0.5) * 0.3, w = [S.x + Math.sin(a) * R, S.z + Math.cos(a) * R];
+      const dx = w[0] - d.x, dz = w[1] - d.z, dd = Math.hypot(dx, dz);
+      const sp = Math.max(Math.hypot(S.vx, S.vz) * 1.15, 2.5) + dd * 2;
+      if (dd > 0.05) { d.x += dx / dd * Math.min(dd, sp * dt); d.z += dz / dd * Math.min(dd, sp * dt); }
+      d.yaw = angleLerp(d.yaw, dd > 0.3 ? Math.atan2(dx, dz) : S.yaw, Math.min(1, dt * 4));
+      d.y = -0.1 + Math.max(0, Math.sin(d.ph * 2.2)) * 0.12;
+      d.cd -= dt;
+      if (d.cd <= 0 && !OC.sink) {
+        const e = nearestEnemy(d.x, d.z, 8);
+        if (e) { const yaw = Math.atan2(e.x - d.x, e.z - d.z), dist = Math.hypot(e.x - d.x, e.z - d.z); d.leap = { t: 0, dur: 0.55 + dist * 0.05, x0: d.x, z0: d.z, x1: e.x, z1: e.z, h: 1.4 + dist * 0.12, yaw }; seaSplash(d.x, d.z, 0.7); }
+        else d.cd = 0.4;
+      }
+    });
+    P.length = L.count;
+  },
+};
+
+// drawn with the sea's other shots (13l emitSeaShots)
+function emitSeaMore() {
+  const t = OC.t;
+  const wl = slotOf('whirl');
+  if (wl && wl.st.pools) for (const w of wl.st.pools) {
+    const grow = Math.min(1, w.t / 0.4) * Math.min(1, (w.life - w.t) / 0.5), r = w.r * grow;
+    if (r < 0.05) continue;
+    // a dark eye, rings of foam turning and foam flecks spiralling in
+    pushDecal(w.x, w.z, r * 0.55, r * 0.55, 0, 1, 0, 0, 0.0, 0.08, 0.22, 0.55);
+    for (let i = 0; i < 3; i++) pushDecal(w.x, w.z, r * (0.45 + i * 0.28), r * (0.45 + i * 0.28), -(t * (2.6 - i * 0.6) + w.ph + i), 3, 0, 0.5, 0.85, 0.97, 1, (wl.evo ? 0.6 : 0.45) - i * 0.1, true);
+    if (Math.random() < 0.6) { const a = t * 3 + w.ph + rand(0, TAU), rr = r * rand(0.4, 1); FX.part(w.x + Math.cos(a) * rr, 0.08, w.z + Math.sin(a) * rr, -Math.sin(a) * 2.2 - Math.cos(a) * 1.2, 0.1, Math.cos(a) * 2.2 - Math.sin(a) * 1.2, 0.09, 0.02, 0.5, [0.9, 0.98, 1], 0.9, 0, 0, 0); }
+  }
+  const sl = slotOf('storm');
+  if (sl && sl.st.x !== undefined && R.enemyDraw.scloud) {
+    const st = sl.st;
+    pushEnemy('scloud', false, st.x, st.y, st.z, OC.ship.yaw + Math.sin(st.ph * 0.3) * 0.3, MODELS.defs.scloud.clips.still.row, sl.evo ? 2.4 : 2.0, 1, 0, st.bolts.length ? 0.4 : 0, 0, 1, 1, 1);
+    seaShadow(st.x, st.z, 1.4, 1.0, 0, 0.35);
+    // lightning: a jagged line, a wide glow and a thin white core
+    for (const b of st.bolts) {
+      const n = 7, pts = [], k = b.life / 0.22, rnd = mulberry32(Math.floor(b.seed + t * 20));
+      for (let i = 0; i < n; i++) { const u = i / (n - 1), j = i && i < n - 1 ? 0.35 : 0; pts.push(lerp(b.a[0], b.b[0], u) + (rnd() - 0.5) * j, lerp(b.a[1], b.b[1], u), lerp(b.a[2], b.b[2], u) + (rnd() - 0.5) * j); }
+      R.ribStrip(pts, n, 0.3 * k, [1, 0.9, 0.45, 0.35], 0, 0, 1);
+      R.ribStrip(pts, n, 0.09 * k, [1, 1, 0.9, 1], 0, 0, 1);
+    }
+  }
+  const kl = slotOf('kraken');
+  if (kl && kl.st.arms && R.enemyDraw.stent) {
+    const M = MODELS.defs.stent, c = M.clips.tcurl;
+    for (const A of kl.st.arms) {
+      if (A.t < 0) continue;
+      // rising out of the water, curling over onto its target, then sinking back
+      const rise = clamp(A.t / KARM.rise, 0, 1), curl = clamp((A.t - KARM.rise) / KARM.slam, 0, 1), sink = clamp((A.t - KARM.rise - KARM.slam) / KARM.sink, 0, 1);
+      const y = -1.9 * (1 - rise) - 1.9 * sink, sc = (kl.evo ? 1.5 : 1.2) * (A.r / 1.4);
+      pushEnemy('stent', false, A.x, y * sc, A.z, A.yaw, c.row + Math.floor(Math.min(0.999, curl * curl) * c.frames), sc, 1, 0, 0, 0, 1, 1, 1);
+      if (!A.slammed) pushDecal(A.tx, A.tz, A.r, A.r, 0, 4, 0, clamp(A.t / (KARM.rise + KARM.slam), 0, 1), 0.8, 0.5, 1, 0.7);
+      pushDecal(A.x, A.z, 0.6 * sc, 0.6 * sc, 0, 3, 0, 0.5, 1, 1, 1, 0.45 * (1 - sink), true);
+    }
+  }
+  const dl = slotOf('dolphin');
+  if (dl && dl.st.pod && R.enemyDraw.sdolph) {
+    const M = MODELS.defs.sdolph, sw = M.clips.swim, lp = M.clips.dleap, sc = dl.evo ? 1.7 : 1.2;
+    for (const d of dl.st.pod) {
+      const row = d.leap ? lp.row + Math.floor(Math.min(0.999, d.leap.t / d.leap.dur) * lp.frames) : sw.row + Math.floor((d.ph % 1) * sw.frames);
+      pushEnemy('sdolph', false, d.x, d.y, d.z, d.yaw, row, sc, 1, 0, 0, 0, 1, 1, 1);
+      seaShadow(d.x, d.z, 0.35 * sc, 0.9 * sc, -d.yaw, d.leap ? 0.3 : 0.55);
+      if (!d.leap) pushDecal(d.x, d.z, 0.4 * sc, 0.8 * sc, -d.yaw, 3, 0, 0.5, 1, 1, 1, 0.3, true);
+    }
   }
 }
 
@@ -31666,11 +32253,16 @@ function renderHeroIcons(keys) {
     h.reset(0, 0); h.setArmCount(2); h.yaw = 0.35;
     for (let i = 0; i < 45; i++) h.update(1 / 60, [0, 0, 0], true);
   }
-  // costume icons frame the head and shoulders, where the costume is; colors show the whole blob
+  // costume icons frame the head and shoulders, where the costume is; colors, and costumes worn on the body
+  // (armor, wings, packs, tails), show the whole blob, turned to show its back if that is where the costume is
   const shot = key => {
+    const c = key.startsWith('costume-') && COSTUMES.find(k => k.id === key.slice(8));
+    const body = c && c.slot === 'hood' && (c.legs || c.parts.some(p => p[1] !== 'head'));
+    h.yaw = c && c.back ? 2.6 : 0.35;
     h.buildPrims(); R.resetStreams();
-    const head = key.startsWith('costume-');
+    const head = c && !body;
     ICONS.map[key] = iconCapture(head ? [0, 2.1, 2.75] : [0, 1.9, 3.9], head ? [0, 1.6, 0] : [0, 1.42, 0], 0.55, h.out);
+    h.yaw = 0.35;
   };
   const paint = s => {
     R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);

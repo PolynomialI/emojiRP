@@ -142,16 +142,16 @@ function seaStats(run) {
   if (OC.wantStage <= OC.stage || seaShipReady(OC.wantStage)) OC.stage = OC.wantStage;
   const D = shipDef();
   run.stats = {
-    dmgMul: 1 + g('dmg'),
+    dmgMul: (1 + g('dmg')) * (1 + 0.05 * lv('powder')),
     speedMul: (1 + 0.07 * lv('propeller')) * (1 + g('speed')),
-    magnet: (1.6 + D.len * 0.2) * (1 + g('magnet')),
+    magnet: (1.6 + D.len * 0.2) * (1 + g('magnet')) * (1 + 0.1 * lv('treasure')),
     armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: 1 + g('area'), extra: 0, xpMul: 1 + g('xp'),
     regen: 0.003 * lv('crew') + g('regen'),
     ramMul: 1 + 0.12 * lv('fort'),
   };
-  run.maxHp = 160 * (1 + D.hull * 0.7) * (1 + g('hp'));
+  run.maxHp = 160 * (1 + D.hull * 0.7) * (1 + g('hp')) * (1 + 0.07 * lv('plating'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = D.heroS; h.bubbles = 0; h.stretchMul = 1; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.topSpeed = 4.5;
@@ -190,6 +190,8 @@ function updateOcean(dt) {
   run.invuln = Math.max(0, run.invuln - dt);
   run.hurtFlash = Math.max(0, run.hurtFlash - dt * 1.8);
   OC.t += dt;
+  // an upgrade whose model was still being built when the run began gets its picture once the model is in
+  if ((OC.iconT = (OC.iconT ?? 2) - dt) <= 0) { OC.iconT = 2; if (SEA_ICON_SHOTS.some(([k, m]) => !ICONS.map[k + '!'] && R.enemyDraw[m])) { seaIcons(); UI.slotSig = ''; } }
   if (live) {
     run.t += dt;
     while (run.events.length && run.t >= run.events[0].t) seaEvent(run.events.shift());

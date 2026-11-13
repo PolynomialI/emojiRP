@@ -964,7 +964,7 @@ function updatePickups(dt) {
     if (p.pull) { p.sp = Math.min(p.sp + 40 * dt, 30); const st = Math.max(4, p.sp) * dt; if (st < d) { p.x += dx / d * st; p.z += dz / d * st; } }
     if (d < (p.kind === 'chest' || p.kind === 'heart' ? 0.85 : 0.6) && p.t > 0.35) {
       p.dead = true;
-      if (p.kind === 'coin') { run.coins += p.value; AUDIO.play('coin'); FX.star(p.x, 0.6, p.z, 0.35, COLORS.gold); }
+      if (p.kind === 'coin') { const cv = p.value * (run.sea ? 1 + 0.08 * lvlOf('treasure') : 1); run.coins += Math.floor(cv) + (Math.random() < cv % 1 ? 1 : 0); AUDIO.play('coin'); FX.star(p.x, 0.6, p.z, 0.35, COLORS.gold); }
       else if (p.kind === 'heart') { run.hp = Math.min(run.maxHp, run.hp + run.maxHp * 0.3); AUDIO.play('levelup'); FX.burst(h[0], 1, h[2], 12, [1, 0.4, 0.55], 3, 0.12, 0.6, 3); addNumberAt(h[0], 2.1, h[2], run.maxHp * 0.3, [0.4, 1, 0.6]); }
       else if (p.kind === 'magnet') { for (const g of run.gems) g.pull = true; for (const q of run.pickups) if (q.kind === 'coin' || q.kind === 'scroll') q.pull = true; AUDIO.play('shield'); FX.ring(h[0], h[2], 3, COLORS.mint, 0.5); }
       else if (p.kind === 'chest') { run.chestQueued = (run.chestQueued || 0) + 1; AUDIO.play('chest'); }

@@ -172,11 +172,16 @@ function renderHeroIcons(keys) {
     h.reset(0, 0); h.setArmCount(2); h.yaw = 0.35;
     for (let i = 0; i < 45; i++) h.update(1 / 60, [0, 0, 0], true);
   }
-  // costume icons frame the head and shoulders, where the costume is; colors show the whole blob
+  // costume icons frame the head and shoulders, where the costume is; colors, and costumes worn on the body
+  // (armor, wings, packs, tails), show the whole blob, turned to show its back if that is where the costume is
   const shot = key => {
+    const c = key.startsWith('costume-') && COSTUMES.find(k => k.id === key.slice(8));
+    const body = c && c.slot === 'hood' && (c.legs || c.parts.some(p => p[1] !== 'head'));
+    h.yaw = c && c.back ? 2.6 : 0.35;
     h.buildPrims(); R.resetStreams();
-    const head = key.startsWith('costume-');
+    const head = c && !body;
     ICONS.map[key] = iconCapture(head ? [0, 2.1, 2.75] : [0, 1.9, 3.9], head ? [0, 1.6, 0] : [0, 1.42, 0], 0.55, h.out);
+    h.yaw = 0.35;
   };
   const paint = s => {
     R.goo.base = hexToRgb(s.base); R.goo.accent = hexToRgb(s.accent); R.goo.rim = hexToRgb(s.rim);

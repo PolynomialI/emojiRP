@@ -688,6 +688,7 @@ function hullPoint(u, hl, hr) {
 // everything that flies, swims or floats out from the ship
 function emitSeaShots() {
   const S = OC.ship, D = shipDef(), ms = mountsOf(D).ms;
+  emitSeaMore();
   for (const b of OC.balls) {
     pushImp(b.x, b.y, b.z, 0.26, Math.sin(b.spin + b.t * 6), Math.cos(b.spin + b.t * 6), 0.3, 1, 13, 0, b.gold ? 0.5 : 0, 0, 0, 0, 0, 1);
     pushDecal(b.x + 0.1, b.z + 0.08, 0.22, 0.2, 0, 1, 0, 0, 0.02, 0.06, 0.12, 0.3);

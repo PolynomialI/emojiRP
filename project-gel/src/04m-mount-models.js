@@ -2,10 +2,21 @@
 // Everything the sea's upgrades mount on a ship (drawn at each ship's mount scale), and the creatures they send
 // out: seagulls, sharks, the crew. Facing +z; y = 0 is where it stands on deck (or the waterline).
 // ============================================================
-const MOUNT_MESHES = ['smusket', 'sharpoon', 'sgunner', 'sanchor', 'sbarrel', 'slamp', 'snetrack', 'snet', 'sgull', 'sshark', 'shose', 'sfigure', 'sfort', 'sprop', 'screw', 'ssail'];
+const MOUNT_MESHES = ['smusket', 'sharpoon', 'sgunner', 'sanchor', 'sbarrel', 'slamp', 'snetrack', 'snet', 'sgull', 'sshark', 'shose', 'sfigure', 'sfort', 'sprop', 'screw', 'ssail',
+  'swhirl', 'scloud', 'stent', 'sdolph', 'splate', 'spowder', 'schest'];
 MESH_ORDER.push(...MOUNT_MESHES, ...SHIP_PIECES);
-Object.assign(THEME_CLIPS, { sgull: ['flap'], sshark: ['swim'], sprop: ['pspin'], screw: ['run', 'slam', 'idle'], ssail: ['rock'] });
-Object.assign(THEME_CELLS, { smusket: 0.013, sharpoon: 0.012, sgunner: 0.014, sanchor: 0.014, sbarrel: 0.013, slamp: 0.013, snetrack: 0.013, snet: 0.03, sgull: 0.015, sshark: 0.02, shose: 0.015, sfigure: 0.018, sfort: 0.016, sprop: 0.015, screw: 0.013, ssail: 0.022 });
+Object.assign(THEME_CLIPS, { sgull: ['flap'], sshark: ['swim'], sprop: ['pspin'], screw: ['run', 'slam', 'idle'], ssail: ['rock'], sdolph: ['swim', 'dleap'], stent: ['tcurl'] });
+Object.assign(THEME_CELLS, { smusket: 0.013, sharpoon: 0.012, sgunner: 0.014, sanchor: 0.014, sbarrel: 0.013, slamp: 0.013, snetrack: 0.013, snet: 0.03, sgull: 0.015, sshark: 0.02, shose: 0.015, sfigure: 0.018, sfort: 0.016, sprop: 0.015, screw: 0.013, ssail: 0.022,
+  swhirl: 0.016, scloud: 0.022, stent: 0.014, sdolph: 0.016, splate: 0.012, spowder: 0.012, schest: 0.012 });
+// a dolphin's leap: the whole body pitching from nose-up to nose-down (bone 0 about its middle)
+CLIPS.dleap = { frames: 12, fn(t) {
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 0 ? [lerp(-0.9, 0.9, t * 12 / 11), 0, 0] : b === 7 ? [0, 0.4 * Math.sin(t * TAU * 2), 0] : [0, 0, 0])) };
+} };
+// a kraken arm curling: its upper half (bone 1) and tip (bone 2) bend over, from upright to slammed down
+CLIPS.tcurl = { frames: 12, fn(t) {
+  const u = t * 12 / 11;
+  return { root: [0, 0, 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0.2 + u * 1.1, 0, 0] : b === 2 ? [0.3 + u * 1.2, 0, 0] : b === 0 ? [u * 0.5, 0, 0] : [0, 0, 0])) };
+} };
 // a gull's wings beat (bones 3 and 5 about their shoulders)
 CLIPS.flap = { frames: 16, fn(t) {
   const a = Math.sin(t * TAU) * 0.75;
@@ -332,4 +343,81 @@ function mountModels(defs) {
     { s: 'cap', a: [0, 1.85, -0.06], b: [0, 1.85, -0.44], r: 0.006, col: woodD, k: 0 },
     { s: 'box', c: [0, 1.82, -0.28], hs: [0.012, 0.055, 0.2], rd: 0.008, col: C('#35b8e8'), k: 0 },
   ], { ao: 0.4 });
+
+  // ---------- Whirlpool (the upgrade's picture): a funnel of water spiralling down, foam on its rim, bits of
+  // flotsam caught in it ----------
+  {
+    // (an open funnel: the capsules' round tops are cut away above the rim)
+    const p = [{ s: 'cap', a: [0, 0.02, 0], b: [0, -0.5, 0], r: 0.62, r2: 0.12, col: C('#1f6fc8'), k: 0 }, { s: 'cap', a: [0, 0.06, 0], b: [0, -0.46, 0], r: 0.56, r2: 0.08, sub: true, k: 0 }, { s: 'box', c: [0, 0.62, 0], hs: [1, 0.6, 1], sub: true, k: 0 }];
+    for (let i = 0; i < 3; i++) p.push({ s: 'tor', ax: 'y', c: [0, -0.06 - i * 0.14, 0], R: 0.5 - i * 0.14, r: 0.035 - i * 0.006, a0: i, a1: i + 4.2, col: i ? C('#8fdcff') : C('#f2fbff'), k: 0 });
+    p.push({ s: 'tor', ax: 'y', c: [0, 0.02, 0], R: 0.6, r: 0.05, a0: -Math.PI, a1: Math.PI, col: C('#f2fbff'), k: 0 });
+    p.push({ s: 'box', c: [0.32, -0.08, 0.18], hs: [0.08, 0.02, 0.03], rd: 0.01, col: wood, k: 0 }, { s: 'sph', c: [-0.24, -0.2, -0.12], r: 0.05, col: C('#ff8a3a'), k: 0 });
+    P('swhirl', p, { ao: 0.4 });
+  }
+  // ---------- Storm Cloud: a dark billowing cloud with a paler top, rain streaks and a gold lightning bolt ----------
+  P('scloud', [
+    ...[[0, 0, 0, 0.36], [0.32, -0.04, 0.05, 0.28], [-0.32, -0.04, -0.02, 0.27], [0.12, 0.18, -0.05, 0.27], [-0.14, 0.14, 0.08, 0.24], [0.5, -0.1, -0.06, 0.18], [-0.5, -0.1, 0.06, 0.18]].map(([x, y, z, r], i) => ({ s: 'sph', c: [x, y, z], r, col: i > 2 ? C('#8a92a8') : C('#5a6278'), k: 0.08 })),
+    ...[-0.3, -0.1, 0.12, 0.34].map(x => ({ s: 'cap', a: [x, -0.32, 0.05], b: [x - 0.05, -0.62, 0.05], r: 0.012, col: C('#9fd8ff'), k: 0 })),
+    { s: 'cap', a: [0.02, -0.25, 0.2], b: [-0.08, -0.48, 0.22], r: 0.035, col: yel, k: 0 }, { s: 'cap', a: [-0.08, -0.48, 0.22], b: [0.06, -0.52, 0.22], r: 0.035, col: yel, k: 0 }, { s: 'cap', a: [0.06, -0.52, 0.22], b: [-0.06, -0.82, 0.22], r: 0.03, r2: 0.008, col: yel, k: 0 },
+  ], { ao: 0.5 });
+  // ---------- Kraken Arm: a purple tentacle rising from a ring of foam, curling over at the top (three bones: base,
+  // upper half, tip), with rows of pale suckers on its inner side ----------
+  {
+    const pur = C('#8a3ad8'), purD = C('#5a1fa0'), suck = C('#f4c8ff');
+    const segs = [[0, 0.0, 0, 0.16, 0], [0, 0.45, 0.02, 0.13, 0], [0, 0.85, 0.06, 0.1, 1], [0, 1.2, 0.12, 0.075, 1], [0, 1.5, 0.2, 0.05, 2], [0, 1.72, 0.3, 0.025, 2]];
+    const p = [];
+    for (let i = 0; i < segs.length - 1; i++) { const [x, y, z, r, b] = segs[i], [x2, y2, z2, r2] = segs[i + 1]; p.push({ s: 'cap', a: [x, y, z], b: [x2, y2, z2], r, r2, col: i % 2 ? pur : purD, bone: b, k: 0.05 }); }
+    for (let i = 0; i < 8; i++) { const u = (i + 0.5) / 8, y = 0.1 + u * 1.5, r = 0.15 - u * 0.11; p.push({ s: 'sph', c: [0, y, 0.02 + u * 0.25 + r * 0.85], r: 0.03 - u * 0.015, col: suck, bone: y > 1.35 ? 2 : y > 0.75 ? 1 : 0, k: 0 }); }
+    p.push({ s: 'tor', ax: 'y', c: [0, 0.0, 0], R: 0.24, r: 0.05, a0: -Math.PI, a1: Math.PI, col: C('#f2fbff'), k: 0 });
+    const m = P('stent', p, { ao: 0.4 });
+    rig(m, { 0: [0, 0, 0], 1: [0, 0.8, 0.05], 2: [0, 1.38, 0.17] });
+    // (bones 1 and 2 hang off 0 and 1: the curl adds up along the arm)
+  }
+  // ---------- Dolphin Pod: a sleek grey-blue dolphin with a pale belly, a curved dorsal fin, flippers, a beak, a
+  // smile and bright eyes; its tail flukes on their own bone ----------
+  {
+    const dk = C('#6a8eb8'), dkD = C('#4a6e98'), belly = C('#e8f0f8');
+    const m = P('sdolph', [
+      { s: 'ell', c: [0, 0.0, 0.0], rr: [0.2, 0.2, 0.62], col: dk, k: 0 },
+      { s: 'ell', c: [0, 0.08, -0.02], rr: [0.14, 0.11, 0.55], col: dkD, k: 0.08 },
+      { s: 'ell', c: [0, -0.07, 0.06], rr: [0.16, 0.12, 0.52], col: belly, k: 0.06 },
+      { s: 'cap', a: [0, 0.0, 0.55], b: [0, -0.03, 0.82], r: 0.075, r2: 0.04, col: dk, k: 0.06 },
+      { s: 'cap', a: [0, -0.04, 0.6], b: [0, -0.06, 0.8], r: 0.05, r2: 0.03, col: belly, k: 0.03 },
+      { s: 'cap', a: [0, 0.15, 0.0], b: [0, 0.4, -0.2], r: 0.07, r2: 0.015, col: dkD, k: 0.04 },
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.15, -0.08, 0.2], b: [sx * 0.34, -0.17, 0.05], r: 0.05, r2: 0.02, col: dkD, k: 0.03 })),
+      ...[1, -1].flatMap(sx => [{ s: 'sph', c: [sx * 0.12, 0.05, 0.5], r: 0.035, col: white, k: 0 }, { s: 'sph', c: [sx * 0.13, 0.055, 0.52], r: 0.02, col: dark, k: 0 }]),
+      { s: 'cap', a: [0.05, -0.05, 0.76], b: [-0.05, -0.05, 0.76], r: 0.01, col: dkD, k: 0 },
+      { s: 'cap', a: [0, 0.0, -0.5], b: [0, 0.02, -0.8], r: 0.1, r2: 0.045, col: dk, bone: 7, k: 0.04 },
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.15, 0.02, -0.86], rr: [0.17, 0.025, 0.08], col: dkD, bone: 7, k: 0.03 })),
+    ], { ao: 0.4 });
+    rig(m, { 0: [0, 0, 0], 7: [0, 0, -0.5] });
+  }
+  // ---------- Hull Plating: a riveted steel plate leaning on a crate, a hammer beside it ----------
+  P('splate', [
+    { s: 'box', c: [0, 0.32, 0], hs: [0.3, 0.3, 0.03], rd: 0.04, col: steel, k: 0 },
+    { s: 'box', c: [0, 0.32, 0.03], hs: [0.24, 0.24, 0.01], rd: 0.03, col: C('#c4d0de'), k: 0 },
+    ...[-0.23, 0.23].flatMap(x => [-0.23, 0.23].map(y => ({ s: 'sph', c: [x, 0.32 + y, 0.035], r: 0.025, col: ironL, k: 0 }))),
+    ...[-0.12, 0, 0.12].map(x => ({ s: 'sph', c: [x, 0.09, 0.035], r: 0.018, col: ironL, k: 0 })),
+    { s: 'cap', a: [0.38, 0.02, 0.15], b: [0.38, 0.32, 0.12], r: 0.02, col: woodD, k: 0 },
+    { s: 'box', c: [0.38, 0.33, 0.12], hs: [0.08, 0.035, 0.035], rd: 0.012, col: iron, k: 0 },
+  ], { ao: 0.6 });
+  // ---------- Gunpowder: a squat black keg with brass hoops, a skull and crossbones, a lit fuse and spilled powder ----------
+  P('spowder', [
+    { s: 'cyl', ax: 'y', c: [0, 0.22, 0], r: 0.22, hh: 0.2, rd: 0.06, col: C('#2a2630'), k: 0 },
+    ...[0.08, 0.36].map(y => ({ s: 'tor', ax: 'y', c: [0, y, 0], R: 0.225, r: 0.016, a0: -Math.PI, a1: Math.PI, col: brass, k: 0 })),
+    { s: 'sph', c: [0, 0.24, 0.215], r: 0.06, col: white, k: 0 }, ...[-0.022, 0.022].map(x => ({ s: 'sph', c: [x, 0.25, 0.268], r: 0.014, col: dark, k: 0 })),
+    ...[[-1, 1], [1, -1]].map(([a, b]) => ({ s: 'cap', a: [a * 0.07, 0.16, 0.215], b: [b * 0.07, 0.2, 0.215], r: 0.012, col: white, k: 0 })),
+    { s: 'cap', a: [0.06, 0.42, 0], b: [0.12, 0.55, 0.03], r: 0.012, col: C('#3a2a1a'), k: 0 },
+    { s: 'sph', c: [0.125, 0.57, 0.03], r: 0.035, col: yel, k: 0 }, { s: 'sph', c: [0.125, 0.57, 0.03], r: 0.02, col: C('#fff8d0'), k: 0 },
+    { s: 'ell', c: [-0.24, 0.0, 0.16], rr: [0.14, 0.02, 0.09], col: C('#3a3540'), k: 0 },
+  ], { ao: 0.5 });
+  // ---------- Treasure Hunter: an open chest of gold coins and a gem, a rolled map on top ----------
+  P('schest', [
+    { s: 'box', c: [0, 0.14, 0], hs: [0.28, 0.13, 0.18], rd: 0.03, col: wood, k: 0 },
+    ...[-0.18, 0.18].map(x => ({ s: 'box', c: [x, 0.14, 0], hs: [0.025, 0.135, 0.185], rd: 0.01, col: brass, k: 0 })),
+    { s: 'box', c: [0, 0.4, -0.16], hs: [0.28, 0.14, 0.03], rd: 0.03, col: woodD, k: 0 },
+    ...Array.from({ length: 9 }, (_, i) => ({ s: 'cyl', ax: 'y', c: [-0.18 + (i % 3) * 0.18 + (i > 5 ? 0.05 : 0), 0.28 + Math.floor(i / 3) * 0.025, -0.08 + Math.floor(i / 3) * 0.08], r: 0.06, hh: 0.012, rd: 0.006, col: yel, k: 0 })),
+    { s: 'sph', c: [0.08, 0.36, 0.06], r: 0.05, col: C('#3ad0ff'), k: 0 },
+    { s: 'cap', a: [-0.2, 0.33, 0.1], b: [0.05, 0.36, 0.14], r: 0.04, col: C('#f0e0b8'), k: 0 }, { s: 'tor', ax: 'z', c: [-0.08, 0.345, 0.12], R: 0.042, r: 0.008, a0: -Math.PI, a1: Math.PI, col: red, k: 0 },
+  ], { ao: 0.5 });
 }
