@@ -15,7 +15,23 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - Buttons slide a little to the left under the pointer (CSS `translate`, so it stacks with each button's own
   `transform`); a new button with its own `transition` list must add `translate` to it.
 
-## Polish: menus, icons, mounts, ship details, deep balance (latest)
+## Ship upgrade without the freeze, harder seas (latest)
+- **No freeze on the Ship upgrade.** Picking it used to build the new hull's (and rigging's) meshes on the main thread
+  (`ensureMeshNow`): 3-14 s a ship on the test machine, about 20 s for a hull and its rig. Now nothing is built on the
+  spot: the Ship level rises at once, and the new ship (stats, hull, mounts, the splash and banner) takes to the
+  water the moment the mesh workers have it (`OC.wantStage`, `seaShipReady`, `seaShipArrives`; a toast says it is on
+  its way if it is not built yet). Every hull is queued early in a sea run, so it is normally ready. A miniboss's raft
+  or canoe is queued, not built on the spot. `ensureMeshNow` reuses the prepared model definitions.
+  `test/_shipfreeze.mjs` times the pick (0 ms) and waits for the ship to arrive.
+- **Harder seas.** Everything at sea hits harder (`seaThreat` in `hurtHero`): x1.1 on the raft, +0.1 per ship, x2.0 on
+  the Golden Ark; and the hull grows with the ship at 70% of the old rate (`160 * (1 + hull * 0.7)`). Autopilot (a weak
+  player, revive on), before -> after: ocean 5 won at 69% lowest hull -> lost at the boss; ocean 10 won at 77% ->
+  sank at 2:45 after rushing to the Golden Ark; ocean 1 is won but the hull dips to a few percent.
+- **Propellers** give +7% speed a level (was 5%). The land Speed passive is unchanged (+4%).
+- **Gear eye buttons:** the rules placing the bottom-row slot boxes also caught the buttons inside them (they share
+  `data-slot`), so the necklace's eye sat under its picture and the ring's beside it; now only `.eqw` is placed.
+
+## Polish: menus, icons, mounts, ship details, deep balance
 - **Menus fit their contents.** Level-up cards are narrower with a 124px icon, 28px names and 19px numbers, and
   their contents centered; pause rows are 430px wide with 48px icons and 23px names; settings rows 21px with bigger
   switches; results numbers 34px and the coin line 42px; achievements, the chapter map, skin and ship-look tiles,

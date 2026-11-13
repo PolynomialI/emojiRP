@@ -74,6 +74,10 @@ function seaInfo(n) {
   };
 }
 const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
+const seaShipReady = i => { const m = SHIPS[i].model; return !!R.enemyDraw[m] && (!MODELS.defs[m + '_rig'] || !!R.enemyDraw[m + '_rig']); };
+// how hard everything at sea hits: a little harder on the raft, climbing with the ship (the Golden Ark takes twice
+// the base damage), so a big ship is sturdier but never safe
+const seaThreat = () => 1.1 + 0.1 * clamp(OC.stage, 0, SHIPS.length - 1);
 const seaUnlocked = () => !!(G.save && G.save.cleared[CHAPTER_COUNT]);
 
 // ---------- the look of the water ----------
@@ -90,14 +94,15 @@ function seaLook(n) {
 function beginSea(n) {
   // the first ships and every mount next (the first level-up offers them), the big ships after
   const C = SEA_CHAPTERS[n - 1];
-  prioritizeMeshes([...SEA_MESHES, ...C.isles, ...C.mix.map(x => ENEMY_TYPES[x[0]].model), 'canoe', ...MOUNT_MESHES, 'pcapt', ...bossMeshes(C.boss), 'sloop', 'sloop_rig', 'pmusket']);
+  prioritizeMeshes([...SEA_MESHES, ...C.isles, ...C.mix.map(x => ENEMY_TYPES[x[0]].model), 'canoe', ...MOUNT_MESHES, 'pcapt', ...bossMeshes(C.boss), 'sloop', 'sloop_rig', 'pmusket',
+    ...SHIPS.slice(3).flatMap(D => [D.model, ...(MODELS.defs[D.model + '_rig'] ? [D.model + '_rig'] : [])])]);
   for (const m of ['raft', 'pswim']) ensureMeshNow(m);
   startSea(n);
 }
 function startSea(chapter) {
   const info = seaInfo(chapter);
   OC.ship = { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
-  OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.shot.length = 0; OC.mines.length = 0; OC.nets.length = 0; OC.crew.length = 0; OC.hz.length = 0; OC.look = null; OC.boltT = 5; OC.sink = null; OC.stage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
+  OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.shot.length = 0; OC.mines.length = 0; OC.nets.length = 0; OC.crew.length = 0; OC.hz.length = 0; OC.look = null; OC.boltT = 5; OC.sink = null; OC.stage = 0; OC.wantStage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
   const run = G.run = {
     chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
@@ -131,11 +136,14 @@ function seaLeave() { const h = G.hero; if (h) { h.lounge = h.lng = 0; h.faceYaw
 // the sea's own upgrades in place of the land's passives (called by recomputeStats)
 function seaStats(run) {
   const lv = lvlOf, gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
-  OC.stage = Math.max(0, lv('ship') - 1);
+  // the ship earned by the Ship level takes to the water once its meshes are built (by the mesh workers, never on
+  // the spot: a big hull takes seconds to build); until then the last one sails on (seaShipArrives)
+  OC.wantStage = Math.max(0, lv('ship') - 1);
+  if (OC.wantStage <= OC.stage || seaShipReady(OC.wantStage)) OC.stage = OC.wantStage;
   const D = shipDef();
   run.stats = {
     dmgMul: 1 + g('dmg'),
-    speedMul: (1 + 0.05 * lv('propeller')) * (1 + g('speed')),
+    speedMul: (1 + 0.07 * lv('propeller')) * (1 + g('speed')),
     magnet: (1.6 + D.len * 0.45) * (1 + g('magnet')),
     armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
@@ -143,7 +151,7 @@ function seaStats(run) {
     regen: 0.003 * lv('crew') + g('regen'),
     ramMul: 1 + 0.12 * lv('fort'),
   };
-  run.maxHp = 160 * (1 + D.hull) * (1 + g('hp'));
+  run.maxHp = 160 * (1 + D.hull * 0.7) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = D.heroS; h.bubbles = 0; h.stretchMul = 1; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.topSpeed = 4.5;
@@ -229,6 +237,7 @@ function updateOcean(dt) {
 // Boat handling: the stick points where you want to go; the ship turns toward it (better when under way),
 // eases off the throttle while turning hard, and slides only a little sideways
 function seaSteer(dt) {
+  if (OC.wantStage > OC.stage && seaShipReady(OC.wantStage)) seaShipArrives();
   const S = OC.ship, D = shipDef(), run = G.run;
   const ix = G.input.x, iz = G.input.z, m = Math.min(1, Math.hypot(ix, iz));
   // (kelp and frost patches grip the hull)
@@ -762,7 +771,7 @@ function seaIcons() {
 // the run is over: the sea keeps its own chapter progress (coins, cosmetics and gear are shared with the land)
 function seaFinish(run, won) {
   const S = G.save.sea, n = run.chapter;
-  S.ship = Math.max(S.ship || 0, OC.stage);
+  S.ship = Math.max(S.ship || 0, OC.stage, OC.wantStage || 0);
   if (won) { S.cleared[n] = true; S.chapter = Math.min(SEA_COUNT, Math.max(S.chapter, n + 1)); }
   if (run.t > (S.best[n] || 0)) S.best[n] = Math.round(run.t);
   G.save.stats.runs++; G.save.stats.kills += run.kills;

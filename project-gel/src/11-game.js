@@ -349,6 +349,7 @@ function hurtHero(dmg, fromX, fromZ) {
   // Slippery: now and then a hit misses entirely
   if (run.stats.dodge && Math.random() < run.stats.dodge) { run.invuln = 0.25; addNumberAt(G.hero.pos[0], 2.2, G.hero.pos[2], 'DODGE', [0.6, 0.95, 1]); AUDIO.play('pop', 1.4); return; }
   if (SKILL_HOOKS.shield.absorb(run, fromX, fromZ)) return;
+  if (run.sea) dmg *= seaThreat();
   dmg *= run.stats.armorMul;
   run.hp -= dmg;
   run.invuln = 0.35;

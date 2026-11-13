@@ -80,7 +80,7 @@ function ensureMeshNow(name) {
   if (R.enemyDraw[name]) return;
   const i = MESHJOB.pending.indexOf(name);
   if (i >= 0) MESHJOB.pending.splice(i, 1);
-  onMeshBuilt(name, buildMeshByName(prepareModelDefs(), name));
+  onMeshBuilt(name, buildMeshByName(MODELS.defs || prepareModelDefs(), name));
 }
 
 // ---------- input ----------

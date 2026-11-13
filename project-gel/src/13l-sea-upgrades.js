@@ -123,7 +123,7 @@ Object.assign(SKILLS, {
 });
 Object.assign(PASSIVES, {
   fort: { sea: true, name: 'Fortifications', short: '-5% hull damage', desc: 'Iron plating with spikes: the hull takes 5% less damage, rams 12% harder, and the spikes hurt boarders.', max: 10, icon: { type: 21, colw: 0 } },
-  propeller: { sea: true, name: 'Propellers', short: '+5% speed', desc: 'An outboard motor on the stern: +5% speed and quicker to get going.', max: 10, icon: { type: 1, colw: 0 } },
+  propeller: { sea: true, name: 'Propellers', short: '+7% speed', desc: 'An outboard motor on the stern: +7% speed and quicker to get going.', max: 10, icon: { type: 1, colw: 0 } },
   crew: { sea: true, name: 'Repair Crew', short: '+0.3% hull/s', desc: 'Little goo sailors patch the hull (0.3% a second) and bonk boarders.', max: 10, icon: { type: 10, colw: 4 } },
   sails: { sea: true, name: 'Gust Sails', short: '+4% cooldown speed', desc: 'A sail that catches a magic wind: weapons recharge 4% faster and the ship turns 5% sharper.', max: 10, icon: { type: 22, colw: 0 } },
 });
@@ -148,14 +148,23 @@ SKILL_HOOKS.ship = {
   update() {},
   // a new ship: the old one bursts apart in a splash and the new one rises out of it
   onLevel(s) {
-    const run = G.run, S = OC.ship;
+    const run = G.run;
     if (!run || !run.sea || s.lvl < 2) return;
-    const before = run.maxHp;
-    seaStats(run);
-    run.hp = Math.min(run.maxHp, run.hp + (run.maxHp - before) + run.maxHp * 0.25);
-    const D = shipDef();
-    for (const m of [D.model, D.model + '_rig']) if (MODELS.defs[m]) ensureMeshNow(m);
-    if (SHIPS[OC.stage + 1]) prioritizeMeshes([SHIPS[OC.stage + 1].model, SHIPS[OC.stage + 1].model + '_rig']);
+    // (its meshes are built off the main thread: if they are not ready yet, the new ship arrives the moment they are)
+    const want = Math.max(0, s.lvl - 1), D = SHIPS[Math.min(want, SHIPS.length - 1)];
+    prioritizeMeshes([D.model, D.model + '_rig', ...(SHIPS[want + 1] ? [SHIPS[want + 1].model, SHIPS[want + 1].model + '_rig'] : [])]);
+    if (seaShipReady(Math.min(want, SHIPS.length - 1))) seaShipArrives();
+    else { OC.wantStage = want; UI.toast(`The ${D.name} is on its way…`, 2); }
+  },
+};
+// the new ship takes to the water: the old one bursts apart in a splash and the new one rises out of it
+function seaShipArrives() {
+  const run = G.run, S = OC.ship;
+  const before = run.maxHp;
+  recomputeStats();
+  run.hp = Math.min(run.maxHp, run.hp + Math.max(0, run.maxHp - before) + run.maxHp * 0.25);
+  const D = shipDef();
+  {
     FX.ring(S.x, S.z, D.len * 0.9, [0.85, 0.97, 1], 0.7, 1);
     FX.burst(S.x, 0.4, S.z, 40, [0.85, 0.95, 1], 7, 0.14, 0.7, 2, 3);
     FX.burst(S.x, D.deck + 0.3, S.z, 26, [1, 0.85, 0.4], 5, 0.1, 0.6, 3, 2);
@@ -163,8 +172,8 @@ SKILL_HOOKS.ship = {
     G.cam.shake = Math.max(G.cam.shake, 0.2);
     AUDIO.play('splash'); AUDIO.play('levelup', 0.8);
     UI.banner(D.name.toUpperCase() + '!');
-  },
-};
+  }
+}
 
 // ---------- Homing Cannon: each cannon turns toward its own target and fires a ball that arcs onto it ----------
 SKILL_HOOKS.cannon = {

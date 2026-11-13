@@ -217,7 +217,7 @@ function seaMini(k) {
   e.hp = e.maxHp = 300 * run.info.hpMul * hpK; e.scale *= scK; e.radius = M.ride === 'raft' ? 1.25 : 1.0;
   e.tint = hexToRgb(M.tint); e.ghost = !!M.ghost; e.spawnT = 0;
   e.ai = { state: 'circle', t: 2.5, ang: Math.atan2(x - OC.ship.x, z - OC.ship.z), n: 0 };
-  ensureMeshNow(M.ride);
+  prioritizeMeshes([M.ride]);
   UI.banner(M.name.toUpperCase()); AUDIO.play('horn');
 }
 // a vehicle against the hull: a ram if the ship drives into it, a bump otherwise

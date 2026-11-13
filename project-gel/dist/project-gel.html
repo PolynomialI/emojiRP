@@ -310,8 +310,9 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .gear-stage .eq { width: 70px; height: 70px; border-radius: 18px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.28); box-shadow: inset 0 0 0 3px rgba(255,255,255,.7); }
 .gear-stage .eq img { width: 80%; height: 80%; }
 .gear-stage .eq img.ghost { width: 46%; height: 46%; opacity: 0.85; }
-.gear-stage [data-slot="armor"], .gear-stage [data-slot="necklace"] { grid-column: 3; }
-.gear-stage [data-slot="ring"], .gear-stage [data-slot="necklace"] { grid-row: 2; }
+/* (only the slot boxes are placed: the slot and eye buttons inside them carry the same data-slot) */
+.gear-stage > .eqw[data-slot="armor"], .gear-stage > .eqw[data-slot="necklace"] { grid-column: 3; }
+.gear-stage > .eqw[data-slot="ring"], .gear-stage > .eqw[data-slot="necklace"] { grid-row: 2; }
 .gear-panel { display: grid; gap: 10px; padding: 12px; }
 .gear-stats { display: flex; justify-content: center; gap: 22px; font-size: 25px; font-variant-numeric: tabular-nums; }
 .gear-stats span { display: inline-flex; align-items: center; gap: 6px; }
@@ -18132,6 +18133,7 @@ function hurtHero(dmg, fromX, fromZ) {
   // Slippery: now and then a hit misses entirely
   if (run.stats.dodge && Math.random() < run.stats.dodge) { run.invuln = 0.25; addNumberAt(G.hero.pos[0], 2.2, G.hero.pos[2], 'DODGE', [0.6, 0.95, 1]); AUDIO.play('pop', 1.4); return; }
   if (SKILL_HOOKS.shield.absorb(run, fromX, fromZ)) return;
+  if (run.sea) dmg *= seaThreat();
   dmg *= run.stats.armorMul;
   run.hp -= dmg;
   run.invuln = 0.35;
@@ -26623,6 +26625,10 @@ function seaInfo(n) {
   };
 }
 const shipDef = () => SHIPS[clamp(OC.stage, 0, SHIPS.length - 1)];
+const seaShipReady = i => { const m = SHIPS[i].model; return !!R.enemyDraw[m] && (!MODELS.defs[m + '_rig'] || !!R.enemyDraw[m + '_rig']); };
+// how hard everything at sea hits: a little harder on the raft, climbing with the ship (the Golden Ark takes twice
+// the base damage), so a big ship is sturdier but never safe
+const seaThreat = () => 1.1 + 0.1 * clamp(OC.stage, 0, SHIPS.length - 1);
 const seaUnlocked = () => !!(G.save && G.save.cleared[CHAPTER_COUNT]);
 
 // ---------- the look of the water ----------
@@ -26639,14 +26645,15 @@ function seaLook(n) {
 function beginSea(n) {
   // the first ships and every mount next (the first level-up offers them), the big ships after
   const C = SEA_CHAPTERS[n - 1];
-  prioritizeMeshes([...SEA_MESHES, ...C.isles, ...C.mix.map(x => ENEMY_TYPES[x[0]].model), 'canoe', ...MOUNT_MESHES, 'pcapt', ...bossMeshes(C.boss), 'sloop', 'sloop_rig', 'pmusket']);
+  prioritizeMeshes([...SEA_MESHES, ...C.isles, ...C.mix.map(x => ENEMY_TYPES[x[0]].model), 'canoe', ...MOUNT_MESHES, 'pcapt', ...bossMeshes(C.boss), 'sloop', 'sloop_rig', 'pmusket',
+    ...SHIPS.slice(3).flatMap(D => [D.model, ...(MODELS.defs[D.model + '_rig'] ? [D.model + '_rig'] : [])])]);
   for (const m of ['raft', 'pswim']) ensureMeshNow(m);
   startSea(n);
 }
 function startSea(chapter) {
   const info = seaInfo(chapter);
   OC.ship = { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
-  OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.shot.length = 0; OC.mines.length = 0; OC.nets.length = 0; OC.crew.length = 0; OC.hz.length = 0; OC.look = null; OC.boltT = 5; OC.sink = null; OC.stage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
+  OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.shot.length = 0; OC.mines.length = 0; OC.nets.length = 0; OC.crew.length = 0; OC.hz.length = 0; OC.look = null; OC.boltT = 5; OC.sink = null; OC.stage = 0; OC.wantStage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
   const run = G.run = {
     chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
@@ -26680,11 +26687,14 @@ function seaLeave() { const h = G.hero; if (h) { h.lounge = h.lng = 0; h.faceYaw
 // the sea's own upgrades in place of the land's passives (called by recomputeStats)
 function seaStats(run) {
   const lv = lvlOf, gb = run.gear || {}, g = k => (gb[k] || 0) / 100;
-  OC.stage = Math.max(0, lv('ship') - 1);
+  // the ship earned by the Ship level takes to the water once its meshes are built (by the mesh workers, never on
+  // the spot: a big hull takes seconds to build); until then the last one sails on (seaShipArrives)
+  OC.wantStage = Math.max(0, lv('ship') - 1);
+  if (OC.wantStage <= OC.stage || seaShipReady(OC.wantStage)) OC.stage = OC.wantStage;
   const D = shipDef();
   run.stats = {
     dmgMul: 1 + g('dmg'),
-    speedMul: (1 + 0.05 * lv('propeller')) * (1 + g('speed')),
+    speedMul: (1 + 0.07 * lv('propeller')) * (1 + g('speed')),
     magnet: (1.6 + D.len * 0.45) * (1 + g('magnet')),
     armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
@@ -26692,7 +26702,7 @@ function seaStats(run) {
     regen: 0.003 * lv('crew') + g('regen'),
     ramMul: 1 + 0.12 * lv('fort'),
   };
-  run.maxHp = 160 * (1 + D.hull) * (1 + g('hp'));
+  run.maxHp = 160 * (1 + D.hull * 0.7) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
   const h = G.hero;
   h.scale = D.heroS; h.bubbles = 0; h.stretchMul = 1; h.glow = 0; h.gloss = 1; h.wobbleMul = 1; h.topSpeed = 4.5;
@@ -26778,6 +26788,7 @@ function updateOcean(dt) {
 // Boat handling: the stick points where you want to go; the ship turns toward it (better when under way),
 // eases off the throttle while turning hard, and slides only a little sideways
 function seaSteer(dt) {
+  if (OC.wantStage > OC.stage && seaShipReady(OC.wantStage)) seaShipArrives();
   const S = OC.ship, D = shipDef(), run = G.run;
   const ix = G.input.x, iz = G.input.z, m = Math.min(1, Math.hypot(ix, iz));
   // (kelp and frost patches grip the hull)
@@ -27311,7 +27322,7 @@ function seaIcons() {
 // the run is over: the sea keeps its own chapter progress (coins, cosmetics and gear are shared with the land)
 function seaFinish(run, won) {
   const S = G.save.sea, n = run.chapter;
-  S.ship = Math.max(S.ship || 0, OC.stage);
+  S.ship = Math.max(S.ship || 0, OC.stage, OC.wantStage || 0);
   if (won) { S.cleared[n] = true; S.chapter = Math.min(SEA_COUNT, Math.max(S.chapter, n + 1)); }
   if (run.t > (S.best[n] || 0)) S.best[n] = Math.round(run.t);
   G.save.stats.runs++; G.save.stats.kills += run.kills;
@@ -27443,7 +27454,7 @@ Object.assign(SKILLS, {
 });
 Object.assign(PASSIVES, {
   fort: { sea: true, name: 'Fortifications', short: '-5% hull damage', desc: 'Iron plating with spikes: the hull takes 5% less damage, rams 12% harder, and the spikes hurt boarders.', max: 10, icon: { type: 21, colw: 0 } },
-  propeller: { sea: true, name: 'Propellers', short: '+5% speed', desc: 'An outboard motor on the stern: +5% speed and quicker to get going.', max: 10, icon: { type: 1, colw: 0 } },
+  propeller: { sea: true, name: 'Propellers', short: '+7% speed', desc: 'An outboard motor on the stern: +7% speed and quicker to get going.', max: 10, icon: { type: 1, colw: 0 } },
   crew: { sea: true, name: 'Repair Crew', short: '+0.3% hull/s', desc: 'Little goo sailors patch the hull (0.3% a second) and bonk boarders.', max: 10, icon: { type: 10, colw: 4 } },
   sails: { sea: true, name: 'Gust Sails', short: '+4% cooldown speed', desc: 'A sail that catches a magic wind: weapons recharge 4% faster and the ship turns 5% sharper.', max: 10, icon: { type: 22, colw: 0 } },
 });
@@ -27468,14 +27479,23 @@ SKILL_HOOKS.ship = {
   update() {},
   // a new ship: the old one bursts apart in a splash and the new one rises out of it
   onLevel(s) {
-    const run = G.run, S = OC.ship;
+    const run = G.run;
     if (!run || !run.sea || s.lvl < 2) return;
-    const before = run.maxHp;
-    seaStats(run);
-    run.hp = Math.min(run.maxHp, run.hp + (run.maxHp - before) + run.maxHp * 0.25);
-    const D = shipDef();
-    for (const m of [D.model, D.model + '_rig']) if (MODELS.defs[m]) ensureMeshNow(m);
-    if (SHIPS[OC.stage + 1]) prioritizeMeshes([SHIPS[OC.stage + 1].model, SHIPS[OC.stage + 1].model + '_rig']);
+    // (its meshes are built off the main thread: if they are not ready yet, the new ship arrives the moment they are)
+    const want = Math.max(0, s.lvl - 1), D = SHIPS[Math.min(want, SHIPS.length - 1)];
+    prioritizeMeshes([D.model, D.model + '_rig', ...(SHIPS[want + 1] ? [SHIPS[want + 1].model, SHIPS[want + 1].model + '_rig'] : [])]);
+    if (seaShipReady(Math.min(want, SHIPS.length - 1))) seaShipArrives();
+    else { OC.wantStage = want; UI.toast(`The ${D.name} is on its way…`, 2); }
+  },
+};
+// the new ship takes to the water: the old one bursts apart in a splash and the new one rises out of it
+function seaShipArrives() {
+  const run = G.run, S = OC.ship;
+  const before = run.maxHp;
+  recomputeStats();
+  run.hp = Math.min(run.maxHp, run.hp + Math.max(0, run.maxHp - before) + run.maxHp * 0.25);
+  const D = shipDef();
+  {
     FX.ring(S.x, S.z, D.len * 0.9, [0.85, 0.97, 1], 0.7, 1);
     FX.burst(S.x, 0.4, S.z, 40, [0.85, 0.95, 1], 7, 0.14, 0.7, 2, 3);
     FX.burst(S.x, D.deck + 0.3, S.z, 26, [1, 0.85, 0.4], 5, 0.1, 0.6, 3, 2);
@@ -27483,8 +27503,8 @@ SKILL_HOOKS.ship = {
     G.cam.shake = Math.max(G.cam.shake, 0.2);
     AUDIO.play('splash'); AUDIO.play('levelup', 0.8);
     UI.banner(D.name.toUpperCase() + '!');
-  },
-};
+  }
+}
 
 // ---------- Homing Cannon: each cannon turns toward its own target and fires a ball that arcs onto it ----------
 SKILL_HOOKS.cannon = {
@@ -28311,7 +28331,7 @@ function seaMini(k) {
   e.hp = e.maxHp = 300 * run.info.hpMul * hpK; e.scale *= scK; e.radius = M.ride === 'raft' ? 1.25 : 1.0;
   e.tint = hexToRgb(M.tint); e.ghost = !!M.ghost; e.spawnT = 0;
   e.ai = { state: 'circle', t: 2.5, ang: Math.atan2(x - OC.ship.x, z - OC.ship.z), n: 0 };
-  ensureMeshNow(M.ride);
+  prioritizeMeshes([M.ride]);
   UI.banner(M.name.toUpperCase()); AUDIO.play('horn');
 }
 // a vehicle against the hull: a ram if the ship drives into it, a bump otherwise
@@ -31480,7 +31500,7 @@ function ensureMeshNow(name) {
   if (R.enemyDraw[name]) return;
   const i = MESHJOB.pending.indexOf(name);
   if (i >= 0) MESHJOB.pending.splice(i, 1);
-  onMeshBuilt(name, buildMeshByName(prepareModelDefs(), name));
+  onMeshBuilt(name, buildMeshByName(MODELS.defs || prepareModelDefs(), name));
 }
 
 // ---------- input ----------
