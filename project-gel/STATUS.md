@@ -15,7 +15,17 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - Buttons slide a little to the left under the pointer (CSS `translate`, so it stacks with each button's own
   `transform`); a new button with its own `transition` list must add `translate` to it.
 
-## Hurler, aura, maxed powers, item colors (latest)
+## Blob Buddies and Sandstorm buffs (latest)
+- **Blob Buddies:** about twice the headbutt damage (4-12 after the power-up halving, was 2-5.5), a buddy more from
+  level 3 (up to 4), and they last as long as the wait for the next batch (10-15 s, every 10-7.5 s; was 8-12 s every
+  14-12 s).
+- **Sandstorm:** about twice the damage per tick (3-8, was 1.5-4.5), a bit wider (1.6-2.5 m), lasting longer
+  (4-7.5 s), sooner (every 7-4.8 s) and a second tornado from level 4 (third from level 8).
+- `test/_dps.mjs` (24 tough dummies round the blob, 30 s): Buddies level 1 2 -> 5 damage a second, level 10 23 -> 107;
+  Sandstorm level 1 14 -> 56, level 10 838 -> 2377 (its tornadoes pull the whole crowd in). Aura for scale: 95 and
+  442.
+
+## Hurler, aura, maxed powers, item colors
 - **The Hurler** (chapter 2's boss and its three miniboss visits; also in Boss Rush):
   - It no longer hops away when the hero gets close; it only walks.
   - 25% less health (`hp` 1650, was 2200).

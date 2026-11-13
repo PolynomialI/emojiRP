@@ -60,7 +60,8 @@ const SKILLS = {
   buddies: {
     name: 'Blob Buddies', intro: 'You split off small copies of yourself that hop at enemies and headbutt them.', icon: { type: 7, colw: 0 },
     fields: [['count', 'Buddies'], ['dmg', 'Headbutt damage'], ['life', 'Lifetime', 's']],
-    levels: L10({ count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], dmg: [4, 5, 5, 6, 6, 7, 8, 9, 10, 11], life: [8, 8, 9, 9, 10, 10, 11, 11, 12, 12], cd: [14, 14, 13.5, 13.5, 13, 13, 12.5, 12.5, 12, 12] }),
+    // (buffed: about twice the headbutt, a buddy more from level 3, and they last as long as the wait for the next)
+    levels: L10({ count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], dmg: [8, 9, 10, 11, 12, 14, 16, 18, 20, 24], life: [10, 10, 11, 11, 12, 12, 13, 13, 14, 15], cd: [10, 10, 9.5, 9.5, 9, 9, 8.5, 8.5, 8, 7.5] }),
   },
   axe: {
     name: 'Goo Axe', intro: 'Throws spinning axes that cut through everything and fly back to you.', icon: { type: 4, colw: 0.5 },
@@ -76,7 +77,8 @@ const SKILLS = {
   sandstorm: {
     name: 'Sandstorm', from: 2, intro: 'Whips up goo tornadoes that wander into crowds, pulling enemies in and grinding them down.', icon: { type: 32, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['count', 'Tornadoes'], ['radius', 'Radius', 'm'], ['life', 'Lasts', 's']],
-    levels: L10({ dmg: [3, 3, 4, 4, 5, 5, 6, 7, 8, 9], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.4, 1.5, 1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], life: [3, 3.2, 3.4, 3.6, 3.8, 4, 4.3, 4.6, 5, 5.5], cd: [8, 7.8, 7.6, 7.4, 7.2, 7, 6.6, 6.3, 6, 5.5] }),
+    // (buffed: about twice the damage, wider, longer-lived, sooner and a second tornado from level 4)
+    levels: L10({ dmg: [6, 6, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], radius: [1.6, 1.7, 1.8, 1.9, 1.9, 2.0, 2.1, 2.2, 2.3, 2.5], life: [4, 4.3, 4.6, 5, 5.3, 5.6, 6, 6.4, 6.8, 7.5], cd: [7, 6.8, 6.6, 6.4, 6.2, 6, 5.7, 5.4, 5.1, 4.8] }),
   },
   bouncy: {
     name: 'Bouncy Ball', from: 4, intro: 'Launches rubber goo balls that ricochet from enemy to enemy and off the walls.', icon: { type: 35, colw: 0 },
