@@ -79,7 +79,7 @@ function bagShift(B, n) {
 }
 function bagShiftUpdate(B, dt) {
   B.wheelV = 3.2;
-  if (B.t > 0.45) CV.fadeTo = 1;
+  if (B.t > 0.45 && !B.shifted) CV.fadeTo = 1;
   if (B.t > 1.0 && !B.shifted) {
     B.shifted = true; B.stage = B.next;
     bagStageSetup(B, B.stage, 0.6);
@@ -559,7 +559,8 @@ function bagCamera(dt) {
 }
 function bagEmit() {
   const B = CV.boss, Rm = CV.room, F = Rm.F, S = BAG.S, f = R.frame, tm = f.time;
-  const base = cvW3(F, B.x, 0, B.z), yawB = F.yaw, yawT = F.yaw + B.slew;
+  // (its crawlers stay square to the hall, so each stage shows it from another side; only its upper works turn)
+  const base = cvW3(F, B.x, 0, B.z), yawB = Rm.P.F.yaw, yawT = F.yaw + B.slew;
   const melt = B.dying > 4.2 ? clamp((B.dying - 4.2) / 1.8, 0, 1) : 0, sinkM = (B.mastSink || 0) * 2.6;
   const k = 1 + B.flash * 1.4, tint = B.tint, gT = [tint[0] * k, tint[1] * k, tint[2] * k];
   const draw = (m, x, y, z, yaw, row, sq = 1) => { if (R.enemyDraw[m]) pushEnemy(m, false, x, y, z, yaw, row, S, sq, melt * 0.6, B.flash > 0 ? 0.25 : 0, 0, gT[0], gT[1], gT[2]); };

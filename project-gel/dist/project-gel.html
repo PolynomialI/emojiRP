@@ -16591,7 +16591,7 @@ const BOSS_HINTS = {
   monarch: 'Spiralling spores, glowing mycelium lanes, spore showers and sprouting sporelings.',
   trex: 'A roaring shockwave in front, a tail sweep behind, and stomping charges that shake rocks loose.',
   chef: 'Cleaver chops down marked lanes, flipped pancakes that leave hot grease, and pepper bombs.',
-  bagger: 'Rock barrages, a sweeping beam and cover-smashing drill rocks. Hide, then pop up and shoot its glowing heart.',
+  bagger: 'Four stages, each from a new side: rock barrages, a sweeping beam, spike quakes, goo rain and drill rocks. Hide, then pop up and shoot its glowing heart.',
 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
@@ -25418,15 +25418,20 @@ function cvFoeDeep(f, dt, Rm, moveTo, meleeX) {
         if (f.y <= 0) { f.y = 0; f.state = 'dash'; f.t = 0; const w = cvW(Rm.F, f.lx, f.lz); FX.burst(w[0], 0.2, w[1], 8, [0.5, 0.45, 0.4], 3, 0.08, 0.4, 1, 2); AUDIO.play('thud', 0.5); }
         break;
       }
+      // (a spider is lower than the hero's rocks: where one stands in its way it climbs up on top of it and bites down
+      // from there, in plain sight)
+      const rock = Rm.covers.find(c => !c.foe && !c.pillar && !c.broken && Math.abs(c.lx - f.lx) < c.hw + 0.25 && f.lz > c.lz - 2.2);
+      const meleeZ = rock ? rock.lz : CAVE.meleeZ;
+      f.y += ((rock && f.state !== 'drop' ? rock.h * 0.92 : 0) - f.y) * Math.min(1, dt * 9);
       if (f.state === 'dash') {
         const zx = Math.sin(f.t * 7 + f.ph * 6) * 1.6;
-        if (moveTo(meleeX + (f.lz < CAVE.meleeZ - 2.5 ? zx : 0), CAVE.meleeZ, 6.8)) { f.state = 'claw'; f.t = 0; }
+        if (moveTo(meleeX + (f.lz < meleeZ - 2.5 ? zx : 0), meleeZ, 6.8)) { f.state = 'claw'; f.t = 0; }
         f.ph += dt * 3;
         break;
       }
       if (f.state === 'claw') {
         f.clip = 'slam'; f.u = clamp(f.t / 0.6, 0, 0.99);
-        if (f.t < 0.2) moveTo(meleeX, CAVE.meleeZ, 2.5);
+        if (f.t < 0.2) moveTo(meleeX, meleeZ, 2.5);
         if (f.t > 0.42 && !f.hit) { f.hit = true; if (Math.abs(Rm.hx - f.lx) < 1.3) cvHurtHero(CAVE.biteDmg, f); AUDIO.play('squish', 0.6); }
         if (f.t > 0.6) { f.hit = false; f.t = 0; f.state = Math.abs(Rm.hx - f.lx) > 1.3 ? 'dash' : 'claw'; }
       }
@@ -25468,9 +25473,11 @@ function cvFoeDeep(f, dt, Rm, moveTo, meleeX) {
         break;
       }
       if (f.state === 'throw') {
-        f.sink = Math.max(0, f.sink - dt * 5); f.clip = 'throw'; f.u = clamp(f.t / 0.8, 0, 0.99);
-        if (f.t > 0.45 && !f.thrown) { f.thrown = true; cvLob(f, Rm, 'dyn'); }
-        if (f.t > 0.8) { f.thrown = false; f.state = 'hide'; f.t = 0; }
+        // (a goblin is shorter than its rock: it hops up on top of it to throw, and that is when to hit it)
+        f.sink = Math.max(0, f.sink - dt * 5); f.clip = 'throw'; f.u = clamp(f.t / 0.9, 0, 0.99);
+        f.y = 0.8 * Math.sin(clamp(f.t / 0.9, 0, 1) * Math.PI);
+        if (f.t > 0.5 && !f.thrown) { f.thrown = true; cvLob(f, Rm, 'dyn'); }
+        if (f.t > 0.9) { f.thrown = false; f.y = 0; f.state = 'hide'; f.t = 0; }
       }
       break;
     }
@@ -25962,7 +25969,7 @@ function bagShift(B, n) {
 }
 function bagShiftUpdate(B, dt) {
   B.wheelV = 3.2;
-  if (B.t > 0.45) CV.fadeTo = 1;
+  if (B.t > 0.45 && !B.shifted) CV.fadeTo = 1;
   if (B.t > 1.0 && !B.shifted) {
     B.shifted = true; B.stage = B.next;
     bagStageSetup(B, B.stage, 0.6);
@@ -26442,7 +26449,8 @@ function bagCamera(dt) {
 }
 function bagEmit() {
   const B = CV.boss, Rm = CV.room, F = Rm.F, S = BAG.S, f = R.frame, tm = f.time;
-  const base = cvW3(F, B.x, 0, B.z), yawB = F.yaw, yawT = F.yaw + B.slew;
+  // (its crawlers stay square to the hall, so each stage shows it from another side; only its upper works turn)
+  const base = cvW3(F, B.x, 0, B.z), yawB = Rm.P.F.yaw, yawT = F.yaw + B.slew;
   const melt = B.dying > 4.2 ? clamp((B.dying - 4.2) / 1.8, 0, 1) : 0, sinkM = (B.mastSink || 0) * 2.6;
   const k = 1 + B.flash * 1.4, tint = B.tint, gT = [tint[0] * k, tint[1] * k, tint[2] * k];
   const draw = (m, x, y, z, yaw, row, sq = 1) => { if (R.enemyDraw[m]) pushEnemy(m, false, x, y, z, yaw, row, S, sq, melt * 0.6, B.flash > 0 ? 0.25 : 0, 0, gT[0], gT[1], gT[2]); };

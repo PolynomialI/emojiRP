@@ -732,15 +732,20 @@ function cvFoeDeep(f, dt, Rm, moveTo, meleeX) {
         if (f.y <= 0) { f.y = 0; f.state = 'dash'; f.t = 0; const w = cvW(Rm.F, f.lx, f.lz); FX.burst(w[0], 0.2, w[1], 8, [0.5, 0.45, 0.4], 3, 0.08, 0.4, 1, 2); AUDIO.play('thud', 0.5); }
         break;
       }
+      // (a spider is lower than the hero's rocks: where one stands in its way it climbs up on top of it and bites down
+      // from there, in plain sight)
+      const rock = Rm.covers.find(c => !c.foe && !c.pillar && !c.broken && Math.abs(c.lx - f.lx) < c.hw + 0.25 && f.lz > c.lz - 2.2);
+      const meleeZ = rock ? rock.lz : CAVE.meleeZ;
+      f.y += ((rock && f.state !== 'drop' ? rock.h * 0.92 : 0) - f.y) * Math.min(1, dt * 9);
       if (f.state === 'dash') {
         const zx = Math.sin(f.t * 7 + f.ph * 6) * 1.6;
-        if (moveTo(meleeX + (f.lz < CAVE.meleeZ - 2.5 ? zx : 0), CAVE.meleeZ, 6.8)) { f.state = 'claw'; f.t = 0; }
+        if (moveTo(meleeX + (f.lz < meleeZ - 2.5 ? zx : 0), meleeZ, 6.8)) { f.state = 'claw'; f.t = 0; }
         f.ph += dt * 3;
         break;
       }
       if (f.state === 'claw') {
         f.clip = 'slam'; f.u = clamp(f.t / 0.6, 0, 0.99);
-        if (f.t < 0.2) moveTo(meleeX, CAVE.meleeZ, 2.5);
+        if (f.t < 0.2) moveTo(meleeX, meleeZ, 2.5);
         if (f.t > 0.42 && !f.hit) { f.hit = true; if (Math.abs(Rm.hx - f.lx) < 1.3) cvHurtHero(CAVE.biteDmg, f); AUDIO.play('squish', 0.6); }
         if (f.t > 0.6) { f.hit = false; f.t = 0; f.state = Math.abs(Rm.hx - f.lx) > 1.3 ? 'dash' : 'claw'; }
       }
@@ -782,9 +787,11 @@ function cvFoeDeep(f, dt, Rm, moveTo, meleeX) {
         break;
       }
       if (f.state === 'throw') {
-        f.sink = Math.max(0, f.sink - dt * 5); f.clip = 'throw'; f.u = clamp(f.t / 0.8, 0, 0.99);
-        if (f.t > 0.45 && !f.thrown) { f.thrown = true; cvLob(f, Rm, 'dyn'); }
-        if (f.t > 0.8) { f.thrown = false; f.state = 'hide'; f.t = 0; }
+        // (a goblin is shorter than its rock: it hops up on top of it to throw, and that is when to hit it)
+        f.sink = Math.max(0, f.sink - dt * 5); f.clip = 'throw'; f.u = clamp(f.t / 0.9, 0, 0.99);
+        f.y = 0.8 * Math.sin(clamp(f.t / 0.9, 0, 1) * Math.PI);
+        if (f.t > 0.5 && !f.thrown) { f.thrown = true; cvLob(f, Rm, 'dyn'); }
+        if (f.t > 0.9) { f.thrown = false; f.y = 0; f.state = 'hide'; f.t = 0; }
       }
       break;
     }

@@ -374,7 +374,7 @@ const BOSS_HINTS = {
   monarch: 'Spiralling spores, glowing mycelium lanes, spore showers and sprouting sporelings.',
   trex: 'A roaring shockwave in front, a tail sweep behind, and stomping charges that shake rocks loose.',
   chef: 'Cleaver chops down marked lanes, flipped pancakes that leave hot grease, and pepper bombs.',
-  bagger: 'Rock barrages, a sweeping beam and cover-smashing drill rocks. Hide, then pop up and shoot its glowing heart.',
+  bagger: 'Four stages, each from a new side: rock barrages, a sweeping beam, spike quakes, goo rain and drill rocks. Hide, then pop up and shoot its glowing heart.',
 };
 const BOSS_ORDER = ['stomper', 'hurler', 'charger', 'twins', 'conductor'];
 // meshes a boss needs (custom-drawn bosses list theirs in meshes; the rest use model)
