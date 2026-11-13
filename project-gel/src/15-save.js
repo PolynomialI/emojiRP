@@ -7,7 +7,7 @@ function defaultSave() {
     v: 1, content: 4, coins: 0, blobUp: {}, blobLv: {}, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
-    scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {} }, devUnlocked: false,
+    scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {}, colors: {} }, devUnlocked: false,
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0, bosses: 0, elites: 0, gooblins: 0, evos: 0, maxLevel: 0, fuses: 0, coinsEarned: 0 },
     goals: { seen: {}, claimed: {} }, tutorial: true,
@@ -32,7 +32,7 @@ function loadGame() {
         cleared: s.cleared || {}, best: s.best || {},
         sea: { ...d.sea, ...(s.sea || {}), cleared: { ...((s.sea && s.sea.cleared) || {}) }, best: { ...((s.sea && s.sea.best) || {}) } },
         goals: { seen: { ...((s.goals && s.goals.seen) || {}) }, claimed: { ...((s.goals && s.goals.claimed) || {}) } },
-        gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) }, hidden: { ...((s.gear && s.gear.hidden) || {}) } },
+        gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) }, hidden: { ...((s.gear && s.gear.hidden) || {}) }, colors: { ...((s.gear && s.gear.colors) || {}) } },
       };
       // saves from before the blob upgrades replaced the Upgrades tab (content 4): everyone starts over,
       // keeping only their settings

@@ -755,7 +755,7 @@ class Hero {
       const key = eq[slot];
       // a hidden slot keeps its stats but is not drawn
       if (!key || !(g.items[key] > 0) || hid[slot]) continue;
-      const { id, r } = artParse(key), look = GEAR_LOOK[id];
+      const { id, r } = artParse(key), look = gearLook(id, g);
       if (!look) continue;
       out[slot] = id; out.glow[slot] = r >= MYTHIC ? 0.5 : r * 0.1; any = true;
       look.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), (slots[slot] + i) * 3); this.out.gearMat[slots[slot] - 8 + i] = (GEAR_MAT[id] || [])[i] ?? 0.5; });

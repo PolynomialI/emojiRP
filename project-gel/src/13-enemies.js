@@ -171,15 +171,8 @@ function bossThink(e, dt, d, dx, dz) {
         if (d < 6) { tx = e.x - dx / d * 3; tz = e.z - dz / d * 3; }
         else if (d > 9) { tx = h[0]; tz = h[2]; }
         bossWalk(e, dt, tx, tz, e.speed); bossFace(e, dt);
-        if (d < 3 && ai.jumpCd <= 0) {
-          ai.state = 'hop'; ai.t = 0.6; ai.jumpCd = 4; ai.sx = e.x; ai.sz = e.z;
-          const tp = { x: e.x - dx / d * 7, z: e.z - dz / d * 7 }; resolveCircle(tp, e.radius);
-          ai.tx = tp.x; ai.tz = tp.z;
-        } else if (ai.throwT <= 0) { ai.state = 'throw'; ai.t = 0.7; ai.thrown = false; }
-      } else if (ai.state === 'hop') {
-        const u = 1 - ai.t / 0.6;
-        e.x = lerp(ai.sx, ai.tx, u); e.z = lerp(ai.sz, ai.tz, u); e.y = Math.sin(u * Math.PI) * 1.6; e.clip = 'idle';
-        if (ai.t <= 0) { e.y = 0; ai.state = 'walk'; FX.burst(e.x, 0.1, e.z, 10, [0.6, 0.55, 0.5], 4, 0.15, 0.5, 2); }
+        // (it no longer hops away when the hero closes in: it only walks)
+        if (ai.throwT <= 0) { ai.state = 'throw'; ai.t = 0.7; ai.thrown = false; }
       } else if (ai.state === 'throw') {
         const u = 1 - ai.t / 0.7;
         e.clip = 'throw'; e.clipU = u; bossFace(e, dt, 10);
@@ -189,8 +182,8 @@ function bossThink(e, dt, d, dx, dz) {
           const lead = [h[0] + vel[0] * 0.6, h[2] + vel[2] * 0.6];
           const targets = [lead, [lead[0] + px * 1.9, lead[1] + pz * 1.9], [lead[0] - px * 1.9, lead[1] - pz * 1.9]];
           for (const [tx, tz] of targets) {
-            addTele({ kind: 'circle', x: tx, z: tz, r: 1.5, dur: 1.0 });
-            run.eShots.push({ kind: 'boulder', sx: e.x, sy: 2.6, sz: e.z, tx, tz, x: e.x, y: 2.6, z: e.z, t: 0, dur: 1.0, radius: 1.5, dmg: 25 * run.info.dmgMul, life: 2, spin: 0 });
+            addTele({ kind: 'circle', x: tx, z: tz, r: 1.2, dur: 1.0 });
+            run.eShots.push({ kind: 'boulder', sx: e.x, sy: 2.6, sz: e.z, tx, tz, x: e.x, y: 2.6, z: e.z, t: 0, dur: 1.0, radius: 1.2, dmg: 25 * run.info.dmgMul, life: 2, spin: 0 });
           }
           AUDIO.play('throw');
         }

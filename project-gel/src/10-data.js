@@ -50,7 +50,7 @@ const SKILLS = {
   aura: {
     name: 'Aura', intro: 'A sticky goo puddle around you slows everything in it to a crawl and burns it hard.', icon: { type: 19, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['radius', 'Radius', 'm'], ['slow', 'Slow', '%']],
-    levels: L10({ dmg: [6, 7, 8, 10, 11, 13, 15, 17, 20, 24], radius: [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8], slow: [30, 32, 35, 38, 40, 43, 46, 50, 55, 60] }),
+    levels: L10({ dmg: [5, 6, 7, 9, 10, 12, 14, 16, 19, 23], radius: [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8], slow: [30, 32, 35, 38, 40, 43, 46, 50, 55, 60] }),
   },
   worms: {
     name: 'Worms', intro: 'Goo worms tunnel under the floor and bite enemies.', icon: { type: 5, colw: 3 },
@@ -333,7 +333,7 @@ const ELITE_TYPES = ['stickman', 'helmet', 'spear', 'axe', 'archer', 'brute', 's
 
 const BOSS_TYPES = {
   stomper: { name: 'Big Stomper', model: 'stomper', hp: 2500, speed: 1.6, dmg: 14, scale: 2.8, radius: 1.15, tint: '#ff6f8f', mass: 60 },
-  hurler: { name: 'Hurler', model: 'hurler', hp: 2200, speed: 2.4, dmg: 12, scale: 2.6, radius: 0.95, tint: '#9a7bff', mass: 60 },
+  hurler: { name: 'Hurler', model: 'hurler', hp: 1650, speed: 2.4, dmg: 12, scale: 2.6, radius: 0.95, tint: '#9a7bff', mass: 60 },
   charger: { name: 'Charger', model: 'charger', hp: 2600, speed: 1.9, dmg: 14, scale: 2.7, radius: 1.1, tint: '#e2504f', mass: 60 },
   twins: { name: 'Twins', model: 'twin', hp: 1400, speed: 2.4, dmg: 12, scale: 2.3, radius: 0.9, tint: '#ff70b0', tint2: '#9a6bff', mass: 60 },
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
@@ -1264,6 +1264,46 @@ const GEAR_MAT = {
   goldRing: [1, 0.9], silverRing: [1, 0.9], rubyRing: [1, 0.9],
   skull: [0.1, 0.25, 0.1], moon: [1, 0.85, 0.9], clover: [1, 0.3, 0.2],
 };
+// Item colors (an item's card in Gear): ten colors any item can be painted, free, kept per item type
+// (G.save.gear.colors[id] = hex; none = its own color). The paint goes on the item's main material and its shades:
+// on the blob the GEAR_LOOK entries in `look`, in its picture the `svg` colors; each shade stays as much lighter or
+// darker than the first (`base` in the picture) as it was. Mythic gear keeps cycling through the rainbow.
+const GEAR_COLORS = [['Red', '#e8283c'], ['Orange', '#ff8a1f'], ['Yellow', '#ffd23a'], ['Green', '#3ccf5a'], ['Teal', '#1fc8b4'],
+  ['Blue', '#2f7ff0'], ['Purple', '#8a4cff'], ['Pink', '#ff5ab4'], ['White', '#f2f4f8'], ['Black', '#34343e']];
+const NECK_CHAIN = { look: [0], svg: ['#ffd23a', '#ffc83a'], base: '#ffc83a' };
+const GEAR_TINT = {
+  // the sword's blade, the wand's handle, the bow's wood
+  sword: { look: [0], svg: ['#dfe8f3', '#a3b6ce', '#9fb3cc', '#7f93ad'], base: '#dfe8f3' },
+  wand: { look: [0, 2], svg: ['#b58cff', '#7a4bd6', '#4a22a8', '#e2d2ff'], base: '#7a4bd6' },
+  bow: { look: [0, 2], svg: ['#e6a868', '#b8733e', '#8a4f24', '#f5c58e'], base: '#b8733e' },
+  // the robe's cloth, the plate's steel, the vest's leather
+  cloak: { look: [0, 2], svg: ['#ff7a8c', '#e8283c', '#9c1024', '#a01428', '#ff9aa6'], base: '#e8283c' },
+  plate: { look: [0], svg: ['#f7fafd', '#c4d0de', '#7d8fa8', '#5f7290'], base: '#c4d0de' },
+  vest: { look: [0, 1], svg: ['#e09a5c', '#b8733e', '#814720', '#8a4f24', '#5a2f12', '#a8622c', '#f3bd88'], base: '#b8733e' },
+  // a ring's band (its gem keeps its own color), a necklace's chain
+  goldRing: { look: [0], svg: ['#fff1a8', '#ffc83a', '#d98a0c'], base: '#ffc83a' },
+  silverRing: { look: [0], svg: ['#dfe7f1', '#93a2b7'], base: '#dfe7f1' },
+  rubyRing: { look: [0], svg: ['#fff1a8', '#ffc83a', '#d98a0c'], base: '#ffc83a' },
+  skull: NECK_CHAIN, moon: NECK_CHAIN, clover: NECK_CHAIN,
+};
+const rgbHex = c => '#' + c.map(v => Math.round(clamp(v, 0, 1) * 255).toString(16).padStart(2, '0')).join('');
+// one shade (orig) of a color (base), moved onto another color (to)
+function shadeTo(orig, base, to) {
+  const lum = c => 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2], t = hexToRgb(to);
+  const lo = lum(hexToRgb(orig)), lb = Math.max(0.05, lum(hexToRgb(base)));
+  if (lo <= lb) return rgbHex(t.map(v => v * lo / lb));
+  const k = clamp((lo - lb) / Math.max(0.05, 1 - lb), 0, 1);
+  return rgbHex(t.map(v => v + (1 - v) * k));
+}
+const gearPaint = (id, g = G.save && G.save.gear) => (GEAR_TINT[id] && g && g.colors && g.colors[id]) || null;
+// an item's colors on the blob, painted
+function gearLook(id, g) {
+  const look = GEAR_LOOK[id], to = gearPaint(id, g);
+  if (!look || !to) return look;
+  const T = GEAR_TINT[id], out = look.slice(), base = look[T.look[0]];
+  for (const i of T.look) out[i] = shadeTo(look[i], base, to);
+  return out;
+}
 const artKey = (id, r) => id + ':' + r;
 const artParse = key => { const [id, r] = key.split(':'); return { id, r: Number(r), def: ARTIFACTS[id] }; };
 function artStats(key) {

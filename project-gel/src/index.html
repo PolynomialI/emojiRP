@@ -383,6 +383,11 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .art-info .art-stat { margin: 0; font-size: 22px; color: var(--ink); }
 .art-info .chip { font-size: 20px; }
 .art-info .dim { margin: 0; font-size: 18px; font-weight: 500; }
+.art-paint { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+.art-paint[hidden] { display: none; }
+.art-paint .swatch { width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 3px solid #fff; background: var(--c); box-shadow: 0 0 0 2px rgba(35,48,90,.25), inset 0 -4px 0 rgba(0,0,0,.18); cursor: pointer; display: grid; place-items: center; }
+.art-paint .swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink), inset 0 -4px 0 rgba(0,0,0,.18); }
+.art-paint .swatch.orig::after { content: '\21BA'; color: #fff; font: 800 20px/1 var(--font); text-shadow: 0 1px 2px rgba(0,0,0,.55); }
 .chest-stage { position: relative; height: 280px; display: grid; place-items: center; }
 .chest-stage .rays { position: absolute; width: 300px; height: 300px; border-radius: 50%; opacity: 0; transition: opacity .3s;
   background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.55) 0deg 10deg, rgba(255,255,255,0) 10deg 24deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%); }
@@ -664,6 +669,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
         <p class="eyebrow rar" id="artRar">Common</p>
         <h2 id="artName">Goo Sword</h2>
         <p class="art-stat chips" id="artStat"></p>
+        <div class="art-paint" id="artPaint" aria-label="Color"></div>
       </div>
       <div class="row-actions"><button class="jelly" id="artEquip">Equip</button><button class="jelly violet" id="artFuse">Fuse 3</button><button class="jelly ghost" id="artClose">Close</button></div>
     </div>

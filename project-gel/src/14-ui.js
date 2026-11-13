@@ -606,10 +606,12 @@ const UI = {
     }
     this.chestResults = results;
     this.chestCoins = results.length || this.chestEvo ? 0 : 40;
-    const pool = run.slots.map(s => (s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
-    const strip = $('chStrip'), tiles = [];
     const total = 34, land = 28;
     const landKey = this.chestEvo ? 'skill-' + this.chestEvo : results.length ? (SKILLS[results[0]] ? 'skill-' : 'passive-') + results[0] : 'meta-offline';
+    // the strip spins past only what the chest could still give: powers not yet at their max (else just its prize)
+    const pool = run.slots.filter(s => s.lvl < maxLevel(s.id)).map(s => (s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
+    if (!pool.length) pool.push(landKey);
+    const strip = $('chStrip'), tiles = [];
     for (let i = 0; i < total; i++) {
       const key = i === land ? landKey : pick(pool);
       const t = document.createElement('span'); t.className = 'tile' + (i === land && this.chestEvo ? ' evo' : ''); const im = document.createElement('img'); im.alt = ''; im.src = ICONS.get(key); t.append(im); tiles.push(t);
@@ -897,10 +899,11 @@ function describeChoice(c) {
       line = (ch.length ? ch : [fields[0]]).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[lvl - 1][k], unit)} → ${fmtStat(sk.levels[lvl][k], unit)}</em>`).join('<br>');
     }
     if (ABILITIES[c.id] && lvl + 1 === max) line += `<br><b class="abil-note">Max level: unlocks the ${ABILITIES[c.id].name} ability</b>`;
+    else if (lvl + 1 === max && max > 1) line += '<br><b class="abil-note">Takes it to max level</b>';
     return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id] };
   }
   const partner = Object.keys(EVOLUTIONS).some(k => EVOLUTIONS[k].with === c.id && G.run && slotOf(k) && !slotOf(k).evo);
-  return { name: ps.name, desc: `<em>${ps.short}</em>`, icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner };
+  return { name: ps.name, desc: `<em>${ps.short}</em>` + (lvl + 1 === max && max > 1 ? '<br><b class="abil-note">Takes it to max level</b>' : ''), icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner };
 }
 function applyChoice(c) {
   const run = G.run;

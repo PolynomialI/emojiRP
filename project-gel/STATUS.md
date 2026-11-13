@@ -15,7 +15,29 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - Buttons slide a little to the left under the pointer (CSS `translate`, so it stacks with each button's own
   `transform`); a new button with its own `transition` list must add `translate` to it.
 
-## Ocean map, tank steering, slower sea leveling, blob levels, a faster cave (latest)
+## Hurler, aura, maxed powers, item colors (latest)
+- **The Hurler** (chapter 2's boss and its three miniboss visits; also in Boss Rush):
+  - It no longer hops away when the hero gets close; it only walks.
+  - 25% less health (`hp` 1650, was 2200).
+  - Its boulders land in circles 20% smaller (1.2 m, was 1.5 m), telegraph and hit alike.
+- **Aura:** 1 less damage per tick at every level (5-23, was 6-24).
+- **Maxed powers:** level-up cards never offered a maxed power (`test/_maxed.mjs` checks land and sea with everything
+  maxed), but the chest's spinning strip showed them going past; it now shows only powers it could still give (or
+  just its prize). The level-up card that takes a power to its max says "Takes it to max level".
+- **Item colors.** Every item can be painted, free, in its card (right-click): its own color (the ↺ swatch) or ten
+  others (`GEAR_COLORS`: red, orange, yellow, green, teal, blue, purple, pink, white, black).
+  - The paint is per item type: all robes share one color. It is kept in `G.save.gear.colors`.
+  - It goes on the item's main material and its shades (`GEAR_TINT`, `shadeTo`; each shade keeps how much lighter or
+    darker it was):
+    - weapons: the sword's blade, the wand's handle, the bow's wood;
+    - armor: the robe's cloth, the plate's steel, the vest's leather;
+    - rings: the band (the gem keeps its color);
+    - necklaces: the chain.
+  - It shows both on the blob (`gearLook` in `Hero.setGear`) and in the item's picture (`gearIcon`).
+  - Mythic gear keeps cycling through the rainbow, so its card has no swatches.
+  - `test/_k.mjs` checks all of this round's changes.
+
+## Ocean map, tank steering, slower sea leveling, blob levels, a faster cave
 - **Ocean map.** On the ocean page the Chapters button opens a map of the twenty oceans (`renderOceans`, 14-ui.js):
   the sea boss's portrait, the ocean's name, its boss and best time; oceans not reached yet are locked. It used to
   show the land chapters.

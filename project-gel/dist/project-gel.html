@@ -383,6 +383,11 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .art-info .art-stat { margin: 0; font-size: 22px; color: var(--ink); }
 .art-info .chip { font-size: 20px; }
 .art-info .dim { margin: 0; font-size: 18px; font-weight: 500; }
+.art-paint { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+.art-paint[hidden] { display: none; }
+.art-paint .swatch { width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 3px solid #fff; background: var(--c); box-shadow: 0 0 0 2px rgba(35,48,90,.25), inset 0 -4px 0 rgba(0,0,0,.18); cursor: pointer; display: grid; place-items: center; }
+.art-paint .swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink), inset 0 -4px 0 rgba(0,0,0,.18); }
+.art-paint .swatch.orig::after { content: '\21BA'; color: #fff; font: 800 20px/1 var(--font); text-shadow: 0 1px 2px rgba(0,0,0,.55); }
 .chest-stage { position: relative; height: 280px; display: grid; place-items: center; }
 .chest-stage .rays { position: absolute; width: 300px; height: 300px; border-radius: 50%; opacity: 0; transition: opacity .3s;
   background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.55) 0deg 10deg, rgba(255,255,255,0) 10deg 24deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%); }
@@ -664,6 +669,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
         <p class="eyebrow rar" id="artRar">Common</p>
         <h2 id="artName">Goo Sword</h2>
         <p class="art-stat chips" id="artStat"></p>
+        <div class="art-paint" id="artPaint" aria-label="Color"></div>
       </div>
       <div class="row-actions"><button class="jelly" id="artEquip">Equip</button><button class="jelly violet" id="artFuse">Fuse 3</button><button class="jelly ghost" id="artClose">Close</button></div>
     </div>
@@ -16001,7 +16007,7 @@ class Hero {
       const key = eq[slot];
       // a hidden slot keeps its stats but is not drawn
       if (!key || !(g.items[key] > 0) || hid[slot]) continue;
-      const { id, r } = artParse(key), look = GEAR_LOOK[id];
+      const { id, r } = artParse(key), look = gearLook(id, g);
       if (!look) continue;
       out[slot] = id; out.glow[slot] = r >= MYTHIC ? 0.5 : r * 0.1; any = true;
       look.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), (slots[slot] + i) * 3); this.out.gearMat[slots[slot] - 8 + i] = (GEAR_MAT[id] || [])[i] ?? 0.5; });
@@ -16289,7 +16295,7 @@ const SKILLS = {
   aura: {
     name: 'Aura', intro: 'A sticky goo puddle around you slows everything in it to a crawl and burns it hard.', icon: { type: 19, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['radius', 'Radius', 'm'], ['slow', 'Slow', '%']],
-    levels: L10({ dmg: [6, 7, 8, 10, 11, 13, 15, 17, 20, 24], radius: [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8], slow: [30, 32, 35, 38, 40, 43, 46, 50, 55, 60] }),
+    levels: L10({ dmg: [5, 6, 7, 9, 10, 12, 14, 16, 19, 23], radius: [1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8], slow: [30, 32, 35, 38, 40, 43, 46, 50, 55, 60] }),
   },
   worms: {
     name: 'Worms', intro: 'Goo worms tunnel under the floor and bite enemies.', icon: { type: 5, colw: 3 },
@@ -16572,7 +16578,7 @@ const ELITE_TYPES = ['stickman', 'helmet', 'spear', 'axe', 'archer', 'brute', 's
 
 const BOSS_TYPES = {
   stomper: { name: 'Big Stomper', model: 'stomper', hp: 2500, speed: 1.6, dmg: 14, scale: 2.8, radius: 1.15, tint: '#ff6f8f', mass: 60 },
-  hurler: { name: 'Hurler', model: 'hurler', hp: 2200, speed: 2.4, dmg: 12, scale: 2.6, radius: 0.95, tint: '#9a7bff', mass: 60 },
+  hurler: { name: 'Hurler', model: 'hurler', hp: 1650, speed: 2.4, dmg: 12, scale: 2.6, radius: 0.95, tint: '#9a7bff', mass: 60 },
   charger: { name: 'Charger', model: 'charger', hp: 2600, speed: 1.9, dmg: 14, scale: 2.7, radius: 1.1, tint: '#e2504f', mass: 60 },
   twins: { name: 'Twins', model: 'twin', hp: 1400, speed: 2.4, dmg: 12, scale: 2.3, radius: 0.9, tint: '#ff70b0', tint2: '#9a6bff', mass: 60 },
   conductor: { name: 'Conductor', model: 'conductor', hp: 2800, speed: 0.9, dmg: 12, scale: 2.8, radius: 1.0, tint: '#ff79aa', mass: 60 },
@@ -17503,6 +17509,46 @@ const GEAR_MAT = {
   goldRing: [1, 0.9], silverRing: [1, 0.9], rubyRing: [1, 0.9],
   skull: [0.1, 0.25, 0.1], moon: [1, 0.85, 0.9], clover: [1, 0.3, 0.2],
 };
+// Item colors (an item's card in Gear): ten colors any item can be painted, free, kept per item type
+// (G.save.gear.colors[id] = hex; none = its own color). The paint goes on the item's main material and its shades:
+// on the blob the GEAR_LOOK entries in `look`, in its picture the `svg` colors; each shade stays as much lighter or
+// darker than the first (`base` in the picture) as it was. Mythic gear keeps cycling through the rainbow.
+const GEAR_COLORS = [['Red', '#e8283c'], ['Orange', '#ff8a1f'], ['Yellow', '#ffd23a'], ['Green', '#3ccf5a'], ['Teal', '#1fc8b4'],
+  ['Blue', '#2f7ff0'], ['Purple', '#8a4cff'], ['Pink', '#ff5ab4'], ['White', '#f2f4f8'], ['Black', '#34343e']];
+const NECK_CHAIN = { look: [0], svg: ['#ffd23a', '#ffc83a'], base: '#ffc83a' };
+const GEAR_TINT = {
+  // the sword's blade, the wand's handle, the bow's wood
+  sword: { look: [0], svg: ['#dfe8f3', '#a3b6ce', '#9fb3cc', '#7f93ad'], base: '#dfe8f3' },
+  wand: { look: [0, 2], svg: ['#b58cff', '#7a4bd6', '#4a22a8', '#e2d2ff'], base: '#7a4bd6' },
+  bow: { look: [0, 2], svg: ['#e6a868', '#b8733e', '#8a4f24', '#f5c58e'], base: '#b8733e' },
+  // the robe's cloth, the plate's steel, the vest's leather
+  cloak: { look: [0, 2], svg: ['#ff7a8c', '#e8283c', '#9c1024', '#a01428', '#ff9aa6'], base: '#e8283c' },
+  plate: { look: [0], svg: ['#f7fafd', '#c4d0de', '#7d8fa8', '#5f7290'], base: '#c4d0de' },
+  vest: { look: [0, 1], svg: ['#e09a5c', '#b8733e', '#814720', '#8a4f24', '#5a2f12', '#a8622c', '#f3bd88'], base: '#b8733e' },
+  // a ring's band (its gem keeps its own color), a necklace's chain
+  goldRing: { look: [0], svg: ['#fff1a8', '#ffc83a', '#d98a0c'], base: '#ffc83a' },
+  silverRing: { look: [0], svg: ['#dfe7f1', '#93a2b7'], base: '#dfe7f1' },
+  rubyRing: { look: [0], svg: ['#fff1a8', '#ffc83a', '#d98a0c'], base: '#ffc83a' },
+  skull: NECK_CHAIN, moon: NECK_CHAIN, clover: NECK_CHAIN,
+};
+const rgbHex = c => '#' + c.map(v => Math.round(clamp(v, 0, 1) * 255).toString(16).padStart(2, '0')).join('');
+// one shade (orig) of a color (base), moved onto another color (to)
+function shadeTo(orig, base, to) {
+  const lum = c => 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2], t = hexToRgb(to);
+  const lo = lum(hexToRgb(orig)), lb = Math.max(0.05, lum(hexToRgb(base)));
+  if (lo <= lb) return rgbHex(t.map(v => v * lo / lb));
+  const k = clamp((lo - lb) / Math.max(0.05, 1 - lb), 0, 1);
+  return rgbHex(t.map(v => v + (1 - v) * k));
+}
+const gearPaint = (id, g = G.save && G.save.gear) => (GEAR_TINT[id] && g && g.colors && g.colors[id]) || null;
+// an item's colors on the blob, painted
+function gearLook(id, g) {
+  const look = GEAR_LOOK[id], to = gearPaint(id, g);
+  if (!look || !to) return look;
+  const T = GEAR_TINT[id], out = look.slice(), base = look[T.look[0]];
+  for (const i of T.look) out[i] = shadeTo(look[i], base, to);
+  return out;
+}
 const artKey = (id, r) => id + ':' + r;
 const artParse = key => { const [id, r] = key.split(':'); return { id, r: Number(r), def: ARTIFACTS[id] }; };
 function artStats(key) {
@@ -21687,15 +21733,8 @@ function bossThink(e, dt, d, dx, dz) {
         if (d < 6) { tx = e.x - dx / d * 3; tz = e.z - dz / d * 3; }
         else if (d > 9) { tx = h[0]; tz = h[2]; }
         bossWalk(e, dt, tx, tz, e.speed); bossFace(e, dt);
-        if (d < 3 && ai.jumpCd <= 0) {
-          ai.state = 'hop'; ai.t = 0.6; ai.jumpCd = 4; ai.sx = e.x; ai.sz = e.z;
-          const tp = { x: e.x - dx / d * 7, z: e.z - dz / d * 7 }; resolveCircle(tp, e.radius);
-          ai.tx = tp.x; ai.tz = tp.z;
-        } else if (ai.throwT <= 0) { ai.state = 'throw'; ai.t = 0.7; ai.thrown = false; }
-      } else if (ai.state === 'hop') {
-        const u = 1 - ai.t / 0.6;
-        e.x = lerp(ai.sx, ai.tx, u); e.z = lerp(ai.sz, ai.tz, u); e.y = Math.sin(u * Math.PI) * 1.6; e.clip = 'idle';
-        if (ai.t <= 0) { e.y = 0; ai.state = 'walk'; FX.burst(e.x, 0.1, e.z, 10, [0.6, 0.55, 0.5], 4, 0.15, 0.5, 2); }
+        // (it no longer hops away when the hero closes in: it only walks)
+        if (ai.throwT <= 0) { ai.state = 'throw'; ai.t = 0.7; ai.thrown = false; }
       } else if (ai.state === 'throw') {
         const u = 1 - ai.t / 0.7;
         e.clip = 'throw'; e.clipU = u; bossFace(e, dt, 10);
@@ -21705,8 +21744,8 @@ function bossThink(e, dt, d, dx, dz) {
           const lead = [h[0] + vel[0] * 0.6, h[2] + vel[2] * 0.6];
           const targets = [lead, [lead[0] + px * 1.9, lead[1] + pz * 1.9], [lead[0] - px * 1.9, lead[1] - pz * 1.9]];
           for (const [tx, tz] of targets) {
-            addTele({ kind: 'circle', x: tx, z: tz, r: 1.5, dur: 1.0 });
-            run.eShots.push({ kind: 'boulder', sx: e.x, sy: 2.6, sz: e.z, tx, tz, x: e.x, y: 2.6, z: e.z, t: 0, dur: 1.0, radius: 1.5, dmg: 25 * run.info.dmgMul, life: 2, spin: 0 });
+            addTele({ kind: 'circle', x: tx, z: tz, r: 1.2, dur: 1.0 });
+            run.eShots.push({ kind: 'boulder', sx: e.x, sy: 2.6, sz: e.z, tx, tz, x: e.x, y: 2.6, z: e.z, t: 0, dur: 1.0, radius: 1.2, dmg: 25 * run.info.dmgMul, life: 2, spin: 0 });
           }
           AUDIO.play('throw');
         }
@@ -30022,10 +30061,12 @@ const UI = {
     }
     this.chestResults = results;
     this.chestCoins = results.length || this.chestEvo ? 0 : 40;
-    const pool = run.slots.map(s => (s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
-    const strip = $('chStrip'), tiles = [];
     const total = 34, land = 28;
     const landKey = this.chestEvo ? 'skill-' + this.chestEvo : results.length ? (SKILLS[results[0]] ? 'skill-' : 'passive-') + results[0] : 'meta-offline';
+    // the strip spins past only what the chest could still give: powers not yet at their max (else just its prize)
+    const pool = run.slots.filter(s => s.lvl < maxLevel(s.id)).map(s => (s.kind === 'skill' ? 'skill-' : 'passive-') + s.id);
+    if (!pool.length) pool.push(landKey);
+    const strip = $('chStrip'), tiles = [];
     for (let i = 0; i < total; i++) {
       const key = i === land ? landKey : pick(pool);
       const t = document.createElement('span'); t.className = 'tile' + (i === land && this.chestEvo ? ' evo' : ''); const im = document.createElement('img'); im.alt = ''; im.src = ICONS.get(key); t.append(im); tiles.push(t);
@@ -30313,10 +30354,11 @@ function describeChoice(c) {
       line = (ch.length ? ch : [fields[0]]).map(([k, label, unit]) => `${label} <em>${fmtStat(sk.levels[lvl - 1][k], unit)} → ${fmtStat(sk.levels[lvl][k], unit)}</em>`).join('<br>');
     }
     if (ABILITIES[c.id] && lvl + 1 === max) line += `<br><b class="abil-note">Max level: unlocks the ${ABILITIES[c.id].name} ability</b>`;
+    else if (lvl + 1 === max && max > 1) line += '<br><b class="abil-note">Takes it to max level</b>';
     return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id] };
   }
   const partner = Object.keys(EVOLUTIONS).some(k => EVOLUTIONS[k].with === c.id && G.run && slotOf(k) && !slotOf(k).evo);
-  return { name: ps.name, desc: `<em>${ps.short}</em>`, icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner };
+  return { name: ps.name, desc: `<em>${ps.short}</em>` + (lvl + 1 === max && max > 1 ? '<br><b class="abil-note">Takes it to max level</b>' : ''), icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner };
 }
 function applyChoice(c) {
   const run = G.run;
@@ -30466,7 +30508,14 @@ const CHEST_SVG = svgDoc(`<defs>${grad('chxW', ['#d9935a', '#b8733e', '#874d22']
   <rect x="7" y="46" width="106" height="11" rx="4" fill="url(#chxG)" stroke="#23305a" stroke-width="3"/><path d="M12 49 H54" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".75"/>
   <g fill="#b56d08"><circle cx="16" cy="51.5" r="1.8"/><circle cx="40" cy="51.5" r="1.8"/><circle cx="80" cy="51.5" r="1.8"/><circle cx="104" cy="51.5" r="1.8"/></g></g>`, '0 0 120 110');
 const GEAR_URL = {};
-const gearIcon = id => GEAR_URL[id] || (GEAR_URL[id] = svgUrl(svgDoc(GEAR_SVG[id])));
+// (a painted item's picture has its main color's shades swapped for the paint's, see GEAR_TINT)
+const gearIcon = id => {
+  const to = gearPaint(id), k = to ? id + to : id;
+  if (GEAR_URL[k]) return GEAR_URL[k];
+  let svg = GEAR_SVG[id];
+  if (to) { const T = GEAR_TINT[id]; svg = svg.replace(new RegExp(T.svg.join('|'), 'gi'), m => shadeTo(m, T.base, to)); }
+  return (GEAR_URL[k] = svgUrl(svgDoc(svg)));
+};
 const slotIcon = id => GEAR_URL['slot-' + id] || (GEAR_URL['slot-' + id] = svgUrl(svgDoc(SLOT_SVG[id], '0 0 24 24')));
 
 // ---------- inventory logic (G.save.gear = { items: { 'wand:2': count }, eq: { slot: key } }) ----------
@@ -30721,6 +30770,19 @@ Object.assign(UI, {
     $('artRar').className = 'eyebrow rar r' + r;
     $('artName').textContent = def.name;
     $('artStat').innerHTML = statChips(artStats(key));
+    // its paint: its own color and the ten others (every rarity of this item shares it; Mythic is every color)
+    const paint = $('artPaint'), cur = gearPaint(id);
+    paint.hidden = r >= MYTHIC || !GEAR_TINT[id];
+    if (!paint.hidden) {
+      const sw = [[null, 'Original color', GEAR_LOOK[id][GEAR_TINT[id].look[0]]], ...GEAR_COLORS.map(([n, h]) => [h, n, h])];
+      paint.replaceChildren(...sw.map(([val, name, show]) => {
+        const b = document.createElement('button');
+        b.className = 'swatch' + (val ? '' : ' orig'); b.style.setProperty('--c', show);
+        b.title = name; b.setAttribute('aria-label', name); b.setAttribute('aria-pressed', String(cur === val));
+        b.addEventListener('click', () => this.paintArt(id, val));
+        return b;
+      }));
+    }
     const worn = g.eq[def.slot] === key;
     $('artEquip').textContent = worn ? 'Unequip' : 'Equip';
     $('artEquip').className = worn ? 'jelly ghost' : 'jelly';
@@ -30728,6 +30790,13 @@ Object.assign(UI, {
     $('artFuse').textContent = r === LEGEND ? 'Mythic' : 'Fuse';
     $('artFuse').className = r === LEGEND ? 'jelly mythic' : 'jelly violet';
     this.show('artInfo', true);
+  },
+  paintArt(id, hex) {
+    const g = G.save.gear;
+    g.colors = g.colors || {};
+    if (hex) g.colors[id] = hex; else delete g.colors[id];
+    saveGame(); AUDIO.play('pop'); G.hero.impulse(1.2);
+    this.renderGear(); this.openArtifact(this.artKeyOpen);
   },
   // a left click on an item in the grid puts it on, in place of whatever was in its slot (one already worn just
   // makes the blob hop); a right click opens its card
@@ -31219,7 +31288,7 @@ function defaultSave() {
     v: 1, content: 4, coins: 0, blobUp: {}, blobLv: {}, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
-    scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {} }, devUnlocked: false,
+    scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {}, colors: {} }, devUnlocked: false,
     settings: { sound: true, numbers: true, shake: true, haptics: true, quality: 'auto' },
     lastSeen: Date.now(), stats: { runs: 0, kills: 0, bosses: 0, elites: 0, gooblins: 0, evos: 0, maxLevel: 0, fuses: 0, coinsEarned: 0 },
     goals: { seen: {}, claimed: {} }, tutorial: true,
@@ -31244,7 +31313,7 @@ function loadGame() {
         cleared: s.cleared || {}, best: s.best || {},
         sea: { ...d.sea, ...(s.sea || {}), cleared: { ...((s.sea && s.sea.cleared) || {}) }, best: { ...((s.sea && s.sea.best) || {}) } },
         goals: { seen: { ...((s.goals && s.goals.seen) || {}) }, claimed: { ...((s.goals && s.goals.claimed) || {}) } },
-        gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) }, hidden: { ...((s.gear && s.gear.hidden) || {}) } },
+        gear: { items: { ...((s.gear && s.gear.items) || {}) }, eq: { ...d.gear.eq, ...((s.gear && s.gear.eq) || {}) }, hidden: { ...((s.gear && s.gear.hidden) || {}) }, colors: { ...((s.gear && s.gear.colors) || {}) } },
       };
       // saves from before the blob upgrades replaced the Upgrades tab (content 4): everyone starts over,
       // keeping only their settings

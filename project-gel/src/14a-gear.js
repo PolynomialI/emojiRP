@@ -139,7 +139,14 @@ const CHEST_SVG = svgDoc(`<defs>${grad('chxW', ['#d9935a', '#b8733e', '#874d22']
   <rect x="7" y="46" width="106" height="11" rx="4" fill="url(#chxG)" stroke="#23305a" stroke-width="3"/><path d="M12 49 H54" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".75"/>
   <g fill="#b56d08"><circle cx="16" cy="51.5" r="1.8"/><circle cx="40" cy="51.5" r="1.8"/><circle cx="80" cy="51.5" r="1.8"/><circle cx="104" cy="51.5" r="1.8"/></g></g>`, '0 0 120 110');
 const GEAR_URL = {};
-const gearIcon = id => GEAR_URL[id] || (GEAR_URL[id] = svgUrl(svgDoc(GEAR_SVG[id])));
+// (a painted item's picture has its main color's shades swapped for the paint's, see GEAR_TINT)
+const gearIcon = id => {
+  const to = gearPaint(id), k = to ? id + to : id;
+  if (GEAR_URL[k]) return GEAR_URL[k];
+  let svg = GEAR_SVG[id];
+  if (to) { const T = GEAR_TINT[id]; svg = svg.replace(new RegExp(T.svg.join('|'), 'gi'), m => shadeTo(m, T.base, to)); }
+  return (GEAR_URL[k] = svgUrl(svgDoc(svg)));
+};
 const slotIcon = id => GEAR_URL['slot-' + id] || (GEAR_URL['slot-' + id] = svgUrl(svgDoc(SLOT_SVG[id], '0 0 24 24')));
 
 // ---------- inventory logic (G.save.gear = { items: { 'wand:2': count }, eq: { slot: key } }) ----------
@@ -394,6 +401,19 @@ Object.assign(UI, {
     $('artRar').className = 'eyebrow rar r' + r;
     $('artName').textContent = def.name;
     $('artStat').innerHTML = statChips(artStats(key));
+    // its paint: its own color and the ten others (every rarity of this item shares it; Mythic is every color)
+    const paint = $('artPaint'), cur = gearPaint(id);
+    paint.hidden = r >= MYTHIC || !GEAR_TINT[id];
+    if (!paint.hidden) {
+      const sw = [[null, 'Original color', GEAR_LOOK[id][GEAR_TINT[id].look[0]]], ...GEAR_COLORS.map(([n, h]) => [h, n, h])];
+      paint.replaceChildren(...sw.map(([val, name, show]) => {
+        const b = document.createElement('button');
+        b.className = 'swatch' + (val ? '' : ' orig'); b.style.setProperty('--c', show);
+        b.title = name; b.setAttribute('aria-label', name); b.setAttribute('aria-pressed', String(cur === val));
+        b.addEventListener('click', () => this.paintArt(id, val));
+        return b;
+      }));
+    }
     const worn = g.eq[def.slot] === key;
     $('artEquip').textContent = worn ? 'Unequip' : 'Equip';
     $('artEquip').className = worn ? 'jelly ghost' : 'jelly';
@@ -401,6 +421,13 @@ Object.assign(UI, {
     $('artFuse').textContent = r === LEGEND ? 'Mythic' : 'Fuse';
     $('artFuse').className = r === LEGEND ? 'jelly mythic' : 'jelly violet';
     this.show('artInfo', true);
+  },
+  paintArt(id, hex) {
+    const g = G.save.gear;
+    g.colors = g.colors || {};
+    if (hex) g.colors[id] = hex; else delete g.colors[id];
+    saveGame(); AUDIO.play('pop'); G.hero.impulse(1.2);
+    this.renderGear(); this.openArtifact(this.artKeyOpen);
   },
   // a left click on an item in the grid puts it on, in place of whatever was in its slot (one already worn just
   // makes the blob hop); a right click opens its card
