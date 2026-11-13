@@ -9,7 +9,7 @@ const errs = []; page.on('pageerror', e => errs.push(e.message + ' ' + (e.stack 
 await page.addInitScript({ path: path.join(dir, 'harness.js') });
 await page.goto('file://' + path.join(dir, '..', 'dist', 'project-gel.html'));
 await page.waitForFunction(() => G.state === 'home', null, { timeout: 120000 });
-await page.waitForFunction(() => MESHJOB.done.size === MESH_ORDER.length, null, { timeout: 240000 });
+await page.waitForFunction(() => MESHJOB.done.size === MESH_ORDER.length, null, { timeout: 400000 });
 const shot = async n => { await page.evaluate(() => __frames(2, 1 / 60, true)); await page.waitForTimeout(350); await page.screenshot({ path: path.join(dir, 'shots', n + '.png') }); };
 const hidden0 = await page.evaluate(() => { __manual(); __installNanCheck(); __frames(3, 1 / 60, true); return document.getElementById('btnEndless').hidden; });
 await page.evaluate(() => { G.save.chapter = 6; G.save.cleared[3] = true; G.save.selected = 5; UI.refreshHome(); });

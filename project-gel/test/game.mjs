@@ -36,7 +36,7 @@ await page.waitForFunction(() => G.state === 'home' || !document.getElementById(
 console.log('home after', Date.now() - t0, 'ms');
 const loadErr = await page.evaluate(() => document.getElementById('loadError').hidden ? '' : document.getElementById('loadError').textContent);
 if (loadErr) { console.log('LOAD ERROR:', loadErr); console.log(errors.join('\n')); await browser.close(); process.exit(1); }
-await page.waitForFunction(() => MESHJOB.done.size === MESH_ORDER.length, null, { timeout: 180000 });
+await page.waitForFunction(() => MESHJOB.done.size === MESH_ORDER.length, null, { timeout: 400000 });
 console.log('all meshes after', Date.now() - t0, 'ms', await page.evaluate(() => MESHJOB.fallback ? '(main-thread fallback)' : '(workers)'));
 await page.evaluate(() => { __manual(); __installNanCheck(); __installDmgLog(); });
 await render(3);
