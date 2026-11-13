@@ -1241,15 +1241,21 @@ const ARTIFACTS = {
   moon: { name: 'Moon Pendant', slot: 'necklace', stats: { cd: 4 } },
   clover: { name: 'Clover Charm', slot: 'necklace', stats: { gold: 8, magnet: 10 } },
 };
-// How an equipped artifact looks on the blob: its colors (the hero's palette entries 8-12; see Hero.setGear)
+// How an equipped artifact looks on the blob: its colors (the hero's palette, see Hero.setGear: weapon 4 colors,
+// armor 3, ring 2 (band, gem), necklace 3 (chain, pendant, detail)) and how metallic each color is (1 polished metal,
+// 0 cloth or leather)
 const GEAR_LOOK = {
-  sword: ['#e4ecf4', '#ffc93a'], wand: ['#8a63ff', '#ffe14a'], bow: ['#9a6a3a'],
-  cloak: ['#e8283c'], plate: ['#c2ccd9'], vest: ['#9a6a3a'],
-  goldRing: ['#ffc21f'], silverRing: ['#e8eef6'], rubyRing: ['#ff3b6b'],
-  skull: ['#f4ecd8'], moon: ['#ffe9a0'], clover: ['#4cd964'],
+  sword: ['#e4ecf4', '#ffc93a', '#5a3420', '#3ad0ff'], wand: ['#8a5a30', '#ffe14a', '#8a63ff', '#ffc93a'], bow: ['#a8743e', '#f4ecd8', '#5a3420', '#c8d0da'],
+  cloak: ['#e8283c', '#ffc93a', '#8a1424'], plate: ['#c2ccd9', '#6a4426', '#e8b84a'], vest: ['#a8703a', '#5e3a1e', '#e0b048'],
+  goldRing: ['#ffc21f', '#2ee07a'], silverRing: ['#e8eef6', '#3a8aff'], rubyRing: ['#ffb02a', '#ff1f4a'],
+  skull: ['#3a2e28', '#f4ecd8', '#2a2230'], moon: ['#e8c060', '#ffe9a0', '#5ac8ff'], clover: ['#e8c060', '#4cd964', '#1e8a3e'],
 };
-// how metallic each artifact looks on the blob: 1 polished metal, 0 cloth or leather
-const GEAR_MAT = { sword: 1, wand: 0.55, bow: 0.1, cloak: 0, plate: 1, vest: 0.12, goldRing: 1, silverRing: 1, rubyRing: 1, skull: 0.25, moon: 0.85, clover: 0.3 };
+const GEAR_MAT = {
+  sword: [1, 1, 0.1, 0.9], wand: [0.15, 0.9, 0.2, 1], bow: [0.1, 0, 0.1, 0.9],
+  cloak: [0, 1, 0], plate: [1, 0.1, 1], vest: [0.1, 0.1, 1],
+  goldRing: [1, 0.9], silverRing: [1, 0.9], rubyRing: [1, 0.9],
+  skull: [0.1, 0.25, 0.1], moon: [1, 0.85, 0.9], clover: [1, 0.3, 0.2],
+};
 const artKey = (id, r) => id + ':' + r;
 const artParse = key => { const [id, r] = key.split(':'); return { id, r: Number(r), def: ARTIFACTS[id] }; };
 function artStats(key) {

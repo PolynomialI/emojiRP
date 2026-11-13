@@ -21,7 +21,8 @@ R.init = function (canvas) {
   // every program starts compiling now; boot waits on R.programsReady() and calls R.finishPrograms() before drawing
   const P = (vs, fs, name, attribs) => (R.progs[name] = GLX.programStart(vs, fs, name, attribs));
   P(VS_FLOOR, FS_FLOOR, 'floor', ['aPos']);
-  P(VS_HERO, FS_HERO, 'hero', ['aCorner']);
+  HERO_MAXP = clamp(Math.floor((gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS) - 96) / 3), 48, 72);
+  P(VS_HERO, FS_HERO.replace('__HERO_MAXP__', String(HERO_MAXP)), 'hero', ['aCorner']);
   P(VS_IMP, FS_IMP, 'imp', ['aCorner', 'iPosS', 'iAxis', 'iP0', 'iP1']);
   P(VS_ENEMY, FS_ENEMY, 'enemy', ['aPos', 'aNrm', 'aBones', 'aW0', 'aAO', 'aCol', 'iPosYaw', 'iAnim', 'iFx', 'iTint']);
   P(VS_DECAL, FS_DECAL, 'decal', ['aCorner', 'iA', 'iB', 'iC']);

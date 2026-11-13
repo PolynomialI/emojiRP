@@ -55,6 +55,17 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   the gear level with the coin count and the arrows level with the PROJECT GEL line. Sell and Mythic share the
   gear panel's second row. Dragging spins the blob on the Gear screen too (as on home and Blobs). The home menu
   column has room round it so a button's slide to the left on hover is no longer cut off by its scroll box.
+- **Gear on the blob reworked** (07-hero.js, the gear block of `buildPrims`). Steel Plate: a breastplate with a
+  gold gorget, rim and rivets, domed pauldrons, a belt and buckle, two tassets. Leather Vest: a jerkin over chest
+  and belly with a dark collar, shoulder pads, crossed laces and brass studs, a belt. Necklaces hang on a cord or
+  chain round the neck (over any armor) to a pendant on its own spring (`updateNeck`: lags, swings, bounces with
+  the steps): a skull with a jaw and eye sockets, a crescent moon with a blue bead, a four-leaf clover. Rings are a
+  band round the second fist (square to the forearm) with a gem on a bezel: green (gold), blue (silver), red (ruby).
+  The bow is a recurve with a leather grip and a string; the star wand has a pommel, a wrapped grip, a banded
+  shaft, a gold collar and a five-pointed star; the sword has round guard ends, a gem and a pommel; the robe has a
+  hood, a clasp, front trim and a sash. Gear colors: weapon 4, armor 3, ring 2, necklace 3 (`GEAR_PAL`, palette
+  8-19, color weights 18-29), each with its own metalness (`GEAR_MAT`, `uGearMat[3]`). The blob's shape budget is
+  set at start from the GPU's uniform room (`HERO_MAXP`, 72, at least 48); a full set uses about 47-56 shapes.
 - **Ocean home foes.** Pirates (swimmers, float and tube riders, sized and tinted as in a run, head and shoulders
   out of the water) swim in round the ship and hack at its side, rocking the blob; tap the water to lob goo at the
   nearest, and the blob throws now and then itself (`seaHomeFoes`, `emitSeaHomeFoes`; shots shared with the land

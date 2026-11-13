@@ -722,7 +722,9 @@ void main() {
 // ------------------------------------------------------------
 // Hero: raymarched blended shapes inside a camera-facing quad
 // ------------------------------------------------------------
-const HERO_MAXP = 48;
+// how many shapes the blob may use: 72 where the GPU has room for that many uniforms, never fewer than 48
+// (R.init sets it once the context exists; gear is drawn last, so a smaller budget drops its finest parts first)
+let HERO_MAXP = 72;
 const VS_HERO = GLSL_HEAD + GLSL_FRAME + `
 in vec2 aCorner;
 uniform vec3 uBoundC;
@@ -741,7 +743,7 @@ void main() {
 }`;
 
 const FS_HERO = GLSL_HEAD + GLSL_FRAME + GLSL_COMMON + GLSL_GOO + `
-#define MAXP ${HERO_MAXP}
+#define MAXP __HERO_MAXP__
 in vec3 vW;
 out vec4 fragColor;
 uniform vec4 uPA[MAXP];
@@ -759,11 +761,11 @@ uniform float uBubbles;
 uniform float uSpark;
 uniform float uGloss;
 uniform vec4 uChest;
-uniform vec3 uPal[14];  // costume colors (0-3), hat colors (4-7) and gear colors (8-13), used by color weights 10..23
+uniform vec3 uPal[20];  // costume colors (0-3), hat colors (4-7) and gear colors (8-19), used by color weights 10..29
 uniform vec4 uGrad;     // body gradient: top color, amount
 uniform float uGroundY;
 uniform float uAoY;
-uniform vec4 uGearMat;   // gear metalness: weapon, armor, ring, necklace
+uniform vec4 uGearMat[3]; // how metallic each gear color is (palette 8-19)
 uniform vec3 uBoxLo;    // the shapes' world-space box (padded): rays that miss it are dropped
 uniform vec3 uBoxHi;
 uniform int uZero; // never set, so always 0: loops that start at it cannot be unrolled
@@ -783,17 +785,16 @@ float wob(vec3 p) {
 }
 // color of one shape: goo colors, costume palette, or the body (with its optional gradient)
 vec3 primCol(float w, vec3 p) {
-  if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 13.0))];
+  if (w >= 9.5) return uPal[int(clamp(w - 10.0 + 0.5, 0.0, 19.0))];
   vec3 c = gooColor(w);
   if (w < 0.05) c = mix(c, uGrad.rgb, uGrad.w * smoothstep(0.5, 1.75, p.y - uGroundY));
   return c;
 }
-// gear shapes (color weights 18-23, palette 8-13) are solid, not goo: x = 1 for gear, y = how metallic
-// (per slot, from uGearMat: weapon, armor, ring, necklace)
+// gear shapes (color weights 18-29, palette 8-19) are solid, not goo: x = 1 for gear, y = how metallic that color is
 vec2 primMat(float w) {
-  if (w < 17.5 || w > 23.5) return vec2(0.0);
-  float k = floor(w - 10.0 + 0.5);
-  return vec2(1.0, k < 9.5 ? uGearMat.x : k < 10.5 ? uGearMat.y : k < 11.5 ? uGearMat.z : uGearMat.w);
+  if (w < 17.5 || w > 29.5) return vec2(0.0);
+  int k = int(w - 18.0 + 0.5);
+  return vec2(1.0, uGearMat[k >> 2][k & 3]);
 }
 // distance, and when asked the blended color, glow and material of the shapes that meet here
 float mapH(vec3 p, bool wantCol, out vec3 col, out float g, out vec2 mat) {

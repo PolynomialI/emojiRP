@@ -7,6 +7,10 @@
 const PELVIS_Y = 0.88, HIP_Y = 0.78, LEG_SEG = 0.36, STRIDE = 1.8;
 // the robe's swing at rest (Hero Cloak; see updateRobe and buildPrims)
 const ROBE0 = { x: 0, z: 0, tw: 0, sp: 0 };
+const NECK0 = { x: 0, z: 0, b: 0 };
+// where each gear slot's colors start in the hero's palette (color weight = 10 + entry): weapon 4, armor 3,
+// ring 2 (band, gem), necklace 3 (chain, pendant, detail)
+const GEAR_PAL = { weapon: 8, armor: 12, ring: 15, necklace: 17 };
 const HERO_JOINTS = {
   pelvis: { rest: [0, PELVIS_Y, 0], k: 420, z: 0.62, inertia: 0.15 },
   chest: { rest: [0, 1.21, 0], k: 260, z: 0.42, inertia: 0.42 },
@@ -85,8 +89,8 @@ class Hero {
     this.ghosts = [];
     this.out = {
       pa: new Float32Array(HERO_MAXP * 4), pb: new Float32Array(HERO_MAXP * 4), pc: new Float32Array(HERO_MAXP * 4), count: 0,
-      rotInv: new Float32Array(9), gearMat: new Float32Array(4), boundC: [0, 0, 0], boundR: 1, boxLo: new Float32Array(3), boxHi: new Float32Array(3), aoY: 0, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
-      chest: new Float32Array(4), pal: new Float32Array(42), grad: new Float32Array(4), groundY: 0,
+      rotInv: new Float32Array(9), gearMat: new Float32Array(12), boundC: [0, 0, 0], boundR: 1, boxLo: new Float32Array(3), boxHi: new Float32Array(3), aoY: 0, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
+      chest: new Float32Array(4), pal: new Float32Array(60), grad: new Float32Array(4), groundY: 0,
     };
     this.costume = null; this.hat = null; this.hatLift = 0; this.gear = null;
     this.lounge = 0; this.lng = 0; // lounge target and its eased blend (0 stands, 1 lies back on deck)
@@ -262,6 +266,7 @@ class Hero {
       if (lg > 0) { const k = i ? 'B' : 'A'; V3.lerp(hip.t, hip.t, LOUNGE['hip' + k], lg); V3.lerp(knee.t, knee.t, LOUNGE['knee' + k], lg); V3.lerp(foot.t, foot.t, LOUNGE['foot' + k], lg); }
     }
     if (this.gear && this.gear.armor === 'cloak') this.updateRobe(dt, c, s, lax, laz, sN);
+    if (this.gear && this.gear.necklace) this.updateNeck(dt, c, s, lax, laz, sN);
     // arms
     for (const a of this.arms) {
       a.grow += (a.growTarget - a.grow) * Math.min(1, dt * 5);
@@ -382,6 +387,18 @@ class Hero {
 
   // The robe's hem hangs on damped springs (in the blob's own frame): it trails behind as you run, kicks forward
   // when you stop and sways back and forth to rest, twists behind you when you turn (or are spun in the menu)
+  // a necklace's pendant hangs on a spring: it lags behind as the blob sets off, swings on as it stops or turns,
+  // and bounces a little with each step
+  updateNeck(dt, c, s, lax, laz, sN) {
+    if (!(dt > 0)) return;
+    const nk = this.neck || (this.neck = { x: 0, z: 0, vx: 0, vz: 0, b: 0, yaw: this.yaw });
+    const lvx = c * this.vel[0] - s * this.vel[2], lvz = s * this.vel[0] + c * this.vel[2];
+    const turn = angleDiff(nk.yaw, this.yaw) / dt; nk.yaw = this.yaw;
+    const tx = clamp(-lvx * 0.012 - lax * 0.0035 + turn * 0.012, -0.12, 0.12), tz = clamp(-lvz * 0.012 - laz * 0.0035, -0.1, 0.12);
+    nk.vx += ((tx - nk.x) * 55 - nk.vx * 3.2) * dt; nk.vz += ((tz - nk.z) * 55 - nk.vz * 3.2) * dt;
+    nk.x = clamp(nk.x + nk.vx * dt, -0.14, 0.14); nk.z = clamp(nk.z + nk.vz * dt, -0.12, 0.14);
+    nk.b = Math.abs(Math.sin(this.time * 9)) * 0.012 * sN;
+  }
   updateRobe(dt, c, s, lax, laz, sN) {
     if (!(dt > 0)) return;
     const rb = this.robe || (this.robe = { x: 0, z: 0, vx: 0, vz: 0, tw: 0, vtw: 0, sp: 0, yaw: this.yaw });
@@ -525,19 +542,27 @@ class Hero {
       // the Hero Cloak is a full robe: a mantle on the shoulders, a wrapped body and waist, and a skirt of eight
       // overlapping panels down to the ankles. Their hems swing on the robe's springs (updateRobe), flutter
       // when you run, and the front ones are pushed out by the striding feet
+      const WP = 10 + GEAR_PAL.weapon, AR = 10 + GEAR_PAL.armor, RG = 10 + GEAR_PAL.ring, NK = 10 + GEAR_PAL.necklace;
+      const P = J.pelvis.p;
       if (gear.armor === 'cloak') {
-        const P = J.pelvis.p, rb = this.robe || ROBE0, t = this.time, push = Math.max(0, J.footA.p[2], J.footB.p[2]) * 0.7;
+        const rb = this.robe || ROBE0, t = this.time, push = Math.max(0, J.footA.p[2], J.footB.p[2]) * 0.7;
         const lift = Math.hypot(rb.x, rb.z) * 0.45;
         // (a small blend keeps the cloth's color crisp where it lies close over the goo)
-        ell(off(ch, 0, 0.12, -0.01, gp), 0.43, 0.13, 0.33, 0.012, 20, 0);
-        ell(off(ch, 0, -0.05, 0, gp), 0.385, 0.345, 0.315, 0.012, 20, 0);
-        ell(off(P, 0, 0.02, 0, gp), 0.335, 0.24, 0.315, 0.02, 20, 0);
+        ell(off(ch, 0, 0.12, -0.01, gp), 0.43, 0.13, 0.33, 0.012, AR, 0);
+        ell(off(ch, 0, -0.05, 0, gp), 0.385, 0.345, 0.315, 0.012, AR, 0);
+        ell(off(P, 0, 0.02, 0, gp), 0.335, 0.24, 0.315, 0.02, AR, 0);
+        // the hood lying down the back, a gold clasp at the collar, gold trim down the front, a gold sash and buckle
+        ell(off(ch, 0, 0.17, -0.25, gp), 0.25, 0.15, 0.12, 0.02, AR + 2, 0);
+        cap(off(ch, 0, 0.16, 0.29, gp), off(P, 0, -0.04, 0.33, gq), 0.02, 0.02, 0.006, AR + 1, 0);
+        sph(off(ch, 0, 0.2, 0.27, gp), 0.048, 0.008, AR + 1, gear.glow.armor);
+        ell(off(P, 0, 0.13, 0, gp), 0.35, 0.05, 0.33, 0.008, AR + 1, 0);
+        sph(off(P, 0, 0.13, 0.33, gp), 0.04, 0.006, AR + 2, 0);
         // sleeves over the upper arms of the first two arms, so they move with them
         for (let i = 0; i < 2; i++) {
           const a = this.arms[i];
           if (a.grow < 0.5) continue;
           const sh = a.sh.p, el = a.el.p;
-          cap(sh, [lerp(sh[0], el[0], 0.9), lerp(sh[1], el[1], 0.9), lerp(sh[2], el[2], 0.9)], 0.14, 0.15, 0.012, 20, 0);
+          cap(sh, [lerp(sh[0], el[0], 0.9), lerp(sh[1], el[1], 0.9), lerp(sh[2], el[2], 0.9)], 0.14, 0.15, 0.012, AR, 0);
         }
         for (let i = 0; i < 8; i++) {
           const a = (i / 8) * TAU, ca = Math.cos(a + rb.tw), sa = Math.sin(a + rb.tw);
@@ -545,26 +570,106 @@ class Hero {
           gq[0] = P[0] + sa * (0.36 + fl) + rb.x;
           gq[1] = 0.2 + lift + Math.abs(fl) * 0.6;
           gq[2] = P[2] + ca * (0.33 + fl) + rb.z + Math.max(0, Math.cos(a)) * push;
-          cap(off(P, Math.sin(a) * 0.2, -0.05, Math.cos(a) * 0.19, gp), gq, 0.1, 0.14, 0.035, 20, 0);
+          cap(off(P, Math.sin(a) * 0.2, -0.05, Math.cos(a) * 0.19, gp), gq, 0.1, 0.14, 0.035, AR, 0);
+        }
+      } else if (gear.armor === 'plate') {
+        // steel plate: a breastplate with a gold gorget and lower rim and two gold rivets, domed pauldrons on the
+        // shoulders, a leather belt with a gold buckle and two steel tassets over the hips
+        ell(off(ch, 0, -0.01, 0.02, gp), 0.355, 0.27, 0.295, 0.012, AR, gear.glow.armor * 0.3);
+        ell(off(ch, 0, 0.21, 0, gp), 0.23, 0.045, 0.21, 0.008, AR + 2, 0);
+        ell(off(ch, 0, -0.21, 0.02, gp), 0.335, 0.035, 0.28, 0.008, AR + 2, 0);
+        for (const sx of [1, -1]) sph(off(ch, sx * 0.17, 0.07, 0.27, gp), 0.022, 0.004, AR + 2, 0);
+        for (let i = 0; i < 2; i++) { const sh = this.arms[i].sh.p, sx = this.arms[i].side; ell(off(sh, sx * 0.03, 0.06, 0, gp), 0.16, 0.1, 0.16, 0.01, AR, 0); }
+        ell(off(P, 0, 0.11, 0, gp), 0.3, 0.05, 0.29, 0.008, AR + 1, 0);
+        sph(off(P, 0, 0.11, 0.29, gp), 0.045, 0.006, AR + 2, 0);
+        for (const sx of [1, -1]) ell(off(P, sx * 0.15, -0.03, 0.18, gp), 0.12, 0.1, 0.07, 0.01, AR, 0);
+      } else if (gear.armor === 'vest') {
+        // leather vest: a jerkin over the chest and belly, a dark leather collar and shoulder pads, crossed laces
+        // down the front with brass studs, and a belt with a brass buckle
+        const vz = (x, y) => 0.01 + 0.3 * Math.sqrt(Math.max(0, 1 - (x / 0.36) ** 2 - ((y + 0.01) / 0.3) ** 2));
+        ell(off(ch, 0, -0.01, 0.01, gp), 0.36, 0.3, 0.3, 0.012, AR, gear.glow.armor * 0.3);
+        ell(off(P, 0, 0.17, 0, gp), 0.33, 0.13, 0.3, 0.012, AR, 0);
+        ell(off(ch, 0, 0.21, 0, gp), 0.235, 0.05, 0.215, 0.008, AR + 1, 0);
+        for (let i = 0; i < 2; i++) { const sh = this.arms[i].sh.p, sx = this.arms[i].side; ell(off(sh, sx * 0.02, 0.05, 0, gp), 0.13, 0.075, 0.13, 0.01, AR + 1, 0); }
+        for (const sx of [1, -1]) {
+          cap(off(ch, sx * -0.055, 0.12, vz(0.055, 0.12) + 0.006, gp), off(ch, sx * 0.055, -0.13, vz(0.055, -0.13) + 0.006, gq), 0.014, 0.014, 0.003, AR + 1, 0);
+          sph(off(ch, sx * 0.06, 0.13, vz(0.06, 0.13) + 0.004, gp), 0.02, 0.003, AR + 2, 0);
+        }
+        ell(off(P, 0, 0.1, 0, gp), 0.31, 0.05, 0.3, 0.008, AR + 1, 0);
+        sph(off(P, 0, 0.1, 0.3, gp), 0.042, 0.006, AR + 2, 0);
+      }
+      // a necklace: a chain round the neck, hanging to a pendant that swings on its own spring
+      if (gear.necklace) {
+        // (worn over armor, it sits that much further out)
+        const nk = this.neck || NECK0, gl = gear.glow.necklace, kind = gear.necklace, dz = gear.armor ? 0.045 : 0;
+        const b = off(ch, nk.x, -0.02 - nk.b, 0.29 + dz + Math.max(0, nk.z), [0, 0, 0]);
+        const pc = off(b, nk.x * 0.6, -0.065, Math.max(0, nk.z) * 0.6 + 0.005, [0, 0, 0]);
+        for (const sx of [1, -1]) {
+          const top = off(ch, sx * 0.19, 0.17, 0.168 + dz, gp), mid = off(ch, sx * 0.105 + nk.x * 0.4, 0.075, 0.262 + dz + Math.max(0, nk.z) * 0.4, gq);
+          cap(top, mid, 0.013, 0.013, 0.004, NK, 0); cap(mid, b, 0.013, 0.013, 0.004, NK, 0);
+        }
+        if (kind === 'skull') {
+          sph(pc, 0.06, 0.006, NK + 1, gl);
+          ell(off(pc, 0, -0.05, 0.008, gp), 0.042, 0.026, 0.038, 0.012, NK + 1, gl);
+          for (const sx of [1, -1]) sph(off(pc, sx * 0.023, 0.006, 0.05, gp), 0.017, 0.003, NK + 2, 0);
+        } else if (kind === 'moon') {
+          // a crescent: four caps along an arc, thick in the middle, thin at the horns, and a blue gem bead above it
+          const R0 = 0.055, ang = [1.2, 2.1, 3.14, 4.18, 5.08], rr = [0.01, 0.024, 0.03, 0.024, 0.01];
+          for (let i = 0; i < 4; i++) cap(off(pc, 0.015 + Math.cos(ang[i]) * R0, Math.sin(ang[i]) * R0, 0, gp), off(pc, 0.015 + Math.cos(ang[i + 1]) * R0, Math.sin(ang[i + 1]) * R0, 0, gq), rr[i], rr[i + 1], 0.004, NK + 1, 0.15 + gl);
+          sph(off(b, 0, -0.005, 0.005, gp), 0.022, 0.004, NK + 2, 0.2 + gl);
+        } else {
+          // a four-leaf clover with a little stem, on a gold bead
+          for (const [x, y] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) sph(off(pc, x * 0.03, y * 0.03 - 0.005, 0, gp), 0.033, 0.012, NK + 1, gl);
+          cap(off(pc, 0, -0.03, 0.01, gp), off(pc, 0.03, -0.095, 0.02, gq), 0.01, 0.007, 0.004, NK + 2, 0);
+          sph(off(b, 0, 0, 0.005, gp), 0.02, 0.004, NK, 0);
         }
       }
-      else if (gear.armor) ell(off(ch, 0, -0.01, 0.02, gp), 0.35, gear.armor === 'plate' ? 0.26 : 0.3, 0.285, 0.015, 20, 0);
-      if (gear.necklace) sph(off(ch, 0, 0.19, 0.27, gp), 0.062, 0.01, 22, gear.glow.necklace);
       const wa = this.arms[0], ra = this.arms[1];
       if (gear.weapon && wa.grow > 0.5) {
-        const f = wa.fi.p;
+        const f = wa.fi.p, sx = wa.side, gw = gear.glow.weapon;
         if (gear.weapon === 'bow') {
-          cap(off(f, 0, 0.44, -0.1, gp), off(f, 0, 0, 0.1, gq), 0.02, 0.036, 0.02, 18, 0);
-          cap(off(f, 0, 0, 0.1, gp), off(f, 0, -0.44, -0.1, gq), 0.036, 0.02, 0.02, 18, 0);
+          // a recurve bow: curved limbs that bend back and flick out at the tips, a leather grip and a taut string
+          const G = off(f, sx * 0.06, 0, 0.03, [0, 0, 0]);
+          for (const sy of [1, -1]) {
+            const u1 = off(f, sx * 0.02, sy * 0.24, 0.025, gp), u2 = off(f, sx * -0.09, sy * 0.43, 0.01, gq), tip = off(f, sx * -0.07, sy * 0.51, 0.01, [0, 0, 0]);
+            cap(G, u1, 0.034, 0.027, 0.01, WP, gw * 0.4); cap(u1, u2, 0.027, 0.016, 0.006, WP, gw * 0.4); cap(u2, tip, 0.016, 0.012, 0.004, WP + 3, 0);
+          }
+          cap(off(f, sx * 0.065, -0.08, 0.03, gp), off(f, sx * 0.065, 0.08, 0.03, gq), 0.04, 0.04, 0.008, WP + 2, 0);
+          cap(off(f, sx * -0.075, 0.5, 0.01, gp), off(f, sx * -0.075, -0.5, 0.01, gq), 0.008, 0.008, 0.002, WP + 1, 0);
         } else if (gear.weapon === 'sword') {
-          cap(off(f, 0, 0.1, 0.07, gp), off(f, 0, 0.7, 0.3, gq), 0.05, 0.012, 0.01, 18, gear.glow.weapon * 0.5);
-          cap(off(f, -0.12, 0.17, 0.1, gp), off(f, 0.12, 0.17, 0.1, gq), 0.032, 0.032, 0.01, 19, 0);
+          // a broad blade, a gold crossguard with round ends and a gem in its middle, and a gold pommel under the fist
+          cap(off(f, 0, 0.2, 0.1, gp), off(f, 0, 0.78, 0.33, gq), 0.05, 0.01, 0.008, WP, gw * 0.5);
+          cap(off(f, -0.13, 0.17, 0.1, gp), off(f, 0.13, 0.17, 0.1, gq), 0.03, 0.03, 0.008, WP + 1, 0);
+          for (const x of [-0.15, 0.15]) sph(off(f, x, 0.18, 0.1, gp), 0.038, 0.006, WP + 1, 0);
+          sph(off(f, 0, 0.17, 0.135, gp), 0.03, 0.004, WP + 3, 0.25 + gw);
+          sph(off(f, 0, -0.15, -0.05, gp), 0.045, 0.006, WP + 1, 0);
         } else {
-          cap(off(f, 0, 0.08, 0.06, gp), off(f, 0, 0.56, 0.24, gq), 0.026, 0.022, 0.01, 18, 0);
-          sph(off(f, 0, 0.62, 0.27, gp), 0.085, 0.01, 19, 0.35 + gear.glow.weapon);
+          // the star wand: a gold pommel, a purple-wrapped grip, a carved wooden shaft with a purple band and a gold
+          // collar, and a five-pointed star on top
+          sph(off(f, 0, -0.12, -0.03, gp), 0.036, 0.006, WP + 3, 0);
+          cap(off(f, 0, -0.08, -0.01, gp), off(f, 0, 0.17, 0.08, gq), 0.032, 0.03, 0.006, WP + 2, 0);
+          cap(off(f, 0, 0.14, 0.07, gp), off(f, 0, 0.53, 0.215, gq), 0.026, 0.019, 0.006, WP, 0);
+          ell(off(f, 0, 0.34, 0.145, gp), 0.032, 0.013, 0.032, 0.004, WP + 2, 0);
+          sph(off(f, 0, 0.53, 0.215, gp), 0.031, 0.006, WP + 3, 0);
+          const S = off(f, 0, 0.64, 0.255, [0, 0, 0]);
+          for (let i = 0; i < 5; i++) { const a = Math.PI / 2 + i * TAU / 5; cap(S, off(S, Math.cos(a) * 0.12, Math.sin(a) * 0.12, 0, gq), 0.042, 0.01, 0.012, WP + 1, 0.35 + gw); }
         }
       }
-      if (gear.ring && ra.grow > 0.5) sph(off(ra.fi.p, 0, 0.07, 0.15, gp), 0.058, 0.01, 21, 0.2 + gear.glow.ring);
+      // a ring: a band round the second fist (square to its forearm) with a gem set on top
+      if (gear.ring && ra.grow > 0.5) {
+        const fi = ra.fi.p, el = ra.el.p, d = [fi[0] - el[0], fi[1] - el[1], fi[2] - el[2]], dl = Math.hypot(d[0], d[1], d[2]) || 1;
+        d[0] /= dl; d[1] /= dl; d[2] /= dl;
+        let u = [d[2], 0, -d[0]], ul = Math.hypot(u[0], u[2]);
+        if (ul < 0.2) { u = [1, 0, 0]; ul = 1; }
+        u[0] /= ul; u[2] /= ul;
+        const v = [d[1] * u[2] - d[2] * u[1], d[2] * u[0] - d[0] * u[2], d[0] * u[1] - d[1] * u[0]];
+        if (v[1] < 0) { v[0] = -v[0]; v[1] = -v[1]; v[2] = -v[2]; }
+        const fr = (0.155 + ra.swell * 0.06) * ra.grow, along = fr * 0.42, Rb = Math.sqrt(fr * fr - along * along) + 0.012;
+        const C0 = [fi[0] + d[0] * along, fi[1] + d[1] * along, fi[2] + d[2] * along], pt = (a, R, out) => { const ca = Math.cos(a) * R, sa = Math.sin(a) * R; out[0] = C0[0] + u[0] * ca + v[0] * sa; out[1] = C0[1] + u[1] * ca + v[1] * sa; out[2] = C0[2] + u[2] * ca + v[2] * sa; return out; };
+        for (let i = 0; i < 5; i++) cap(pt(Math.PI / 2 + i * TAU / 5, Rb, gp), pt(Math.PI / 2 + (i + 1) * TAU / 5, Rb, gq), 0.02, 0.02, 0.004, RG, 0);
+        sph(pt(Math.PI / 2, Rb + 0.012, gp), 0.03, 0.006, RG, 0);
+        sph(pt(Math.PI / 2, Rb + 0.04, gp), 0.04, 0.004, RG + 1, 0.25 + gear.glow.ring);
+      }
     }
     o.count = n;
 
@@ -643,7 +748,7 @@ class Hero {
 
   // show the equipped artifacts (the save's gear: { items, eq }); better rarities glow a little
   setGear(g) {
-    const eq = (g && g.eq) || {}, hid = (g && g.hidden) || {}, slots = { weapon: 8, armor: 10, ring: 11, necklace: 12 }, order = ['weapon', 'armor', 'ring', 'necklace'];
+    const eq = (g && g.eq) || {}, hid = (g && g.hidden) || {}, slots = GEAR_PAL;
     const out = { glow: {}, myth: null };
     let any = false;
     for (const slot in slots) {
@@ -653,8 +758,7 @@ class Hero {
       const { id, r } = artParse(key), look = GEAR_LOOK[id];
       if (!look) continue;
       out[slot] = id; out.glow[slot] = r >= MYTHIC ? 0.5 : r * 0.1; any = true;
-      this.out.gearMat[order.indexOf(slot)] = GEAR_MAT[id] ?? 0.5;
-      look.forEach((hex, i) => this.out.pal.set(hexToRgb(hex), (slots[slot] + i) * 3));
+      look.forEach((hex, i) => { this.out.pal.set(hexToRgb(hex), (slots[slot] + i) * 3); this.out.gearMat[slots[slot] - 8 + i] = (GEAR_MAT[id] || [])[i] ?? 0.5; });
       // mythic: its colors cycle through the rainbow (rainbowGear, every frame)
       if (r >= MYTHIC) (out.myth = out.myth || []).push([slots[slot], look.length]);
     }
