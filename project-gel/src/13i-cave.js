@@ -35,7 +35,7 @@ const CAVE_FOES = {
   bat: { model: 'cbat', hp: 10, scale: 1.5, tint: '#4a3a40', fly: true, clips: { run: 'batflap', idle: 'batflap', slam: 'batflap' } },
   goblin: { model: 'goblin', hp: 28, scale: 1.3, tint: '#6aa84a' },
   ogre: { model: 'ogre', hp: 300, scale: 2.2, tint: '#8aa070', armor: 0.8, head: 0.98, headR: 0.15 },
-  golem: { model: 'golem', hp: 200, scale: 2.0, tint: '#8a8078', armor: 0.25, head: 0.66, headR: 0.12 },
+  golem: { model: 'cgolem', hp: 200, scale: 2.0, tint: '#8a8078', armor: 0.25, head: 0.66, headR: 0.12 },
 };
 // rooms: half width, length, the look, hero cover xs, mid-room and far cover spots, and the waves
 const CAVE_ROOMS = {
@@ -143,7 +143,7 @@ function cvPiece(spec, F, rnd) {
     if (kind === 'boss') for (const sx of [-1, 1]) { wall(sx * hw, 0, sx * hw, -15.5, -sx * Math.PI / 2, sc); wall(sx * hw, -20.5, sx * hw, -L, -sx * Math.PI / 2, sc); wall(sx * (hw + 5), -15, sx * (hw + 5), -21, -sx * Math.PI / 2, sc); }
     else for (const sx of [-1, 1]) wall(sx * hw, 0, sx * hw, -L, -sx * Math.PI / 2, sc);
     for (let z = -4, i = 0; z > -L + 1; z -= 6.5, i++) for (const sx of [-1, 1]) if (kind !== 'boss' || z > -14 || z < -22) torch(sx * hw, z - (sx > 0 ? 3 : 0), -sx * Math.PI / 2);
-    ceiling(-hw, hw, 0, -L, Math.ceil(L * hw / 18));
+    ceiling(-hw, hw, 0, -L, Math.min(44, Math.ceil(L * hw / 18)));
     // a ring of bits along the walls, clear of the covers
     const near = (x, z) => [...D.hero.map(x0 => [x0, CAVE.coverZ]), ...D.mid, ...D.foe].some(([cx, cz]) => Math.hypot(cx - x, cz - z) < 2.6) || Math.abs(x) < 3 && (z > -3 || z < -L + 3);
     floorBits(-hw + 0.3, -hw + 1.8, -1, -L + 1, Math.ceil(L / 4), near); floorBits(hw - 1.8, hw - 0.3, -1, -L + 1, Math.ceil(L / 4), near);
@@ -519,7 +519,7 @@ function cvHitAt(x, y, z, forAim) {
   for (const c of Rm.covers) {
     if (Math.abs(lx - c.lx) < c.hw && Math.abs(lz - c.lz) < c.hd && y < (c.broken ? 0.35 : c.h)) return { kind: 'cover', cover: c };
   }
-  if (Math.abs(lx) > Rm.D.hw + 0.3 || lz < -Rm.D.len - 0.3 || y > CAVE.ceil) return { kind: 'wall' };
+  if (Math.abs(lx) > (Rm.D.wallHw ?? Rm.D.hw) + 0.3 || lz < -Rm.D.len - 0.3 || y > CAVE.ceil) return { kind: 'wall' };
   return null;
 }
 const cvShieldUp = f => !(f.state === 'bash' && f.t > 0.45) && f.state !== 'recover';
@@ -879,7 +879,7 @@ function cvBolts(dt) {
       if (CV.boss && !b.goo && bagBlocks(l[0], b.y, l[1])) { b.done = true; break; }
       // the hero: a capsule from the floor to the top of the blob
       if (Math.abs(l[1] - CAVE.rail) < CAVE.heroR && Math.abs(l[0] - Rm.hx) < CAVE.heroR + 0.1 && b.y < cvHeroTop(Rm) && b.y > 0.1) { b.done = true; cvHurtHero(b.dmg, null, b); }
-      if (l[1] > 2 || Math.abs(l[0]) > Rm.D.hw + 1) b.done = true;
+      if (l[1] > 2 || Math.abs(l[0]) > (Rm.D.wallHw ?? Rm.D.hw) + 1) b.done = true;
     }
     if (b.t > 3) b.done = true;
   }
@@ -1105,7 +1105,7 @@ function emitCave() {
   for (const s of CV.shots) { pushImp(s.x, s.y, s.z, 0.17, s.vx, s.vy, s.vz, 1.45, 0, 0, 0.3, s.ph + s.t, 0, 0, 0, 1); }
   for (const b of CV.bolts) { const sp = Math.hypot(b.vx, b.vy, b.vz) || 1; pushImp(b.x, b.y, b.z, b.crys ? 0.42 : 0.34, b.vx / sp, b.vy / sp, b.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); FX.glow(b.x, b.y, b.z, b.crys ? 0.7 : 0.3, b.crys ? [0.5, 0.95, 1] : [1, 0.5, 0.3], 0.04, b.crys ? 0.8 : 0.4); }
   for (const p of CV.spears) {
-    if (p.kind === 'dyn') { if (R.enemyDraw.dynamite) pushEnemy('dynamite', false, p.x, p.y, p.z, p.spin, MODELS.defs.dynamite.clips.still.row, 2.2, 1, 0, p.fuse !== undefined && Math.sin(R.frame.time * 30) > 0 ? 0.6 : 0, 0, 1, 1, 1); FX.glow(p.x, p.y + 0.2, p.z, 0.45, [1, 0.7, 0.3], 0.04, 0.8); continue; }
+    if (p.kind === 'dyn') { if (R.enemyDraw.dynamite) pushEnemy('dynamite', false, p.x, p.y - 0.3, p.z, p.spin, MODELS.defs.dynamite.clips.still.row, 1.4, 1, 0, p.fuse !== undefined && Math.sin(R.frame.time * 30) > 0 ? 0.6 : 0, 0, 1, 1, 1); FX.glow(p.x, p.y + 0.2, p.z, 0.45, [1, 0.7, 0.3], 0.04, 0.8); continue; }
     if (p.kind === 'boulder') { if (R.enemyDraw.boulder1) pushEnemy('boulder1', false, p.x, p.y - 0.4, p.z, p.spin, MODELS.defs.boulder1.clips.still.row, 1.5, 1, 0, 0, 0, f.rockCol[0], f.rockCol[1], f.rockCol[2]); continue; }
     const u = clamp(p.t / p.dur, 0, 1), vy = -p.sy + Math.cos(u * Math.PI) * Math.PI * 4.2, vx = p.tx - p.sx, vz = p.tz - p.sz, l = Math.hypot(vx, vy, vz) || 1;
     pushImp(p.x, p.y, p.z, 0.62, vx / l, vy / l, vz / l, 1, 14, 0, 0, 0, 0, 0, 0, 1);

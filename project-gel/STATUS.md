@@ -66,6 +66,31 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   hood, a clasp, front trim and a sash. Gear colors: weapon 4, armor 3, ring 2, necklace 3 (`GEAR_PAL`, palette
   8-19, color weights 18-29), each with its own metalness (`GEAR_MAT`, `uGearMat[3]`). The blob's shape budget is
   set at start from the GPU's uniform room (`HERO_MAXP`, 72, at least 48); a full set uses about 47-56 shapes.
+- **Cave overhaul (chapter 20).**
+  - Outside: once the cave opens, a big gold arrow bobs over its mouth when it is on screen, or points to it from
+    the screen's edge when it is not (14-ui.js, after the boss arrows).
+  - The original cave foes hit 40% harder; walking between rooms is three times as fast (`CAVE.walk` 13.8).
+  - Every room's rocks crash down from the ceiling one after another when it starts, bounce and settle in dust
+    (`cvDropCovers`, `cvCoverDrops`, `cvDropY`); the first wave waits for them.
+  - See-through rock: any wall slab, boulder, pillar or brazier between the camera and the blob (or what the camera
+    looks at) fades out like the city's buildings (`cvSeeThrough`).
+  - The deep mine's crowd (models in 04i, behaviour in `cvFoeDeep`): cave spiders drop from the ceiling on silk and
+    skitter in to bite; bats weave in high and swoop at your head; goblin sappers throw dynamite from behind rocks (it
+    lands, the fuse burns, it blasts you and your rocks); ogres hurl two boulders, then come in to smash with a
+    club; crystal golems fire fans of crystal shards, and only the glowing core in their chest takes full damage
+    (their body takes a quarter). Every room has its own mix of the old and new crowd; the Bagger calls them too.
+  - The Bagger (13j-bagger.js) has half again its health and four stages at 100/75/50/25%, each fought from another
+    side of it (`BAG_STAGES`: a frame turned about the machine, `bagStageSetup`; the hall is now 42 wide and 58 deep).
+    Stage 1 from the front: goo spit, rock barrage, minions. Stage 2 from its left: the heart beam, the drill-smash
+    and quake (lanes of rock spikes erupting out to the rail). Stage 3 from its right: goo rain (gobs sweeping along
+    the rail), spin (the upper works turn a full circle spraying rocks across the rail) and the drill volley (a
+    drill-rock at every rock at once). Stage 4 from behind, red-hot: all of them. Between stages it roars, the view
+    goes dark and the hero comes back on the new side with fresh rocks dropping in (`bagShift`).
+  - Its fall: the heart cracks in a moment of slow motion, the bucket wheel snaps off and rolls away bouncing,
+    explosions run over it as the boom droops and the masts sink, then the heart bursts in a blast of goo and the
+    machine melts into the floor while rock rains from the ceiling; the camera circles it throughout.
+  - `test/_cave.mjs` plays chapter 20 through (BR=L|R) with shots of each stage; `test/_cavefoes.mjs` lines up the
+    new crowd.
 - **Ocean home foes.** Pirates (swimmers, float and tube riders, sized and tinted as in a run, head and shoulders
   out of the water) swim in round the ship and hack at its side, rocking the blob; tap the water to lob goo at the
   nearest, and the blob throws now and then itself (`seaHomeFoes`, `emitSeaHomeFoes`; shots shared with the land

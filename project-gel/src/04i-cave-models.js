@@ -7,7 +7,7 @@
 // Rocks are 'crag' parts (faceted chunks, 03-sdfmesh.js); parts without col take the instance tint.
 // ============================================================
 Object.assign(THEME_CLIPS, { mole: ['run', 'slam', 'idle'], xbowman: ['run', 'aim', 'idle'], spearman: ['run', 'throw', 'slam', 'idle'], shieldman: ['run', 'slam', 'idle'],
-  cspider: ['skitter', 'bite'], cbat: ['batflap'], goblin: ['run', 'throw', 'idle'], ogre: ['run', 'throw', 'slam', 'idle'], golem: ['run', 'aim', 'slam', 'idle'] });
+  cspider: ['skitter', 'bite'], cbat: ['batflap'], goblin: ['run', 'throw', 'idle'], ogre: ['run', 'throw', 'slam', 'idle'], cgolem: ['run', 'aim', 'slam', 'idle'] });
 // a cave spider's legs move in two alternating sets (bones 1 and 2), the front pair (bone 4) feels the air and the
 // abdomen (bone 3) bobs; biting, the front legs rear up and it lunges
 CLIPS.skitter = { frames: 12, fn(t) {
@@ -25,10 +25,10 @@ CLIPS.batflap = { frames: 10, fn(t) {
 } };
 Object.assign(THEME_CELLS, { boulder0: 0.025, boulder1: 0.025, boulder2: 0.025, cliff0: 0.03, cliff1: 0.03, cavemouth: 0.026, minecart: 0.014, lanternpost: 0.014, ore: 0.022,
   cwall0: 0.03, cwall1: 0.03, cwall2: 0.03, stalac: 0.02, stalag: 0.02, cover0: 0.022, cover1: 0.022, cover2: 0.022, rubble: 0.02, cpillar: 0.026, torch: 0.008, brazier: 0.012, mbeam: 0.02,
-  mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013, cspider: 0.012, cbat: 0.01, goblin: 0.012, ogre: 0.013, golem: 0.014, dynamite: 0.008 });
+  mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013, cspider: 0.012, cbat: 0.01, goblin: 0.012, ogre: 0.013, cgolem: 0.014 });
 MESH_ORDER.push('boulder0', 'boulder1', 'boulder2', 'cliff0', 'cliff1', 'cavemouth', 'minecart', 'lanternpost', 'ore', 'stalag', 'mole',
   'cwall0', 'cwall1', 'cwall2', 'stalac', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman',
-  'cspider', 'cbat', 'goblin', 'ogre', 'golem', 'dynamite');
+  'cspider', 'cbat', 'goblin', 'ogre', 'cgolem');
 
 function caveModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -332,12 +332,7 @@ function caveModels(defs) {
     }
     rig(P('cbat', parts, { ao: 0.5 }), { 1: [0.06, 0.01, 0], 2: [-0.06, 0.01, 0] });
   }
-  // a stick of dynamite with its fuse (thrown by goblins)
-  P('dynamite', [
-    { s: 'cap', a: [0, 0, -0.12], b: [0, 0, 0.12], r: 0.05, col: C('#d8282a'), k: 0 },
-    { s: 'tor', ax: 'z', c: [0, 0, 0.0], R: 0.052, r: 0.008, a0: -Math.PI, a1: Math.PI, col: C('#2a2018'), k: 0 },
-    { s: 'cap', a: [0, 0, 0.14], b: [0.02, 0.05, 0.2], r: 0.008, col: C('#e8dcc0'), k: 0 },
-  ], { ao: 0.4 });
+  // (the goblins throw the Wild West's dynamite, 04d)
   // the goblin sapper: a small green goblin with long ears, a battered tin helmet with a candle on it, goggles, a
   // satchel of dynamite on its back and a lit stick in its hand
   {
@@ -396,7 +391,7 @@ function caveModels(defs) {
     m.parts.push({ s: 'sph', c: [0, 0.66, 0.16], r: 0.075, col: crB, bone: 1, k: 0.01 });
     for (const [x, y, z, dx, dy, dz, r] of [[0.08, 0.72, -0.12, 0.1, 0.22, -0.12, 0.045], [-0.1, 0.68, -0.13, -0.08, 0.18, -0.16, 0.04], [0, 0.6, -0.14, 0.02, 0.14, -0.2, 0.035], [0.18, 0.86, -0.02, 0.12, 0.16, -0.05, 0.035], [-0.18, 0.86, -0.02, -0.12, 0.16, -0.05, 0.035]])
       m.parts.push({ s: 'cap', a: [x, y, z], b: [x + dx, y + dy, z + dz], r, r2: 0.006, col: cr, bone: 1, k: 0.01 });
-    m.name = 'golem'; m.crownLift = 0.08; m.runAmp = 0.6;
-    defs.golem = m;
+    m.name = 'cgolem'; m.crownLift = 0.08; m.runAmp = 0.6;
+    defs.cgolem = m;
   }
 }
