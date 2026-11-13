@@ -42,7 +42,7 @@ await page.evaluate(() => { __manual(); __installNanCheck(); __installDmgLog(); 
 await render(3);
 if (mode === 'boot') {
   await render(30); await shot('home');
-  for (const tab of ['upgrades', 'gear', 'skins', 'chapters']) { await page.click(`.tab[data-tab="${tab}"]`); await render(2); await shot('menu-' + tab); await page.click(`#${tab} .back`); }
+  for (const tab of ['goals', 'gear', 'skins', 'chapters']) { await page.click(`.tab[data-tab="${tab}"]`); await render(2); await shot('menu-' + tab); await page.click(`#${tab} .back`); }
   await page.click('#btnSettings'); await render(1); await shot('menu-settings');
   await page.click('#btnSettingsDone');
 }
@@ -187,10 +187,11 @@ if (mode === 'flows') {
   await page.waitForFunction(() => G.state === 'home', null, { timeout: 60000, polling: 100 });
   // purchases
   await page.evaluate(() => { G.save.coins = 5000; UI.refreshHome(); });
-  await page.click('.tab[data-tab="upgrades"]');
-  await page.click('#upList .uprow:nth-child(1) button'); await page.click('#upList .uprow:nth-child(1) button');
+  // (the blob's own upgrades, under Gear, replaced the Upgrades tab)
+  await page.click('.tab[data-tab="gear"]'); await page.click('#gUpgrade');
+  await page.click('#buList .bu-row:nth-child(1) .jelly'); await page.click('#buList .bu-row:nth-child(1) .jelly');
   await render(2); await shot('flow-upgrades-bought');
-  await page.click('#upgrades .back');
+  await page.click('#buClose'); await page.click('#gear .back');
   await page.click('.tab[data-tab="skins"]');
   await page.click('#skinGrid .skin:nth-child(3)'); await render(20); await shot('flow-skin-preview');
   await page.click('#skinAction'); await render(20); await shot('flow-skin-bought');
@@ -198,7 +199,7 @@ if (mode === 'flows') {
   await page.click('.tab[data-tab="chapters"]'); await render(2); await shot('flow-chapters-after');
   await page.click('#chapters .back');
   // offline earnings popup on the next visit
-  await page.evaluate(() => { G.save.upgrades.offline = 3; G.save.lastSeen = Date.now() - 3 * 3.6e6; const o = offlineEarnings(); UI.showOffline(o.coins, o.hours); });
+  await page.evaluate(() => UI.showOffline(120, 3)); // (offline earnings are off since the blob upgrades; the popup still works)
   await render(2); await shot('flow-offline');
   await page.click('#btnCollect');
   // low quality preset in a run

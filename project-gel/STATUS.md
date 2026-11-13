@@ -45,6 +45,10 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   there and adds 5% an ocean instead, and the deep bosses were rebased (11k health at ocean 11 to 16.6k at 20).
   The deep steps are gentle early and steep late (health x1.04 at ocean 11 to x1.6 at 20; damage x1.03 to x1.4).
   Last run: ocean 11 won (needed the revive), ocean 15 won at 67% lowest hull, ocean 20 sank at 3:12 after a revive.
+- **Tests brought up to date.** `game.mjs boot` and `flows` still clicked the old Upgrades tab and used offline
+  earnings (both gone since the blob upgrades); they use Achievements, Gear > Upgrade and the offline popup now.
+  The full mesh build takes about 3.5 minutes on the (software GPU) test machine, so the checks wait up to 400 s.
+  Last pass: check-home, check-goals, check-endless, check-rush, game.mjs boot, flows and input, no page errors.
 
 ## The Deep: oceans 11-20, new ships, ship looks
 - **Weight in the water.** Everything in the sea has a dark mass under the surface (decal type 12, `seaShadow` in
