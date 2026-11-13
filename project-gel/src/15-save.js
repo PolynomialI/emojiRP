@@ -4,7 +4,7 @@
 const SAVE_KEY = 'projectGel.save.v1';
 function defaultSave() {
   return {
-    v: 1, content: 4, coins: 0, blobUp: {}, chapter: 1, selected: 1, cleared: {}, best: {},
+    v: 1, content: 4, coins: 0, blobUp: {}, blobLv: {}, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {} }, devUnlocked: false,
@@ -38,6 +38,9 @@ function loadGame() {
       // keeping only their settings
       if (!(s.content >= 4)) { const fresh = defaultSave(); fresh.settings = out.settings; return fresh; }
       out.blobUp = { ...(s.blobUp || {}) };
+      // one level per color now: a color upgraded stat by stat before starts at the average of its three levels
+      out.blobLv = { ...(s.blobLv || {}) };
+      for (const id in out.blobUp) if (out.blobLv[id] === undefined) { const v = Object.values(out.blobUp[id] || {}); if (v.length) out.blobLv[id] = Math.min(BLOB_UP_MAX, Math.round(v.reduce((a, b) => a + b, 0) / 3)); }
       return out;
     }
   } catch (_) { /* storage unavailable: play without saving */ }

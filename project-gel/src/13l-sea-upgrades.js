@@ -63,7 +63,7 @@ Object.assign(SKILLS, {
   cannon: {
     sea: true, name: 'Homing Cannon', intro: 'Deck cannons that turn to fire cannonballs which curve onto their target.', icon: { type: 13, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Cannons'], ['splash', 'Splash', 'm']],
-    levels: L10({ dmg: [10, 11, 12, 13, 15, 16, 18, 20, 22, 25], cd: [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.95, 0.9, 0.85], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0.8, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4] }),
+    levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 13, 15], cd: [1.4, 1.35, 1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.95], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0.8, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4] }),
   },
   musket: {
     sea: true, name: 'Musket Ball Pile', intro: 'A heap of musket balls that goes off in a ring of shot all around the ship.', icon: { type: 13, colw: 0 },
@@ -78,7 +78,7 @@ Object.assign(SKILLS, {
   gunner: {
     sea: true, rare: true, name: 'Battleship Gunner', intro: 'Rare. A battleship turret that lobs heavy shells into the thickest crowd.', icon: { type: 13, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Blast', 'm'], ['shells', 'Shells'], ['cd', 'Cooldown', 's']],
-    levels: L10({ dmg: [30, 34, 38, 43, 48, 54, 60, 67, 75, 85], cd: [4.5, 4.4, 4.3, 4.1, 4.0, 3.8, 3.6, 3.4, 3.2, 3.0], shells: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], radius: [2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.0] }),
+    levels: L10({ dmg: [16, 18, 20, 22, 25, 28, 31, 34, 38, 44], cd: [5.2, 5.1, 5.0, 4.8, 4.6, 4.4, 4.2, 4.0, 3.8, 3.5], shells: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], radius: [2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.0] }),
   },
   anchor: {
     sea: true, name: 'Anchor Flail', intro: 'The anchor swings round the ship on its chain, battering everything it sweeps through.', icon: { type: 13, colw: 0 },

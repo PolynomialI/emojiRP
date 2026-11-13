@@ -422,7 +422,8 @@ function gainXp(v) {
   const run = G.run;
   // (Endless and Boss Rush level up far more slowly: 40% of the XP)
   run.xp += v * run.stats.xpMul * XP_MUL * (run.endless || run.rush ? 0.4 : 1);
-  while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = xpFor(run.level); run.pending++; }
+  const need = run.sea ? xpForSea : xpFor;
+  while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = need(run.level); run.pending++; }
 }
 
 // ---------- damage numbers ----------

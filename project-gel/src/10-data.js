@@ -236,6 +236,8 @@ function featuredPowerup(chapter) {
 }
 // a run holds at most this many different skills and this many different passives
 const SLOT_LIMIT = { skill: 4, passive: 4 };
+// (at sea the Ship and the Homing Cannon take two of the weapon slots, so there is one more)
+const slotLimit = kind => SLOT_LIMIT[kind] + (kind === 'skill' && G.run && G.run.sea ? 1 : 0);
 
 // Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1).
 // ai: how the enemy attacks besides walking into you. lunge = spear thrust, chop = overhead swing,
@@ -627,6 +629,9 @@ function chapterInfo(n) {
 
 // XP needed to go from level L to L+1
 const xpFor = L => Math.round(4 + 1.6 * L + 0.03 * L * L);
+// at sea a level costs far more: about six times as much early on, ten times by level 20 (a chapter there is longer
+// and has more swimmers, and the ship's upgrades should take the whole chapter to build up)
+const xpForSea = L => Math.round(25 + 8 * L + 0.35 * L * L);
 
 // every permanent upgrade stops at level 20 (past that, damage and health made runs far too easy)
 const META_MAX = 20;
@@ -640,9 +645,10 @@ const META_UPGRADES = {
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
 // (META_UPGRADES are only icons now: the Upgrades tab is gone, replaced by each color's own upgrades below)
 
-// Blob upgrades: every body color has three stats of its own to upgrade (Gear > Upgrade), up to level 20,
-// percent per level (regen: percent of max health a second). The plain blue blob has the all-rounders; a
-// color that specializes (its boost) gets more of its own stat and less health.
+// Blob levels: every body color has a level of its own (Gear > Upgrade), up to 20, kept per color (switch colors
+// and the new one is at its own level). Each level raises all three of that color's stats at once by the amounts
+// below (percent per level; regen: percent of max health a second). The plain blue blob has the all-rounders; a
+// color that specializes (its boost) gains more of its own stat and less of the others.
 const BLOB_UP_MAX = 20;
 const BLOB_UPS = {
   none: [['dmg', 2.5], ['hp', 4], ['armor', 1]],
@@ -658,7 +664,9 @@ const BLOB_UPS = {
   gold: [['gold', 2.5], ['dmg', 1.8], ['hp', 2.5]],
 };
 const blobUps = skin => BLOB_UPS[(skin && skin.boost && Object.keys(skin.boost)[0]) || 'none'] || BLOB_UPS.none;
-const blobUpCost = lvl => Math.round(60 * Math.pow(1.16, lvl));
+// (a level buys three stats at once, so it costs about three of the old single-stat steps)
+const blobUpCost = lvl => Math.round(170 * Math.pow(1.16, lvl));
+const blobLevel = (sv, id) => ((sv.blobLv || {})[id]) || 0;
 
 // Body colors. "top" makes a two-tone gradient from the feet up. "boost" is a small stat bonus (see STAT_INFO).
 const SKINS = [

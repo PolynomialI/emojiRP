@@ -104,7 +104,7 @@ function startSea(chapter) {
   OC.ship = { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
   OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.shot.length = 0; OC.mines.length = 0; OC.nets.length = 0; OC.crew.length = 0; OC.hz.length = 0; OC.look = null; OC.boltT = 5; OC.sink = null; OC.stage = 0; OC.wantStage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
   const run = G.run = {
-    chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
+    chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpForSea(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
@@ -144,7 +144,7 @@ function seaStats(run) {
   run.stats = {
     dmgMul: 1 + g('dmg'),
     speedMul: (1 + 0.07 * lv('propeller')) * (1 + g('speed')),
-    magnet: (1.6 + D.len * 0.45) * (1 + g('magnet')),
+    magnet: (1.6 + D.len * 0.2) * (1 + g('magnet')),
     armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: 1 + g('area'), extra: 0, xpMul: 1 + g('xp'),
@@ -194,7 +194,7 @@ function updateOcean(dt) {
     run.t += dt;
     while (run.events.length && run.t >= run.events[0].t) seaEvent(run.events.shift());
     // (fewer while the boss is out, so the fight is about the boss)
-    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t)) * run.info.rateMul * 0.85;
+    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t * 300 / SEA_BOSS_T)) * run.info.rateMul * 0.85 * 1.5;
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) { run.spawnAcc -= 1; if (run.enemies.length < MAX_ALIVE) seaSpawn(); }
   }
@@ -234,8 +234,10 @@ function updateOcean(dt) {
   }
 }
 
-// Boat handling: the stick points where you want to go; the ship turns toward it (better when under way),
-// eases off the throttle while turning hard, and slides only a little sideways
+// Boat handling. On the keyboard the ship drives like a boat: W (or up) is full ahead along its heading, S (or down)
+// backs it off, A and D (or left and right) turn it to port and starboard. With the touch stick or a gamepad the stick
+// points where you want to go: the ship turns toward it (better when under way) and eases off the throttle while
+// turning hard. Either way it slides only a little sideways.
 function seaSteer(dt) {
   if (OC.wantStage > OC.stage && seaShipReady(OC.wantStage)) seaShipArrives();
   const S = OC.ship, D = shipDef(), run = G.run;
@@ -243,15 +245,18 @@ function seaSteer(dt) {
   // (kelp and frost patches grip the hull)
   const top = D.speed * run.stats.speedMul * (1 - (OC.snared || 0));
   let steer = 0, thr = 0;
-  if (m > 0.12 && G.state === 'run') {
+  const KY = INPUT.keys, ahead = (KY.has('w') || KY.has('arrowup') ? 1 : 0) - (KY.has('s') || KY.has('arrowdown') ? 1 : 0);
+  const turnK = (KY.has('a') || KY.has('arrowleft') ? 1 : 0) - (KY.has('d') || KY.has('arrowright') ? 1 : 0);
+  if ((ahead || turnK) && G.state === 'run') { steer = turnK; thr = ahead > 0 ? 1 : ahead < 0 ? -0.4 : 0; }
+  else if (m > 0.12 && G.state === 'run') {
     const diff = angleDiff(S.yaw, Math.atan2(ix, iz));
     steer = clamp(diff * 2.4, -1, 1);
     thr = m * clamp(Math.cos(diff) * 0.75 + 0.45, 0.2, 1);
   }
   const want = thr * top;
   const acc = D.accel * (1 + 0.06 * lvlOf('propeller')), turn = D.turn * (1 + 0.05 * lvlOf('sails'));
-  S.speed += (want - S.speed) * (1 - Math.exp(-dt * (want > S.speed ? acc / top : 0.8)));
-  const tr = turn * (0.4 + 0.6 * clamp(S.speed / top, 0, 1));
+  S.speed += (want - S.speed) * (1 - Math.exp(-dt * (Math.abs(want) > Math.abs(S.speed) ? acc / top : 0.8)));
+  const tr = turn * (0.4 + 0.6 * clamp(Math.abs(S.speed) / top, 0, 1));
   S.yawV += (steer * tr - S.yawV) * (1 - Math.exp(-dt * 5));
   S.yaw += S.yawV * dt;
   const k = 1 - Math.exp(-dt * 4);
@@ -374,10 +379,13 @@ function seaFoe(type, x, z, opts) {
   if (type === 'pdiver') e.hidden = true;
   return e;
 }
+// a chapter at sea runs SEA_BOSS_T seconds to its boss (half again a land chapter), with half again as many
+// swimmers on the way
+const SEA_BOSS_T = 450;
 function seaEvents(chapter) {
-  const ev = [{ t: 60, kind: 'swarm', n: 16 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 26 }, { t: 210, kind: 'swarm', n: 36 },
-    { t: 255, kind: 'surge', n: 30 }, { t: 280, kind: 'swarm', n: 44 }, { t: 300, kind: 'boss' }];
-  MINI_VISITS.forEach(([f], k) => ev.push({ t: 300 * f, kind: 'mini', k }));
+  const ev = [{ t: 90, kind: 'swarm', n: 24 }, { t: 180, kind: 'elite' }, { t: 225, kind: 'swarm', n: 39 }, { t: 280, kind: 'elite' }, { t: 315, kind: 'swarm', n: 54 },
+    { t: 382, kind: 'surge', n: 45 }, { t: 420, kind: 'swarm', n: 66 }, { t: SEA_BOSS_T, kind: 'boss' }];
+  MINI_VISITS.forEach(([f], k) => ev.push({ t: SEA_BOSS_T * f, kind: 'mini', k }));
   return ev.sort((a, b) => a.t - b.t);
 }
 function seaEvent(ev) {

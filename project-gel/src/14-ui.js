@@ -368,6 +368,8 @@ const UI = {
   // ---------- chapter map ----------
   renderChapters() {
     const sv = G.save, map = $('chMap');
+    $('chapters').querySelector('.subhead h2').textContent = this.homePage === 'sea' ? 'Oceans' : 'Chapters';
+    if (this.homePage === 'sea') { this.renderOceans(map); return; }
     // boss portraits need a GPU readback, so they are drawn here, only when the map is opened
     for (const id in BOSS_TYPES) if (!ICONS.map['boss-' + id] && bossMeshes(id).every(m => R.enemyDraw[m])) renderBossPortraitOf(id);
     // every chapter at once, locked ones too
@@ -386,6 +388,29 @@ const UI = {
       b.querySelector('.ds').textContent = locked ? info.arenaName : `${info.arenaName} · ${names}${sv.best[n] ? ' · ' + fmtTime(sv.best[n]) : ''}`;
       b.disabled = locked;
       b.addEventListener('click', () => { sv.selected = n; saveGame(); AUDIO.play('click'); this.openTab('home'); });
+      nodes.push(b);
+    }
+    map.replaceChildren(...this.stagger(nodes));
+    requestAnimationFrame(() => { const cur = map.querySelector('.current'); if (cur) cur.scrollIntoView({ block: 'center' }); });
+  },
+
+  // the ocean page's map: all twenty oceans, the ones not reached yet locked
+  renderOceans(map) {
+    const S = G.save.sea, nodes = [];
+    for (let n = SEA_COUNT; n >= 1; n--) {
+      const C = SEA_CHAPTERS[n - 1], boss = C.boss, b = document.createElement('button');
+      const locked = n > S.chapter, cleared = !!S.cleared[n];
+      if (!locked && !ICONS.map['boss-' + boss] && bossMeshes(boss).every(m => R.enemyDraw[m])) renderBossPortraitOf(boss);
+      b.className = 'node' + (locked ? ' locked' : '') + (cleared ? ' cleared' : '') + (n === S.selected ? ' current' : '') + (n % 5 === 0 ? ' big' : '');
+      b.innerHTML = `<span class="num"></span><span><span class="nm"></span><span class="ds"></span></span>`;
+      const icon = ICONS.map['boss-' + boss];
+      if (icon && !locked) { const im = document.createElement('img'); im.alt = ''; im.src = icon; b.querySelector('.num').append(im); }
+      else if (locked) b.querySelector('.num').innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><rect x="4.5" y="10" width="15" height="11" rx="3" fill="currentColor"/></svg>';
+      else b.querySelector('.num').textContent = n;
+      b.querySelector('.nm').textContent = `Ocean ${n}`;
+      b.querySelector('.ds').textContent = locked ? C.name : `${C.name} · ${seaBossName(n)}${S.best[n] ? ' · ' + fmtTime(S.best[n]) : ''}`;
+      b.disabled = locked;
+      b.addEventListener('click', () => { S.selected = n; saveGame(); AUDIO.play('click'); this.openTab('home'); });
       nodes.push(b);
     }
     map.replaceChildren(...this.stagger(nodes));
@@ -427,7 +452,7 @@ const UI = {
       const cells = [];
       for (const kind of ['skill', 'passive']) {
         const list = run.slots.filter(s => s.kind === kind);
-        for (let i = 0; i < SLOT_LIMIT[kind]; i++) {
+        for (let i = 0; i < slotLimit(kind); i++) {
           const s = list[i], d = document.createElement('div');
           if (s) {
             d.className = 'slot ' + s.kind + seaTile(s.id) + (s.evo ? ' evo' : '');
@@ -454,7 +479,7 @@ const UI = {
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.rush ? run.rushK / RUSH_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      pct = run.rush ? run.rushK / RUSH_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / (run.sea ? SEA_BOSS_T : 300), 0, 1);
       label = run.rush ? `BOSS RUSH · ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : (run.sea ? 'OCEAN ' : 'CHAPTER ') + run.chapter;
       // the crater: the bar fills to the cave (85%) and waits there
       if (craterOpenNow()) { pct = Math.min(pct, CRATER.open / 300); if (ARENA.fx && ARENA.fx.st.open) label = 'ENTER THE CAVE'; }
@@ -831,8 +856,8 @@ function rollChoices() {
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
   // (the sea and the land each have their own upgrades)
   const open = def => !def.sea === !run.sea && (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
-  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) * (SKILLS[id].rare ? 0.3 : 1) });
-  if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
+  if (nSkills < slotLimit('skill')) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) * (SKILLS[id].rare ? 0.3 : 1) });
+  if (nPassives < slotLimit('passive')) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
   while (out.length < 3 && pool.length) {
     let r = Math.random() * pool.reduce((a, c) => a + c.w, 0), i = 0;

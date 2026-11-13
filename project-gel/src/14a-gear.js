@@ -148,9 +148,9 @@ function gearStats(sv = G.save) {
   const add = st => { if (st) for (const k in st) out[k] = (out[k] || 0) + st[k]; };
   const skin = SKINS.find(s => s.id === sv.skin) || {};
   add(skin.boost);
-  // this color's own upgrades
-  const ups = (sv.blobUp || {})[sv.skin] || {};
-  for (const [k, per] of blobUps(skin)) if (ups[k]) add({ [k]: per * ups[k] });
+  // this color's own level: every level adds all three of its stats
+  const lv = blobLevel(sv, sv.skin);
+  if (lv) for (const [k, per] of blobUps(skin)) add({ [k]: per * lv });
   add((COSTUMES.find(c => c.id === sv.costume) || {}).boost);
   add((COSTUMES.find(c => c.id === sv.hat) || {}).boost);
   const g = sv.gear;
@@ -218,8 +218,8 @@ const statChips = st => Object.keys(st).map(k => `<span class="chip">${statIcon(
 const SELL_PRICE = [5, 12, 30, 60, 120, 300];
 // can any of the worn color's upgrades be bought right now?
 function blobUpAffordable(sv = G.save) {
-  const skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp || {})[sv.skin] || {};
-  return blobUps(skin).some(([k]) => (ups[k] || 0) < BLOB_UP_MAX && sv.coins >= blobUpCost(ups[k] || 0));
+  const lv = blobLevel(sv, sv.skin);
+  return lv < BLOB_UP_MAX && sv.coins >= blobUpCost(lv);
 }
 const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
 
@@ -335,34 +335,45 @@ Object.assign(UI, {
   },
   // ---------- the blob's own upgrades (Gear > Upgrade) ----------
   openBlobUp() { this.renderBlobUp(); this.show('blobUp', true); },
+  // the color's one level: what each of its three stats gives now and per level, and one button to level up
   renderBlobUp() {
-    const sv = G.save, skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp[sv.skin] = sv.blobUp[sv.skin] || {});
+    const sv = G.save, skin = SKINS.find(s => s.id === sv.skin) || SKINS[0];
+    sv.blobLv = sv.blobLv || {};
+    const lvl = blobLevel(sv, sv.skin), cost = blobUpCost(lvl), maxed = lvl >= BLOB_UP_MAX;
     $('buTitle').textContent = skin.name.toUpperCase();
     this.syncCoins();
-    $('buList').replaceChildren(...blobUps(skin).map(([k, per]) => {
-      const lvl = ups[k] || 0, cost = blobUpCost(lvl), maxed = lvl >= BLOB_UP_MAX, row = document.createElement('div');
+    const head = document.createElement('div');
+    head.className = 'panel bu-level';
+    head.innerHTML = `<b></b><span class="bu-pips"></span>`;
+    head.querySelector('b').textContent = `Level ${lvl} / ${BLOB_UP_MAX}`;
+    head.querySelector('.bu-pips').innerHTML = Array.from({ length: BLOB_UP_MAX }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');
+    const rows = blobUps(skin).map(([k, per]) => {
+      const row = document.createElement('div');
       row.className = 'panel bu-row';
-      row.innerHTML = `<span class="ic"></span><span><span class="nm"></span><span class="ds"></span><span class="bu-pips"></span></span><button class="jelly gold"></button>`;
+      row.innerHTML = `<span class="ic"></span><span><span class="nm"></span><span class="ds"></span></span><em></em>`;
       // the short label is sized to fill its tile without spilling out (MAGNET is twice as long as HP)
       const ic = row.querySelector('.ic'), sh = STAT_INFO[k].short;
       ic.textContent = sh; ic.style.fontSize = Math.min(17, Math.floor(54 / (sh.length * 0.75))) + 'px';
       row.querySelector('.nm').textContent = STAT_INFO[k].name.replace(/^./, c => c.toUpperCase());
-      row.querySelector('.ds').textContent = `+${+(per * lvl).toFixed(2)}% now · +${per}% a level · Lv ${lvl}/${BLOB_UP_MAX}`;
-      row.querySelector('.bu-pips').innerHTML = Array.from({ length: BLOB_UP_MAX }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');
-      const b = row.querySelector('button');
-      if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
-      else {
-        b.innerHTML = `<i class="coin"></i><span></span>`; b.querySelector('span').textContent = fmtNum(cost);
-        b.disabled = sv.coins < cost;
-        b.addEventListener('click', () => {
-          if (sv.coins < cost || (ups[k] || 0) >= BLOB_UP_MAX) return;
-          sv.coins -= cost; ups[k] = (ups[k] || 0) + 1; saveGame();
-          AUDIO.play('coin'); G.hero.impulse(1.4);
-          this.renderBlobUp(); this.refreshBadges && this.refreshBadges();
-        });
-      }
+      row.querySelector('.ds').textContent = `+${per}% a level`;
+      row.querySelector('em').textContent = `+${+(per * lvl).toFixed(2)}%`;
       return row;
-    }));
+    });
+    const b = document.createElement('button');
+    b.className = 'jelly gold bu-go';
+    if (maxed) { b.textContent = 'MAX LEVEL'; b.disabled = true; }
+    else {
+      b.innerHTML = `LEVEL UP · <i class="coin"></i><span></span>`; b.querySelector('span').textContent = fmtNum(cost);
+      b.disabled = sv.coins < cost;
+      b.addEventListener('click', () => {
+        const now = blobLevel(sv, sv.skin);
+        if (sv.coins < blobUpCost(now) || now >= BLOB_UP_MAX) return;
+        sv.coins -= blobUpCost(now); sv.blobLv[sv.skin] = now + 1; saveGame();
+        AUDIO.play('levelup'); G.hero.impulse(1.8);
+        this.renderBlobUp(); this.refreshBadges && this.refreshBadges();
+      });
+    }
+    $('buList').replaceChildren(head, ...rows, b);
   },
   sortedArtKeys() {
     const g = G.save.gear, slotOrder = GEAR_SLOTS.map(s => s.id), ids = Object.keys(ARTIFACTS);

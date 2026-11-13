@@ -189,7 +189,7 @@ if (mode === 'flows') {
   await page.evaluate(() => { G.save.coins = 5000; UI.refreshHome(); });
   // (the blob's own upgrades, under Gear, replaced the Upgrades tab)
   await page.click('.tab[data-tab="gear"]'); await page.click('#gUpgrade');
-  await page.click('#buList .bu-row:nth-child(1) .jelly'); await page.click('#buList .bu-row:nth-child(1) .jelly');
+  await page.click('#buList .bu-go'); await page.click('#buList .bu-go');
   await render(2); await shot('flow-upgrades-bought');
   await page.click('#buClose'); await page.click('#gear .back');
   await page.click('.tab[data-tab="skins"]');

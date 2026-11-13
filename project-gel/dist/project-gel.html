@@ -134,6 +134,11 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .bu-row .nm { display: block; font-size: 24px; font-weight: 700; color: var(--ink); }
 .bu-row .ds { display: block; font-size: 16.5px; color: var(--ink-2, #5a6a8a); }
 .bu-row .jelly { min-width: 104px; font-size: 21px; }
+.bu-row em { font-style: normal; font-size: 26px; font-weight: 800; color: #14a070; font-variant-numeric: tabular-nums; }
+.bu-level { display: grid; gap: 6px; padding: 12px 16px; text-align: center; }
+.bu-level b { font-size: 28px; color: var(--ink); }
+.bu-level .bu-pips i { height: 10px; }
+.bu-go { min-height: 60px; font-size: 26px; }
 .bu-pips { display: flex; gap: 2px; margin-top: 4px; }
 .bu-pips i { flex: 1; height: 7px; border-radius: 3px; background: #d6e4f6; }
 .bu-pips i.on { background: var(--gold); }
@@ -646,7 +651,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
   <section id="blobUp" class="screen modal menu" hidden>
     <div class="modal-body">
       <h1 class="title outline" id="buTitle">CLASSIC</h1>
-      <p class="dim bu-sub">Each color has its own upgrades, up to level 20.</p>
+      <p class="dim bu-sub">Each color has its own level, up to 20. A level raises all three of its stats.</p>
       <div class="bu-list" id="buList"></div>
       <div class="row-actions"><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div><button class="jelly ghost" id="buClose">Done</button></div>
     </div>
@@ -16454,6 +16459,8 @@ function featuredPowerup(chapter) {
 }
 // a run holds at most this many different skills and this many different passives
 const SLOT_LIMIT = { skill: 4, passive: 4 };
+// (at sea the Ship and the Homing Cannon take two of the weapon slots, so there is one more)
+const slotLimit = kind => SLOT_LIMIT[kind] + (kind === 'skill' && G.run && G.run.sea ? 1 : 0);
 
 // Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1).
 // ai: how the enemy attacks besides walking into you. lunge = spear thrust, chop = overhead swing,
@@ -16845,6 +16852,9 @@ function chapterInfo(n) {
 
 // XP needed to go from level L to L+1
 const xpFor = L => Math.round(4 + 1.6 * L + 0.03 * L * L);
+// at sea a level costs far more: about six times as much early on, ten times by level 20 (a chapter there is longer
+// and has more swimmers, and the ship's upgrades should take the whole chapter to build up)
+const xpForSea = L => Math.round(25 + 8 * L + 0.35 * L * L);
 
 // every permanent upgrade stops at level 20 (past that, damage and health made runs far too easy)
 const META_MAX = 20;
@@ -16858,9 +16868,10 @@ const META_UPGRADES = {
 const upgradeCost = (id, lvl) => Math.round(META_UPGRADES[id].base * Math.pow(META_UPGRADES[id].growth, lvl));
 // (META_UPGRADES are only icons now: the Upgrades tab is gone, replaced by each color's own upgrades below)
 
-// Blob upgrades: every body color has three stats of its own to upgrade (Gear > Upgrade), up to level 20,
-// percent per level (regen: percent of max health a second). The plain blue blob has the all-rounders; a
-// color that specializes (its boost) gets more of its own stat and less health.
+// Blob levels: every body color has a level of its own (Gear > Upgrade), up to 20, kept per color (switch colors
+// and the new one is at its own level). Each level raises all three of that color's stats at once by the amounts
+// below (percent per level; regen: percent of max health a second). The plain blue blob has the all-rounders; a
+// color that specializes (its boost) gains more of its own stat and less of the others.
 const BLOB_UP_MAX = 20;
 const BLOB_UPS = {
   none: [['dmg', 2.5], ['hp', 4], ['armor', 1]],
@@ -16876,7 +16887,9 @@ const BLOB_UPS = {
   gold: [['gold', 2.5], ['dmg', 1.8], ['hp', 2.5]],
 };
 const blobUps = skin => BLOB_UPS[(skin && skin.boost && Object.keys(skin.boost)[0]) || 'none'] || BLOB_UPS.none;
-const blobUpCost = lvl => Math.round(60 * Math.pow(1.16, lvl));
+// (a level buys three stats at once, so it costs about three of the old single-stat steps)
+const blobUpCost = lvl => Math.round(170 * Math.pow(1.16, lvl));
+const blobLevel = (sv, id) => ((sv.blobLv || {})[id]) || 0;
 
 // Body colors. "top" makes a two-tone gradient from the feet up. "boost" is a small stat bonus (see STAT_INFO).
 const SKINS = [
@@ -18206,7 +18219,8 @@ function gainXp(v) {
   const run = G.run;
   // (Endless and Boss Rush level up far more slowly: 40% of the XP)
   run.xp += v * run.stats.xpMul * XP_MUL * (run.endless || run.rush ? 0.4 : 1);
-  while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = xpFor(run.level); run.pending++; }
+  const need = run.sea ? xpForSea : xpFor;
+  while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = need(run.level); run.pending++; }
 }
 
 // ---------- damage numbers ----------
@@ -26655,7 +26669,7 @@ function startSea(chapter) {
   OC.ship = { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
   OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.shot.length = 0; OC.mines.length = 0; OC.nets.length = 0; OC.crew.length = 0; OC.hz.length = 0; OC.look = null; OC.boltT = 5; OC.sink = null; OC.stage = 0; OC.wantStage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
   const run = G.run = {
-    chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpFor(1), pending: 0, rerolls: 2,
+    chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpForSea(1), pending: 0, rerolls: 2,
     hp: 100, maxHp: 100, invuln: 1.2, revived: false, over: false, won: false, endT: 0,
     slots: [], stats: null,
     enemies: [], proj: [], eShots: [], gems: [], pickups: [], mines: [], bombs: [], worms: [], buddies: [], axes: [], beams: [],
@@ -26695,7 +26709,7 @@ function seaStats(run) {
   run.stats = {
     dmgMul: 1 + g('dmg'),
     speedMul: (1 + 0.07 * lv('propeller')) * (1 + g('speed')),
-    magnet: (1.6 + D.len * 0.45) * (1 + g('magnet')),
+    magnet: (1.6 + D.len * 0.2) * (1 + g('magnet')),
     armorMul: Math.pow(0.95, lv('fort')) * (1 - Math.min(0.6, g('armor'))),
     cdMul: Math.pow(0.96, lv('sails')) * (1 - Math.min(0.5, g('cd'))),
     areaMul: 1 + g('area'), extra: 0, xpMul: 1 + g('xp'),
@@ -26745,7 +26759,7 @@ function updateOcean(dt) {
     run.t += dt;
     while (run.events.length && run.t >= run.events[0].t) seaEvent(run.events.shift());
     // (fewer while the boss is out, so the fight is about the boss)
-    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t)) * run.info.rateMul * 0.85;
+    const rate = (run.bossStarted ? 1.0 : spawnRate(run.t * 300 / SEA_BOSS_T)) * run.info.rateMul * 0.85 * 1.5;
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) { run.spawnAcc -= 1; if (run.enemies.length < MAX_ALIVE) seaSpawn(); }
   }
@@ -26785,8 +26799,10 @@ function updateOcean(dt) {
   }
 }
 
-// Boat handling: the stick points where you want to go; the ship turns toward it (better when under way),
-// eases off the throttle while turning hard, and slides only a little sideways
+// Boat handling. On the keyboard the ship drives like a boat: W (or up) is full ahead along its heading, S (or down)
+// backs it off, A and D (or left and right) turn it to port and starboard. With the touch stick or a gamepad the stick
+// points where you want to go: the ship turns toward it (better when under way) and eases off the throttle while
+// turning hard. Either way it slides only a little sideways.
 function seaSteer(dt) {
   if (OC.wantStage > OC.stage && seaShipReady(OC.wantStage)) seaShipArrives();
   const S = OC.ship, D = shipDef(), run = G.run;
@@ -26794,15 +26810,18 @@ function seaSteer(dt) {
   // (kelp and frost patches grip the hull)
   const top = D.speed * run.stats.speedMul * (1 - (OC.snared || 0));
   let steer = 0, thr = 0;
-  if (m > 0.12 && G.state === 'run') {
+  const KY = INPUT.keys, ahead = (KY.has('w') || KY.has('arrowup') ? 1 : 0) - (KY.has('s') || KY.has('arrowdown') ? 1 : 0);
+  const turnK = (KY.has('a') || KY.has('arrowleft') ? 1 : 0) - (KY.has('d') || KY.has('arrowright') ? 1 : 0);
+  if ((ahead || turnK) && G.state === 'run') { steer = turnK; thr = ahead > 0 ? 1 : ahead < 0 ? -0.4 : 0; }
+  else if (m > 0.12 && G.state === 'run') {
     const diff = angleDiff(S.yaw, Math.atan2(ix, iz));
     steer = clamp(diff * 2.4, -1, 1);
     thr = m * clamp(Math.cos(diff) * 0.75 + 0.45, 0.2, 1);
   }
   const want = thr * top;
   const acc = D.accel * (1 + 0.06 * lvlOf('propeller')), turn = D.turn * (1 + 0.05 * lvlOf('sails'));
-  S.speed += (want - S.speed) * (1 - Math.exp(-dt * (want > S.speed ? acc / top : 0.8)));
-  const tr = turn * (0.4 + 0.6 * clamp(S.speed / top, 0, 1));
+  S.speed += (want - S.speed) * (1 - Math.exp(-dt * (Math.abs(want) > Math.abs(S.speed) ? acc / top : 0.8)));
+  const tr = turn * (0.4 + 0.6 * clamp(Math.abs(S.speed) / top, 0, 1));
   S.yawV += (steer * tr - S.yawV) * (1 - Math.exp(-dt * 5));
   S.yaw += S.yawV * dt;
   const k = 1 - Math.exp(-dt * 4);
@@ -26925,10 +26944,13 @@ function seaFoe(type, x, z, opts) {
   if (type === 'pdiver') e.hidden = true;
   return e;
 }
+// a chapter at sea runs SEA_BOSS_T seconds to its boss (half again a land chapter), with half again as many
+// swimmers on the way
+const SEA_BOSS_T = 450;
 function seaEvents(chapter) {
-  const ev = [{ t: 60, kind: 'swarm', n: 16 }, { t: 120, kind: 'elite' }, { t: 150, kind: 'swarm', n: 26 }, { t: 210, kind: 'swarm', n: 36 },
-    { t: 255, kind: 'surge', n: 30 }, { t: 280, kind: 'swarm', n: 44 }, { t: 300, kind: 'boss' }];
-  MINI_VISITS.forEach(([f], k) => ev.push({ t: 300 * f, kind: 'mini', k }));
+  const ev = [{ t: 90, kind: 'swarm', n: 24 }, { t: 180, kind: 'elite' }, { t: 225, kind: 'swarm', n: 39 }, { t: 280, kind: 'elite' }, { t: 315, kind: 'swarm', n: 54 },
+    { t: 382, kind: 'surge', n: 45 }, { t: 420, kind: 'swarm', n: 66 }, { t: SEA_BOSS_T, kind: 'boss' }];
+  MINI_VISITS.forEach(([f], k) => ev.push({ t: SEA_BOSS_T * f, kind: 'mini', k }));
   return ev.sort((a, b) => a.t - b.t);
 }
 function seaEvent(ev) {
@@ -27394,7 +27416,7 @@ Object.assign(SKILLS, {
   cannon: {
     sea: true, name: 'Homing Cannon', intro: 'Deck cannons that turn to fire cannonballs which curve onto their target.', icon: { type: 13, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Cannons'], ['splash', 'Splash', 'm']],
-    levels: L10({ dmg: [10, 11, 12, 13, 15, 16, 18, 20, 22, 25], cd: [1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.95, 0.9, 0.85], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0.8, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4] }),
+    levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 13, 15], cd: [1.4, 1.35, 1.3, 1.25, 1.2, 1.15, 1.1, 1.05, 1.0, 0.95], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], splash: [0, 0, 0, 0.8, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4] }),
   },
   musket: {
     sea: true, name: 'Musket Ball Pile', intro: 'A heap of musket balls that goes off in a ring of shot all around the ship.', icon: { type: 13, colw: 0 },
@@ -27409,7 +27431,7 @@ Object.assign(SKILLS, {
   gunner: {
     sea: true, rare: true, name: 'Battleship Gunner', intro: 'Rare. A battleship turret that lobs heavy shells into the thickest crowd.', icon: { type: 13, colw: 0 },
     fields: [['dmg', 'Damage'], ['radius', 'Blast', 'm'], ['shells', 'Shells'], ['cd', 'Cooldown', 's']],
-    levels: L10({ dmg: [30, 34, 38, 43, 48, 54, 60, 67, 75, 85], cd: [4.5, 4.4, 4.3, 4.1, 4.0, 3.8, 3.6, 3.4, 3.2, 3.0], shells: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], radius: [2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.0] }),
+    levels: L10({ dmg: [16, 18, 20, 22, 25, 28, 31, 34, 38, 44], cd: [5.2, 5.1, 5.0, 4.8, 4.6, 4.4, 4.2, 4.0, 3.8, 3.5], shells: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], radius: [2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.0] }),
   },
   anchor: {
     sea: true, name: 'Anchor Flail', intro: 'The anchor swings round the ship on its chain, battering everything it sweeps through.', icon: { type: 13, colw: 0 },
@@ -29726,6 +29748,8 @@ const UI = {
   // ---------- chapter map ----------
   renderChapters() {
     const sv = G.save, map = $('chMap');
+    $('chapters').querySelector('.subhead h2').textContent = this.homePage === 'sea' ? 'Oceans' : 'Chapters';
+    if (this.homePage === 'sea') { this.renderOceans(map); return; }
     // boss portraits need a GPU readback, so they are drawn here, only when the map is opened
     for (const id in BOSS_TYPES) if (!ICONS.map['boss-' + id] && bossMeshes(id).every(m => R.enemyDraw[m])) renderBossPortraitOf(id);
     // every chapter at once, locked ones too
@@ -29744,6 +29768,29 @@ const UI = {
       b.querySelector('.ds').textContent = locked ? info.arenaName : `${info.arenaName} · ${names}${sv.best[n] ? ' · ' + fmtTime(sv.best[n]) : ''}`;
       b.disabled = locked;
       b.addEventListener('click', () => { sv.selected = n; saveGame(); AUDIO.play('click'); this.openTab('home'); });
+      nodes.push(b);
+    }
+    map.replaceChildren(...this.stagger(nodes));
+    requestAnimationFrame(() => { const cur = map.querySelector('.current'); if (cur) cur.scrollIntoView({ block: 'center' }); });
+  },
+
+  // the ocean page's map: all twenty oceans, the ones not reached yet locked
+  renderOceans(map) {
+    const S = G.save.sea, nodes = [];
+    for (let n = SEA_COUNT; n >= 1; n--) {
+      const C = SEA_CHAPTERS[n - 1], boss = C.boss, b = document.createElement('button');
+      const locked = n > S.chapter, cleared = !!S.cleared[n];
+      if (!locked && !ICONS.map['boss-' + boss] && bossMeshes(boss).every(m => R.enemyDraw[m])) renderBossPortraitOf(boss);
+      b.className = 'node' + (locked ? ' locked' : '') + (cleared ? ' cleared' : '') + (n === S.selected ? ' current' : '') + (n % 5 === 0 ? ' big' : '');
+      b.innerHTML = `<span class="num"></span><span><span class="nm"></span><span class="ds"></span></span>`;
+      const icon = ICONS.map['boss-' + boss];
+      if (icon && !locked) { const im = document.createElement('img'); im.alt = ''; im.src = icon; b.querySelector('.num').append(im); }
+      else if (locked) b.querySelector('.num').innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><rect x="4.5" y="10" width="15" height="11" rx="3" fill="currentColor"/></svg>';
+      else b.querySelector('.num').textContent = n;
+      b.querySelector('.nm').textContent = `Ocean ${n}`;
+      b.querySelector('.ds').textContent = locked ? C.name : `${C.name} · ${seaBossName(n)}${S.best[n] ? ' · ' + fmtTime(S.best[n]) : ''}`;
+      b.disabled = locked;
+      b.addEventListener('click', () => { S.selected = n; saveGame(); AUDIO.play('click'); this.openTab('home'); });
       nodes.push(b);
     }
     map.replaceChildren(...this.stagger(nodes));
@@ -29785,7 +29832,7 @@ const UI = {
       const cells = [];
       for (const kind of ['skill', 'passive']) {
         const list = run.slots.filter(s => s.kind === kind);
-        for (let i = 0; i < SLOT_LIMIT[kind]; i++) {
+        for (let i = 0; i < slotLimit(kind); i++) {
           const s = list[i], d = document.createElement('div');
           if (s) {
             d.className = 'slot ' + s.kind + seaTile(s.id) + (s.evo ? ' evo' : '');
@@ -29812,7 +29859,7 @@ const UI = {
       pct = clamp(hp / run.bossTotalHp, 0, 1);
       label = [...new Set(run.bosses.map(b => b.def.name))].join(' + ').toUpperCase();
     } else {
-      pct = run.rush ? run.rushK / RUSH_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / 300, 0, 1);
+      pct = run.rush ? run.rushK / RUSH_BOSSES.length : run.endless ? (run.t % 60) / 60 : run.bossStarted ? 0 : clamp(run.t / (run.sea ? SEA_BOSS_T : 300), 0, 1);
       label = run.rush ? `BOSS RUSH · ${run.rushK}/${RUSH_BOSSES.length}` : run.endless ? 'ENDLESS · ' + fmtTime(run.t) : (run.sea ? 'OCEAN ' : 'CHAPTER ') + run.chapter;
       // the crater: the bar fills to the cave (85%) and waits there
       if (craterOpenNow()) { pct = Math.min(pct, CRATER.open / 300); if (ARENA.fx && ARENA.fx.st.open) label = 'ENTER THE CAVE'; }
@@ -30189,8 +30236,8 @@ function rollChoices() {
   // power-ups unlock by chapter; the one a chapter introduces is offered three times as often there
   // (the sea and the land each have their own upgrades)
   const open = def => !def.sea === !run.sea && (def.from || 1) <= run.powerCap, feat = run.endless || run.rush ? null : featuredPowerup(run.chapter);
-  if (nSkills < SLOT_LIMIT.skill) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) * (SKILLS[id].rare ? 0.3 : 1) });
-  if (nPassives < SLOT_LIMIT.passive) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
+  if (nSkills < slotLimit('skill')) for (const id in SKILLS) if (!slotOf(id) && open(SKILLS[id])) pool.push({ id, w: (many ? 0.55 : 1) * (id === feat ? 3 : 1) * (SKILLS[id].rare ? 0.3 : 1) });
+  if (nPassives < slotLimit('passive')) for (const id in PASSIVES) if (!slotOf(id) && open(PASSIVES[id])) pool.push({ id, w: (many ? 0.45 : 0.7) * (id === feat ? 3 : 1) });
   const out = [];
   while (out.length < 3 && pool.length) {
     let r = Math.random() * pool.reduce((a, c) => a + c.w, 0), i = 0;
@@ -30392,9 +30439,9 @@ function gearStats(sv = G.save) {
   const add = st => { if (st) for (const k in st) out[k] = (out[k] || 0) + st[k]; };
   const skin = SKINS.find(s => s.id === sv.skin) || {};
   add(skin.boost);
-  // this color's own upgrades
-  const ups = (sv.blobUp || {})[sv.skin] || {};
-  for (const [k, per] of blobUps(skin)) if (ups[k]) add({ [k]: per * ups[k] });
+  // this color's own level: every level adds all three of its stats
+  const lv = blobLevel(sv, sv.skin);
+  if (lv) for (const [k, per] of blobUps(skin)) add({ [k]: per * lv });
   add((COSTUMES.find(c => c.id === sv.costume) || {}).boost);
   add((COSTUMES.find(c => c.id === sv.hat) || {}).boost);
   const g = sv.gear;
@@ -30462,8 +30509,8 @@ const statChips = st => Object.keys(st).map(k => `<span class="chip">${statIcon(
 const SELL_PRICE = [5, 12, 30, 60, 120, 300];
 // can any of the worn color's upgrades be bought right now?
 function blobUpAffordable(sv = G.save) {
-  const skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp || {})[sv.skin] || {};
-  return blobUps(skin).some(([k]) => (ups[k] || 0) < BLOB_UP_MAX && sv.coins >= blobUpCost(ups[k] || 0));
+  const lv = blobLevel(sv, sv.skin);
+  return lv < BLOB_UP_MAX && sv.coins >= blobUpCost(lv);
 }
 const fmtBoost = st => Object.keys(st || {}).map(k => `+${+st[k].toFixed(2)}% ${STAT_INFO[k].short}`).join(' ');
 
@@ -30579,34 +30626,45 @@ Object.assign(UI, {
   },
   // ---------- the blob's own upgrades (Gear > Upgrade) ----------
   openBlobUp() { this.renderBlobUp(); this.show('blobUp', true); },
+  // the color's one level: what each of its three stats gives now and per level, and one button to level up
   renderBlobUp() {
-    const sv = G.save, skin = SKINS.find(s => s.id === sv.skin) || SKINS[0], ups = (sv.blobUp[sv.skin] = sv.blobUp[sv.skin] || {});
+    const sv = G.save, skin = SKINS.find(s => s.id === sv.skin) || SKINS[0];
+    sv.blobLv = sv.blobLv || {};
+    const lvl = blobLevel(sv, sv.skin), cost = blobUpCost(lvl), maxed = lvl >= BLOB_UP_MAX;
     $('buTitle').textContent = skin.name.toUpperCase();
     this.syncCoins();
-    $('buList').replaceChildren(...blobUps(skin).map(([k, per]) => {
-      const lvl = ups[k] || 0, cost = blobUpCost(lvl), maxed = lvl >= BLOB_UP_MAX, row = document.createElement('div');
+    const head = document.createElement('div');
+    head.className = 'panel bu-level';
+    head.innerHTML = `<b></b><span class="bu-pips"></span>`;
+    head.querySelector('b').textContent = `Level ${lvl} / ${BLOB_UP_MAX}`;
+    head.querySelector('.bu-pips').innerHTML = Array.from({ length: BLOB_UP_MAX }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');
+    const rows = blobUps(skin).map(([k, per]) => {
+      const row = document.createElement('div');
       row.className = 'panel bu-row';
-      row.innerHTML = `<span class="ic"></span><span><span class="nm"></span><span class="ds"></span><span class="bu-pips"></span></span><button class="jelly gold"></button>`;
+      row.innerHTML = `<span class="ic"></span><span><span class="nm"></span><span class="ds"></span></span><em></em>`;
       // the short label is sized to fill its tile without spilling out (MAGNET is twice as long as HP)
       const ic = row.querySelector('.ic'), sh = STAT_INFO[k].short;
       ic.textContent = sh; ic.style.fontSize = Math.min(17, Math.floor(54 / (sh.length * 0.75))) + 'px';
       row.querySelector('.nm').textContent = STAT_INFO[k].name.replace(/^./, c => c.toUpperCase());
-      row.querySelector('.ds').textContent = `+${+(per * lvl).toFixed(2)}% now · +${per}% a level · Lv ${lvl}/${BLOB_UP_MAX}`;
-      row.querySelector('.bu-pips').innerHTML = Array.from({ length: BLOB_UP_MAX }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('');
-      const b = row.querySelector('button');
-      if (maxed) { b.textContent = 'MAX'; b.disabled = true; }
-      else {
-        b.innerHTML = `<i class="coin"></i><span></span>`; b.querySelector('span').textContent = fmtNum(cost);
-        b.disabled = sv.coins < cost;
-        b.addEventListener('click', () => {
-          if (sv.coins < cost || (ups[k] || 0) >= BLOB_UP_MAX) return;
-          sv.coins -= cost; ups[k] = (ups[k] || 0) + 1; saveGame();
-          AUDIO.play('coin'); G.hero.impulse(1.4);
-          this.renderBlobUp(); this.refreshBadges && this.refreshBadges();
-        });
-      }
+      row.querySelector('.ds').textContent = `+${per}% a level`;
+      row.querySelector('em').textContent = `+${+(per * lvl).toFixed(2)}%`;
       return row;
-    }));
+    });
+    const b = document.createElement('button');
+    b.className = 'jelly gold bu-go';
+    if (maxed) { b.textContent = 'MAX LEVEL'; b.disabled = true; }
+    else {
+      b.innerHTML = `LEVEL UP · <i class="coin"></i><span></span>`; b.querySelector('span').textContent = fmtNum(cost);
+      b.disabled = sv.coins < cost;
+      b.addEventListener('click', () => {
+        const now = blobLevel(sv, sv.skin);
+        if (sv.coins < blobUpCost(now) || now >= BLOB_UP_MAX) return;
+        sv.coins -= blobUpCost(now); sv.blobLv[sv.skin] = now + 1; saveGame();
+        AUDIO.play('levelup'); G.hero.impulse(1.8);
+        this.renderBlobUp(); this.refreshBadges && this.refreshBadges();
+      });
+    }
+    $('buList').replaceChildren(head, ...rows, b);
   },
   sortedArtKeys() {
     const g = G.save.gear, slotOrder = GEAR_SLOTS.map(s => s.id), ids = Object.keys(ARTIFACTS);
@@ -30900,7 +30958,7 @@ const DEV_CMDS = {
       if (!id) throw new Error(`Unknown skill. Skills: ${Object.keys(SKILLS).join(', ')}. Passives: ${Object.keys(PASSIVES).join(', ')}`);
       const n = clamp(Math.round(devNum(a[1], 1)), 1, 10);
       const kind = SKILLS[id] ? 'skill' : 'passive';
-      if (!slotOf(id) && r.slots.filter(s => s.kind === kind).length >= SLOT_LIMIT[kind]) throw new Error(`All ${SLOT_LIMIT[kind]} ${kind} slots are full`);
+      if (!slotOf(id) && r.slots.filter(s => s.kind === kind).length >= slotLimit(kind)) throw new Error(`All ${slotLimit(kind)} ${kind} slots are full`);
       for (let i = 0; i < n && lvlOf(id) < maxLevel(id); i++) addOrLevel(id);
       return `${(SKILLS[id] || PASSIVES[id]).name} level ${lvlOf(id)}`;
     },
@@ -30983,7 +31041,7 @@ const GOAL_VALUE = {
   colors: sv => sv.skins.length,
   costumes: sv => sv.costumes.filter(id => id !== 'none').length,
   // (blob upgrade levels bought, across every color)
-  upgrades: sv => Object.values(sv.blobUp || {}).reduce((a, o) => a + Object.values(o).reduce((x, y) => x + y, 0), 0),
+  upgrades: sv => Object.values(sv.blobLv || {}).reduce((a, v) => a + v, 0),
   geared: sv => Object.values(sv.gear.eq).filter(Boolean).length,
   fuses: sv => sv.stats.fuses || 0,
   rarity: sv => Math.max(0, ...Object.keys(sv.gear.items).map(k => artParse(k).r + 1)),
@@ -31015,8 +31073,8 @@ const GOALS = [
   { id: 'colors', group: 'collect', name: 'Fashionista', desc: 'Own {n} colors', stat: 'colors', n: 10, coins: 500 },
   { id: 'costumes1', group: 'collect', name: 'Wardrobe', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 15, coins: 1000 },
   { id: 'costumes2', group: 'collect', name: 'Collector', desc: 'Own {n} costumes and hats', stat: 'costumes', n: 40, coins: 3000, scrolls: 2 },
-  { id: 'upg1', group: 'collect', name: 'Strong Roots', desc: 'Buy {n} blob upgrade levels', stat: 'upgrades', n: 25, coins: 600 },
-  { id: 'upg2', group: 'collect', name: 'Powered Up', desc: 'Buy {n} blob upgrade levels', stat: 'upgrades', n: 60, coins: 2500, scrolls: 1 },
+  { id: 'upg1', group: 'collect', name: 'Strong Roots', desc: 'Buy {n} blob levels', stat: 'upgrades', n: 10, coins: 600 },
+  { id: 'upg2', group: 'collect', name: 'Powered Up', desc: 'Buy {n} blob levels', stat: 'upgrades', n: 30, coins: 2500, scrolls: 1 },
   { id: 'geared', group: 'gear', name: 'Suited Up', desc: 'Wear gear in all four slots', stat: 'geared', n: 4, coins: 400, scrolls: 1 },
   { id: 'fuse1', group: 'gear', name: 'Fusion', desc: 'Fuse an artifact', stat: 'fuses', n: 1, coins: 300 },
   { id: 'fuse2', group: 'gear', name: 'Master Fuser', desc: 'Fuse {n} artifacts', stat: 'fuses', n: 20, coins: 2000, scrolls: 2 },
@@ -31122,7 +31180,7 @@ Object.assign(UI, {
 const SAVE_KEY = 'projectGel.save.v1';
 function defaultSave() {
   return {
-    v: 1, content: 4, coins: 0, blobUp: {}, chapter: 1, selected: 1, cleared: {}, best: {},
+    v: 1, content: 4, coins: 0, blobUp: {}, blobLv: {}, chapter: 1, selected: 1, cleared: {}, best: {},
     upgrades: { damage: 0, health: 0, offline: 0, speed: 0, magnet: 0 },
     skin: 'classic', skins: ['classic'], costume: 'none', hat: 'none', costumes: ['none'],
     scrolls: 0, gear: { items: {}, eq: { weapon: null, armor: null, ring: null, necklace: null }, hidden: {} }, devUnlocked: false,
@@ -31156,6 +31214,9 @@ function loadGame() {
       // keeping only their settings
       if (!(s.content >= 4)) { const fresh = defaultSave(); fresh.settings = out.settings; return fresh; }
       out.blobUp = { ...(s.blobUp || {}) };
+      // one level per color now: a color upgraded stat by stat before starts at the average of its three levels
+      out.blobLv = { ...(s.blobLv || {}) };
+      for (const id in out.blobUp) if (out.blobLv[id] === undefined) { const v = Object.values(out.blobUp[id] || {}); if (v.length) out.blobLv[id] = Math.min(BLOB_UP_MAX, Math.round(v.reduce((a, b) => a + b, 0) / 3)); }
       return out;
     }
   } catch (_) { /* storage unavailable: play without saving */ }
