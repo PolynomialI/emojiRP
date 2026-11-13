@@ -51,6 +51,10 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   are back in the top left. The menu column is a little wider than before the ocean (up to 460px, was 390px) with
   slightly taller buttons. A page button sits beside the title, always shown (the ocean is always one swipe away):
   on the right of PROJECT GEL to the ocean, on the left of it on the ocean page to go back.
+- **Small fixes.** The page arrows and the settings gear are plain white icons on a clear background (no box),
+  the gear level with the coin count and the arrows level with the PROJECT GEL line. Sell and Mythic share the
+  gear panel's second row. Dragging spins the blob on the Gear screen too (as on home and Blobs). The home menu
+  column has room round it so a button's slide to the left on hover is no longer cut off by its scroll box.
 - **Ocean home foes.** Pirates (swimmers, float and tube riders, sized and tinted as in a run, head and shoulders
   out of the water) swim in round the ship and hack at its side, rocking the blob; tap the water to lob goo at the
   nearest, and the blob throws now and then itself (`seaHomeFoes`, `emitSeaHomeFoes`; shots shared with the land

@@ -71,7 +71,7 @@ const UI = {
       };
       el.addEventListener('pointerup', release); el.addEventListener('pointercancel', release);
     };
-    spinOn($('heroTap'), false); spinOn($('skins'), true);
+    spinOn($('heroTap'), false); spinOn($('skins'), true); spinOn($('gearStage'), true);
     $('skinAction').addEventListener('click', () => this.skinAction());
     document.querySelectorAll('#blobTabs button').forEach(b => b.addEventListener('click', () => { this.blobTab = b.dataset.bt; AUDIO.play('click'); this.renderSkins(); }));
     this.initGear();
