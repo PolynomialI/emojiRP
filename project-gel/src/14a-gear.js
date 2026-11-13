@@ -245,11 +245,10 @@ Object.assign(UI, {
     $('fuseGo').addEventListener('click', () => this.fuseGo());
     $('fuseAll').addEventListener('click', () => this.fuseEverything());
     $('fuseClose').addEventListener('click', () => { AUDIO.play('click'); this.show('fuseBox', false); this.renderGear(); });
-    document.querySelectorAll('#gearStage .eq').forEach(b => b.addEventListener('click', () => {
-      const k = G.save.gear.eq[b.dataset.slot];
-      AUDIO.play('click');
-      if (k) this.openArtifact(k);
-    }));
+    document.querySelectorAll('#gearStage .eq').forEach(b => {
+      const open = e => { e.preventDefault(); const k = G.save.gear.eq[b.dataset.slot]; AUDIO.play('click'); if (k) this.openArtifact(k); };
+      b.addEventListener('click', open); b.addEventListener('contextmenu', open);
+    });
     // the eye under each slot hides that piece on the blob (its stats still count)
     document.querySelectorAll('#gearStage .eye').forEach(b => b.addEventListener('click', () => {
       const h = G.save.gear.hidden = G.save.gear.hidden || {}, sl = b.dataset.slot;
@@ -313,7 +312,9 @@ Object.assign(UI, {
       const b = this.artButton(k, g.items[k], `${worn ? ' worn' : ''}${g.items[k] >= fuseNeed(r) && r < MYTHIC ? ' fusable' : ''}`);
       // in sell mode a tap sells one copy (the price shows on each item)
       if (this.selling) { const p = document.createElement('span'); p.className = 'price'; p.textContent = SELL_PRICE[r]; b.append(p); }
-      b.addEventListener('click', () => { AUDIO.play('click'); if (this.selling) this.sellOne(k); else this.openArtifact(k); });
+      b.addEventListener('click', () => { if (this.selling) { AUDIO.play('click'); this.sellOne(k); } else this.equipArt(k); });
+      // a right click (or a long press) opens the item's card: its stats, unequip, fuse
+      b.addEventListener('contextmenu', e => { e.preventDefault(); AUDIO.play('click'); this.openArtifact(k); });
       return b;
     })));
     $('gearGrid').classList.toggle('selling', !!this.selling);
@@ -389,6 +390,17 @@ Object.assign(UI, {
     $('artFuse').textContent = r === LEGEND ? 'Mythic' : 'Fuse';
     $('artFuse').className = r === LEGEND ? 'jelly mythic' : 'jelly violet';
     this.show('artInfo', true);
+  },
+  // a left click on an item in the grid puts it on, in place of whatever was in its slot (one already worn just
+  // makes the blob hop); a right click opens its card
+  equipArt(key) {
+    const g = G.save.gear;
+    if (!(g.items[key] > 0)) return;
+    const slot = artParse(key).def.slot;
+    if (g.eq[slot] === key) { AUDIO.play('click'); G.hero.impulse(1.2); return; }
+    g.eq[slot] = key;
+    saveGame(); AUDIO.play('levelup'); G.hero.impulse(1.6);
+    this.renderGear();
   },
   equipToggle() {
     const g = G.save.gear, key = this.artKeyOpen;

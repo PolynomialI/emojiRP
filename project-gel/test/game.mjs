@@ -353,8 +353,9 @@ if (mode === 'gear') {
   await page.click('#fuseClose');
   const fused = await page.evaluate(() => JSON.stringify(G.save.gear.items));
   console.log('after fuse:', fused);
-  await page.click('#gearGrid .art'); await render(2); await shot('gear-item');
-  await page.click('#artEquip'); await page.click('#artClose'); await render(4); await shot('gear-after');
+  // a left click equips an item; a right click opens its card
+  await page.click('#gearGrid .art'); await render(4); await shot('gear-after');
+  await page.click('#gearGrid .art', { button: 'right' }); await render(2); await shot('gear-item'); await page.click('#artClose');
   const totals = await page.evaluate(() => ({ eq: G.save.gear.eq, stats: gearStats(), tot: gearTotals() }));
   console.log('equipped:', JSON.stringify(totals));
   await page.click('#gear .back');
