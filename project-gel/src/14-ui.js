@@ -287,7 +287,9 @@ const UI = {
       const k = key + s.id, img = b.querySelector('img');
       img.dataset.heroIcon = k; if (ICONS.map[k]) img.src = ICONS.map[k]; else img.classList.add('pending');
       b.querySelector('span').textContent = s.id === 'none' ? (tab === 'hats' ? 'No hat' : 'No costume') : s.name;
-      b.querySelector('.boost').textContent = s.boost ? fmtBoost(s.boost) : '';
+      // (a two-stat bonus is long: it shrinks to fit the card rather than run off it)
+      const bt = s.boost ? fmtBoost(s.boost) : '', be = b.querySelector('.boost');
+      be.textContent = bt; if (bt.length > 13) be.style.fontSize = Math.max(9.5, 13.5 * 13 / bt.length).toFixed(1) + 'px';
       const sm = b.querySelector('small');
       if (owned.includes(s.id)) sm.textContent = '';
       else if (s.goal) sm.textContent = '🏆';
@@ -340,7 +342,7 @@ const UI = {
         const b = document.createElement('button'), sel = this.shipSel.key === K.key && this.shipSel.id === it.id;
         b.className = 'skin' + (sel ? ' sel' : '') + (S[K.key] === it.id ? ' worn' : '');
         b.innerHTML = `<img alt=""><span></span><small></small>`;
-        b.querySelector('img').src = ICONS.map['look-' + K.key + '-' + it.id] || shipLookIcon(K.key, it);
+        const im = b.querySelector('img'); im.dataset.look = 'look-' + K.key + '-' + it.id; im.src = ICONS.map[im.dataset.look] || shipLookIcon(K.key, it);
         b.querySelector('span').textContent = it.name;
         const sm = b.querySelector('small');
         if (!owns(K.key, it.id)) { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(it.cost); sm.classList.toggle('poor', sv.coins < it.cost); }
@@ -349,6 +351,10 @@ const UI = {
       }
     }
     grid.replaceChildren(...this.stagger(cells));
+    // pictures still waiting on their models: look again in a moment (only while this tab is open)
+    clearTimeout(this.shipIconT);
+    if (SHIP_LOOK_KINDS.some(K => K.key !== 'trail' && K.list.some(it => !(K.key === 'flag' && it.id === 'none') && !ICONS.map['look-' + K.key + '-' + it.id])))
+      this.shipIconT = setTimeout(() => { if (this.menuTab === 'skins' && this.blobLists().tab === 'ships') { shipLookIcons(); document.querySelectorAll('#skinGrid .skin img').forEach(im => { const k = im.dataset.look; if (k && ICONS.map[k]) im.src = ICONS.map[k]; }); } }, 1500);
     const K = SHIP_LOOK_KINDS.find(k => k.key === this.shipSel.key), it = K.list.find(x => x.id === this.shipSel.id), act = $('skinAction');
     if (S[K.key] === it.id) { act.textContent = 'Equipped'; act.disabled = true; act.className = 'jelly'; }
     else if (owns(K.key, it.id)) { act.textContent = 'Equip'; act.disabled = false; act.className = 'jelly'; }

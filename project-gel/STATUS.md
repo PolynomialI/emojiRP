@@ -18,7 +18,54 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   stronger, or plainly better, than the one before it: finding a new one should feel rewarding. Check a new one
   with `test/_dps.mjs` (IDS=its id plus the previous chapter's) and by playing it.
 
-## Ground-game balance, big-enemy gems, power changes, a lighter blob in the menus (latest)
+## Ship looks everywhere, new sea upgrades, body costumes and hats, boat details (latest)
+- **Ship looks:**
+  - Hull paint now reaches every big part in a ship's own hull color family (`paintLike` in 04l: bulwarks, castles,
+    cabins, superstructure; decks, trim, windows and small fittings keep their colors). It shows plainly on all ten
+    ships, not just along the waterline (it had looked as if only the Golden Ark took it).
+  - The Ships tab lives on the ocean page only: the ground game's Blobs screen has no Ships tab, and from the ocean
+    page the Blobs screen opens on it. Arrows over the list try the looks on any of the ten ships.
+  - Paints, sails and flags have 3D pictures (the sloop wearing them, the flag on its pole: `shipLookIcons` in 13k);
+    the wake trails have new drawings.
+  - `test/_m1.mjs` checks all this.
+- **Seven new sea upgrades** (13q-sea-more.js), each with its model, picture and evolution.
+  - Weapons:
+    - Whirlpool: pools that drag swimmers in and grind them.
+    - Storm Cloud: a cloud over the ship strikes chained lightning.
+    - Kraken Arms: tentacles rise under swimmers and slam down.
+    - Dolphin Pod: dolphins leap onto swimmers.
+  - Passives: Hull Plating +7% hull, Gunpowder +5% damage, Treasure Hunter +8% coins and +10% pickup reach.
+  - Tuned beside the first weapons (`test/_seadps.mjs`, damage a second from a still sloop among 24 tough
+    swimmers, level 1 / 10):
+
+    | Weapon | Level 1 | Level 10 |
+    |---|---|---|
+    | Cannon | 4 | 80 |
+    | Gulls | 2 | 53 |
+    | Shark | 6 | 62 |
+    | Whirlpool | about 7 | about 100 |
+    | Storm Cloud | about 7 | 68 |
+    | Kraken Arms | 4 | 88 |
+    | Dolphin Pod | about 4 | about 50 |
+
+  - The sea autopilot plays with them without errors.
+  - Pictures still missing when a sea run starts are drawn once their models are in.
+- **16 whole-body costumes and 12 hats** (10d-costumes2.js), listed and bought in the Blobs screen as usual
+  (`test/_m3.mjs`).
+  - Body costumes: knight and samurai armor, a turtle shell, a super cape, angel wings, fairy wings with a tutu, a
+    jetpack, an adventurer's pack, a tuxedo, a hula skirt, a snowman, a captain's coat, a mech suit, a space suit, a
+    duck float, a scarecrow.
+  - Hats: graduation cap, fez, beret, hard hat, ball cap, traffic cone, tiara, pharaoh, bucket hat, light bulb,
+    flower pot, a chick.
+  - A body costume's picture shows the whole blob, from behind when it is worn on the back.
+  - Long two-stat bonus labels on the Blobs cards shrink to fit.
+- **Boats:**
+  - The battleship and the carrier fly lines of signal flags from the mast to bow and stern.
+  - The battleship has a second funnel and bridge windows.
+  - Long ships are framed closer in the Ships tab and on the ocean page.
+  - (Thin parts on the biggest ships must be at least about 0.15 thick: their meshes are coarse, 0.07-0.08 a cell.)
+
+## Ground-game balance, big-enemy gems, power changes, a lighter blob in the menus
 - **Ground game** (every chapter, Endless and Boss Rush; the sea is unchanged): constants at the top of the enemy
   section of 11-game.js.
   - **Bosses:** 20% less health (`LAND_BOSS_HP`), the Bagger too (4080, was 5100).
