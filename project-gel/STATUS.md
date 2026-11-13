@@ -89,8 +89,13 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   - Its fall: the heart cracks in a moment of slow motion, the bucket wheel snaps off and rolls away bouncing,
     explosions run over it as the boom droops and the masts sink, then the heart bursts in a blast of goo and the
     machine melts into the floor while rock rains from the ceiling; the camera circles it throughout.
+  - Reach: a goblin is shorter than its rock, so it hops up on top to throw (that is when to hit it); a spider is
+    lower than the hero's rocks, so where one is in its way it climbs up on it and bites down from there. The
+    Bagger's crawlers stay square to the hall (only its upper works turn), so each stage shows it from a new side.
+  - Model names are global: the cave golem is `cgolem` (`golem` is the Magma Golem's), and the goblins throw the
+    Wild West's `dynamite`. A duplicate in MESH_ORDER keeps the mesh count from ever completing.
   - `test/_cave.mjs` plays chapter 20 through (BR=L|R) with shots of each stage; `test/_cavefoes.mjs` lines up the
-    new crowd.
+    new crowd. Last run (R): rooms 14 s, 13 s, 138 s; the Bagger's stages about 16 s each for a perfect-aim bot; no errors.
 - **Ocean home foes.** Pirates (swimmers, float and tube riders, sized and tinted as in a run, head and shoulders
   out of the water) swim in round the ship and hack at its side, rocking the blob; tap the water to lob goo at the
   nearest, and the blob throws now and then itself (`seaHomeFoes`, `emitSeaHomeFoes`; shots shared with the land
