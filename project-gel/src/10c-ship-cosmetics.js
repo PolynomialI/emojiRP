@@ -83,9 +83,21 @@ function shipLookIcon(key, item) {
         : e === 'swords' ? `<path d="M24 12 L48 34 M48 12 L24 34" stroke="${m}" stroke-width="4" stroke-linecap="round"/>` : `<path d="M20 12 H52 V16 H20 Z" fill="#ff5a5a"/><path d="M20 16 H52 V20 H20 Z" fill="#ffa83a"/><path d="M20 20 H52 V24 H20 Z" fill="#ffe84a"/><path d="M20 24 H52 V28 H20 Z" fill="#5ad86a"/><path d="M20 28 H52 V32 H20 Z" fill="#4aa8ff"/><path d="M20 32 H52 V36 H20 Z" fill="#a86aff"/>`;
       inner = `<path d="M18 8 V58" stroke="#6e4426" stroke-width="4" stroke-linecap="round"/><path d="M20 10 H52 V36 H20 Z" fill="${e === 'rainbow' ? '#fff' : item.cloth}" ${ol}/>${em}<path d="M20 10 H52 V36 H20 Z" fill="none" ${ol}/>`; }
   } else {
-    const col = item.col ? '#' + item.col.map(v => Math.round(Math.min(1, v) * 255).toString(16).padStart(2, '0')).join('') : null;
-    const dots = [[12, 46, 6], [24, 38, 5], [36, 30, 4.5], [47, 22, 4], [56, 15, 3]];
-    inner = `<path d="M6 54 Q30 50 58 10" stroke="#9fd0ff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".5"/>` + dots.map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col || ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff'][i]}" ${ol.replace('3"', '2"')}/>`).join('');
+    // a wake: a patch of sea, the foam curling back from where the ship was, and what rises out of it
+    const col = item.col ? rgbHex(item.col) : '#ffffff', ol2 = 'stroke="#23305a" stroke-width="2" stroke-linejoin="round"';
+    const curve = 'M8 52 Q22 46 30 34 Q38 22 56 14';
+    const sea = `<defs><linearGradient id="sw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fdcff"/><stop offset="1" stop-color="#2f86e0"/></linearGradient></defs><rect x="4" y="6" width="56" height="52" rx="14" fill="url(#sw)" ${ol}/><path d="M10 24 Q16 21 22 24 M38 46 Q44 43 50 46" stroke="#fff" stroke-opacity=".45" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    const ribbon = item.id === 'rainbow'
+      ? ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff', '#a86aff'].map((c, i) => `<path d="${curve}" transform="translate(${(i - 2.5) * 1.6} ${(i - 2.5) * 1.6})" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`).join('')
+      : (item.add ? `<path d="${curve}" stroke="${col}" stroke-width="14" fill="none" stroke-linecap="round" opacity=".35"/>` : '') + `<path d="${curve}" stroke="${col}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="${curve}" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-dasharray="4 5" opacity=".9"/>`;
+    const spots = [[20, 30], [42, 42], [46, 24], [28, 50]];
+    const star = (x, y, r, c) => `<path d="M${x} ${y - r} Q${x + r * 0.2} ${y - r * 0.2} ${x + r} ${y} Q${x + r * 0.2} ${y + r * 0.2} ${x} ${y + r} Q${x - r * 0.2} ${y + r * 0.2} ${x - r} ${y} Q${x - r * 0.2} ${y - r * 0.2} ${x} ${y - r} Z" fill="${c}" ${ol2}/>`;
+    const heart = (x, y, r) => `<path d="M${x} ${y + r} C${x - r * 1.6} ${y - r * 0.2} ${x - r * 0.6} ${y - r * 1.5} ${x} ${y - r * 0.4} C${x + r * 0.6} ${y - r * 1.5} ${x + r * 1.6} ${y - r * 0.2} ${x} ${y + r} Z" fill="#ff6a9a" ${ol2}/>`;
+    const flame = (x, y, r) => `<path d="M${x} ${y - r * 1.4} Q${x + r} ${y - r * 0.2} ${x + r * 0.7} ${y + r * 0.5} Q${x} ${y + r * 1.2} ${x - r * 0.7} ${y + r * 0.5} Q${x - r} ${y - r * 0.2} ${x} ${y - r * 1.4} Z" fill="#ff8a2a" ${ol2}/><path d="M${x} ${y - r * 0.4} Q${x + r * 0.4} ${y + r * 0.2} ${x} ${y + r * 0.7} Q${x - r * 0.4} ${y + r * 0.2} ${x} ${y - r * 0.4} Z" fill="#ffe14a"/>`;
+    const bubble = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#dff6ff" fill-opacity=".7" ${ol2}/><circle cx="${x - r * 0.35}" cy="${y - r * 0.35}" r="${r * 0.28}" fill="#fff"/>`;
+    const bits = spots.map(([x, y], i) => { const r = [5, 4, 3.6, 3.2][i];
+      return item.part === 'bubble' ? bubble(x, y, r) : item.part === 'sparkle' ? star(x, y, r + 1.5, '#ffe14a') : item.part === 'heart' ? heart(x, y, r) : item.part === 'flame' ? flame(x, y, r) : item.part === 'rainbow' ? star(x, y, r + 1, ['#ff5a5a', '#ffe84a', '#5ad86a', '#4aa8ff'][i]) : item.add ? `<circle cx="${x}" cy="${y}" r="${r * 0.7}" fill="${col}"/>` : `<circle cx="${x}" cy="${y}" r="${r * 0.6}" fill="#fff" opacity=".9"/>`; }).join('');
+    inner = sea + ribbon + bits;
   }
   return svgUrl(svgDoc(inner));
 }

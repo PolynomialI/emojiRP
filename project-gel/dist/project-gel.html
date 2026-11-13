@@ -280,6 +280,9 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .skin img { width: 66px; height: 66px; }
 .skin img.pending { border-radius: 50%; background: radial-gradient(circle, #dbeafc 40%, transparent 42%); animation: pulse 1.2s ease-in-out infinite; }
 .skin.sel { box-shadow: inset 0 0 0 3px var(--sky), 0 4px 0 var(--sky-deep); }
+.ship-pick { grid-column: 1 / -1; display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 8px; padding: 2px 0 4px; }
+.ship-pick b { font: 800 24px/1.1 var(--font); color: var(--ink); text-align: center; }
+.ship-pick .jelly { min-width: 0; padding: 4px 0; font-size: 30px; line-height: 1; }
 .skin-head { grid-column: 1 / -1; font: 800 19px/1.1 var(--font); color: var(--ink); padding: 10px 4px 0; text-align: left; }
 .skin small { font-size: 15.5px; color: var(--ink-dim); display: inline-flex; align-items: center; gap: 4px; }
 .skin small .coin { width: 16px; height: 16px; }
@@ -5020,7 +5023,26 @@ function shipModels(defs) {
   const C = hexToRgb;
   // a ship: its parts, rocked about its middle (the bigger it is, the less it rocks); and three pieces split
   // across the keel at z0 and z1, each pivoting about its own middle
+  // hull paint (the Ships tab) reaches every big part in the hull's own color family, not just the hull below the
+  // rail: bulwarks, stern castles, cabins and superstructure the color of the hull take the paint too (decks, trim,
+  // windows and small fittings keep their colors). Same hue and a similar brightness; for white or grey hulls,
+  // anything as pale or grey
+  const paintLike = parts => {
+    const hull = parts.find(p => p.paint && p.col);
+    if (!hull) return;
+    const hsl = c => { const mx = Math.max(...c), mn = Math.min(...c), l = (mx + mn) / 2, d = mx - mn, s = d < 1e-4 ? 0 : d / (1 - Math.abs(2 * l - 1));
+      const h = d < 1e-4 ? 0 : mx === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : mx === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4; return [h * 60, s, l]; };
+    const [hh, hs, hl] = hsl(hull.col);
+    for (const p of parts) {
+      if (p.paint || p.sub || !p.col || partBounds(p)[1] < 0.22) continue;
+      const [ph, ps, pl] = hsl(p.col), dh = Math.min(Math.abs(ph - hh), 360 - Math.abs(ph - hh));
+      // (lightness keeps ivory apart from gold, and a hull apart from its paler deck)
+      const like = hs < 0.18 ? ps < 0.18 && Math.abs(pl - hl) < 0.2 : ps > 0.15 && dh < 22 && Math.abs(pl - hl) < 0.17;
+      if (like) p.paint = true;
+    }
+  };
   const ship = (name, parts, len, z0, z1, o = {}) => {
+    paintLike(parts);
     const m = prop(defs, name, parts, { ao: o.ao || 0.5 });
     rig(m, { 0: [0, o.piv || 0.3, 0] }); m.rockAmp = 0.1 / len;
     const big = 50, top = 12;
@@ -11019,7 +11041,26 @@ function shipModels(defs) {
   const C = hexToRgb;
   // a ship: its parts, rocked about its middle (the bigger it is, the less it rocks); and three pieces split
   // across the keel at z0 and z1, each pivoting about its own middle
+  // hull paint (the Ships tab) reaches every big part in the hull's own color family, not just the hull below the
+  // rail: bulwarks, stern castles, cabins and superstructure the color of the hull take the paint too (decks, trim,
+  // windows and small fittings keep their colors). Same hue and a similar brightness; for white or grey hulls,
+  // anything as pale or grey
+  const paintLike = parts => {
+    const hull = parts.find(p => p.paint && p.col);
+    if (!hull) return;
+    const hsl = c => { const mx = Math.max(...c), mn = Math.min(...c), l = (mx + mn) / 2, d = mx - mn, s = d < 1e-4 ? 0 : d / (1 - Math.abs(2 * l - 1));
+      const h = d < 1e-4 ? 0 : mx === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : mx === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4; return [h * 60, s, l]; };
+    const [hh, hs, hl] = hsl(hull.col);
+    for (const p of parts) {
+      if (p.paint || p.sub || !p.col || partBounds(p)[1] < 0.22) continue;
+      const [ph, ps, pl] = hsl(p.col), dh = Math.min(Math.abs(ph - hh), 360 - Math.abs(ph - hh));
+      // (lightness keeps ivory apart from gold, and a hull apart from its paler deck)
+      const like = hs < 0.18 ? ps < 0.18 && Math.abs(pl - hl) < 0.2 : ps > 0.15 && dh < 22 && Math.abs(pl - hl) < 0.17;
+      if (like) p.paint = true;
+    }
+  };
   const ship = (name, parts, len, z0, z1, o = {}) => {
+    paintLike(parts);
     const m = prop(defs, name, parts, { ao: o.ao || 0.5 });
     rig(m, { 0: [0, o.piv || 0.3, 0] }); m.rockAmp = 0.1 / len;
     const big = 50, top = 12;
@@ -17876,9 +17917,21 @@ function shipLookIcon(key, item) {
         : e === 'swords' ? `<path d="M24 12 L48 34 M48 12 L24 34" stroke="${m}" stroke-width="4" stroke-linecap="round"/>` : `<path d="M20 12 H52 V16 H20 Z" fill="#ff5a5a"/><path d="M20 16 H52 V20 H20 Z" fill="#ffa83a"/><path d="M20 20 H52 V24 H20 Z" fill="#ffe84a"/><path d="M20 24 H52 V28 H20 Z" fill="#5ad86a"/><path d="M20 28 H52 V32 H20 Z" fill="#4aa8ff"/><path d="M20 32 H52 V36 H20 Z" fill="#a86aff"/>`;
       inner = `<path d="M18 8 V58" stroke="#6e4426" stroke-width="4" stroke-linecap="round"/><path d="M20 10 H52 V36 H20 Z" fill="${e === 'rainbow' ? '#fff' : item.cloth}" ${ol}/>${em}<path d="M20 10 H52 V36 H20 Z" fill="none" ${ol}/>`; }
   } else {
-    const col = item.col ? '#' + item.col.map(v => Math.round(Math.min(1, v) * 255).toString(16).padStart(2, '0')).join('') : null;
-    const dots = [[12, 46, 6], [24, 38, 5], [36, 30, 4.5], [47, 22, 4], [56, 15, 3]];
-    inner = `<path d="M6 54 Q30 50 58 10" stroke="#9fd0ff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".5"/>` + dots.map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col || ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff'][i]}" ${ol.replace('3"', '2"')}/>`).join('');
+    // a wake: a patch of sea, the foam curling back from where the ship was, and what rises out of it
+    const col = item.col ? rgbHex(item.col) : '#ffffff', ol2 = 'stroke="#23305a" stroke-width="2" stroke-linejoin="round"';
+    const curve = 'M8 52 Q22 46 30 34 Q38 22 56 14';
+    const sea = `<defs><linearGradient id="sw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fdcff"/><stop offset="1" stop-color="#2f86e0"/></linearGradient></defs><rect x="4" y="6" width="56" height="52" rx="14" fill="url(#sw)" ${ol}/><path d="M10 24 Q16 21 22 24 M38 46 Q44 43 50 46" stroke="#fff" stroke-opacity=".45" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    const ribbon = item.id === 'rainbow'
+      ? ['#ff5a5a', '#ffa83a', '#ffe84a', '#5ad86a', '#4aa8ff', '#a86aff'].map((c, i) => `<path d="${curve}" transform="translate(${(i - 2.5) * 1.6} ${(i - 2.5) * 1.6})" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`).join('')
+      : (item.add ? `<path d="${curve}" stroke="${col}" stroke-width="14" fill="none" stroke-linecap="round" opacity=".35"/>` : '') + `<path d="${curve}" stroke="${col}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="${curve}" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-dasharray="4 5" opacity=".9"/>`;
+    const spots = [[20, 30], [42, 42], [46, 24], [28, 50]];
+    const star = (x, y, r, c) => `<path d="M${x} ${y - r} Q${x + r * 0.2} ${y - r * 0.2} ${x + r} ${y} Q${x + r * 0.2} ${y + r * 0.2} ${x} ${y + r} Q${x - r * 0.2} ${y + r * 0.2} ${x - r} ${y} Q${x - r * 0.2} ${y - r * 0.2} ${x} ${y - r} Z" fill="${c}" ${ol2}/>`;
+    const heart = (x, y, r) => `<path d="M${x} ${y + r} C${x - r * 1.6} ${y - r * 0.2} ${x - r * 0.6} ${y - r * 1.5} ${x} ${y - r * 0.4} C${x + r * 0.6} ${y - r * 1.5} ${x + r * 1.6} ${y - r * 0.2} ${x} ${y + r} Z" fill="#ff6a9a" ${ol2}/>`;
+    const flame = (x, y, r) => `<path d="M${x} ${y - r * 1.4} Q${x + r} ${y - r * 0.2} ${x + r * 0.7} ${y + r * 0.5} Q${x} ${y + r * 1.2} ${x - r * 0.7} ${y + r * 0.5} Q${x - r} ${y - r * 0.2} ${x} ${y - r * 1.4} Z" fill="#ff8a2a" ${ol2}/><path d="M${x} ${y - r * 0.4} Q${x + r * 0.4} ${y + r * 0.2} ${x} ${y + r * 0.7} Q${x - r * 0.4} ${y + r * 0.2} ${x} ${y - r * 0.4} Z" fill="#ffe14a"/>`;
+    const bubble = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#dff6ff" fill-opacity=".7" ${ol2}/><circle cx="${x - r * 0.35}" cy="${y - r * 0.35}" r="${r * 0.28}" fill="#fff"/>`;
+    const bits = spots.map(([x, y], i) => { const r = [5, 4, 3.6, 3.2][i];
+      return item.part === 'bubble' ? bubble(x, y, r) : item.part === 'sparkle' ? star(x, y, r + 1.5, '#ffe14a') : item.part === 'heart' ? heart(x, y, r) : item.part === 'flame' ? flame(x, y, r) : item.part === 'rainbow' ? star(x, y, r + 1, ['#ff5a5a', '#ffe84a', '#5ad86a', '#4aa8ff'][i]) : item.add ? `<circle cx="${x}" cy="${y}" r="${r * 0.7}" fill="${col}"/>` : `<circle cx="${x}" cy="${y}" r="${r * 0.6}" fill="#fff" opacity=".9"/>`; }).join('');
+    inner = sea + ribbon + bits;
   }
   return svgUrl(svgDoc(inner));
 }
@@ -27474,6 +27527,32 @@ function seaIcons() {
   R.resetStreams();
 }
 
+// the Ships tab's pictures, drawn from the models once built: paints on the pirate sloop (classic sails), sails on it
+// (classic paint), each flag on its pole. 'No flag' and the wake trails keep their drawings (10c-ship-cosmetics.js)
+function shipLookIcons() {
+  const jobs = [];
+  for (const K of SHIP_LOOK_KINDS) for (const it of K.list) {
+    const key = 'look-' + K.key + '-' + it.id;
+    if (ICONS.map[key] || K.key === 'trail' || (K.key === 'flag' && it.id === 'none')) continue;
+    const ms = K.key === 'flag' ? ['flag_' + it.id] : ['sloop', 'sloop_rig'];
+    if (ms.every(m => R.enemyDraw[m])) jobs.push([key, K.key, it, ms]); else prioritizeMeshes(ms);
+  }
+  if (!jobs.length) return;
+  iconBegin();
+  for (const [key, kind, it, ms] of jobs) {
+    R.resetStreams();
+    const yaw = kind === 'flag' ? 2.0 : 2.35, pitch = kind === 'flag' ? 0.2 : 0.42;
+    if (kind === 'flag') { const FM = MODELS.defs[ms[0]], fc = FM.clips.flutter; pushEnemy(ms[0], false, 0, 0, 0, yaw, fc.row + 3, 1, 1, 0, 0, 0, 1, 1, 1); }
+    else {
+      const look = { paint: kind === 'paint' ? it : SHIP_PAINTS[0], sail: kind === 'sail' ? it : SHIP_SAILS[0] }, ht = shipTint('sloop', 'hull', look), st = shipTint('sloop', 'sail', look);
+      pushEnemy('sloop', false, 0, 0, 0, yaw, MODELS.defs.sloop.clips.rock.row, 1, 1, 0, 0, 0, ht[0], ht[1], ht[2]);
+      pushEnemy('sloop_rig', false, 0, 0, 0, yaw, MODELS.defs.sloop_rig.clips.rock.row, 1, 1, 0, 0, 0, st[0], st[1], st[2]);
+    }
+    ICONS.map[key] = iconCapture(...iconFit(iconFrame(ms[ms.length - 1], yaw, 1, pitch, 0.5), pitch), null, true);
+  }
+  iconEnd();
+  R.resetStreams();
+}
 // the run is over: the sea keeps its own chapter progress (coins, cosmetics and gear are shared with the land)
 function seaFinish(run, won) {
   const S = G.save.sea, n = run.chapter;
@@ -29653,7 +29732,8 @@ const UI = {
     if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-    if (tab === 'skins') this.renderSkins();
+    // (the Ships tab belongs to the ocean page: it opens there first, and the ground game never shows it)
+    if (tab === 'skins') { if (this.homePage === 'sea') this.blobTab = 'ships'; else if (this.blobTab === 'ships') this.blobTab = 'colors'; this.shipView = null; this.renderSkins(); }
     if (tab === 'gear') this.renderGear();
     if (tab === 'chapters') this.renderChapters();
     if (tab === 'goals') this.renderGoals();
@@ -29774,7 +29854,7 @@ const UI = {
   },
   // Three tabs: body colors, costumes and hats. Tapping a card previews it on the blob; the button buys or equips it.
   blobLists() {
-    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' || this.blobTab === 'ships' ? this.blobTab : 'colors';
+    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' || (this.blobTab === 'ships' && this.homePage === 'sea') ? this.blobTab : 'colors';
     if (tab === 'ships') return { tab, list: [], owned: [], worn: null, sel: null, key: 'ship-' };
     if (tab === 'colors') return { tab, list: SKINS, owned: sv.skins, worn: sv.skin, sel: this.skinPreview, key: 'skin-' };
     if (tab === 'costumes') return { tab, list: costumesOf('hood'), owned: sv.costumes, worn: sv.costume, sel: this.costumePreview, key: 'costume-' };
@@ -29787,7 +29867,7 @@ const UI = {
     if (!this.hatPreview) this.hatPreview = sv.hat;
     const { tab, list, owned, worn, sel, key } = this.blobLists();
     this.syncCoins();
-    document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bt === tab)));
+    document.querySelectorAll('#blobTabs button').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.bt === tab)); if (b.dataset.bt === 'ships') b.hidden = this.homePage !== 'sea'; });
     if (tab === 'ships') { this.renderShipLooks(); return; }
     this.shipPreview = null; this.shipTabOn = false;
     queueHeroIcons(list.map(s => key + s.id), true);
@@ -29817,11 +29897,16 @@ const UI = {
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   // ---------- the Ships tab: hull paint, sails, flags and wake trails, tried on a ship on open water ----------
+  // the ship the looks are tried on: any of the ten (the arrows over the list), at first the best one sailed (at least
+  // the pirate sloop); picking sails on a ship without any moves to the nearest one with sails
   shipStage() {
-    // at least the pirate sloop (so there are sails); a ship with sails when sails are picked
-    const sailed = seaHomeStage(), k = this.shipSel && this.shipSel.key;
-    if (k === 'sail' && !(SHIP_BASE_COL[SHIPS[Math.max(sailed, 2)].id] || {}).sail) return sailed >= 9 ? 9 : 3;
-    return Math.max(sailed, 2);
+    const sailed = Math.max(seaHomeStage(), 2), k = this.shipSel && this.shipSel.key;
+    if (this.shipView == null) this.shipView = sailed;
+    if (k === 'sail' && !(SHIP_BASE_COL[SHIPS[this.shipView].id] || {}).sail) {
+      const withSails = SHIPS.map((D, i) => i).filter(i => (SHIP_BASE_COL[SHIPS[i].id] || {}).sail);
+      this.shipView = withSails.reduce((a, b) => (Math.abs(b - this.shipView) < Math.abs(a - this.shipView) ? b : a));
+    }
+    return this.shipView;
   },
   renderShipLooks() {
     const sv = G.save, S = sv.sea, grid = $('skinGrid');
@@ -29831,14 +29916,23 @@ const UI = {
     OC.stage = this.shipStage();
     const D = shipDef(); prioritizeMeshes([D.model, D.model + '_rig', ...(this.shipPreview.flag !== 'none' ? ['flag_' + this.shipPreview.flag] : [])]);
     const owns = (key, id) => S.looks.includes(key + ':' + id);
-    const cells = [];
+    shipLookIcons();
+    // which ship: arrows to try the looks on any of them
+    const pick = document.createElement('div'); pick.className = 'ship-pick';
+    pick.innerHTML = '<button class="jelly ghost" aria-label="Previous ship">\u2039</button><b></b><button class="jelly ghost" aria-label="Next ship">\u203a</button>';
+    pick.querySelector('b').textContent = D.name;
+    const [prev, next] = pick.querySelectorAll('button');
+    prev.disabled = this.shipView <= 0; next.disabled = this.shipView >= SHIPS.length - 1;
+    prev.addEventListener('click', () => { this.shipView--; if (this.shipSel.key === 'sail') this.shipSel = { key: 'paint', id: this.shipPreview.paint }; AUDIO.play('click'); G.hero.impulse(1); this.renderShipLooks(); });
+    next.addEventListener('click', () => { this.shipView++; if (this.shipSel.key === 'sail') this.shipSel = { key: 'paint', id: this.shipPreview.paint }; AUDIO.play('click'); G.hero.impulse(1); this.renderShipLooks(); });
+    const cells = [pick];
     for (const K of SHIP_LOOK_KINDS) {
       const h = document.createElement('div'); h.className = 'skin-head'; h.textContent = K.title; cells.push(h);
       for (const it of K.list) {
         const b = document.createElement('button'), sel = this.shipSel.key === K.key && this.shipSel.id === it.id;
         b.className = 'skin' + (sel ? ' sel' : '') + (S[K.key] === it.id ? ' worn' : '');
         b.innerHTML = `<img alt=""><span></span><small></small>`;
-        b.querySelector('img').src = shipLookIcon(K.key, it);
+        b.querySelector('img').src = ICONS.map['look-' + K.key + '-' + it.id] || shipLookIcon(K.key, it);
         b.querySelector('span').textContent = it.name;
         const sm = b.querySelector('small');
         if (!owns(K.key, it.id)) { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(it.cost); sm.classList.toggle('poor', sv.coins < it.cost); }

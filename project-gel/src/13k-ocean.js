@@ -776,6 +776,32 @@ function seaIcons() {
   R.resetStreams();
 }
 
+// the Ships tab's pictures, drawn from the models once built: paints on the pirate sloop (classic sails), sails on it
+// (classic paint), each flag on its pole. 'No flag' and the wake trails keep their drawings (10c-ship-cosmetics.js)
+function shipLookIcons() {
+  const jobs = [];
+  for (const K of SHIP_LOOK_KINDS) for (const it of K.list) {
+    const key = 'look-' + K.key + '-' + it.id;
+    if (ICONS.map[key] || K.key === 'trail' || (K.key === 'flag' && it.id === 'none')) continue;
+    const ms = K.key === 'flag' ? ['flag_' + it.id] : ['sloop', 'sloop_rig'];
+    if (ms.every(m => R.enemyDraw[m])) jobs.push([key, K.key, it, ms]); else prioritizeMeshes(ms);
+  }
+  if (!jobs.length) return;
+  iconBegin();
+  for (const [key, kind, it, ms] of jobs) {
+    R.resetStreams();
+    const yaw = kind === 'flag' ? 2.0 : 2.35, pitch = kind === 'flag' ? 0.2 : 0.42;
+    if (kind === 'flag') { const FM = MODELS.defs[ms[0]], fc = FM.clips.flutter; pushEnemy(ms[0], false, 0, 0, 0, yaw, fc.row + 3, 1, 1, 0, 0, 0, 1, 1, 1); }
+    else {
+      const look = { paint: kind === 'paint' ? it : SHIP_PAINTS[0], sail: kind === 'sail' ? it : SHIP_SAILS[0] }, ht = shipTint('sloop', 'hull', look), st = shipTint('sloop', 'sail', look);
+      pushEnemy('sloop', false, 0, 0, 0, yaw, MODELS.defs.sloop.clips.rock.row, 1, 1, 0, 0, 0, ht[0], ht[1], ht[2]);
+      pushEnemy('sloop_rig', false, 0, 0, 0, yaw, MODELS.defs.sloop_rig.clips.rock.row, 1, 1, 0, 0, 0, st[0], st[1], st[2]);
+    }
+    ICONS.map[key] = iconCapture(...iconFit(iconFrame(ms[ms.length - 1], yaw, 1, pitch, 0.5), pitch), null, true);
+  }
+  iconEnd();
+  R.resetStreams();
+}
 // the run is over: the sea keeps its own chapter progress (coins, cosmetics and gear are shared with the land)
 function seaFinish(run, won) {
   const S = G.save.sea, n = run.chapter;

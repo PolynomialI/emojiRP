@@ -34,7 +34,26 @@ function shipModels(defs) {
   const C = hexToRgb;
   // a ship: its parts, rocked about its middle (the bigger it is, the less it rocks); and three pieces split
   // across the keel at z0 and z1, each pivoting about its own middle
+  // hull paint (the Ships tab) reaches every big part in the hull's own color family, not just the hull below the
+  // rail: bulwarks, stern castles, cabins and superstructure the color of the hull take the paint too (decks, trim,
+  // windows and small fittings keep their colors). Same hue and a similar brightness; for white or grey hulls,
+  // anything as pale or grey
+  const paintLike = parts => {
+    const hull = parts.find(p => p.paint && p.col);
+    if (!hull) return;
+    const hsl = c => { const mx = Math.max(...c), mn = Math.min(...c), l = (mx + mn) / 2, d = mx - mn, s = d < 1e-4 ? 0 : d / (1 - Math.abs(2 * l - 1));
+      const h = d < 1e-4 ? 0 : mx === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : mx === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4; return [h * 60, s, l]; };
+    const [hh, hs, hl] = hsl(hull.col);
+    for (const p of parts) {
+      if (p.paint || p.sub || !p.col || partBounds(p)[1] < 0.22) continue;
+      const [ph, ps, pl] = hsl(p.col), dh = Math.min(Math.abs(ph - hh), 360 - Math.abs(ph - hh));
+      // (lightness keeps ivory apart from gold, and a hull apart from its paler deck)
+      const like = hs < 0.18 ? ps < 0.18 && Math.abs(pl - hl) < 0.2 : ps > 0.15 && dh < 22 && Math.abs(pl - hl) < 0.17;
+      if (like) p.paint = true;
+    }
+  };
   const ship = (name, parts, len, z0, z1, o = {}) => {
+    paintLike(parts);
     const m = prop(defs, name, parts, { ao: o.ao || 0.5 });
     rig(m, { 0: [0, o.piv || 0.3, 0] }); m.rockAmp = 0.1 / len;
     const big = 50, top = 12;

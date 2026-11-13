@@ -140,7 +140,8 @@ const UI = {
     if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-    if (tab === 'skins') this.renderSkins();
+    // (the Ships tab belongs to the ocean page: it opens there first, and the ground game never shows it)
+    if (tab === 'skins') { if (this.homePage === 'sea') this.blobTab = 'ships'; else if (this.blobTab === 'ships') this.blobTab = 'colors'; this.shipView = null; this.renderSkins(); }
     if (tab === 'gear') this.renderGear();
     if (tab === 'chapters') this.renderChapters();
     if (tab === 'goals') this.renderGoals();
@@ -261,7 +262,7 @@ const UI = {
   },
   // Three tabs: body colors, costumes and hats. Tapping a card previews it on the blob; the button buys or equips it.
   blobLists() {
-    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' || this.blobTab === 'ships' ? this.blobTab : 'colors';
+    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' || (this.blobTab === 'ships' && this.homePage === 'sea') ? this.blobTab : 'colors';
     if (tab === 'ships') return { tab, list: [], owned: [], worn: null, sel: null, key: 'ship-' };
     if (tab === 'colors') return { tab, list: SKINS, owned: sv.skins, worn: sv.skin, sel: this.skinPreview, key: 'skin-' };
     if (tab === 'costumes') return { tab, list: costumesOf('hood'), owned: sv.costumes, worn: sv.costume, sel: this.costumePreview, key: 'costume-' };
@@ -274,7 +275,7 @@ const UI = {
     if (!this.hatPreview) this.hatPreview = sv.hat;
     const { tab, list, owned, worn, sel, key } = this.blobLists();
     this.syncCoins();
-    document.querySelectorAll('#blobTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bt === tab)));
+    document.querySelectorAll('#blobTabs button').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.bt === tab)); if (b.dataset.bt === 'ships') b.hidden = this.homePage !== 'sea'; });
     if (tab === 'ships') { this.renderShipLooks(); return; }
     this.shipPreview = null; this.shipTabOn = false;
     queueHeroIcons(list.map(s => key + s.id), true);
@@ -304,11 +305,16 @@ const UI = {
     else { act.innerHTML = `Buy · <i class="coin"></i><span></span>`; act.querySelector('span').textContent = fmtNum(s.cost); act.disabled = sv.coins < s.cost; act.className = 'jelly gold'; }
   },
   // ---------- the Ships tab: hull paint, sails, flags and wake trails, tried on a ship on open water ----------
+  // the ship the looks are tried on: any of the ten (the arrows over the list), at first the best one sailed (at least
+  // the pirate sloop); picking sails on a ship without any moves to the nearest one with sails
   shipStage() {
-    // at least the pirate sloop (so there are sails); a ship with sails when sails are picked
-    const sailed = seaHomeStage(), k = this.shipSel && this.shipSel.key;
-    if (k === 'sail' && !(SHIP_BASE_COL[SHIPS[Math.max(sailed, 2)].id] || {}).sail) return sailed >= 9 ? 9 : 3;
-    return Math.max(sailed, 2);
+    const sailed = Math.max(seaHomeStage(), 2), k = this.shipSel && this.shipSel.key;
+    if (this.shipView == null) this.shipView = sailed;
+    if (k === 'sail' && !(SHIP_BASE_COL[SHIPS[this.shipView].id] || {}).sail) {
+      const withSails = SHIPS.map((D, i) => i).filter(i => (SHIP_BASE_COL[SHIPS[i].id] || {}).sail);
+      this.shipView = withSails.reduce((a, b) => (Math.abs(b - this.shipView) < Math.abs(a - this.shipView) ? b : a));
+    }
+    return this.shipView;
   },
   renderShipLooks() {
     const sv = G.save, S = sv.sea, grid = $('skinGrid');
@@ -318,14 +324,23 @@ const UI = {
     OC.stage = this.shipStage();
     const D = shipDef(); prioritizeMeshes([D.model, D.model + '_rig', ...(this.shipPreview.flag !== 'none' ? ['flag_' + this.shipPreview.flag] : [])]);
     const owns = (key, id) => S.looks.includes(key + ':' + id);
-    const cells = [];
+    shipLookIcons();
+    // which ship: arrows to try the looks on any of them
+    const pick = document.createElement('div'); pick.className = 'ship-pick';
+    pick.innerHTML = '<button class="jelly ghost" aria-label="Previous ship">\u2039</button><b></b><button class="jelly ghost" aria-label="Next ship">\u203a</button>';
+    pick.querySelector('b').textContent = D.name;
+    const [prev, next] = pick.querySelectorAll('button');
+    prev.disabled = this.shipView <= 0; next.disabled = this.shipView >= SHIPS.length - 1;
+    prev.addEventListener('click', () => { this.shipView--; if (this.shipSel.key === 'sail') this.shipSel = { key: 'paint', id: this.shipPreview.paint }; AUDIO.play('click'); G.hero.impulse(1); this.renderShipLooks(); });
+    next.addEventListener('click', () => { this.shipView++; if (this.shipSel.key === 'sail') this.shipSel = { key: 'paint', id: this.shipPreview.paint }; AUDIO.play('click'); G.hero.impulse(1); this.renderShipLooks(); });
+    const cells = [pick];
     for (const K of SHIP_LOOK_KINDS) {
       const h = document.createElement('div'); h.className = 'skin-head'; h.textContent = K.title; cells.push(h);
       for (const it of K.list) {
         const b = document.createElement('button'), sel = this.shipSel.key === K.key && this.shipSel.id === it.id;
         b.className = 'skin' + (sel ? ' sel' : '') + (S[K.key] === it.id ? ' worn' : '');
         b.innerHTML = `<img alt=""><span></span><small></small>`;
-        b.querySelector('img').src = shipLookIcon(K.key, it);
+        b.querySelector('img').src = ICONS.map['look-' + K.key + '-' + it.id] || shipLookIcon(K.key, it);
         b.querySelector('span').textContent = it.name;
         const sm = b.querySelector('small');
         if (!owns(K.key, it.id)) { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(it.cost); sm.classList.toggle('poor', sv.coins < it.cost); }
