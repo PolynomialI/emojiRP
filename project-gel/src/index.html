@@ -100,7 +100,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 #skins, #gear { display: flex; flex-direction: column; }
 #home { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   grid-template-areas: "top" "title" "stage" "pick" "menu"; row-gap: 8px; }
-.home-top { grid-area: top; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.home-top { grid-area: top; display: flex; align-items: center; justify-content: flex-start; gap: 10px; }
 .gearbtn { width: 46px; height: 46px; }
 .gearbtn svg { width: 64%; height: 64%; }
 .home-top .pill { font-size: 21px; padding-right: 18px; }
@@ -121,7 +121,6 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 #home.sea .pagetab svg { transform: scaleX(-1); }
 @keyframes tabnudge { 50% { transform: translateX(4px); } }
 @keyframes tabnudgeL { 50% { transform: translateX(-4px); } }
-#home { position: relative; }
 /* gear: the blob's Upgrade button under it, the upgrade window, the sell mode */
 .blobup-btn { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 2; min-height: 48px; padding-inline: 26px; font-size: 23px; }
 .blobup-btn .dot { position: absolute; right: -6px; top: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px #fff; }
