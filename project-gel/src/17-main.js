@@ -6,7 +6,7 @@ const PERF = { acc: 0, frames: 0, ratio: 1, min: 0.6, max: 2, fps: 60, cap: 60, 
 // home scene: camera framing, the blob's spin (drag) and aim, and the faded foes it shoots in the background
 // the home stage shows the ship on open water: on the ocean page, and in the Blobs screen's Ships tab
 const seaStageOn = () => G.state === 'home' && ((UI.homePage === 'sea' && UI.menuTab === 'home') || (UI.menuTab === 'skins' && UI.blobTab === 'ships'));
-const HOME = { view: () => (seaStageOn() ? Math.max(1, shipDef().len / 3) : 1), t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], shots: [], portT: 0 };
+const HOME = { view: () => (seaStageOn() ? Math.max(1, shipDef().len / 3) : 1), t: 0, actT: 2.5, frac: 0, lift: 0, side: 0, yaw: 0, spinV: 0, drag: null, idle: 9, aim: null, shootT: 1.5, foes: [], seaFoes: [], shots: [], portT: 0 };
 const HOME_LIGHT = { skyCol: [0.78, 0.92, 1.0], groundCol: [0.3, 0.55, 0.92], lightCol: [1.0, 0.98, 0.95], fogCol: [0.1, 0.45, 0.95], spotMin: 1 };
 const MESHJOB = { pending: [], done: new Set(), workers: [], fallback: false };
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
@@ -254,7 +254,7 @@ function resetHeroForHome() {
 function homePageChanged() {
   resetHeroForHome();
   HOME.yaw = UI.homePage === 'sea' ? 1.9 : 0; HOME.spinV = 0; HOME.aim = null; HOME.shots.length = 0; HOME.frac = 0;
-  if (UI.homePage === 'sea') { prioritizeMeshes(SEA_MESHES); OC.stage = seaHomeStage(); }
+  if (UI.homePage === 'sea') { prioritizeMeshes(SEA_MESHES); OC.stage = seaHomeStage(); HOME.seaFoes.length = 0; }
 }
 function goHome() {
   if (G.run && G.run.cave) caveLeave();
@@ -305,6 +305,7 @@ function updateSeaHome(dt) {
   hero.scale = D.heroS;
   seaPlaceHero(dt);
   if ((HOME.actT -= dt) <= 0) { HOME.actT = rand(3, 6); hero.impulse(rand(-1.5, 2)); seaIcons(); }
+  if (UI.menuTab === 'home' && G.state === 'home') seaHomeFoes(dt);
   // the picker's boss portrait appears once its meshes are built
   if (UI.menuTab === 'home' && $('chBoss').hidden && (HOME.portT -= dt) <= 0) { HOME.portT = 1.5; UI.refreshSeaHome(); }
   FX.update(dt);
@@ -338,27 +339,7 @@ function homeFoes(dt) {
       if ((f.bumpT -= dt) <= 0) { f.bumpT = rand(1.2, 1.8); hero.impulse(rand(-1.4, -0.8)); FX.burst(f.x * 0.45, 0.9, f.z * 0.45, 6, f.col, 3, 0.06, 0.25, 1, 0.3); if (G.state === 'home') AUDIO.play('boing', 0.8); }
     }
   }
-  // goo shots home in on their foe
-  for (const s of HOME.shots) {
-    const f = s.foe, dx = f.x - s.x, dy = 0.75 - s.y, dz = f.z - s.z, l = Math.hypot(dx, dy, dz) || 1;
-    s.t += dt;
-    if (l < 0.5 || s.t > 1.8 || f.dying) {
-      s.dead = true;
-      if (!f.dying) {
-        f.dying = 0.001; f.flash = 1;
-        AUDIO.play('squish');
-        FX.burst(f.x, 0.8, f.z, 12, f.col, 4, 0.07, 0.35, 1, 0.4);
-        FX.glow(f.x, 0.8, f.z, 1.1, f.col, 0.2);
-        FX.burst(s.x, s.y, s.z, 6, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 3, 0.05, 0.25, 1, 0.3);
-      }
-      continue;
-    }
-    const sp = 14;
-    s.vx = dx / l * sp; s.vy = dy / l * sp; s.vz = dz / l * sp;
-    s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
-    s.trail.unshift([s.x, s.y, s.z]); if (s.trail.length > 7) s.trail.pop();
-  }
-  HOME.shots = HOME.shots.filter(s => !s.dead);
+  homeShots(dt);
   // aim at the nearest walker now and then (never while the player is spinning the blob)
   const a = HOME.aim;
   if (a) {
@@ -376,30 +357,120 @@ function homeFoes(dt) {
     if (best) HOME.aim = { foe: best, t: 0, yaw: Math.atan2(best.x, best.z), fired: 0 };
   }
 }
+// goo shots home in on their foe (a swimmer is hit low, at the water)
+function homeShots(dt) {
+  for (const s of HOME.shots) {
+    const f = s.foe, hy = f.hy ?? 0.75, dx = f.x - s.x, dy = hy - s.y, dz = f.z - s.z, l = Math.hypot(dx, dy, dz) || 1;
+    s.t += dt;
+    if (l < 0.5 * (f.sc || 1) || s.t > 2.4 || f.dying) {
+      s.dead = true;
+      if (!f.dying) {
+        f.dying = 0.001; f.flash = 1;
+        AUDIO.play('squish');
+        FX.burst(f.x, hy + 0.05, f.z, 12, f.col, 4, 0.07, 0.35, 1, 0.4);
+        FX.glow(f.x, hy + 0.05, f.z, 1.1, f.col, 0.2);
+        FX.burst(s.x, s.y, s.z, 6, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 3, 0.05, 0.25, 1, 0.3);
+        if (f.hy != null) { FX.burst(f.x, 0.1, f.z, 14, [0.85, 0.95, 1], 4, 0.08, 0.5, 2, 3); AUDIO.play('splash', 0.6); }
+      }
+      continue;
+    }
+    const sp = 14 * (f.sc || 1);
+    s.vx = dx / l * sp; s.vy = dy / l * sp; s.vz = dz / l * sp;
+    s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+    s.trail.unshift([s.x, s.y, s.z]); if (s.trail.length > 7) s.trail.pop();
+  }
+  HOME.shots = HOME.shots.filter(s => !s.dead);
+}
+// ---------- the ocean page's foes ----------
+// pirates swim in from behind the ship (as the camera sees it) and hack at its side, rocking the blob, until shot;
+// tap the water to lob goo at the one nearest the tap (the blob lobs one now and then by itself)
+const SEA_HOME_FOE_MODELS = ['pswim', 'pfloat', 'ptube'];
+function spawnSeaHomeFoe(f, first) {
+  // the camera frames the ship closely, so they start just round it (behind it and off to its sides), in view
+  const c = R.cam.pos, D = shipDef(), u = Math.max(1.9, D.len * 0.62) / 1.9;
+  const a = Math.atan2(-c[0], -c[2]) + rand(-1.5, 1.5), r = D.len * 0.5 + (0.6 + (first ? rand(0.4, 1.6) : rand(1.8, 2.4))) * u;
+  // as in a run: their own size and tint, head and shoulders out of the water
+  const model = pick(SEA_HOME_FOE_MODELS), T = ENEMY_TYPES[model];
+  return Object.assign(f, { x: Math.sin(a) * r, z: Math.cos(a) * r, model, phase: Math.random(), speed: rand(0.45, 0.7) * u,
+    sc: T.scale, tint: hexToRgb(T.tint), hy: 0.25 * T.scale, col: [1, 0.55, 0.3], yaw: 0, moving: true, appear: first ? 1 : 0, flash: 0, dying: 0, bumpT: rand(0.5, 1.2) });
+}
+// within the hull's outline, padded (in the ship's own frame)
+function nearHull(x, z, pad) {
+  const S = OC.ship, D = shipDef(), c = Math.cos(S.yaw), s = Math.sin(S.yaw), lx = c * x - s * z, lz = s * x + c * z;
+  return (lx / (D.wid / 2 + pad)) ** 2 + (lz / (D.len / 2 + pad)) ** 2 < 1;
+}
+function seaHomeFoes(dt) {
+  const F = HOME.seaFoes, hero = G.hero;
+  if (!HOME.frac || !OC.ship) return;
+  while (F.length < 5) F.push(spawnSeaHomeFoe({}, true));
+  for (const f of F) {
+    f.appear = Math.min(1, f.appear + dt * 1.2); f.flash = Math.max(0, f.flash - dt * 3);
+    if (f.dying) { f.dying += dt * 1.6; if (f.dying >= 1.8) spawnSeaHomeFoe(f, false); continue; }
+    const d = Math.hypot(f.x, f.z) || 1;
+    f.yaw = Math.atan2(-f.x, -f.z);
+    f.moving = !nearHull(f.x, f.z, 0.55 * f.sc);
+    if (f.moving) { f.x -= f.x / d * f.speed * dt; f.z -= f.z / d * f.speed * dt; f.phase += dt * 0.9; }
+    else {
+      f.phase += dt * 0.8;
+      if ((f.bumpT -= dt) <= 0) {
+        f.bumpT = rand(1.4, 2.2); hero.impulse(rand(-1.4, -0.8));
+        FX.burst(f.x, 0.3, f.z, 8, [0.85, 0.95, 1], 3, 0.06, 0.3, 1.5, 0.4);
+        if (G.state === 'home') AUDIO.play('boing', 0.6);
+      }
+    }
+  }
+  homeShots(dt);
+  if ((HOME.shootT -= dt) <= 0 && !HOME.drag && HOME.idle > 1.5) {
+    HOME.shootT = rand(2.6, 4.2);
+    let best = null, bd = 1e9;
+    for (const f of F) { const d = Math.hypot(f.x, f.z); if (!f.dying && !homeTargeted(f) && f.appear >= 1 && d < bd) { bd = d; best = f; } }
+    if (best) homeFire(best);
+  }
+}
+function emitSeaHomeFoes() {
+  for (const f of HOME.seaFoes) {
+    const m = MODELS.defs && MODELS.defs[f.model];
+    if (!m || !R.enemyDraw[f.model]) continue;
+    const c = f.moving || f.dying ? m.clips.paddle : (m.clips.hack || m.clips.paddle);
+    const row = c.row + Math.floor((f.phase - Math.floor(f.phase)) * c.frames);
+    const sc = f.sc * (0.25 + 0.75 * f.appear), dead = clamp(f.dying, 0, 1);
+    const y = -SEA.sink * f.sc * (m.top || 1) * 0.9 + Math.sin(OC.t * 2.2 + f.phase * 6) * 0.04 * f.sc - dead * 0.6 * f.sc;
+    pushEnemy(f.model, false, f.x, y, f.z, f.yaw, row, sc, 1, dead, f.flash * 0.85, 0, f.tint[0], f.tint[1], f.tint[2], 0);
+    seaShadow(f.x, f.z, 0.55 * sc, 0.7 * sc, f.yaw, 0.55 * (1 - clamp(f.dying - 0.9, 0, 1)));
+  }
+  emitHomeShots();
+}
+function emitHomeShots() {
+  for (const s of HOME.shots) {
+    pushImp(s.x, s.y, s.z, 0.17 * (s.foe.sc || 1), s.vx, s.vy, s.vz, 1.35, 0, 0, 0.25, s.ph + s.t, 0, 0, 0, 1);
+    trailRibbon(s.trail, 0.13 * (s.foe.sc || 1), [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
+  }
+}
 // a foe already has goo on its way (or the blob is turning to shoot it)
 const homeTargeted = f => HOME.shots.some(s => s.foe === f) || (HOME.aim && HOME.aim.foe === f && !HOME.aim.fired);
 // the blob flicks a goo shot at a foe from a free arm (or its chest when both are busy)
 function homeFire(f) {
-  const hero = G.hero, tw = [f.x, 0.75, f.z];
+  const hero = G.hero, tw = [f.x, f.hy ?? 0.75, f.z];
   const go = from => HOME.shots.push({ x: from[0], y: from[1], z: from[2], vx: 0, vy: 0, vz: 0, t: 0, trail: [], foe: f, ph: Math.random() * 10 });
-  const arm = hero.freeArm(tw);
+  const arm = hero.lounge ? -1 : hero.freeArm(tw);
   if (arm >= 0) hero.thrust(arm, tw, 0.17, 0, wp => go(wp)); else go(hero.jointWorld('chest'));
   if (G.state === 'home') AUDIO.play('gooshot', 0.8);
 }
 // a tap on the home stage: shoot the foe nearest the tap on screen (ones already being shot count as farther),
 // or the nearest one to the blob when there was no tap point; false when there is nothing to shoot
 function homeShoot(sx, sy) {
-  if (G.state !== 'home' || UI.menuTab !== 'home' || UI.homePage === 'sea') return false;
+  if (G.state !== 'home' || UI.menuTab !== 'home') return false;
+  const sea = UI.homePage === 'sea';
   let best = null, bd = 1e9;
   const p = [0, 0];
-  for (const f of HOME.foes) {
+  for (const f of sea ? HOME.seaFoes : HOME.foes) {
     if (f.dying || f.appear < 0.3) continue;
     const busy = homeTargeted(f);
-    const d = sx != null && R.project(f.x, 0.8, f.z, p) ? Math.hypot(p[0] - sx, p[1] - sy) + (busy ? 300 : 0) : Math.hypot(f.x, f.z) + (busy ? 30 : 0);
+    const d = sx != null && R.project(f.x, f.hy ?? 0.8, f.z, p) ? Math.hypot(p[0] - sx, p[1] - sy) + (busy ? 300 : 0) : Math.hypot(f.x, f.z) + (busy ? 30 : 0);
     if (d < bd) { bd = d; best = f; }
   }
   if (!best) return false;
-  HOME.aim = { foe: best, t: 0, yaw: Math.atan2(best.x, best.z), fired: 0.001 };
+  if (!sea) HOME.aim = { foe: best, t: 0, yaw: Math.atan2(best.x, best.z), fired: 0.001 };
   homeFire(best);
   return true;
 }
@@ -414,10 +485,7 @@ function emitHomeFoes() {
     pushEnemy(f.model, false, f.x, 0, f.z, f.yaw, row, sc, 1, dead, Math.max(0.32, f.flash * 0.9), 0, f.col[0], f.col[1], f.col[2], clamp((f.dying - 0.9) * 1.2, 0, 1));
     pushDecal(f.x + 0.05, f.z + 0.04, 0.34 * sc, 0.46 * sc, 0, 1, 0, 0, 0.05, 0.2, 0.5, 0.22 * (1 - clamp(f.dying - 0.9, 0, 1)));
   }
-  for (const s of HOME.shots) {
-    pushImp(s.x, s.y, s.z, 0.17, s.vx, s.vy, s.vz, 1.35, 0, 0, 0.25, s.ph + s.t, 0, 0, 0, 1);
-    trailRibbon(s.trail, 0.13, [R.goo.rim[0], R.goo.rim[1], R.goo.rim[2]], 0.6);
-  }
+  emitHomeShots();
 }
 function homeAction(loud) {
   const hero = G.hero, r = Math.random();
@@ -438,6 +506,7 @@ function homeAction(loud) {
 function pokeHero(sx, sy) {
   if (G.state !== 'home') return;
   if (UI.homePage === 'sea' && UI.menuTab === 'home') {
+    if (homeShoot(sx, sy)) return;
     const h = G.hero.pos; G.hero.impulse(2.6); AUDIO.play('splash', 0.8);
     FX.burst(h[0], 0.2, h[2], 14, [0.85, 0.95, 1], 4, 0.08, 0.5, 2, 3); FX.droplets(h[0], h[1] + 0.5, h[2], 3, 0, 1.5, 0.04, null);
     return;
@@ -499,6 +568,7 @@ function renderFrame() {
     f.spot = [0, 0, 0, 1e4]; f.fogRange = [22 * HOME.view(), 60 * HOME.view()]; f.hurt = 0; f.lowHp = 0;
     const S = OC.ship;
     if (S) seaDrawShip(0, S.y, 0, S.yaw, OC.stage, OC.t, 0);
+    if (S && UI.menuTab === 'home' && G.state === 'home') emitSeaHomeFoes();
   } else {
     // menus: the hero stands on a bright sky backdrop with a soft shadow
     SCENE.floor = false;

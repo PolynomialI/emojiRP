@@ -186,7 +186,7 @@ const UI = {
   refreshPages() {
     const sea = this.homePage === 'sea', open = seaUnlocked();
     $('home').classList.toggle('sea', sea);
-    $('pageDots').hidden = !open; $('pageTab').hidden = !open;
+    $('pageDots').hidden = !open;
     document.querySelectorAll('#pageDots button').forEach(b => b.setAttribute('aria-current', String(b.dataset.page === this.homePage)));
     $('pageTab').setAttribute('aria-label', sea ? 'Back to the land' : 'Go to the ocean');
     const pb = $('btnPlay');

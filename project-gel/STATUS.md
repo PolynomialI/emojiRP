@@ -45,6 +45,16 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   there and adds 5% an ocean instead, and the deep bosses were rebased (11k health at ocean 11 to 16.6k at 20).
   The deep steps are gentle early and steep late (health x1.04 at ocean 11 to x1.6 at 20; damage x1.03 to x1.4).
   Last run: ocean 11 won (needed the revive), ocean 15 won at 67% lowest hull, ocean 20 sank at 3:12 after a revive.
+- **Home screen fixed.** The Ocean Update had left a `#home { position: relative }` rule that overrode the
+  screens' full-window positioning, so the home screen was only as tall as its contents (bunched at the top with
+  empty space below). Removed; the stage fills the height again, the menu is centered. Coins and the settings gear
+  are back in the top left. The menu column is a little wider than before the ocean (up to 460px, was 390px) with
+  slightly taller buttons. A page button sits beside the title, always shown (the ocean is always one swipe away):
+  on the right of PROJECT GEL to the ocean, on the left of it on the ocean page to go back.
+- **Ocean home foes.** Pirates (swimmers, float and tube riders, sized and tinted as in a run, head and shoulders
+  out of the water) swim in round the ship and hack at its side, rocking the blob; tap the water to lob goo at the
+  nearest, and the blob throws now and then itself (`seaHomeFoes`, `emitSeaHomeFoes`; shots shared with the land
+  page in `homeShots`). `test/_homesizes.mjs` shoots both pages at four window sizes.
 - **Tests brought up to date.** `game.mjs boot` and `flows` still clicked the old Upgrades tab and used offline
   earnings (both gone since the blob upgrades); they use Achievements, Gear > Upgrade and the offline popup now.
   The full mesh build takes about 3.5 minutes on the (software GPU) test machine, so the checks wait up to 400 s.
