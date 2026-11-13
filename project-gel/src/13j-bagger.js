@@ -11,7 +11,7 @@
 // Its goo heart (the porthole above its eyes) takes the most damage; the steel takes little.
 // ============================================================
 const BAG_ROOM = { hw: 15, len: 46, look: 'boss', hero: [-9, -3, 3, 9], mid: [], foe: [[-11.5, -17], [-8, -20.5], [8, -20.5], [11.5, -17]], pillars: [[-6, -9.8], [6, -9.8]] };
-const BAG = { S: 4, z: -29, hp: 3400, heart: [0, 1.62, 0.42], heartR: 0.55, gooDmg: 14, rockDmg: 18, beamDmg: 15, smashDmg: 24, beamY: 0.85 };
+const BAG = { S: 4, z: -29, hp: 5100, heart: [0, 1.62, 0.42], heartR: 0.55, gooDmg: 14, rockDmg: 18, beamDmg: 15, smashDmg: 24, beamY: 0.85 };
 const bagPlan = st2 => st2 ? ['barrage', 'goo', 'beam', 'smash', 'barrage', 'minions', 'beam', 'goo'] : ['goo', 'barrage', 'goo', 'beam', 'smash', 'minions'];
 
 // the hall's own look: braziers down both sides, a heap of spoil behind the machine, pillars at the back
@@ -29,6 +29,7 @@ function bagStart(P) {
   for (const x of D.hero) CV.room.covers.push(cvCover(P, x, CAVE.coverZ, CAVE.coverHp, false));
   for (const [x, z] of D.pillars) CV.room.covers.push({ ...cvCover(P, x, z, Infinity, false), pillar: true, hw: 1.0, hd: 1.0, h: 99, model: 'cpillar' });
   for (const [x, z] of D.foe) CV.room.covers.push(cvCover(P, x, z, CAVE.foeCoverHp, true));
+  cvDropCovers(CV.room, 0.3);
   CV.boss = { x: 0, z: BAG.z, slew: 0, pitch: -0.1, wheel: 0, wheelV: 0.6, hp: BAG.hp, maxHp: BAG.hp, stage2: false, state: 'idle', t: 0, cd: 2.2, plan: 0,
     glow: 0, flash: 0, beam: null, rocks: [], drills: [], regrow: [], dying: 0, eyes: 0, tint: hexToRgb('#ff8a2a'), side: 1 };
   CV.boss.slew = Math.atan2(-CV.boss.x, CAVE.rail - CV.boss.z) + 0.62;
@@ -56,6 +57,7 @@ function bagUpdate(dt) {
   B.flash = Math.max(0, B.flash - dt * 4);
   B.t += dt;
   B.wheel += dt * B.wheelV * (B.stage2 ? 1.5 : 1);
+  cvCoverDrops(dt, Rm);
   if (CV.phase === 'bossintro') {
     cvHeroRail(dt, Rm);
     cvAimAndShoot(Rm);
@@ -251,11 +253,13 @@ function bagRegrow(B, dt, Rm) {
 }
 // its minions come out of the side alcoves and take the rocks near the walls
 function bagMinions(B, Rm) {
-  const n = B.stage2 ? 3 : 2, types = B.stage2 ? ['xbow', 'spear', 'mole', 'xbow'] : ['xbow', 'xbow', 'mole'];
+  const n = B.stage2 ? 3 : 2, types = B.stage2 ? ['xbow', 'spear', 'mole', 'goblin', 'spider', 'bat'] : ['xbow', 'goblin', 'mole', 'spider'];
   for (let i = 0; i < n; i++) {
     const type = pick(types), T = CAVE_FOES[type], sx = i % 2 ? 1 : -1;
     const f = { type, T, hp: T.hp, maxHp: T.hp, lx: sx * (Rm.D.hw + 3), lz: -18 + rand(-1.5, 1.5), y: 0, sink: 0, state: 'enter', t: 0, yaw: 0, flash: 0, ph: Math.random(), clip: 'run', u: 0, cover: null, throws: 0, tint: hexToRgb(T.tint), dying: 0, peekX: 0 };
     if (type === 'mole') { f.lx = sx * (Rm.D.hw - 0.4); f.lz = rand(-11, -15); f.state = 'burst'; f.t = -i * 0.4; }
+    else if (type === 'spider') { f.lx = rand(-6, 6); f.lz = rand(-11, -15); f.y = CAVE.ceil; f.state = 'drop'; f.t = -i * 0.4; }
+    else if (type === 'bat') { f.lx = sx * (Rm.D.hw - 1); f.lz = -18; f.y = 3.6; f.state = 'fly'; f.t = 0; }
     else {
       const free = Rm.covers.filter(c => c.foe && !c.broken && !Rm.foes.some(o => o.cover === c && !o.dying) && Math.sign(c.lx) === sx);
       const c = free[0] || Rm.covers.find(c => c.foe && Math.sign(c.lx) === sx);

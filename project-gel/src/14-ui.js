@@ -773,6 +773,22 @@ const UI = {
       if (img && img.complete && img.naturalWidth) { ctx.beginPath(); ctx.arc(0, 0, 22, 0, TAU); ctx.clip(); ctx.drawImage(img, -30, -26, 60, 60); }
       ctx.restore();
     }
+    // chapter 20: once the cave is open, a big arrow points to its mouth: bobbing over it when it is on screen,
+    // at the screen's edge when it is not
+    const cr = ARENA.fx && ARENA.fx.st && ARENA.fx.st.mouth && ARENA.fx.st.open ? ARENA.fx.st : null;
+    if (cr && G.state === 'run' && !run.cave && R.project(cr.mouth.x, 4.5, cr.mouth.z + 2.2, p)) {
+      if (p[0] > 40 && p[0] < w - 40 && p[1] > 120 && p[1] < h - 40) {
+        const bob = Math.sin(performance.now() / 180) * 9;
+        ctx.save(); ctx.translate(p[0], p[1] + bob);
+        ctx.fillStyle = '#ffc93a'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(0, 30); ctx.lineTo(-30, -6); ctx.lineTo(-12, -6); ctx.lineTo(-12, -34); ctx.lineTo(12, -34); ctx.lineTo(12, -6); ctx.lineTo(30, -6); ctx.closePath(); ctx.stroke(); ctx.fill();
+        ctx.restore();
+      } else {
+        const [ax, ay] = edgeArrow('#ffc93a');
+        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(ax, ay, 24, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#3a2a1a'; ctx.beginPath(); ctx.arc(ax, ay, 20, Math.PI, 0); ctx.lineTo(ax + 20, ay + 10); ctx.lineTo(ax - 20, ay + 10); ctx.closePath(); ctx.fill();
+      }
+    }
     // joystick
     const J = INPUT.stick;
     if (J.active && G.state === 'run') {

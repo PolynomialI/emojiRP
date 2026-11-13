@@ -3930,12 +3930,29 @@ function kitchenModels(defs) {
 // shieldmen, and the hard-hatted mole miner (also the crater's own creature). The Bagger is in 04j.
 // Rocks are 'crag' parts (faceted chunks, 03-sdfmesh.js); parts without col take the instance tint.
 // ============================================================
-Object.assign(THEME_CLIPS, { mole: ['run', 'slam', 'idle'], xbowman: ['run', 'aim', 'idle'], spearman: ['run', 'throw', 'slam', 'idle'], shieldman: ['run', 'slam', 'idle'] });
+Object.assign(THEME_CLIPS, { mole: ['run', 'slam', 'idle'], xbowman: ['run', 'aim', 'idle'], spearman: ['run', 'throw', 'slam', 'idle'], shieldman: ['run', 'slam', 'idle'],
+  cspider: ['skitter', 'bite'], cbat: ['batflap'], goblin: ['run', 'throw', 'idle'], ogre: ['run', 'throw', 'slam', 'idle'], golem: ['run', 'aim', 'slam', 'idle'] });
+// a cave spider's legs move in two alternating sets (bones 1 and 2), the front pair (bone 4) feels the air and the
+// abdomen (bone 3) bobs; biting, the front legs rear up and it lunges
+CLIPS.skitter = { frames: 12, fn(t) {
+  const a = t * TAU, s = Math.sin(a);
+  return { root: [0, 0.02 * Math.abs(Math.sin(a * 2)), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0, 0.32 * s, 0.12 * Math.max(0, s)] : b === 2 ? [0, -0.32 * s, 0.12 * Math.max(0, -s)] : b === 4 ? [0.25 * Math.sin(a * 2), 0, 0] : b === 3 ? [0.08 * Math.sin(a * 2), 0, 0] : [0, 0, 0])) };
+} };
+CLIPS.bite = { frames: 12, fn(t) {
+  const up = Math.sin(Math.min(1, t / 0.6) * Math.PI * 0.5), hit = t > 0.6 ? Math.sin((t - 0.6) / 0.4 * Math.PI) : 0;
+  return { root: [0, 0.05 * up, 0.18 * hit], rot: Array.from({ length: NBONES }, (_, b) => (b === 4 ? [-0.9 * up + 1.3 * hit, 0, 0] : b === 0 ? [-0.18 * up + 0.2 * hit, 0, 0] : [0, 0, 0])) };
+} };
+// a bat's wings beat (bones 1 and 2 about the body's length)
+CLIPS.batflap = { frames: 10, fn(t) {
+  const a = Math.sin(t * TAU) * 0.95;
+  return { root: [0, 0.04 * Math.cos(t * TAU), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0, 0, a] : b === 2 ? [0, 0, -a] : [0, 0, 0])) };
+} };
 Object.assign(THEME_CELLS, { boulder0: 0.025, boulder1: 0.025, boulder2: 0.025, cliff0: 0.03, cliff1: 0.03, cavemouth: 0.026, minecart: 0.014, lanternpost: 0.014, ore: 0.022,
   cwall0: 0.03, cwall1: 0.03, cwall2: 0.03, stalac: 0.02, stalag: 0.02, cover0: 0.022, cover1: 0.022, cover2: 0.022, rubble: 0.02, cpillar: 0.026, torch: 0.008, brazier: 0.012, mbeam: 0.02,
-  mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013 });
+  mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013, cspider: 0.012, cbat: 0.01, goblin: 0.012, ogre: 0.013, golem: 0.014, dynamite: 0.008 });
 MESH_ORDER.push('boulder0', 'boulder1', 'boulder2', 'cliff0', 'cliff1', 'cavemouth', 'minecart', 'lanternpost', 'ore', 'stalag', 'mole',
-  'cwall0', 'cwall1', 'cwall2', 'stalac', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman');
+  'cwall0', 'cwall1', 'cwall2', 'stalac', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman',
+  'cspider', 'cbat', 'goblin', 'ogre', 'golem', 'dynamite');
 
 function caveModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -4197,6 +4214,114 @@ function caveModels(defs) {
     for (const [dx, dy, dz] of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0.6, 0.6, 0.4], [-0.6, -0.6, 0.4]]) m.parts.push({ s: 'cap', a: [h[0] + dx * 0.06, h[1] + 0.03 + dy * 0.06, h[2] + 0.44 + dz * 0.06], b: [h[0] + dx * 0.12, h[1] + 0.03 + dy * 0.12, h[2] + 0.44 + dz * 0.12], r: 0.022, r2: 0.003, col: steel, bone: 6, k: 0 });
     m.name = 'shieldman'; m.shieldArm = true; m.runAmp = 0.8; m.crownLift = 0.12;
     defs.shieldman = m;
+  }
+
+  // ---------- the deep mine's crowd ----------
+  // the cave spider: a dark hairy body with an orange hourglass on its abdomen, six red eyes, cream fangs and eight
+  // jointed legs (two alternating sets on bones 1 and 2, the front pair on bone 4, the abdomen on bone 3)
+  {
+    const body = C('#2a2232'), bodyL = C('#43384e'), mark = C('#ff7a2a'), eye = C('#ff3a3a'), fang = C('#f4e8d8');
+    const parts = [
+      { s: 'ell', c: [0, 0.32, 0.1], rr: [0.17, 0.12, 0.17], col: body, k: 0.03 },
+      { s: 'sph', c: [0, 0.33, 0.29], r: 0.11, col: bodyL, k: 0.04 },
+      { s: 'ell', c: [0, 0.38, -0.24], rr: [0.24, 0.2, 0.28], col: body, bone: 3, k: 0.04 },
+      { s: 'ell', c: [0, 0.55, -0.2], rr: [0.06, 0.035, 0.07], col: mark, bone: 3, k: 0.01 }, { s: 'ell', c: [0, 0.53, -0.31], rr: [0.05, 0.035, 0.06], col: mark, bone: 3, k: 0.01 },
+      ...[[0.04, 0.38, 0.38, 0.026], [-0.04, 0.38, 0.38, 0.026], [0.075, 0.36, 0.35, 0.02], [-0.075, 0.36, 0.35, 0.02], [0.025, 0.41, 0.36, 0.016], [-0.025, 0.41, 0.36, 0.016]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: eye, k: 0 })),
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.035, 0.27, 0.36], b: [sx * 0.02, 0.17, 0.42], r: 0.022, r2: 0.006, col: fang, k: 0 })),
+    ];
+    for (let i = 0; i < 4; i++) for (const sx of [1, -1]) {
+      const z0 = 0.2 - i * 0.1, spread = 0.35 - i * 0.25, bone = i === 0 ? 4 : ((i + (sx > 0 ? 1 : 0)) % 2 ? 1 : 2);
+      const hip = [sx * 0.13, 0.33, z0], knee = [sx * 0.42, 0.56, z0 + spread * 0.5], foot = [sx * 0.66, 0.0, z0 + spread];
+      parts.push({ s: 'cap', a: hip, b: knee, r: 0.035, r2: 0.028, col: bodyL, bone, k: 0.01 }, { s: 'cap', a: knee, b: foot, r: 0.028, r2: 0.012, col: body, bone, k: 0.01 });
+      parts.push({ s: 'sph', c: knee, r: 0.034, col: body, bone, k: 0.01 });
+    }
+    rig(P('cspider', parts, { ao: 0.6 }), { 1: [0, 0.33, 0.05], 2: [0, 0.33, 0.05], 3: [0, 0.36, -0.05], 4: [0, 0.33, 0.2] });
+  }
+  // the cave bat: a furry body with big ears, red eyes and a pug snout, on leathery wings with finger bones (bones 1, 2)
+  {
+    const fur = C('#4a3a40'), wing = C('#6a4a52'), bone = C('#3a2a30'), eye = C('#ff4a3a');
+    const parts = [
+      { s: 'ell', c: [0, 0, 0], rr: [0.08, 0.09, 0.12], col: fur, k: 0.03 },
+      { s: 'sph', c: [0, 0.05, 0.13], r: 0.075, col: fur, k: 0.03 },
+      { s: 'ell', c: [0, 0.03, 0.2], rr: [0.035, 0.025, 0.02], col: C('#c87a8a'), k: 0.01 },
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.04, 0.1, 0.12], b: [sx * 0.08, 0.22, 0.08], r: 0.035, r2: 0.008, col: fur, k: 0.02 },
+        { s: 'sph', c: [sx * 0.03, 0.07, 0.19], r: 0.016, col: eye, k: 0 },
+        { s: 'cap', a: [sx * 0.012, -0.0, 0.2], b: [sx * 0.014, -0.035, 0.205], r: 0.008, r2: 0.002, col: C('#f4e8d8'), k: 0 },
+      ]),
+    ];
+    for (const [sx, b] of [[1, 1], [-1, 2]]) {
+      parts.push({ s: 'ell', c: [sx * 0.3, 0.0, -0.02], rr: [0.26, 0.012, 0.14], col: wing, bone: b, k: 0 });
+      for (const [x, z] of [[0.52, 0.08], [0.46, -0.1], [0.32, -0.15]]) parts.push({ s: 'cap', a: [sx * 0.07, 0.01, 0.02], b: [sx * x, 0.01, z], r: 0.012, r2: 0.006, col: bone, bone: b, k: 0 });
+    }
+    rig(P('cbat', parts, { ao: 0.5 }), { 1: [0.06, 0.01, 0], 2: [-0.06, 0.01, 0] });
+  }
+  // a stick of dynamite with its fuse (thrown by goblins)
+  P('dynamite', [
+    { s: 'cap', a: [0, 0, -0.12], b: [0, 0, 0.12], r: 0.05, col: C('#d8282a'), k: 0 },
+    { s: 'tor', ax: 'z', c: [0, 0, 0.0], R: 0.052, r: 0.008, a0: -Math.PI, a1: Math.PI, col: C('#2a2018'), k: 0 },
+    { s: 'cap', a: [0, 0, 0.14], b: [0.02, 0.05, 0.2], r: 0.008, col: C('#e8dcc0'), k: 0 },
+  ], { ao: 0.4 });
+  // the goblin sapper: a small green goblin with long ears, a battered tin helmet with a candle on it, goggles, a
+  // satchel of dynamite on its back and a lit stick in its hand
+  {
+    const m = makeHumanoid({ ...STICK, headR: 0.15, torsoR: 0.09, torsoR2: 0.1 }), J = m.J, hd = J.head;
+    const tin = C('#8a8e96'), strap = C('#5a3a20'), red = C('#d8282a');
+    for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [hd[0] + sx * 0.12, hd[1] + 0.0, hd[2] - 0.02], b: [hd[0] + sx * 0.32, hd[1] + 0.08, hd[2] - 0.08], r: 0.05, r2: 0.012, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.09, hd[2] - 0.01], rr: [0.165, 0.1, 0.17], col: tin, bone: 2, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.21, hd[2] + 0.02], r: 0.025, hh: 0.04, rd: 0.01, col: C('#f4ecd8'), bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + 0.27, hd[2] + 0.02], r: 0.02, col: C('#ffd23a'), bone: 2, k: 0 });
+    for (const sx of [1, -1]) { m.parts.push({ s: 'cyl', ax: 'z', c: [hd[0] + sx * 0.055, hd[1] + 0.02, hd[2] + 0.135], r: 0.04, hh: 0.02, rd: 0.01, col: C('#3a3a40'), bone: 2, k: 0 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.055, hd[1] + 0.02, hd[2] + 0.15], r: 0.028, col: C('#ffe08a'), bone: 2, k: 0 }); }
+    m.parts.push({ s: 'cap', a: [hd[0], hd[1] - 0.03, hd[2] + 0.13], b: [hd[0], hd[1] - 0.06, hd[2] + 0.2], r: 0.035, r2: 0.02, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'box', c: [0, 0.66, -0.13], hs: [0.1, 0.1, 0.05], rd: 0.03, col: strap, bone: 1, k: 0 });
+    for (const x of [-0.06, 0, 0.06]) m.parts.push({ s: 'cap', a: [x, 0.7, -0.15], b: [x, 0.84, -0.15], r: 0.022, col: red, bone: 1, k: 0 });
+    m.parts.push({ s: 'cap', a: [0.1, 0.78, 0.06], b: [-0.12, 0.56, -0.08], r: 0.015, col: strap, bone: 1, k: 0 });
+    const h = J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.05, h[2] + 0.02], b: [h[0], h[1] + 0.13, h[2] + 0.06], r: 0.035, col: red, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] + 0.13, h[2] + 0.06], b: [h[0] + 0.03, h[1] + 0.2, h[2] + 0.08], r: 0.008, col: C('#e8dcc0'), bone: 6, k: 0 });
+    m.parts.push({ s: 'sph', c: [h[0] + 0.03, h[1] + 0.21, h[2] + 0.085], r: 0.025, col: C('#ffb02a'), bone: 6, k: 0 });
+    m.name = 'goblin'; m.crownLift = 0.14; m.runAmp = 1.2; m.lean = 0.12;
+    defs.goblin = m;
+  }
+  // the ogre: a hulking brute with a pot belly, small eyes under a heavy brow, tusks, a loincloth, a tooth necklace,
+  // iron bracers and a great spiked club
+  {
+    const o = { ...STICK, torsoR: 0.17, torsoR2: 0.2, pelvisR: 0.15, shW: 0.17, armR: 0.095, handR: 0.11, legR: 0.1, headR: 0.15 };
+    const m = makeHumanoid(o), J = m.J, hd = J.head;
+    const hide = C('#7a5a3a'), tusk = C('#f4ecd8'), iron2 = C('#5a5e66');
+    m.parts.push({ s: 'ell', c: [0, 0.55, 0.08], rr: [0.2, 0.18, 0.17], bone: 1, k: 0.06 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.06, hd[2] + 0.1], rr: [0.15, 0.04, 0.06], bone: 2, k: 0.04 });
+    for (const sx of [1, -1]) {
+      m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.06, hd[1] + 0.02, hd[2] + 0.14], r: 0.022, col: C('#ffd23a'), bone: 2, k: 0 });
+      m.parts.push({ s: 'cap', a: [hd[0] + sx * 0.06, hd[1] - 0.08, hd[2] + 0.13], b: [hd[0] + sx * 0.08, hd[1] + 0.0, hd[2] + 0.18], r: 0.022, r2: 0.008, col: tusk, bone: 2, k: 0 });
+    }
+    m.parts.push({ s: 'ell', c: [0, STICK.hipY - 0.06, 0.03], rr: [0.18, 0.12, 0.15], col: hide, bone: 0, k: 0.02 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, 0.78, 0.0], R: 0.15, r: 0.012, a0: 0.3, a1: Math.PI - 0.3, col: C('#c8a870'), bone: 1, k: 0 });
+    for (const x of [-0.08, 0, 0.08]) m.parts.push({ s: 'cap', a: [x, 0.74, 0.15], b: [x, 0.68, 0.16], r: 0.014, r2: 0.005, col: tusk, bone: 1, k: 0 });
+    for (const [s, b] of [['L', 4], ['R', 6]]) { const hh = J['ha' + s]; m.parts.push({ s: 'cyl', ax: 'y', c: [hh[0], hh[1] + 0.1, hh[2]], r: 0.1, hh: 0.05, rd: 0.02, col: iron2, bone: b, k: 0 }); }
+    const h = J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.02, h[2] - 0.05], b: [h[0], h[1] + 0.05, h[2] + 0.55], r: 0.04, r2: 0.09, col: C('#6e4a2c'), bone: 6, k: 0.02 });
+    for (const [dx, dy, dz] of [[1, 0, 0.42], [-1, 0, 0.36], [0, 1, 0.48], [0.7, -0.7, 0.3], [-0.7, 0.7, 0.52]]) m.parts.push({ s: 'cap', a: [h[0] + dx * 0.06, h[1] + 0.04 + dy * 0.06, h[2] + dz], b: [h[0] + dx * 0.13, h[1] + 0.04 + dy * 0.13, h[2] + dz], r: 0.02, r2: 0.003, col: C('#c8ccd4'), bone: 6, k: 0 });
+    m.name = 'ogre'; m.crownLift = 0.1; m.runAmp = 0.7;
+    defs.ogre = m;
+  }
+  // the crystal golem: a body of rough rock chunks with cyan crystals growing out of its back and shoulders, glowing
+  // eyes and a glowing crystal core in its chest (its weak spot)
+  {
+    const o = { ...STICK, torsoR: 0.15, torsoR2: 0.17, pelvisR: 0.13, shW: 0.16, armR: 0.09, handR: 0.11, legR: 0.1, headR: 0.13 };
+    const m = makeHumanoid(o), J = m.J, hd = J.head;
+    const rock = C('#7a7068'), rockD = C('#5a524c'), cr = C('#6ae8ff'), crB = C('#bff6ff');
+    m.parts.push({ ...crag([0, 0.66, 0.0], 0.2, 301, [1, 0.9, 0.85], 0.04, rock), bone: 1 });
+    m.parts.push(crag([0, 0.48, 0.0], 0.16, 302, [1.1, 0.7, 0.9], 0.04, rockD));
+    for (const [s, b] of [['L', 3], ['R', 5]]) { const p = J['sh' + s]; m.parts.push({ ...crag([p[0] * 1.2, p[1] + 0.04, p[2]], 0.11, 310 + b, null, 0.03, rock), bone: b }); }
+    for (const [s, b] of [['L', 4], ['R', 6]]) { const hh = J['ha' + s]; m.parts.push({ ...crag([hh[0], hh[1], hh[2]], 0.12, 320 + b, null, 0.03, rockD), bone: b }); }
+    m.parts.push({ ...crag([hd[0], hd[1] + 0.02, hd[2]], 0.14, 330, [1, 0.9, 1], 0.03, rock), bone: 2 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.05, hd[1] + 0.02, hd[2] + 0.12], r: 0.022, col: crB, bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [0, 0.66, 0.16], r: 0.075, col: crB, bone: 1, k: 0.01 });
+    for (const [x, y, z, dx, dy, dz, r] of [[0.08, 0.72, -0.12, 0.1, 0.22, -0.12, 0.045], [-0.1, 0.68, -0.13, -0.08, 0.18, -0.16, 0.04], [0, 0.6, -0.14, 0.02, 0.14, -0.2, 0.035], [0.18, 0.86, -0.02, 0.12, 0.16, -0.05, 0.035], [-0.18, 0.86, -0.02, -0.12, 0.16, -0.05, 0.035]])
+      m.parts.push({ s: 'cap', a: [x, y, z], b: [x + dx, y + dy, z + dz], r, r2: 0.006, col: cr, bone: 1, k: 0.01 });
+    m.name = 'golem'; m.crownLift = 0.08; m.runAmp = 0.6;
+    defs.golem = m;
   }
 }
 
@@ -9803,12 +9928,29 @@ function kitchenModels(defs) {
 // shieldmen, and the hard-hatted mole miner (also the crater's own creature). The Bagger is in 04j.
 // Rocks are 'crag' parts (faceted chunks, 03-sdfmesh.js); parts without col take the instance tint.
 // ============================================================
-Object.assign(THEME_CLIPS, { mole: ['run', 'slam', 'idle'], xbowman: ['run', 'aim', 'idle'], spearman: ['run', 'throw', 'slam', 'idle'], shieldman: ['run', 'slam', 'idle'] });
+Object.assign(THEME_CLIPS, { mole: ['run', 'slam', 'idle'], xbowman: ['run', 'aim', 'idle'], spearman: ['run', 'throw', 'slam', 'idle'], shieldman: ['run', 'slam', 'idle'],
+  cspider: ['skitter', 'bite'], cbat: ['batflap'], goblin: ['run', 'throw', 'idle'], ogre: ['run', 'throw', 'slam', 'idle'], golem: ['run', 'aim', 'slam', 'idle'] });
+// a cave spider's legs move in two alternating sets (bones 1 and 2), the front pair (bone 4) feels the air and the
+// abdomen (bone 3) bobs; biting, the front legs rear up and it lunges
+CLIPS.skitter = { frames: 12, fn(t) {
+  const a = t * TAU, s = Math.sin(a);
+  return { root: [0, 0.02 * Math.abs(Math.sin(a * 2)), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0, 0.32 * s, 0.12 * Math.max(0, s)] : b === 2 ? [0, -0.32 * s, 0.12 * Math.max(0, -s)] : b === 4 ? [0.25 * Math.sin(a * 2), 0, 0] : b === 3 ? [0.08 * Math.sin(a * 2), 0, 0] : [0, 0, 0])) };
+} };
+CLIPS.bite = { frames: 12, fn(t) {
+  const up = Math.sin(Math.min(1, t / 0.6) * Math.PI * 0.5), hit = t > 0.6 ? Math.sin((t - 0.6) / 0.4 * Math.PI) : 0;
+  return { root: [0, 0.05 * up, 0.18 * hit], rot: Array.from({ length: NBONES }, (_, b) => (b === 4 ? [-0.9 * up + 1.3 * hit, 0, 0] : b === 0 ? [-0.18 * up + 0.2 * hit, 0, 0] : [0, 0, 0])) };
+} };
+// a bat's wings beat (bones 1 and 2 about the body's length)
+CLIPS.batflap = { frames: 10, fn(t) {
+  const a = Math.sin(t * TAU) * 0.95;
+  return { root: [0, 0.04 * Math.cos(t * TAU), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0, 0, a] : b === 2 ? [0, 0, -a] : [0, 0, 0])) };
+} };
 Object.assign(THEME_CELLS, { boulder0: 0.025, boulder1: 0.025, boulder2: 0.025, cliff0: 0.03, cliff1: 0.03, cavemouth: 0.026, minecart: 0.014, lanternpost: 0.014, ore: 0.022,
   cwall0: 0.03, cwall1: 0.03, cwall2: 0.03, stalac: 0.02, stalag: 0.02, cover0: 0.022, cover1: 0.022, cover2: 0.022, rubble: 0.02, cpillar: 0.026, torch: 0.008, brazier: 0.012, mbeam: 0.02,
-  mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013 });
+  mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013, cspider: 0.012, cbat: 0.01, goblin: 0.012, ogre: 0.013, golem: 0.014, dynamite: 0.008 });
 MESH_ORDER.push('boulder0', 'boulder1', 'boulder2', 'cliff0', 'cliff1', 'cavemouth', 'minecart', 'lanternpost', 'ore', 'stalag', 'mole',
-  'cwall0', 'cwall1', 'cwall2', 'stalac', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman');
+  'cwall0', 'cwall1', 'cwall2', 'stalac', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman',
+  'cspider', 'cbat', 'goblin', 'ogre', 'golem', 'dynamite');
 
 function caveModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -10070,6 +10212,114 @@ function caveModels(defs) {
     for (const [dx, dy, dz] of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0.6, 0.6, 0.4], [-0.6, -0.6, 0.4]]) m.parts.push({ s: 'cap', a: [h[0] + dx * 0.06, h[1] + 0.03 + dy * 0.06, h[2] + 0.44 + dz * 0.06], b: [h[0] + dx * 0.12, h[1] + 0.03 + dy * 0.12, h[2] + 0.44 + dz * 0.12], r: 0.022, r2: 0.003, col: steel, bone: 6, k: 0 });
     m.name = 'shieldman'; m.shieldArm = true; m.runAmp = 0.8; m.crownLift = 0.12;
     defs.shieldman = m;
+  }
+
+  // ---------- the deep mine's crowd ----------
+  // the cave spider: a dark hairy body with an orange hourglass on its abdomen, six red eyes, cream fangs and eight
+  // jointed legs (two alternating sets on bones 1 and 2, the front pair on bone 4, the abdomen on bone 3)
+  {
+    const body = C('#2a2232'), bodyL = C('#43384e'), mark = C('#ff7a2a'), eye = C('#ff3a3a'), fang = C('#f4e8d8');
+    const parts = [
+      { s: 'ell', c: [0, 0.32, 0.1], rr: [0.17, 0.12, 0.17], col: body, k: 0.03 },
+      { s: 'sph', c: [0, 0.33, 0.29], r: 0.11, col: bodyL, k: 0.04 },
+      { s: 'ell', c: [0, 0.38, -0.24], rr: [0.24, 0.2, 0.28], col: body, bone: 3, k: 0.04 },
+      { s: 'ell', c: [0, 0.55, -0.2], rr: [0.06, 0.035, 0.07], col: mark, bone: 3, k: 0.01 }, { s: 'ell', c: [0, 0.53, -0.31], rr: [0.05, 0.035, 0.06], col: mark, bone: 3, k: 0.01 },
+      ...[[0.04, 0.38, 0.38, 0.026], [-0.04, 0.38, 0.38, 0.026], [0.075, 0.36, 0.35, 0.02], [-0.075, 0.36, 0.35, 0.02], [0.025, 0.41, 0.36, 0.016], [-0.025, 0.41, 0.36, 0.016]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: eye, k: 0 })),
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.035, 0.27, 0.36], b: [sx * 0.02, 0.17, 0.42], r: 0.022, r2: 0.006, col: fang, k: 0 })),
+    ];
+    for (let i = 0; i < 4; i++) for (const sx of [1, -1]) {
+      const z0 = 0.2 - i * 0.1, spread = 0.35 - i * 0.25, bone = i === 0 ? 4 : ((i + (sx > 0 ? 1 : 0)) % 2 ? 1 : 2);
+      const hip = [sx * 0.13, 0.33, z0], knee = [sx * 0.42, 0.56, z0 + spread * 0.5], foot = [sx * 0.66, 0.0, z0 + spread];
+      parts.push({ s: 'cap', a: hip, b: knee, r: 0.035, r2: 0.028, col: bodyL, bone, k: 0.01 }, { s: 'cap', a: knee, b: foot, r: 0.028, r2: 0.012, col: body, bone, k: 0.01 });
+      parts.push({ s: 'sph', c: knee, r: 0.034, col: body, bone, k: 0.01 });
+    }
+    rig(P('cspider', parts, { ao: 0.6 }), { 1: [0, 0.33, 0.05], 2: [0, 0.33, 0.05], 3: [0, 0.36, -0.05], 4: [0, 0.33, 0.2] });
+  }
+  // the cave bat: a furry body with big ears, red eyes and a pug snout, on leathery wings with finger bones (bones 1, 2)
+  {
+    const fur = C('#4a3a40'), wing = C('#6a4a52'), bone = C('#3a2a30'), eye = C('#ff4a3a');
+    const parts = [
+      { s: 'ell', c: [0, 0, 0], rr: [0.08, 0.09, 0.12], col: fur, k: 0.03 },
+      { s: 'sph', c: [0, 0.05, 0.13], r: 0.075, col: fur, k: 0.03 },
+      { s: 'ell', c: [0, 0.03, 0.2], rr: [0.035, 0.025, 0.02], col: C('#c87a8a'), k: 0.01 },
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.04, 0.1, 0.12], b: [sx * 0.08, 0.22, 0.08], r: 0.035, r2: 0.008, col: fur, k: 0.02 },
+        { s: 'sph', c: [sx * 0.03, 0.07, 0.19], r: 0.016, col: eye, k: 0 },
+        { s: 'cap', a: [sx * 0.012, -0.0, 0.2], b: [sx * 0.014, -0.035, 0.205], r: 0.008, r2: 0.002, col: C('#f4e8d8'), k: 0 },
+      ]),
+    ];
+    for (const [sx, b] of [[1, 1], [-1, 2]]) {
+      parts.push({ s: 'ell', c: [sx * 0.3, 0.0, -0.02], rr: [0.26, 0.012, 0.14], col: wing, bone: b, k: 0 });
+      for (const [x, z] of [[0.52, 0.08], [0.46, -0.1], [0.32, -0.15]]) parts.push({ s: 'cap', a: [sx * 0.07, 0.01, 0.02], b: [sx * x, 0.01, z], r: 0.012, r2: 0.006, col: bone, bone: b, k: 0 });
+    }
+    rig(P('cbat', parts, { ao: 0.5 }), { 1: [0.06, 0.01, 0], 2: [-0.06, 0.01, 0] });
+  }
+  // a stick of dynamite with its fuse (thrown by goblins)
+  P('dynamite', [
+    { s: 'cap', a: [0, 0, -0.12], b: [0, 0, 0.12], r: 0.05, col: C('#d8282a'), k: 0 },
+    { s: 'tor', ax: 'z', c: [0, 0, 0.0], R: 0.052, r: 0.008, a0: -Math.PI, a1: Math.PI, col: C('#2a2018'), k: 0 },
+    { s: 'cap', a: [0, 0, 0.14], b: [0.02, 0.05, 0.2], r: 0.008, col: C('#e8dcc0'), k: 0 },
+  ], { ao: 0.4 });
+  // the goblin sapper: a small green goblin with long ears, a battered tin helmet with a candle on it, goggles, a
+  // satchel of dynamite on its back and a lit stick in its hand
+  {
+    const m = makeHumanoid({ ...STICK, headR: 0.15, torsoR: 0.09, torsoR2: 0.1 }), J = m.J, hd = J.head;
+    const tin = C('#8a8e96'), strap = C('#5a3a20'), red = C('#d8282a');
+    for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [hd[0] + sx * 0.12, hd[1] + 0.0, hd[2] - 0.02], b: [hd[0] + sx * 0.32, hd[1] + 0.08, hd[2] - 0.08], r: 0.05, r2: 0.012, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.09, hd[2] - 0.01], rr: [0.165, 0.1, 0.17], col: tin, bone: 2, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.21, hd[2] + 0.02], r: 0.025, hh: 0.04, rd: 0.01, col: C('#f4ecd8'), bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + 0.27, hd[2] + 0.02], r: 0.02, col: C('#ffd23a'), bone: 2, k: 0 });
+    for (const sx of [1, -1]) { m.parts.push({ s: 'cyl', ax: 'z', c: [hd[0] + sx * 0.055, hd[1] + 0.02, hd[2] + 0.135], r: 0.04, hh: 0.02, rd: 0.01, col: C('#3a3a40'), bone: 2, k: 0 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.055, hd[1] + 0.02, hd[2] + 0.15], r: 0.028, col: C('#ffe08a'), bone: 2, k: 0 }); }
+    m.parts.push({ s: 'cap', a: [hd[0], hd[1] - 0.03, hd[2] + 0.13], b: [hd[0], hd[1] - 0.06, hd[2] + 0.2], r: 0.035, r2: 0.02, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'box', c: [0, 0.66, -0.13], hs: [0.1, 0.1, 0.05], rd: 0.03, col: strap, bone: 1, k: 0 });
+    for (const x of [-0.06, 0, 0.06]) m.parts.push({ s: 'cap', a: [x, 0.7, -0.15], b: [x, 0.84, -0.15], r: 0.022, col: red, bone: 1, k: 0 });
+    m.parts.push({ s: 'cap', a: [0.1, 0.78, 0.06], b: [-0.12, 0.56, -0.08], r: 0.015, col: strap, bone: 1, k: 0 });
+    const h = J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.05, h[2] + 0.02], b: [h[0], h[1] + 0.13, h[2] + 0.06], r: 0.035, col: red, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] + 0.13, h[2] + 0.06], b: [h[0] + 0.03, h[1] + 0.2, h[2] + 0.08], r: 0.008, col: C('#e8dcc0'), bone: 6, k: 0 });
+    m.parts.push({ s: 'sph', c: [h[0] + 0.03, h[1] + 0.21, h[2] + 0.085], r: 0.025, col: C('#ffb02a'), bone: 6, k: 0 });
+    m.name = 'goblin'; m.crownLift = 0.14; m.runAmp = 1.2; m.lean = 0.12;
+    defs.goblin = m;
+  }
+  // the ogre: a hulking brute with a pot belly, small eyes under a heavy brow, tusks, a loincloth, a tooth necklace,
+  // iron bracers and a great spiked club
+  {
+    const o = { ...STICK, torsoR: 0.17, torsoR2: 0.2, pelvisR: 0.15, shW: 0.17, armR: 0.095, handR: 0.11, legR: 0.1, headR: 0.15 };
+    const m = makeHumanoid(o), J = m.J, hd = J.head;
+    const hide = C('#7a5a3a'), tusk = C('#f4ecd8'), iron2 = C('#5a5e66');
+    m.parts.push({ s: 'ell', c: [0, 0.55, 0.08], rr: [0.2, 0.18, 0.17], bone: 1, k: 0.06 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.06, hd[2] + 0.1], rr: [0.15, 0.04, 0.06], bone: 2, k: 0.04 });
+    for (const sx of [1, -1]) {
+      m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.06, hd[1] + 0.02, hd[2] + 0.14], r: 0.022, col: C('#ffd23a'), bone: 2, k: 0 });
+      m.parts.push({ s: 'cap', a: [hd[0] + sx * 0.06, hd[1] - 0.08, hd[2] + 0.13], b: [hd[0] + sx * 0.08, hd[1] + 0.0, hd[2] + 0.18], r: 0.022, r2: 0.008, col: tusk, bone: 2, k: 0 });
+    }
+    m.parts.push({ s: 'ell', c: [0, STICK.hipY - 0.06, 0.03], rr: [0.18, 0.12, 0.15], col: hide, bone: 0, k: 0.02 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, 0.78, 0.0], R: 0.15, r: 0.012, a0: 0.3, a1: Math.PI - 0.3, col: C('#c8a870'), bone: 1, k: 0 });
+    for (const x of [-0.08, 0, 0.08]) m.parts.push({ s: 'cap', a: [x, 0.74, 0.15], b: [x, 0.68, 0.16], r: 0.014, r2: 0.005, col: tusk, bone: 1, k: 0 });
+    for (const [s, b] of [['L', 4], ['R', 6]]) { const hh = J['ha' + s]; m.parts.push({ s: 'cyl', ax: 'y', c: [hh[0], hh[1] + 0.1, hh[2]], r: 0.1, hh: 0.05, rd: 0.02, col: iron2, bone: b, k: 0 }); }
+    const h = J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.02, h[2] - 0.05], b: [h[0], h[1] + 0.05, h[2] + 0.55], r: 0.04, r2: 0.09, col: C('#6e4a2c'), bone: 6, k: 0.02 });
+    for (const [dx, dy, dz] of [[1, 0, 0.42], [-1, 0, 0.36], [0, 1, 0.48], [0.7, -0.7, 0.3], [-0.7, 0.7, 0.52]]) m.parts.push({ s: 'cap', a: [h[0] + dx * 0.06, h[1] + 0.04 + dy * 0.06, h[2] + dz], b: [h[0] + dx * 0.13, h[1] + 0.04 + dy * 0.13, h[2] + dz], r: 0.02, r2: 0.003, col: C('#c8ccd4'), bone: 6, k: 0 });
+    m.name = 'ogre'; m.crownLift = 0.1; m.runAmp = 0.7;
+    defs.ogre = m;
+  }
+  // the crystal golem: a body of rough rock chunks with cyan crystals growing out of its back and shoulders, glowing
+  // eyes and a glowing crystal core in its chest (its weak spot)
+  {
+    const o = { ...STICK, torsoR: 0.15, torsoR2: 0.17, pelvisR: 0.13, shW: 0.16, armR: 0.09, handR: 0.11, legR: 0.1, headR: 0.13 };
+    const m = makeHumanoid(o), J = m.J, hd = J.head;
+    const rock = C('#7a7068'), rockD = C('#5a524c'), cr = C('#6ae8ff'), crB = C('#bff6ff');
+    m.parts.push({ ...crag([0, 0.66, 0.0], 0.2, 301, [1, 0.9, 0.85], 0.04, rock), bone: 1 });
+    m.parts.push(crag([0, 0.48, 0.0], 0.16, 302, [1.1, 0.7, 0.9], 0.04, rockD));
+    for (const [s, b] of [['L', 3], ['R', 5]]) { const p = J['sh' + s]; m.parts.push({ ...crag([p[0] * 1.2, p[1] + 0.04, p[2]], 0.11, 310 + b, null, 0.03, rock), bone: b }); }
+    for (const [s, b] of [['L', 4], ['R', 6]]) { const hh = J['ha' + s]; m.parts.push({ ...crag([hh[0], hh[1], hh[2]], 0.12, 320 + b, null, 0.03, rockD), bone: b }); }
+    m.parts.push({ ...crag([hd[0], hd[1] + 0.02, hd[2]], 0.14, 330, [1, 0.9, 1], 0.03, rock), bone: 2 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.05, hd[1] + 0.02, hd[2] + 0.12], r: 0.022, col: crB, bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [0, 0.66, 0.16], r: 0.075, col: crB, bone: 1, k: 0.01 });
+    for (const [x, y, z, dx, dy, dz, r] of [[0.08, 0.72, -0.12, 0.1, 0.22, -0.12, 0.045], [-0.1, 0.68, -0.13, -0.08, 0.18, -0.16, 0.04], [0, 0.6, -0.14, 0.02, 0.14, -0.2, 0.035], [0.18, 0.86, -0.02, 0.12, 0.16, -0.05, 0.035], [-0.18, 0.86, -0.02, -0.12, 0.16, -0.05, 0.035]])
+      m.parts.push({ s: 'cap', a: [x, y, z], b: [x + dx, y + dy, z + dz], r, r2: 0.006, col: cr, bone: 1, k: 0.01 });
+    m.name = 'golem'; m.crownLift = 0.08; m.runAmp = 0.6;
+    defs.golem = m;
   }
 }
 
@@ -24464,31 +24714,41 @@ const CAVE = {
   shotV: 46, shotCd: 0.26, shotDmg: 10, upHold: 0.55,
   standTop: 1.85, crouchTop: 1.12, heroR: 0.44,
   coverHp: 140, foeCoverHp: 260, coverScale: 2.25,
-  boltV: 25, boltDmg: 12, spearDmg: 17, stabDmg: 18, bashDmg: 22, clawDmg: 11,
-  walk: 4.6, wallS: 3, ceil: 8.3,
+  boltV: 25, boltDmg: 16.8, spearDmg: 23.8, stabDmg: 25.2, bashDmg: 30.8, clawDmg: 15.4,
+  walk: 13.8, wallS: 3, ceil: 8.3,
+  // the deep mine's crowd
+  biteDmg: 14, batDmg: 10, dynDmg: 24, dynR: 1.7, boulderDmg: 28, boulderR: 1.9, smashDmg: 36, shardDmg: 16, golemDmg: 30,
 };
 const CAVE_FOES = {
   xbow: { model: 'xbowman', hp: 30, scale: 1.55, tint: '#e8843a' },
   spear: { model: 'spearman', hp: 70, scale: 1.6, tint: '#e86a3a', armor: 0.5 },
   shield: { model: 'shieldman', hp: 95, scale: 1.65, tint: '#c8622a', armor: 0.7 },
   mole: { model: 'mole', hp: 24, scale: 1.45, tint: '#7a6458' },
+  // spiders drop from the ceiling on a thread and skitter in to bite; bats swoop at your head; goblin sappers throw
+  // dynamite from behind rocks (it blasts rocks too); ogres hurl boulders, then come in swinging; crystal golems
+  // march in and fire fans of crystal shards (only the glowing core in their chest really hurts them)
+  spider: { model: 'cspider', hp: 22, scale: 1.5, tint: '#3a2a3a', head: 0.33, headR: 0.13, body: [0.08, 0.45, 0.34], clips: { run: 'skitter', idle: 'skitter', slam: 'bite' } },
+  bat: { model: 'cbat', hp: 10, scale: 1.5, tint: '#4a3a40', fly: true, clips: { run: 'batflap', idle: 'batflap', slam: 'batflap' } },
+  goblin: { model: 'goblin', hp: 28, scale: 1.3, tint: '#6aa84a' },
+  ogre: { model: 'ogre', hp: 300, scale: 2.2, tint: '#8aa070', armor: 0.8, head: 0.98, headR: 0.15 },
+  golem: { model: 'golem', hp: 200, scale: 2.0, tint: '#8a8078', armor: 0.25, head: 0.66, headR: 0.12 },
 };
 // rooms: half width, length, the look, hero cover xs, mid-room and far cover spots, and the waves
 const CAVE_ROOMS = {
   A: { hw: 8.5, len: 24, look: 'stone', hero: [-5.2, 0, 5.2], mid: [], foe: [[-5, -17], [0.5, -19.5], [5.5, -16.5]],
-    waves: [['xbow', 'xbow'], ['xbow', 'xbow', 'xbow']] },
+    waves: [['xbow', 'goblin'], ['xbow', 'xbow', 'spider', 'spider']] },
   L1: { hw: 9, len: 26, look: 'mine', hero: [-6, -2, 2, 6], mid: [[-3.6, -12.6], [3.8, -13]], foe: [[-6, -19], [0, -21], [6, -19.5]],
-    waves: [['xbow', 'spear', 'xbow'], ['spear', 'xbow', 'xbow', 'mole', 'mole'], ['shield', 'xbow', 'xbow']] },
+    waves: [['goblin', 'xbow', 'spider', 'spider'], ['spear', 'goblin', 'bat', 'bat', 'bat'], ['ogre', 'xbow', 'goblin']] },
   L2: { hw: 9.5, len: 27, look: 'stone', hero: [-6.5, -2.2, 2.2, 6.5], mid: [[-5, -13], [0.5, -12.4], [5.5, -13.5]], foe: [[-6.5, -20], [-1.5, -21.5], [3.5, -20.5], [7.5, -19]],
-    waves: [['spear', 'spear', 'xbow'], ['shield', 'shield', 'xbow', 'xbow'], ['mole', 'mole', 'mole', 'spear']] },
+    waves: [['spear', 'spear', 'goblin'], ['golem', 'xbow', 'bat', 'bat'], ['mole', 'mole', 'spider', 'spider', 'spider', 'goblin']] },
   L3: { hw: 9, len: 26, look: 'braziers', hero: [-6, -2, 2, 6], mid: [[-3, -12.5], [4, -12.8]], foe: [[-6.5, -19], [-0.5, -21], [5, -19.5], [7.6, -15.5]],
-    waves: [['xbow', 'xbow', 'xbow', 'spear'], ['shield', 'spear', 'spear', 'mole', 'mole'], ['xbow', 'xbow', 'xbow', 'xbow']] },
+    waves: [['xbow', 'goblin', 'goblin', 'spear'], ['ogre', 'bat', 'bat', 'bat', 'bat'], ['shield', 'golem', 'xbow', 'spider', 'spider']] },
   L4: { hw: 10, len: 28, look: 'ruins', hero: [-7, -2.4, 2.4, 7], mid: [[-5, -13.5], [0, -14.5], [5, -13.5]], foe: [[-7.5, -21], [-2.5, -22], [2.5, -21.5], [7.5, -20.5]],
-    waves: [['shield', 'shield', 'xbow', 'xbow'], ['spear', 'spear', 'spear', 'mole', 'mole', 'mole'], ['shield', 'spear', 'xbow', 'xbow', 'xbow']] },
+    waves: [['shield', 'goblin', 'xbow', 'bat', 'bat'], ['ogre', 'spear', 'spider', 'spider', 'spider'], ['golem', 'ogre', 'goblin', 'goblin', 'bat', 'bat']] },
   R1: { hw: 9.5, len: 27, look: 'crystal', hero: [-6.4, -2.1, 2.1, 6.4], mid: [[-4, -13], [4.2, -12.6]], foe: [[-6, -20], [0.2, -21.5], [6.3, -19.8]],
-    waves: [['xbow', 'spear', 'xbow'], ['shield', 'xbow', 'mole', 'mole'], ['spear', 'spear', 'xbow', 'xbow']] },
+    waves: [['goblin', 'spear', 'xbow', 'spider'], ['shield', 'bat', 'bat', 'bat', 'mole'], ['ogre', 'goblin', 'xbow']] },
   R2: { hw: 10, len: 28, look: 'flooded', hero: [-7, -2.4, 2.4, 7], mid: [[-5.5, -13], [0, -13.8], [5.5, -12.8]], foe: [[-7, -20.5], [-2, -22], [3, -21.2], [7.6, -19.6]],
-    waves: [['shield', 'spear', 'xbow', 'xbow'], ['mole', 'mole', 'mole', 'xbow', 'xbow', 'spear'], ['shield', 'shield', 'spear', 'xbow']] },
+    waves: [['golem', 'xbow', 'goblin', 'spider', 'spider'], ['mole', 'mole', 'bat', 'bat', 'bat', 'spear'], ['ogre', 'shield', 'goblin', 'xbow']] },
 };
 // what each branch is, after the shared start (mouth tunnel, room A, tunnel, the fork)
 const CAVE_BRANCH = {
@@ -24708,8 +24968,29 @@ function updateCave(dt) {
   else if (CV.phase === 'bossintro' || CV.phase === 'boss' || CV.phase === 'won') bagUpdate(dt);
   else if (CV.phase === 'dead') cvDead(dt);
   cvShots(dt); cvBolts(dt); cvSpears(dt);
+  cvSeeThrough(dt);
   updateTempZones(dt);
   R.frame.lowHp = run.hp / run.maxHp < 0.25 && CV.phase !== 'dead' ? 0.35 : 0;
+}
+// see-through rock: a wall slab, overhang boulder, pillar or brazier that stands between the camera and the blob
+// (or between the camera and what it looks at) fades out, as the city's buildings do
+function cvSeeThrough(dt) {
+  if (!CV.pieces) return;
+  const c = R.cam.pos, targets = [G.hero.pos, R.cam.target], hy = 1.0;
+  for (let i = Math.max(0, CV.pi - 1); i <= Math.min(CV.pieces.length - 1, CV.pi + 1); i++) {
+    for (const o of CV.pieces[i].inst) {
+      const B = MESHB[o.m], r = B ? Math.max(B.hi[0] - B.lo[0], B.hi[2] - B.lo[2]) * 0.5 * o.s : o.s * 0.6, my = B ? o.y + (B.lo[1] + B.hi[1]) * 0.5 * o.s : o.y + o.s * 0.5;
+      let behind = false;
+      for (const t of targets) {
+        const ty = t === G.hero.pos ? t[1] + hy : t[1], dx = t[0] - c[0], dy = ty - c[1], dz = t[2] - c[2], L2 = dx * dx + dy * dy + dz * dz;
+        const u = ((o.x - c[0]) * dx + (my - c[1]) * dy + (o.z - c[2]) * dz) / (L2 || 1);
+        if (u < 0.02 || u > 0.92) continue;
+        const px = c[0] + dx * u - o.x, py = c[1] + dy * u - my, pz = c[2] + dz * u - o.z;
+        if (px * px + py * py * 0.5 + pz * pz < (r * 0.8 + 0.5) ** 2) { behind = true; break; }
+      }
+      if (behind || o.fade) o.fade = clamp((o.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.72);
+    }
+  }
 }
 // the crater gives way to the cave: the hero walks into the mouth as the camera swings down behind it
 function cvEnterUpdate(dt) {
@@ -24766,7 +25047,38 @@ function cvNext() {
 
 // ---------- rooms ----------
 function cvCover(P, lx, lz, hp, foe) {
-  return { lx, lz, hw: 1.38, hd: 0.58, h: 1.4, hp, maxHp: hp, foe, model: 'cover' + Math.floor(Math.random() * 3), yaw: (Math.random() - 0.5) * 0.25, shake: 0, broken: false, flash: 0 };
+  return { lx, lz, hw: 1.38, hd: 0.58, h: 1.4, hp, maxHp: hp, foe, model: 'cover' + Math.floor(Math.random() * 3), yaw: (Math.random() - 0.5) * 0.25, shake: 0, broken: false, flash: 0, drop: 1 };
+}
+// the rocks of a new room crash down from the ceiling one after another (near ones first), bounce and settle in
+// a cloud of dust; `delay` holds them all back a moment
+function cvDropCovers(Rm, delay = 0) {
+  const list = Rm.covers.filter(c => !c.pillar).sort((a, b) => b.lz - a.lz || a.lx - b.lx);
+  list.forEach((c, i) => { c.drop = 0; c.dropT = -(delay + i * 0.12); c.landed = false; });
+}
+function cvCoverDrops(dt, Rm) {
+  for (const c of Rm.covers) {
+    if (c.drop >= 1 || c.dropT === undefined) continue;
+    c.dropT += dt;
+    c.drop = clamp(c.dropT / 0.75, 0, 1);
+    if (!c.landed && c.dropT >= 0.42) {
+      c.landed = true; c.shake = 1;
+      const w = cvW(Rm.F, c.lx, c.lz);
+      FX.burst(w[0], 0.3, w[1], 12, [0.55, 0.48, 0.42], 5, 0.13, 0.6, 1, 2);
+      for (let i = 0; i < 3; i++) FX.smoke(w[0] + rand(-1.2, 1.2), rand(0.2, 0.7), w[1] + rand(-0.6, 0.6), 0.9, [0.55, 0.5, 0.44], 1.3, 0.5);
+      FX.crack(w[0], w[1], 1.5, 2);
+      G.cam.shake = Math.max(G.cam.shake, 0.12); AUDIO.play('crumble', 0.6);
+    }
+    // dust trickling from the ceiling where it falls from
+    if (c.dropT < 0.42 && c.dropT > -0.3 && Math.random() < dt * 25) { const w = cvW(Rm.F, c.lx + rand(-1, 1), c.lz + rand(-0.4, 0.4)); FX.part(w[0], CAVE.ceil, w[1], 0, -2, 0, 0.12, 0.08, 1, [0.5, 0.45, 0.4], 0.8, 2, -9, 0); }
+  }
+}
+// how high a dropping rock still is: a fall from the ceiling with one bounce
+function cvDropY(c) {
+  if (c.drop >= 1 || c.dropT === undefined) return 0;
+  const t = c.dropT;
+  if (t < 0) return 99;
+  if (t < 0.42) { const u = t / 0.42; return CAVE.ceil * (1 - u * u); }
+  const b = (t - 0.42) / 0.33; return Math.sin(clamp(b, 0, 1) * Math.PI) * 0.45;
 }
 function cvRoomStart(P) {
   const D = P.def;
@@ -24775,8 +25087,10 @@ function cvRoomStart(P) {
   for (const [x, z] of D.mid) CV.room.covers.push(cvCover(P, x, z, CAVE.foeCoverHp, true));
   for (const [x, z] of D.foe) CV.room.covers.push(cvCover(P, x, z, CAVE.foeCoverHp, true));
   CV.phase = 'fight'; CV.t = 0;
-  // the first wave is already in place, crouched behind its rocks
+  cvDropCovers(CV.room);
+  // the first wave is already in place, crouched behind its rocks (and waits until the rocks are down)
   cvWave(true);
+  for (const f of CV.room.foes) f.t -= 1.3;
 }
 // send in the next wave: crossbowmen and spearmen take a rock each; shieldmen march in from the far door;
 // moles burst out of the side walls
@@ -24793,7 +25107,17 @@ function cvWave(first) {
       f.tx = c.lx + rand(-0.5, 0.5); f.tz = c.lz - 1.15;
       if (first) { f.lx = f.tx; f.lz = f.tz; f.state = 'hide'; f.t = rand(0.6, 2.0) + Rm.foes.length * 0.5; f.sink = 1; }
       else { f.lx = rand(-2.5, 2.5); f.lz = -Rm.D.len + 1; }
-    } else if (type === 'shield') { f.lx = rand(-3, 3); f.lz = -Rm.D.len + 1; f.state = 'march'; }
+    } else if (type === 'goblin') {
+      const free = all.filter(c => !Rm.foes.some(o => o.cover === c && !o.dying)), c = free.length ? pick(free) : pick(all.length ? all : Rm.covers);
+      f.cover = c; f.tx = c.lx + rand(-0.4, 0.4); f.tz = c.lz - 1.1;
+      if (first) { f.lx = f.tx; f.lz = f.tz; f.state = 'hide'; f.t = rand(0.8, 2.2) + Rm.foes.length * 0.4; f.sink = 1; } else { f.lx = rand(-2.5, 2.5); f.lz = -Rm.D.len + 1; }
+    } else if (type === 'spider') {
+      f.lx = rand(-Rm.D.hw + 1.5, Rm.D.hw - 1.5); f.lz = rand(-10.5, -16); f.y = CAVE.ceil; f.state = 'drop'; f.t = -Rm.foes.filter(o => o.type === 'spider').length * 0.4 - (first ? 1.2 : 0);
+    } else if (type === 'bat') {
+      const n = Rm.foes.filter(o => o.type === 'bat').length;
+      f.lx = rand(-3, 3) + (n % 2 ? 2 : -2); f.lz = -Rm.D.len + 1 - n * 1.2; f.y = rand(3, 4.2); f.state = 'fly'; f.t = 0;
+    } else if (type === 'ogre' || type === 'golem') { f.lx = rand(-3, 3); f.lz = -Rm.D.len + 1; f.state = 'march'; f.throws = 0; }
+    else if (type === 'shield') { f.lx = rand(-3, 3); f.lz = -Rm.D.len + 1; f.state = 'march'; }
     else if (type === 'mole') {
       const sx = Math.random() < 0.5 ? -1 : 1;
       f.lx = sx * (Rm.D.hw - 0.4); f.lz = rand(-11, -18); f.state = 'burst'; f.t = -Rm.foes.filter(o => o.type === 'mole').length * 0.45;
@@ -24822,6 +25146,7 @@ function cvHeroRail(dt, Rm) {
 const cvHeroTop = Rm => lerp(CAVE.crouchTop, CAVE.standTop, Rm.stand);
 function cvFight(dt) {
   const Rm = CV.room;
+  cvCoverDrops(dt, Rm);
   cvHeroRail(dt, Rm);
   cvAimAndShoot(Rm);
   for (const c of Rm.covers) { c.shake = Math.max(0, c.shake - dt * 3); c.flash = Math.max(0, c.flash - dt * 3); }
@@ -24875,8 +25200,11 @@ function cvHitAt(x, y, z, forAim) {
     if (f.dying) continue;
     const s = f.T.scale, fy = f.y - f.sink * 0.95 * s, dx = lx - f.lx, dz = lz - f.lz;
     if (Math.abs(dx) > 1.2 * s || Math.abs(dz) > 1.2 * s) continue;
-    const head = f.type === 'mole' ? [0.85, 0.2] : [0.975, 0.17];
+    // a bat is all body, up in the air
+    if (f.T.fly) { if (Math.hypot(dx, y - fy, dz) < 0.32 * s + 0.08) return { kind: 'body', foe: f }; continue; }
+    const head = f.T.head ? [f.T.head, f.T.headR] : f.type === 'mole' ? [0.85, 0.2] : [0.975, 0.17];
     if (Math.hypot(dx, y - (fy + head[0] * s), dz) < head[1] * s + 0.06) return { kind: 'head', foe: f };
+    if (f.T.body) { const B = f.T.body, by2 = clamp(y, fy + B[0] * s, fy + B[1] * s); if (y > fy && Math.hypot(dx, y - by2, dz) < B[2] * s) return { kind: 'body', foe: f }; continue; }
     if (f.type === 'shield' && cvShieldUp(f)) {
       const fwd = cvToHero(f), sx = f.lx + fwd[0] * 0.38 * s, sz = f.lz + fwd[1] * 0.38 * s;
       if (Math.hypot(lx - sx, lz - sz) < 0.36 * s && y > fy + 0.1 * s && y < fy + 0.92 * s) return { kind: 'shield', foe: f };
@@ -24986,6 +25314,7 @@ function cvFoe(f, dt, Rm) {
   f.mx = f.mx ?? rand(-0.7, 0.7);
   const meleeX = clamp(Rm.hx + f.mx, -Rm.D.hw + 1, Rm.D.hw - 1);
   if (f.cover && f.cover.broken && (f.state === 'hide')) f.t = Math.max(f.t, 99);
+  if (f.T.fly || ['spider', 'goblin', 'ogre', 'golem'].includes(f.type)) { cvFoeDeep(f, dt, Rm, moveTo, meleeX); return; }
   switch (f.type) {
     case 'xbow': {
       if (f.state === 'enter') { f.sink = 0; if (moveTo(f.tx, f.tz, 3.6)) { f.state = 'hide'; f.t = rand(0.4, 1.2); } break; }
@@ -25086,6 +25415,140 @@ function cvFoe(f, dt, Rm) {
     }
   }
 }
+// the deep mine's crowd
+function cvFoeDeep(f, dt, Rm, moveTo, meleeX) {
+  const s = f.T.scale;
+  switch (f.type) {
+    case 'spider': {
+      if (f.state === 'drop') {
+        // down from the ceiling on a silk thread, then a skittering dash in
+        if (f.t < 0) { f.y = CAVE.ceil + 1; break; }
+        f.y = Math.max(0, CAVE.ceil * (1 - (f.t / 0.7) ** 2));
+        f.clip = 'run'; f.ph += dt * 2;
+        if (f.y <= 0) { f.y = 0; f.state = 'dash'; f.t = 0; const w = cvW(Rm.F, f.lx, f.lz); FX.burst(w[0], 0.2, w[1], 8, [0.5, 0.45, 0.4], 3, 0.08, 0.4, 1, 2); AUDIO.play('thud', 0.5); }
+        break;
+      }
+      if (f.state === 'dash') {
+        const zx = Math.sin(f.t * 7 + f.ph * 6) * 1.6;
+        if (moveTo(meleeX + (f.lz < CAVE.meleeZ - 2.5 ? zx : 0), CAVE.meleeZ, 6.8)) { f.state = 'claw'; f.t = 0; }
+        f.ph += dt * 3;
+        break;
+      }
+      if (f.state === 'claw') {
+        f.clip = 'slam'; f.u = clamp(f.t / 0.6, 0, 0.99);
+        if (f.t < 0.2) moveTo(meleeX, CAVE.meleeZ, 2.5);
+        if (f.t > 0.42 && !f.hit) { f.hit = true; if (Math.abs(Rm.hx - f.lx) < 1.3) cvHurtHero(CAVE.biteDmg, f); AUDIO.play('squish', 0.6); }
+        if (f.t > 0.6) { f.hit = false; f.t = 0; f.state = Math.abs(Rm.hx - f.lx) > 1.3 ? 'dash' : 'claw'; }
+      }
+      break;
+    }
+    case 'bat': {
+      // weave in high up, then swoop at the hero's head, then climb away and come round again
+      f.clip = 'run'; f.ph += dt * 3.2;
+      if (f.state === 'fly') {
+        const tz = -11.5 + Math.sin(f.ph * 0.4) * 1.5;
+        f.y += (3.4 + Math.sin(f.t * 3 + f.ph) * 0.5 - f.y) * Math.min(1, dt * 2);
+        moveTo(clamp(Rm.hx + Math.sin(f.t * 1.7 + f.ph) * 4, -Rm.D.hw + 1, Rm.D.hw - 1), tz, 5.5);
+        f.clip = 'run';
+        if (f.t > 1.6 + (f.ph % 1)) { f.state = 'dive'; f.t = 0; f.dx = Rm.hx; AUDIO.play('whistle', 0.4); }
+        break;
+      }
+      if (f.state === 'dive') {
+        const ty = cvHeroTop(Rm) - 0.15, dx = f.dx - f.lx, dz = CAVE.rail - 0.3 - f.lz, dy = ty - f.y, d = Math.hypot(dx, dy, dz);
+        f.dx = lerp(f.dx, Rm.hx, Math.min(1, dt * 2));
+        const sp = 9.5 * dt / Math.max(d, 1e-3);
+        f.lx += dx * Math.min(1, sp); f.lz += dz * Math.min(1, sp); f.y += dy * Math.min(1, sp);
+        f.yaw = Math.atan2(dx, dz);
+        if (d < 0.75) { if (Math.abs(Rm.hx - f.lx) < 0.9) cvHurtHero(CAVE.batDmg, f); f.state = 'climb'; f.t = 0; }
+        if (f.t > 2.2) { f.state = 'climb'; f.t = 0; }
+        break;
+      }
+      if (f.state === 'climb') {
+        f.y += (4 - f.y) * Math.min(1, dt * 2.5);
+        moveTo(f.lx + rand(-0.5, 0.5), -12.5, 6);
+        if (f.t > 1.1) { f.state = 'fly'; f.t = 0; }
+      }
+      break;
+    }
+    case 'goblin': {
+      if (f.state === 'enter') { f.sink = 0; if (moveTo(f.tx, f.tz, 4.2)) { f.state = 'hide'; f.t = rand(0.4, 1.2); } break; }
+      if (f.state === 'hide') {
+        f.sink = Math.min(1, f.sink + dt * 4); f.clip = 'idle';
+        if (f.t > (f.cover && f.cover.broken ? 0.4 : rand(1.4, 2.4)) || f.t > 3) { f.state = 'throw'; f.t = 0; }
+        break;
+      }
+      if (f.state === 'throw') {
+        f.sink = Math.max(0, f.sink - dt * 5); f.clip = 'throw'; f.u = clamp(f.t / 0.8, 0, 0.99);
+        if (f.t > 0.45 && !f.thrown) { f.thrown = true; cvLob(f, Rm, 'dyn'); }
+        if (f.t > 0.8) { f.thrown = false; f.state = 'hide'; f.t = 0; }
+      }
+      break;
+    }
+    case 'ogre': {
+      // lumber in to the middle of the room, hurl two boulders, then come all the way in and smash
+      if (f.state === 'march') { f.clip = 'run'; if (moveTo(clamp(Rm.hx * 0.5, -4, 4), -12.5, 1.5)) { f.state = f.throws >= 2 ? 'close' : 'heave'; f.t = 0; } break; }
+      if (f.state === 'heave') {
+        f.clip = 'throw'; f.u = clamp(f.t / 1.2, 0, 0.99);
+        if (f.t > 0.7 && !f.thrown) { f.thrown = true; cvLob(f, Rm, 'boulder'); G.cam.shake = Math.max(G.cam.shake, 0.06); }
+        if (f.t > 1.4) { f.thrown = false; f.throws++; f.state = f.throws >= 2 ? 'close' : 'wait'; f.t = 0; }
+        break;
+      }
+      if (f.state === 'wait') { f.clip = 'idle'; if (f.t > 1.0) { f.state = 'heave'; f.t = 0; } break; }
+      if (f.state === 'close') { if (moveTo(meleeX, CAVE.meleeZ - 0.4, 1.9)) { f.state = 'smash'; f.t = 0; } break; }
+      if (f.state === 'smash') {
+        f.clip = 'slam'; f.u = clamp(f.t / 1.4, 0, 0.99);
+        if (f.t > 0.9 && !f.hit) {
+          f.hit = true; G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom', 0.7);
+          const w = cvW(Rm.F, f.lx, f.lz + 1.4); FX.burst(w[0], 0.3, w[1], 16, [0.55, 0.48, 0.42], 6, 0.14, 0.6, 1, 3); FX.crack(w[0], w[1], 1.8, 2.5);
+          if (Math.abs(Rm.hx - f.lx) < 2.0) cvHurtHero(CAVE.smashDmg, f);
+          for (const c of Rm.covers) if (!c.foe && !c.pillar && Math.abs(c.lx - f.lx) < 2) cvHurtCover(c, 70, null);
+        }
+        if (f.t > 1.8) { f.hit = false; f.t = 0; }
+      }
+      break;
+    }
+    case 'golem': {
+      // march in, then plant its feet: the core blazes and it fires a fan of three crystal shards; hurt enough, it
+      // comes in close to pound
+      const glow = f.state === 'charge' ? clamp(f.t / 0.9, 0, 1) : 0;
+      f.glow = glow;
+      if (f.state === 'march') { f.clip = 'run'; if (moveTo(clamp(Rm.hx * 0.4, -4, 4), f.hp < f.maxHp * 0.5 ? CAVE.meleeZ - 0.3 : -13, 1.3)) { f.state = f.hp < f.maxHp * 0.5 ? 'slam' : 'charge'; f.t = 0; } break; }
+      if (f.state === 'charge') {
+        f.clip = 'aim'; f.u = clamp(f.t / 0.9, 0, 0.7);
+        if (f.t < dt * 1.5) AUDIO.play('laser', 0.5);
+        if (f.t > 0.9) { cvShards(f, Rm); f.state = 'cool'; f.t = 0; }
+        break;
+      }
+      if (f.state === 'cool') { f.clip = 'idle'; if (f.t > 1.3) { f.state = f.hp < f.maxHp * 0.5 ? 'march' : 'charge'; f.t = 0; } break; }
+      if (f.state === 'slam') {
+        f.clip = 'slam'; f.u = clamp(f.t / 1.2, 0, 0.99);
+        if (f.t > 0.75 && !f.hit) { f.hit = true; G.cam.shake = Math.max(G.cam.shake, 0.18); AUDIO.play('boom', 0.6); if (Math.abs(Rm.hx - f.lx) < 1.8) cvHurtHero(CAVE.golemDmg, f); }
+        if (f.t > 1.5) { f.hit = false; f.t = 0; }
+      }
+      break;
+    }
+  }
+}
+// something lobbed onto a marked circle where the hero is: a goblin's dynamite (it lands, its fuse burns down and
+// it blows, hurting the hero and the rocks nearby) or an ogre's boulder (it crashes down)
+function cvLob(f, Rm, kind) {
+  const s = f.T.scale, F = Rm.F, tx = clamp(Rm.hx + rand(-0.7, 0.7), -Rm.D.hw + 1, Rm.D.hw - 1), tz = CAVE.rail + rand(-0.4, 0.2);
+  const o = cvW3(F, f.lx, 1.5 * s, f.lz), t = cvW3(F, tx, 0, tz), dur = kind === 'boulder' ? 1.25 : 0.95, r = kind === 'boulder' ? CAVE.boulderR : CAVE.dynR;
+  CV.spears.push({ sx: o[0], sy: o[1], sz: o[2], tx: t[0], tz: t[2], lx: tx, lz: tz, t: 0, dur, x: o[0], y: o[1], z: o[2], kind, r, dmg: kind === 'boulder' ? CAVE.boulderDmg : CAVE.dynDmg, peak: kind === 'boulder' ? 3.2 : 3.8, spin: rand(0, TAU) });
+  addTele({ kind: 'circle', x: t[0], z: t[2], r, dur: dur + (kind === 'dyn' ? 0.55 : 0) });
+  AUDIO.play('throw');
+}
+// three crystal shards in a fan toward the hero's head
+function cvShards(f, Rm) {
+  const s = f.T.scale, F = Rm.F;
+  for (const off of [-1.6, 0, 1.6]) {
+    const o = [f.lx, 0.66 * s, f.lz + 0.3 * s], ty = cvHeroTop(Rm) - 0.3, tx = Rm.hx + off, tz = CAVE.rail;
+    const dx = tx - o[0], dy = ty - o[1], dz = tz - o[2], d = Math.hypot(dx, dy, dz) || 1, w = cvW3(F, o[0], o[1], o[2]), v = cvDirW(F, dx / d, dz / d), sp = 21;
+    CV.bolts.push({ x: w[0], y: w[1], z: w[2], vx: v[0] * sp, vy: dy / d * sp, vz: v[1] * sp, t: 0, dmg: CAVE.shardDmg, crys: true });
+  }
+  const w = cvW3(F, f.lx, 0.66 * s, f.lz); FX.burst(w[0], w[1], w[2], 12, [0.5, 0.95, 1], 5, 0.08, 0.4, 1);
+  AUDIO.play('shoot', 0.7);
+}
 // a crossbow bolt, aimed where the hero's head is (or where the blob is crouched behind its rock)
 function cvFireBolt(f, Rm) {
   const s = f.T.scale, F = Rm.F;
@@ -25128,9 +25591,36 @@ function cvThrowSpear(f, Rm) {
 }
 function cvSpears(dt) {
   for (const p of CV.spears) {
-    p.t += dt;
+    p.t += dt; p.spin = (p.spin || 0) + dt * 7;
+    if (p.fuse !== undefined) {
+      // dynamite on the ground: the fuse sparks, then it blows
+      p.fuse -= dt;
+      if (Math.random() < 0.8) FX.part(p.x, 0.25, p.z, rand(-1, 1), rand(1, 2.5), rand(-1, 1), 0.06, 0.02, 0.3, [1, 0.75, 0.3], 1, 0, -6);
+      if (p.fuse <= 0) {
+        p.done = true;
+        FX.burst(p.tx, 0.6, p.tz, 26, [1, 0.6, 0.2], 8, 0.18, 0.7, 1, 3); FX.scorch(p.tx, p.tz, p.r, 4);
+        for (let i = 0; i < 4; i++) FX.smoke(p.tx + rand(-1, 1), rand(0.3, 1.2), p.tz + rand(-1, 1), 1, [0.3, 0.28, 0.26], 1.6, 0.8);
+        FX.glow(p.tx, 0.8, p.tz, 3, [1, 0.6, 0.2], 0.25, 1);
+        AUDIO.play('boom'); G.cam.shake = Math.max(G.cam.shake, 0.22);
+        const h = G.hero.pos;
+        if (Math.hypot(h[0] - p.tx, h[2] - p.tz) < p.r + 0.3) cvHurtHero(p.dmg, null, p);
+        if (CV.room) for (const c of CV.room.covers) if (!c.pillar && !c.foe && Math.abs(c.lx - p.lx) < p.r + c.hw * 0.5 && Math.abs(c.lz - p.lz) < p.r + 0.3) cvHurtCover(c, 60, null);
+      }
+      continue;
+    }
     const u = clamp(p.t / p.dur, 0, 1);
-    p.x = lerp(p.sx, p.tx, u); p.z = lerp(p.sz, p.tz, u); p.y = lerp(p.sy, 0, u) + Math.sin(u * Math.PI) * 4.2;
+    p.x = lerp(p.sx, p.tx, u); p.z = lerp(p.sz, p.tz, u); p.y = lerp(p.sy, 0, u) + Math.sin(u * Math.PI) * (p.peak ?? 4.2);
+    if (u >= 1 && p.kind === 'dyn') { p.fuse = 0.55; p.x = p.tx; p.z = p.tz; p.y = 0.1; AUDIO.play('hit', 0.4); continue; }
+    if (u >= 1 && p.kind === 'boulder') {
+      p.done = true;
+      FX.burst(p.tx, 0.4, p.tz, 22, [0.55, 0.48, 0.42], 7, 0.18, 0.8, 1, 3); FX.crack(p.tx, p.tz, p.r * 1.1, 2.5);
+      for (let i = 0; i < 3; i++) FX.smoke(p.tx + rand(-1, 1), rand(0.3, 1), p.tz + rand(-1, 1), 1, [0.5, 0.45, 0.4], 1.4, 0.6);
+      AUDIO.play('crumble'); G.cam.shake = Math.max(G.cam.shake, 0.2);
+      const h = G.hero.pos;
+      if (Math.hypot(h[0] - p.tx, h[2] - p.tz) < p.r + 0.3) cvHurtHero(p.dmg, null, p);
+      if (CV.room) for (const c of CV.room.covers) if (!c.pillar && !c.foe && Math.abs(c.lx - p.lx) < p.r + c.hw * 0.5 && Math.abs(c.lz - p.lz) < p.r + 0.3) cvHurtCover(c, 80, null);
+      continue;
+    }
     if (u >= 1) {
       p.done = true;
       FX.burst(p.tx, 0.2, p.tz, 8, [0.6, 0.55, 0.5], 3, 0.08, 0.4, 1, 2); FX.crack(p.tx, p.tz, 0.9);
@@ -25309,8 +25799,10 @@ function emitCave() {
   }
   // the hero's goo shots, bolts and spears
   for (const s of CV.shots) { pushImp(s.x, s.y, s.z, 0.17, s.vx, s.vy, s.vz, 1.45, 0, 0, 0.3, s.ph + s.t, 0, 0, 0, 1); }
-  for (const b of CV.bolts) { const sp = Math.hypot(b.vx, b.vy, b.vz) || 1; pushImp(b.x, b.y, b.z, 0.34, b.vx / sp, b.vy / sp, b.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); FX.glow(b.x, b.y, b.z, 0.3, [1, 0.5, 0.3], 0.04, 0.4); }
+  for (const b of CV.bolts) { const sp = Math.hypot(b.vx, b.vy, b.vz) || 1; pushImp(b.x, b.y, b.z, b.crys ? 0.42 : 0.34, b.vx / sp, b.vy / sp, b.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); FX.glow(b.x, b.y, b.z, b.crys ? 0.7 : 0.3, b.crys ? [0.5, 0.95, 1] : [1, 0.5, 0.3], 0.04, b.crys ? 0.8 : 0.4); }
   for (const p of CV.spears) {
+    if (p.kind === 'dyn') { if (R.enemyDraw.dynamite) pushEnemy('dynamite', false, p.x, p.y, p.z, p.spin, MODELS.defs.dynamite.clips.still.row, 2.2, 1, 0, p.fuse !== undefined && Math.sin(R.frame.time * 30) > 0 ? 0.6 : 0, 0, 1, 1, 1); FX.glow(p.x, p.y + 0.2, p.z, 0.45, [1, 0.7, 0.3], 0.04, 0.8); continue; }
+    if (p.kind === 'boulder') { if (R.enemyDraw.boulder1) pushEnemy('boulder1', false, p.x, p.y - 0.4, p.z, p.spin, MODELS.defs.boulder1.clips.still.row, 1.5, 1, 0, 0, 0, f.rockCol[0], f.rockCol[1], f.rockCol[2]); continue; }
     const u = clamp(p.t / p.dur, 0, 1), vy = -p.sy + Math.cos(u * Math.PI) * Math.PI * 4.2, vx = p.tx - p.sx, vz = p.tz - p.sz, l = Math.hypot(vx, vy, vz) || 1;
     pushImp(p.x, p.y, p.z, 0.62, vx / l, vy / l, vz / l, 1, 14, 0, 0, 0, 0, 0, 0, 1);
   }
@@ -25321,19 +25813,28 @@ function cvEmitRoom(Rm) {
     const w = cvW(F, c.lx + (c.shake > 0 ? Math.sin(R.frame.time * 60) * 0.05 * c.shake : 0), c.lz);
     const dmg = c.pillar ? 0 : 1 - c.hp / c.maxHp, k = (0.95 - dmg * 0.3) * (1 + c.flash * 0.25);
     const m = c.broken ? 'rubble' : c.model, sc = c.pillar ? 2.35 : c.broken ? 2.6 : CAVE.coverScale;
-    if (R.enemyDraw[m]) pushEnemy(m, false, w[0], 0, w[1], F.yaw + c.yaw, MODELS.defs[m].clips.still.row, sc, c.broken || c.pillar ? 1 : 1 - dmg * 0.12, 0, 0, 0, rc[0] * k, rc[1] * k, rc[2] * k, c.fade || 0);
+    const dy = cvDropY(c);
+    if (dy > 50) continue;
+    // (while it falls: no damage tint, and a shadow on the floor that grows as it comes down)
+    if (dy > 0.05) pushDecal(w[0], w[1], 1.6, 1.0, -F.yaw, 1, 0, 0, 0.02, 0.02, 0.02, 0.7 * (1 - dy / CAVE.ceil));
+    if (R.enemyDraw[m]) pushEnemy(m, false, w[0], dy, w[1], F.yaw + c.yaw, MODELS.defs[m].clips.still.row, sc, c.broken || c.pillar ? 1 : 1 - dmg * 0.12, 0, 0, 0, rc[0] * k, rc[1] * k, rc[2] * k, c.fade || 0);
     if (!c.broken && dmg > 0.35) pushDecal(w[0], w[1], 1.6, 0.9, -F.yaw, 8, c.lx, 0.3, 0.03, 0.03, 0.05, 0.6);
   }
   for (const f of Rm.foes) {
     const T = f.T, s = T.scale, M = MODELS.defs[T.model];
     if (!M || !R.enemyDraw[T.model]) continue;
     const w = cvW(F, f.lx, f.lz), y = f.y - f.sink * 0.95 * s;
-    const c = M.clips[f.clip] || M.clips.run;
+    const cn = (T.clips && T.clips[f.clip]) || f.clip, c = M.clips[cn] || M.clips.run || M.clips[Object.keys(M.clips)[0]];
     const loop = f.clip === 'run' || f.clip === 'idle';
     const row = c.row + Math.floor((loop ? f.ph - Math.floor(f.ph) : clamp(f.u, 0, 0.999)) * c.frames);
     if (f.state === 'burst') continue;
+    if (f.type === 'spider' && f.state === 'drop' && f.y > CAVE.ceil) continue;
     pushEnemy(T.model, false, w[0], y, w[1], f.yaw + F.yaw, row, s, 1, f.dying ? clamp(f.dying, 0, 1) : 0, f.flash > 0 ? 0.85 : 0, 0, f.tint[0], f.tint[1], f.tint[2]);
-    pushDecal(w[0] + 0.15, w[1] + 0.1, 0.32 * s, 0.4 * s, 0, 1, 0, 0, 0.01, 0.01, 0.02, 0.55 * (1 - f.sink * 0.6));
+    pushDecal(w[0] + 0.15, w[1] + 0.1, (f.type === 'spider' ? 0.6 : 0.32) * s, (f.type === 'spider' ? 0.6 : 0.4) * s, 0, 1, 0, 0, 0.01, 0.01, 0.02, (T.fly ? 0.25 : 0.55) * (1 - f.sink * 0.6));
+    // a dropping spider hangs on its silk; a golem's core and eyes glow, blazing as it charges; a goblin's fuse sparks
+    if (f.type === 'spider' && f.state === 'drop') R.ribStrip([w[0], CAVE.ceil, w[1], w[0], y + 0.55 * s, w[1]], 2, 0.025, [0.92, 0.92, 0.95, 0.7], 0, 0, 1);
+    if (f.type === 'golem' && !f.dying) { const cw = cvW3(F, f.lx + Math.sin(f.yaw) * 0.16 * s, y + 0.66 * s, f.lz + Math.cos(f.yaw) * 0.16 * s); FX.glow(cw[0], cw[1], cw[2], 0.55 + (f.glow || 0) * 1.1, [0.45, 0.95, 1], 0.05, 0.4 + (f.glow || 0) * 0.3); }
+    if (f.type === 'goblin' && !f.dying && Math.random() < 0.3) { const cw = cvW3(F, f.lx, y + 1.05 * s, f.lz); FX.part(cw[0], cw[1], cw[2], rand(-0.5, 0.5), rand(0.5, 1.2), rand(-0.5, 0.5), 0.05, 0.02, 0.25, [1, 0.75, 0.3], 1, 0, -4); }
     // a crossbowman's aim: a red line from the bow to where it will shoot, blinking once it locks
     if (f.type === 'xbow' && f.state === 'aim') {
       const o = cvW3(F, f.lx + Math.sin(f.yaw) * 0.45 * s, 0.82 * s, f.lz + Math.cos(f.yaw) * 0.45 * s), t = cvW3(F, f.aimX, cvHeroTop(Rm) - 0.32, CAVE.rail);
@@ -25403,7 +25904,7 @@ function caveOverlay(ctx, w, h, dt) {
 // Its goo heart (the porthole above its eyes) takes the most damage; the steel takes little.
 // ============================================================
 const BAG_ROOM = { hw: 15, len: 46, look: 'boss', hero: [-9, -3, 3, 9], mid: [], foe: [[-11.5, -17], [-8, -20.5], [8, -20.5], [11.5, -17]], pillars: [[-6, -9.8], [6, -9.8]] };
-const BAG = { S: 4, z: -29, hp: 3400, heart: [0, 1.62, 0.42], heartR: 0.55, gooDmg: 14, rockDmg: 18, beamDmg: 15, smashDmg: 24, beamY: 0.85 };
+const BAG = { S: 4, z: -29, hp: 5100, heart: [0, 1.62, 0.42], heartR: 0.55, gooDmg: 14, rockDmg: 18, beamDmg: 15, smashDmg: 24, beamY: 0.85 };
 const bagPlan = st2 => st2 ? ['barrage', 'goo', 'beam', 'smash', 'barrage', 'minions', 'beam', 'goo'] : ['goo', 'barrage', 'goo', 'beam', 'smash', 'minions'];
 
 // the hall's own look: braziers down both sides, a heap of spoil behind the machine, pillars at the back
@@ -25421,6 +25922,7 @@ function bagStart(P) {
   for (const x of D.hero) CV.room.covers.push(cvCover(P, x, CAVE.coverZ, CAVE.coverHp, false));
   for (const [x, z] of D.pillars) CV.room.covers.push({ ...cvCover(P, x, z, Infinity, false), pillar: true, hw: 1.0, hd: 1.0, h: 99, model: 'cpillar' });
   for (const [x, z] of D.foe) CV.room.covers.push(cvCover(P, x, z, CAVE.foeCoverHp, true));
+  cvDropCovers(CV.room, 0.3);
   CV.boss = { x: 0, z: BAG.z, slew: 0, pitch: -0.1, wheel: 0, wheelV: 0.6, hp: BAG.hp, maxHp: BAG.hp, stage2: false, state: 'idle', t: 0, cd: 2.2, plan: 0,
     glow: 0, flash: 0, beam: null, rocks: [], drills: [], regrow: [], dying: 0, eyes: 0, tint: hexToRgb('#ff8a2a'), side: 1 };
   CV.boss.slew = Math.atan2(-CV.boss.x, CAVE.rail - CV.boss.z) + 0.62;
@@ -25448,6 +25950,7 @@ function bagUpdate(dt) {
   B.flash = Math.max(0, B.flash - dt * 4);
   B.t += dt;
   B.wheel += dt * B.wheelV * (B.stage2 ? 1.5 : 1);
+  cvCoverDrops(dt, Rm);
   if (CV.phase === 'bossintro') {
     cvHeroRail(dt, Rm);
     cvAimAndShoot(Rm);
@@ -25643,11 +26146,13 @@ function bagRegrow(B, dt, Rm) {
 }
 // its minions come out of the side alcoves and take the rocks near the walls
 function bagMinions(B, Rm) {
-  const n = B.stage2 ? 3 : 2, types = B.stage2 ? ['xbow', 'spear', 'mole', 'xbow'] : ['xbow', 'xbow', 'mole'];
+  const n = B.stage2 ? 3 : 2, types = B.stage2 ? ['xbow', 'spear', 'mole', 'goblin', 'spider', 'bat'] : ['xbow', 'goblin', 'mole', 'spider'];
   for (let i = 0; i < n; i++) {
     const type = pick(types), T = CAVE_FOES[type], sx = i % 2 ? 1 : -1;
     const f = { type, T, hp: T.hp, maxHp: T.hp, lx: sx * (Rm.D.hw + 3), lz: -18 + rand(-1.5, 1.5), y: 0, sink: 0, state: 'enter', t: 0, yaw: 0, flash: 0, ph: Math.random(), clip: 'run', u: 0, cover: null, throws: 0, tint: hexToRgb(T.tint), dying: 0, peekX: 0 };
     if (type === 'mole') { f.lx = sx * (Rm.D.hw - 0.4); f.lz = rand(-11, -15); f.state = 'burst'; f.t = -i * 0.4; }
+    else if (type === 'spider') { f.lx = rand(-6, 6); f.lz = rand(-11, -15); f.y = CAVE.ceil; f.state = 'drop'; f.t = -i * 0.4; }
+    else if (type === 'bat') { f.lx = sx * (Rm.D.hw - 1); f.lz = -18; f.y = 3.6; f.state = 'fly'; f.t = 0; }
     else {
       const free = Rm.covers.filter(c => c.foe && !c.broken && !Rm.foes.some(o => o.cover === c && !o.dying) && Math.sign(c.lx) === sx);
       const c = free[0] || Rm.covers.find(c => c.foe && Math.sign(c.lx) === sx);
@@ -29409,6 +29914,22 @@ const UI = {
       ctx.fillStyle = '#ff4d5a'; ctx.beginPath(); ctx.arc(0, 0, 23, 0, TAU); ctx.fill();
       if (img && img.complete && img.naturalWidth) { ctx.beginPath(); ctx.arc(0, 0, 22, 0, TAU); ctx.clip(); ctx.drawImage(img, -30, -26, 60, 60); }
       ctx.restore();
+    }
+    // chapter 20: once the cave is open, a big arrow points to its mouth: bobbing over it when it is on screen,
+    // at the screen's edge when it is not
+    const cr = ARENA.fx && ARENA.fx.st && ARENA.fx.st.mouth && ARENA.fx.st.open ? ARENA.fx.st : null;
+    if (cr && G.state === 'run' && !run.cave && R.project(cr.mouth.x, 4.5, cr.mouth.z + 2.2, p)) {
+      if (p[0] > 40 && p[0] < w - 40 && p[1] > 120 && p[1] < h - 40) {
+        const bob = Math.sin(performance.now() / 180) * 9;
+        ctx.save(); ctx.translate(p[0], p[1] + bob);
+        ctx.fillStyle = '#ffc93a'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(0, 30); ctx.lineTo(-30, -6); ctx.lineTo(-12, -6); ctx.lineTo(-12, -34); ctx.lineTo(12, -34); ctx.lineTo(12, -6); ctx.lineTo(30, -6); ctx.closePath(); ctx.stroke(); ctx.fill();
+        ctx.restore();
+      } else {
+        const [ax, ay] = edgeArrow('#ffc93a');
+        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(ax, ay, 24, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#3a2a1a'; ctx.beginPath(); ctx.arc(ax, ay, 20, Math.PI, 0); ctx.lineTo(ax + 20, ay + 10); ctx.lineTo(ax - 20, ay + 10); ctx.closePath(); ctx.fill();
+      }
     }
     // joystick
     const J = INPUT.stick;

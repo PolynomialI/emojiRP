@@ -18,31 +18,41 @@ const CAVE = {
   shotV: 46, shotCd: 0.26, shotDmg: 10, upHold: 0.55,
   standTop: 1.85, crouchTop: 1.12, heroR: 0.44,
   coverHp: 140, foeCoverHp: 260, coverScale: 2.25,
-  boltV: 25, boltDmg: 12, spearDmg: 17, stabDmg: 18, bashDmg: 22, clawDmg: 11,
-  walk: 4.6, wallS: 3, ceil: 8.3,
+  boltV: 25, boltDmg: 16.8, spearDmg: 23.8, stabDmg: 25.2, bashDmg: 30.8, clawDmg: 15.4,
+  walk: 13.8, wallS: 3, ceil: 8.3,
+  // the deep mine's crowd
+  biteDmg: 14, batDmg: 10, dynDmg: 24, dynR: 1.7, boulderDmg: 28, boulderR: 1.9, smashDmg: 36, shardDmg: 16, golemDmg: 30,
 };
 const CAVE_FOES = {
   xbow: { model: 'xbowman', hp: 30, scale: 1.55, tint: '#e8843a' },
   spear: { model: 'spearman', hp: 70, scale: 1.6, tint: '#e86a3a', armor: 0.5 },
   shield: { model: 'shieldman', hp: 95, scale: 1.65, tint: '#c8622a', armor: 0.7 },
   mole: { model: 'mole', hp: 24, scale: 1.45, tint: '#7a6458' },
+  // spiders drop from the ceiling on a thread and skitter in to bite; bats swoop at your head; goblin sappers throw
+  // dynamite from behind rocks (it blasts rocks too); ogres hurl boulders, then come in swinging; crystal golems
+  // march in and fire fans of crystal shards (only the glowing core in their chest really hurts them)
+  spider: { model: 'cspider', hp: 22, scale: 1.5, tint: '#3a2a3a', head: 0.33, headR: 0.13, body: [0.08, 0.45, 0.34], clips: { run: 'skitter', idle: 'skitter', slam: 'bite' } },
+  bat: { model: 'cbat', hp: 10, scale: 1.5, tint: '#4a3a40', fly: true, clips: { run: 'batflap', idle: 'batflap', slam: 'batflap' } },
+  goblin: { model: 'goblin', hp: 28, scale: 1.3, tint: '#6aa84a' },
+  ogre: { model: 'ogre', hp: 300, scale: 2.2, tint: '#8aa070', armor: 0.8, head: 0.98, headR: 0.15 },
+  golem: { model: 'golem', hp: 200, scale: 2.0, tint: '#8a8078', armor: 0.25, head: 0.66, headR: 0.12 },
 };
 // rooms: half width, length, the look, hero cover xs, mid-room and far cover spots, and the waves
 const CAVE_ROOMS = {
   A: { hw: 8.5, len: 24, look: 'stone', hero: [-5.2, 0, 5.2], mid: [], foe: [[-5, -17], [0.5, -19.5], [5.5, -16.5]],
-    waves: [['xbow', 'xbow'], ['xbow', 'xbow', 'xbow']] },
+    waves: [['xbow', 'goblin'], ['xbow', 'xbow', 'spider', 'spider']] },
   L1: { hw: 9, len: 26, look: 'mine', hero: [-6, -2, 2, 6], mid: [[-3.6, -12.6], [3.8, -13]], foe: [[-6, -19], [0, -21], [6, -19.5]],
-    waves: [['xbow', 'spear', 'xbow'], ['spear', 'xbow', 'xbow', 'mole', 'mole'], ['shield', 'xbow', 'xbow']] },
+    waves: [['goblin', 'xbow', 'spider', 'spider'], ['spear', 'goblin', 'bat', 'bat', 'bat'], ['ogre', 'xbow', 'goblin']] },
   L2: { hw: 9.5, len: 27, look: 'stone', hero: [-6.5, -2.2, 2.2, 6.5], mid: [[-5, -13], [0.5, -12.4], [5.5, -13.5]], foe: [[-6.5, -20], [-1.5, -21.5], [3.5, -20.5], [7.5, -19]],
-    waves: [['spear', 'spear', 'xbow'], ['shield', 'shield', 'xbow', 'xbow'], ['mole', 'mole', 'mole', 'spear']] },
+    waves: [['spear', 'spear', 'goblin'], ['golem', 'xbow', 'bat', 'bat'], ['mole', 'mole', 'spider', 'spider', 'spider', 'goblin']] },
   L3: { hw: 9, len: 26, look: 'braziers', hero: [-6, -2, 2, 6], mid: [[-3, -12.5], [4, -12.8]], foe: [[-6.5, -19], [-0.5, -21], [5, -19.5], [7.6, -15.5]],
-    waves: [['xbow', 'xbow', 'xbow', 'spear'], ['shield', 'spear', 'spear', 'mole', 'mole'], ['xbow', 'xbow', 'xbow', 'xbow']] },
+    waves: [['xbow', 'goblin', 'goblin', 'spear'], ['ogre', 'bat', 'bat', 'bat', 'bat'], ['shield', 'golem', 'xbow', 'spider', 'spider']] },
   L4: { hw: 10, len: 28, look: 'ruins', hero: [-7, -2.4, 2.4, 7], mid: [[-5, -13.5], [0, -14.5], [5, -13.5]], foe: [[-7.5, -21], [-2.5, -22], [2.5, -21.5], [7.5, -20.5]],
-    waves: [['shield', 'shield', 'xbow', 'xbow'], ['spear', 'spear', 'spear', 'mole', 'mole', 'mole'], ['shield', 'spear', 'xbow', 'xbow', 'xbow']] },
+    waves: [['shield', 'goblin', 'xbow', 'bat', 'bat'], ['ogre', 'spear', 'spider', 'spider', 'spider'], ['golem', 'ogre', 'goblin', 'goblin', 'bat', 'bat']] },
   R1: { hw: 9.5, len: 27, look: 'crystal', hero: [-6.4, -2.1, 2.1, 6.4], mid: [[-4, -13], [4.2, -12.6]], foe: [[-6, -20], [0.2, -21.5], [6.3, -19.8]],
-    waves: [['xbow', 'spear', 'xbow'], ['shield', 'xbow', 'mole', 'mole'], ['spear', 'spear', 'xbow', 'xbow']] },
+    waves: [['goblin', 'spear', 'xbow', 'spider'], ['shield', 'bat', 'bat', 'bat', 'mole'], ['ogre', 'goblin', 'xbow']] },
   R2: { hw: 10, len: 28, look: 'flooded', hero: [-7, -2.4, 2.4, 7], mid: [[-5.5, -13], [0, -13.8], [5.5, -12.8]], foe: [[-7, -20.5], [-2, -22], [3, -21.2], [7.6, -19.6]],
-    waves: [['shield', 'spear', 'xbow', 'xbow'], ['mole', 'mole', 'mole', 'xbow', 'xbow', 'spear'], ['shield', 'shield', 'spear', 'xbow']] },
+    waves: [['golem', 'xbow', 'goblin', 'spider', 'spider'], ['mole', 'mole', 'bat', 'bat', 'bat', 'spear'], ['ogre', 'shield', 'goblin', 'xbow']] },
 };
 // what each branch is, after the shared start (mouth tunnel, room A, tunnel, the fork)
 const CAVE_BRANCH = {
@@ -262,8 +272,29 @@ function updateCave(dt) {
   else if (CV.phase === 'bossintro' || CV.phase === 'boss' || CV.phase === 'won') bagUpdate(dt);
   else if (CV.phase === 'dead') cvDead(dt);
   cvShots(dt); cvBolts(dt); cvSpears(dt);
+  cvSeeThrough(dt);
   updateTempZones(dt);
   R.frame.lowHp = run.hp / run.maxHp < 0.25 && CV.phase !== 'dead' ? 0.35 : 0;
+}
+// see-through rock: a wall slab, overhang boulder, pillar or brazier that stands between the camera and the blob
+// (or between the camera and what it looks at) fades out, as the city's buildings do
+function cvSeeThrough(dt) {
+  if (!CV.pieces) return;
+  const c = R.cam.pos, targets = [G.hero.pos, R.cam.target], hy = 1.0;
+  for (let i = Math.max(0, CV.pi - 1); i <= Math.min(CV.pieces.length - 1, CV.pi + 1); i++) {
+    for (const o of CV.pieces[i].inst) {
+      const B = MESHB[o.m], r = B ? Math.max(B.hi[0] - B.lo[0], B.hi[2] - B.lo[2]) * 0.5 * o.s : o.s * 0.6, my = B ? o.y + (B.lo[1] + B.hi[1]) * 0.5 * o.s : o.y + o.s * 0.5;
+      let behind = false;
+      for (const t of targets) {
+        const ty = t === G.hero.pos ? t[1] + hy : t[1], dx = t[0] - c[0], dy = ty - c[1], dz = t[2] - c[2], L2 = dx * dx + dy * dy + dz * dz;
+        const u = ((o.x - c[0]) * dx + (my - c[1]) * dy + (o.z - c[2]) * dz) / (L2 || 1);
+        if (u < 0.02 || u > 0.92) continue;
+        const px = c[0] + dx * u - o.x, py = c[1] + dy * u - my, pz = c[2] + dz * u - o.z;
+        if (px * px + py * py * 0.5 + pz * pz < (r * 0.8 + 0.5) ** 2) { behind = true; break; }
+      }
+      if (behind || o.fade) o.fade = clamp((o.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.72);
+    }
+  }
 }
 // the crater gives way to the cave: the hero walks into the mouth as the camera swings down behind it
 function cvEnterUpdate(dt) {
@@ -320,7 +351,38 @@ function cvNext() {
 
 // ---------- rooms ----------
 function cvCover(P, lx, lz, hp, foe) {
-  return { lx, lz, hw: 1.38, hd: 0.58, h: 1.4, hp, maxHp: hp, foe, model: 'cover' + Math.floor(Math.random() * 3), yaw: (Math.random() - 0.5) * 0.25, shake: 0, broken: false, flash: 0 };
+  return { lx, lz, hw: 1.38, hd: 0.58, h: 1.4, hp, maxHp: hp, foe, model: 'cover' + Math.floor(Math.random() * 3), yaw: (Math.random() - 0.5) * 0.25, shake: 0, broken: false, flash: 0, drop: 1 };
+}
+// the rocks of a new room crash down from the ceiling one after another (near ones first), bounce and settle in
+// a cloud of dust; `delay` holds them all back a moment
+function cvDropCovers(Rm, delay = 0) {
+  const list = Rm.covers.filter(c => !c.pillar).sort((a, b) => b.lz - a.lz || a.lx - b.lx);
+  list.forEach((c, i) => { c.drop = 0; c.dropT = -(delay + i * 0.12); c.landed = false; });
+}
+function cvCoverDrops(dt, Rm) {
+  for (const c of Rm.covers) {
+    if (c.drop >= 1 || c.dropT === undefined) continue;
+    c.dropT += dt;
+    c.drop = clamp(c.dropT / 0.75, 0, 1);
+    if (!c.landed && c.dropT >= 0.42) {
+      c.landed = true; c.shake = 1;
+      const w = cvW(Rm.F, c.lx, c.lz);
+      FX.burst(w[0], 0.3, w[1], 12, [0.55, 0.48, 0.42], 5, 0.13, 0.6, 1, 2);
+      for (let i = 0; i < 3; i++) FX.smoke(w[0] + rand(-1.2, 1.2), rand(0.2, 0.7), w[1] + rand(-0.6, 0.6), 0.9, [0.55, 0.5, 0.44], 1.3, 0.5);
+      FX.crack(w[0], w[1], 1.5, 2);
+      G.cam.shake = Math.max(G.cam.shake, 0.12); AUDIO.play('crumble', 0.6);
+    }
+    // dust trickling from the ceiling where it falls from
+    if (c.dropT < 0.42 && c.dropT > -0.3 && Math.random() < dt * 25) { const w = cvW(Rm.F, c.lx + rand(-1, 1), c.lz + rand(-0.4, 0.4)); FX.part(w[0], CAVE.ceil, w[1], 0, -2, 0, 0.12, 0.08, 1, [0.5, 0.45, 0.4], 0.8, 2, -9, 0); }
+  }
+}
+// how high a dropping rock still is: a fall from the ceiling with one bounce
+function cvDropY(c) {
+  if (c.drop >= 1 || c.dropT === undefined) return 0;
+  const t = c.dropT;
+  if (t < 0) return 99;
+  if (t < 0.42) { const u = t / 0.42; return CAVE.ceil * (1 - u * u); }
+  const b = (t - 0.42) / 0.33; return Math.sin(clamp(b, 0, 1) * Math.PI) * 0.45;
 }
 function cvRoomStart(P) {
   const D = P.def;
@@ -329,8 +391,10 @@ function cvRoomStart(P) {
   for (const [x, z] of D.mid) CV.room.covers.push(cvCover(P, x, z, CAVE.foeCoverHp, true));
   for (const [x, z] of D.foe) CV.room.covers.push(cvCover(P, x, z, CAVE.foeCoverHp, true));
   CV.phase = 'fight'; CV.t = 0;
-  // the first wave is already in place, crouched behind its rocks
+  cvDropCovers(CV.room);
+  // the first wave is already in place, crouched behind its rocks (and waits until the rocks are down)
   cvWave(true);
+  for (const f of CV.room.foes) f.t -= 1.3;
 }
 // send in the next wave: crossbowmen and spearmen take a rock each; shieldmen march in from the far door;
 // moles burst out of the side walls
@@ -347,7 +411,17 @@ function cvWave(first) {
       f.tx = c.lx + rand(-0.5, 0.5); f.tz = c.lz - 1.15;
       if (first) { f.lx = f.tx; f.lz = f.tz; f.state = 'hide'; f.t = rand(0.6, 2.0) + Rm.foes.length * 0.5; f.sink = 1; }
       else { f.lx = rand(-2.5, 2.5); f.lz = -Rm.D.len + 1; }
-    } else if (type === 'shield') { f.lx = rand(-3, 3); f.lz = -Rm.D.len + 1; f.state = 'march'; }
+    } else if (type === 'goblin') {
+      const free = all.filter(c => !Rm.foes.some(o => o.cover === c && !o.dying)), c = free.length ? pick(free) : pick(all.length ? all : Rm.covers);
+      f.cover = c; f.tx = c.lx + rand(-0.4, 0.4); f.tz = c.lz - 1.1;
+      if (first) { f.lx = f.tx; f.lz = f.tz; f.state = 'hide'; f.t = rand(0.8, 2.2) + Rm.foes.length * 0.4; f.sink = 1; } else { f.lx = rand(-2.5, 2.5); f.lz = -Rm.D.len + 1; }
+    } else if (type === 'spider') {
+      f.lx = rand(-Rm.D.hw + 1.5, Rm.D.hw - 1.5); f.lz = rand(-10.5, -16); f.y = CAVE.ceil; f.state = 'drop'; f.t = -Rm.foes.filter(o => o.type === 'spider').length * 0.4 - (first ? 1.2 : 0);
+    } else if (type === 'bat') {
+      const n = Rm.foes.filter(o => o.type === 'bat').length;
+      f.lx = rand(-3, 3) + (n % 2 ? 2 : -2); f.lz = -Rm.D.len + 1 - n * 1.2; f.y = rand(3, 4.2); f.state = 'fly'; f.t = 0;
+    } else if (type === 'ogre' || type === 'golem') { f.lx = rand(-3, 3); f.lz = -Rm.D.len + 1; f.state = 'march'; f.throws = 0; }
+    else if (type === 'shield') { f.lx = rand(-3, 3); f.lz = -Rm.D.len + 1; f.state = 'march'; }
     else if (type === 'mole') {
       const sx = Math.random() < 0.5 ? -1 : 1;
       f.lx = sx * (Rm.D.hw - 0.4); f.lz = rand(-11, -18); f.state = 'burst'; f.t = -Rm.foes.filter(o => o.type === 'mole').length * 0.45;
@@ -376,6 +450,7 @@ function cvHeroRail(dt, Rm) {
 const cvHeroTop = Rm => lerp(CAVE.crouchTop, CAVE.standTop, Rm.stand);
 function cvFight(dt) {
   const Rm = CV.room;
+  cvCoverDrops(dt, Rm);
   cvHeroRail(dt, Rm);
   cvAimAndShoot(Rm);
   for (const c of Rm.covers) { c.shake = Math.max(0, c.shake - dt * 3); c.flash = Math.max(0, c.flash - dt * 3); }
@@ -429,8 +504,11 @@ function cvHitAt(x, y, z, forAim) {
     if (f.dying) continue;
     const s = f.T.scale, fy = f.y - f.sink * 0.95 * s, dx = lx - f.lx, dz = lz - f.lz;
     if (Math.abs(dx) > 1.2 * s || Math.abs(dz) > 1.2 * s) continue;
-    const head = f.type === 'mole' ? [0.85, 0.2] : [0.975, 0.17];
+    // a bat is all body, up in the air
+    if (f.T.fly) { if (Math.hypot(dx, y - fy, dz) < 0.32 * s + 0.08) return { kind: 'body', foe: f }; continue; }
+    const head = f.T.head ? [f.T.head, f.T.headR] : f.type === 'mole' ? [0.85, 0.2] : [0.975, 0.17];
     if (Math.hypot(dx, y - (fy + head[0] * s), dz) < head[1] * s + 0.06) return { kind: 'head', foe: f };
+    if (f.T.body) { const B = f.T.body, by2 = clamp(y, fy + B[0] * s, fy + B[1] * s); if (y > fy && Math.hypot(dx, y - by2, dz) < B[2] * s) return { kind: 'body', foe: f }; continue; }
     if (f.type === 'shield' && cvShieldUp(f)) {
       const fwd = cvToHero(f), sx = f.lx + fwd[0] * 0.38 * s, sz = f.lz + fwd[1] * 0.38 * s;
       if (Math.hypot(lx - sx, lz - sz) < 0.36 * s && y > fy + 0.1 * s && y < fy + 0.92 * s) return { kind: 'shield', foe: f };
@@ -540,6 +618,7 @@ function cvFoe(f, dt, Rm) {
   f.mx = f.mx ?? rand(-0.7, 0.7);
   const meleeX = clamp(Rm.hx + f.mx, -Rm.D.hw + 1, Rm.D.hw - 1);
   if (f.cover && f.cover.broken && (f.state === 'hide')) f.t = Math.max(f.t, 99);
+  if (f.T.fly || ['spider', 'goblin', 'ogre', 'golem'].includes(f.type)) { cvFoeDeep(f, dt, Rm, moveTo, meleeX); return; }
   switch (f.type) {
     case 'xbow': {
       if (f.state === 'enter') { f.sink = 0; if (moveTo(f.tx, f.tz, 3.6)) { f.state = 'hide'; f.t = rand(0.4, 1.2); } break; }
@@ -640,6 +719,140 @@ function cvFoe(f, dt, Rm) {
     }
   }
 }
+// the deep mine's crowd
+function cvFoeDeep(f, dt, Rm, moveTo, meleeX) {
+  const s = f.T.scale;
+  switch (f.type) {
+    case 'spider': {
+      if (f.state === 'drop') {
+        // down from the ceiling on a silk thread, then a skittering dash in
+        if (f.t < 0) { f.y = CAVE.ceil + 1; break; }
+        f.y = Math.max(0, CAVE.ceil * (1 - (f.t / 0.7) ** 2));
+        f.clip = 'run'; f.ph += dt * 2;
+        if (f.y <= 0) { f.y = 0; f.state = 'dash'; f.t = 0; const w = cvW(Rm.F, f.lx, f.lz); FX.burst(w[0], 0.2, w[1], 8, [0.5, 0.45, 0.4], 3, 0.08, 0.4, 1, 2); AUDIO.play('thud', 0.5); }
+        break;
+      }
+      if (f.state === 'dash') {
+        const zx = Math.sin(f.t * 7 + f.ph * 6) * 1.6;
+        if (moveTo(meleeX + (f.lz < CAVE.meleeZ - 2.5 ? zx : 0), CAVE.meleeZ, 6.8)) { f.state = 'claw'; f.t = 0; }
+        f.ph += dt * 3;
+        break;
+      }
+      if (f.state === 'claw') {
+        f.clip = 'slam'; f.u = clamp(f.t / 0.6, 0, 0.99);
+        if (f.t < 0.2) moveTo(meleeX, CAVE.meleeZ, 2.5);
+        if (f.t > 0.42 && !f.hit) { f.hit = true; if (Math.abs(Rm.hx - f.lx) < 1.3) cvHurtHero(CAVE.biteDmg, f); AUDIO.play('squish', 0.6); }
+        if (f.t > 0.6) { f.hit = false; f.t = 0; f.state = Math.abs(Rm.hx - f.lx) > 1.3 ? 'dash' : 'claw'; }
+      }
+      break;
+    }
+    case 'bat': {
+      // weave in high up, then swoop at the hero's head, then climb away and come round again
+      f.clip = 'run'; f.ph += dt * 3.2;
+      if (f.state === 'fly') {
+        const tz = -11.5 + Math.sin(f.ph * 0.4) * 1.5;
+        f.y += (3.4 + Math.sin(f.t * 3 + f.ph) * 0.5 - f.y) * Math.min(1, dt * 2);
+        moveTo(clamp(Rm.hx + Math.sin(f.t * 1.7 + f.ph) * 4, -Rm.D.hw + 1, Rm.D.hw - 1), tz, 5.5);
+        f.clip = 'run';
+        if (f.t > 1.6 + (f.ph % 1)) { f.state = 'dive'; f.t = 0; f.dx = Rm.hx; AUDIO.play('whistle', 0.4); }
+        break;
+      }
+      if (f.state === 'dive') {
+        const ty = cvHeroTop(Rm) - 0.15, dx = f.dx - f.lx, dz = CAVE.rail - 0.3 - f.lz, dy = ty - f.y, d = Math.hypot(dx, dy, dz);
+        f.dx = lerp(f.dx, Rm.hx, Math.min(1, dt * 2));
+        const sp = 9.5 * dt / Math.max(d, 1e-3);
+        f.lx += dx * Math.min(1, sp); f.lz += dz * Math.min(1, sp); f.y += dy * Math.min(1, sp);
+        f.yaw = Math.atan2(dx, dz);
+        if (d < 0.75) { if (Math.abs(Rm.hx - f.lx) < 0.9) cvHurtHero(CAVE.batDmg, f); f.state = 'climb'; f.t = 0; }
+        if (f.t > 2.2) { f.state = 'climb'; f.t = 0; }
+        break;
+      }
+      if (f.state === 'climb') {
+        f.y += (4 - f.y) * Math.min(1, dt * 2.5);
+        moveTo(f.lx + rand(-0.5, 0.5), -12.5, 6);
+        if (f.t > 1.1) { f.state = 'fly'; f.t = 0; }
+      }
+      break;
+    }
+    case 'goblin': {
+      if (f.state === 'enter') { f.sink = 0; if (moveTo(f.tx, f.tz, 4.2)) { f.state = 'hide'; f.t = rand(0.4, 1.2); } break; }
+      if (f.state === 'hide') {
+        f.sink = Math.min(1, f.sink + dt * 4); f.clip = 'idle';
+        if (f.t > (f.cover && f.cover.broken ? 0.4 : rand(1.4, 2.4)) || f.t > 3) { f.state = 'throw'; f.t = 0; }
+        break;
+      }
+      if (f.state === 'throw') {
+        f.sink = Math.max(0, f.sink - dt * 5); f.clip = 'throw'; f.u = clamp(f.t / 0.8, 0, 0.99);
+        if (f.t > 0.45 && !f.thrown) { f.thrown = true; cvLob(f, Rm, 'dyn'); }
+        if (f.t > 0.8) { f.thrown = false; f.state = 'hide'; f.t = 0; }
+      }
+      break;
+    }
+    case 'ogre': {
+      // lumber in to the middle of the room, hurl two boulders, then come all the way in and smash
+      if (f.state === 'march') { f.clip = 'run'; if (moveTo(clamp(Rm.hx * 0.5, -4, 4), -12.5, 1.5)) { f.state = f.throws >= 2 ? 'close' : 'heave'; f.t = 0; } break; }
+      if (f.state === 'heave') {
+        f.clip = 'throw'; f.u = clamp(f.t / 1.2, 0, 0.99);
+        if (f.t > 0.7 && !f.thrown) { f.thrown = true; cvLob(f, Rm, 'boulder'); G.cam.shake = Math.max(G.cam.shake, 0.06); }
+        if (f.t > 1.4) { f.thrown = false; f.throws++; f.state = f.throws >= 2 ? 'close' : 'wait'; f.t = 0; }
+        break;
+      }
+      if (f.state === 'wait') { f.clip = 'idle'; if (f.t > 1.0) { f.state = 'heave'; f.t = 0; } break; }
+      if (f.state === 'close') { if (moveTo(meleeX, CAVE.meleeZ - 0.4, 1.9)) { f.state = 'smash'; f.t = 0; } break; }
+      if (f.state === 'smash') {
+        f.clip = 'slam'; f.u = clamp(f.t / 1.4, 0, 0.99);
+        if (f.t > 0.9 && !f.hit) {
+          f.hit = true; G.cam.shake = Math.max(G.cam.shake, 0.25); AUDIO.play('boom', 0.7);
+          const w = cvW(Rm.F, f.lx, f.lz + 1.4); FX.burst(w[0], 0.3, w[1], 16, [0.55, 0.48, 0.42], 6, 0.14, 0.6, 1, 3); FX.crack(w[0], w[1], 1.8, 2.5);
+          if (Math.abs(Rm.hx - f.lx) < 2.0) cvHurtHero(CAVE.smashDmg, f);
+          for (const c of Rm.covers) if (!c.foe && !c.pillar && Math.abs(c.lx - f.lx) < 2) cvHurtCover(c, 70, null);
+        }
+        if (f.t > 1.8) { f.hit = false; f.t = 0; }
+      }
+      break;
+    }
+    case 'golem': {
+      // march in, then plant its feet: the core blazes and it fires a fan of three crystal shards; hurt enough, it
+      // comes in close to pound
+      const glow = f.state === 'charge' ? clamp(f.t / 0.9, 0, 1) : 0;
+      f.glow = glow;
+      if (f.state === 'march') { f.clip = 'run'; if (moveTo(clamp(Rm.hx * 0.4, -4, 4), f.hp < f.maxHp * 0.5 ? CAVE.meleeZ - 0.3 : -13, 1.3)) { f.state = f.hp < f.maxHp * 0.5 ? 'slam' : 'charge'; f.t = 0; } break; }
+      if (f.state === 'charge') {
+        f.clip = 'aim'; f.u = clamp(f.t / 0.9, 0, 0.7);
+        if (f.t < dt * 1.5) AUDIO.play('laser', 0.5);
+        if (f.t > 0.9) { cvShards(f, Rm); f.state = 'cool'; f.t = 0; }
+        break;
+      }
+      if (f.state === 'cool') { f.clip = 'idle'; if (f.t > 1.3) { f.state = f.hp < f.maxHp * 0.5 ? 'march' : 'charge'; f.t = 0; } break; }
+      if (f.state === 'slam') {
+        f.clip = 'slam'; f.u = clamp(f.t / 1.2, 0, 0.99);
+        if (f.t > 0.75 && !f.hit) { f.hit = true; G.cam.shake = Math.max(G.cam.shake, 0.18); AUDIO.play('boom', 0.6); if (Math.abs(Rm.hx - f.lx) < 1.8) cvHurtHero(CAVE.golemDmg, f); }
+        if (f.t > 1.5) { f.hit = false; f.t = 0; }
+      }
+      break;
+    }
+  }
+}
+// something lobbed onto a marked circle where the hero is: a goblin's dynamite (it lands, its fuse burns down and
+// it blows, hurting the hero and the rocks nearby) or an ogre's boulder (it crashes down)
+function cvLob(f, Rm, kind) {
+  const s = f.T.scale, F = Rm.F, tx = clamp(Rm.hx + rand(-0.7, 0.7), -Rm.D.hw + 1, Rm.D.hw - 1), tz = CAVE.rail + rand(-0.4, 0.2);
+  const o = cvW3(F, f.lx, 1.5 * s, f.lz), t = cvW3(F, tx, 0, tz), dur = kind === 'boulder' ? 1.25 : 0.95, r = kind === 'boulder' ? CAVE.boulderR : CAVE.dynR;
+  CV.spears.push({ sx: o[0], sy: o[1], sz: o[2], tx: t[0], tz: t[2], lx: tx, lz: tz, t: 0, dur, x: o[0], y: o[1], z: o[2], kind, r, dmg: kind === 'boulder' ? CAVE.boulderDmg : CAVE.dynDmg, peak: kind === 'boulder' ? 3.2 : 3.8, spin: rand(0, TAU) });
+  addTele({ kind: 'circle', x: t[0], z: t[2], r, dur: dur + (kind === 'dyn' ? 0.55 : 0) });
+  AUDIO.play('throw');
+}
+// three crystal shards in a fan toward the hero's head
+function cvShards(f, Rm) {
+  const s = f.T.scale, F = Rm.F;
+  for (const off of [-1.6, 0, 1.6]) {
+    const o = [f.lx, 0.66 * s, f.lz + 0.3 * s], ty = cvHeroTop(Rm) - 0.3, tx = Rm.hx + off, tz = CAVE.rail;
+    const dx = tx - o[0], dy = ty - o[1], dz = tz - o[2], d = Math.hypot(dx, dy, dz) || 1, w = cvW3(F, o[0], o[1], o[2]), v = cvDirW(F, dx / d, dz / d), sp = 21;
+    CV.bolts.push({ x: w[0], y: w[1], z: w[2], vx: v[0] * sp, vy: dy / d * sp, vz: v[1] * sp, t: 0, dmg: CAVE.shardDmg, crys: true });
+  }
+  const w = cvW3(F, f.lx, 0.66 * s, f.lz); FX.burst(w[0], w[1], w[2], 12, [0.5, 0.95, 1], 5, 0.08, 0.4, 1);
+  AUDIO.play('shoot', 0.7);
+}
 // a crossbow bolt, aimed where the hero's head is (or where the blob is crouched behind its rock)
 function cvFireBolt(f, Rm) {
   const s = f.T.scale, F = Rm.F;
@@ -682,9 +895,36 @@ function cvThrowSpear(f, Rm) {
 }
 function cvSpears(dt) {
   for (const p of CV.spears) {
-    p.t += dt;
+    p.t += dt; p.spin = (p.spin || 0) + dt * 7;
+    if (p.fuse !== undefined) {
+      // dynamite on the ground: the fuse sparks, then it blows
+      p.fuse -= dt;
+      if (Math.random() < 0.8) FX.part(p.x, 0.25, p.z, rand(-1, 1), rand(1, 2.5), rand(-1, 1), 0.06, 0.02, 0.3, [1, 0.75, 0.3], 1, 0, -6);
+      if (p.fuse <= 0) {
+        p.done = true;
+        FX.burst(p.tx, 0.6, p.tz, 26, [1, 0.6, 0.2], 8, 0.18, 0.7, 1, 3); FX.scorch(p.tx, p.tz, p.r, 4);
+        for (let i = 0; i < 4; i++) FX.smoke(p.tx + rand(-1, 1), rand(0.3, 1.2), p.tz + rand(-1, 1), 1, [0.3, 0.28, 0.26], 1.6, 0.8);
+        FX.glow(p.tx, 0.8, p.tz, 3, [1, 0.6, 0.2], 0.25, 1);
+        AUDIO.play('boom'); G.cam.shake = Math.max(G.cam.shake, 0.22);
+        const h = G.hero.pos;
+        if (Math.hypot(h[0] - p.tx, h[2] - p.tz) < p.r + 0.3) cvHurtHero(p.dmg, null, p);
+        if (CV.room) for (const c of CV.room.covers) if (!c.pillar && !c.foe && Math.abs(c.lx - p.lx) < p.r + c.hw * 0.5 && Math.abs(c.lz - p.lz) < p.r + 0.3) cvHurtCover(c, 60, null);
+      }
+      continue;
+    }
     const u = clamp(p.t / p.dur, 0, 1);
-    p.x = lerp(p.sx, p.tx, u); p.z = lerp(p.sz, p.tz, u); p.y = lerp(p.sy, 0, u) + Math.sin(u * Math.PI) * 4.2;
+    p.x = lerp(p.sx, p.tx, u); p.z = lerp(p.sz, p.tz, u); p.y = lerp(p.sy, 0, u) + Math.sin(u * Math.PI) * (p.peak ?? 4.2);
+    if (u >= 1 && p.kind === 'dyn') { p.fuse = 0.55; p.x = p.tx; p.z = p.tz; p.y = 0.1; AUDIO.play('hit', 0.4); continue; }
+    if (u >= 1 && p.kind === 'boulder') {
+      p.done = true;
+      FX.burst(p.tx, 0.4, p.tz, 22, [0.55, 0.48, 0.42], 7, 0.18, 0.8, 1, 3); FX.crack(p.tx, p.tz, p.r * 1.1, 2.5);
+      for (let i = 0; i < 3; i++) FX.smoke(p.tx + rand(-1, 1), rand(0.3, 1), p.tz + rand(-1, 1), 1, [0.5, 0.45, 0.4], 1.4, 0.6);
+      AUDIO.play('crumble'); G.cam.shake = Math.max(G.cam.shake, 0.2);
+      const h = G.hero.pos;
+      if (Math.hypot(h[0] - p.tx, h[2] - p.tz) < p.r + 0.3) cvHurtHero(p.dmg, null, p);
+      if (CV.room) for (const c of CV.room.covers) if (!c.pillar && !c.foe && Math.abs(c.lx - p.lx) < p.r + c.hw * 0.5 && Math.abs(c.lz - p.lz) < p.r + 0.3) cvHurtCover(c, 80, null);
+      continue;
+    }
     if (u >= 1) {
       p.done = true;
       FX.burst(p.tx, 0.2, p.tz, 8, [0.6, 0.55, 0.5], 3, 0.08, 0.4, 1, 2); FX.crack(p.tx, p.tz, 0.9);
@@ -863,8 +1103,10 @@ function emitCave() {
   }
   // the hero's goo shots, bolts and spears
   for (const s of CV.shots) { pushImp(s.x, s.y, s.z, 0.17, s.vx, s.vy, s.vz, 1.45, 0, 0, 0.3, s.ph + s.t, 0, 0, 0, 1); }
-  for (const b of CV.bolts) { const sp = Math.hypot(b.vx, b.vy, b.vz) || 1; pushImp(b.x, b.y, b.z, 0.34, b.vx / sp, b.vy / sp, b.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); FX.glow(b.x, b.y, b.z, 0.3, [1, 0.5, 0.3], 0.04, 0.4); }
+  for (const b of CV.bolts) { const sp = Math.hypot(b.vx, b.vy, b.vz) || 1; pushImp(b.x, b.y, b.z, b.crys ? 0.42 : 0.34, b.vx / sp, b.vy / sp, b.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); FX.glow(b.x, b.y, b.z, b.crys ? 0.7 : 0.3, b.crys ? [0.5, 0.95, 1] : [1, 0.5, 0.3], 0.04, b.crys ? 0.8 : 0.4); }
   for (const p of CV.spears) {
+    if (p.kind === 'dyn') { if (R.enemyDraw.dynamite) pushEnemy('dynamite', false, p.x, p.y, p.z, p.spin, MODELS.defs.dynamite.clips.still.row, 2.2, 1, 0, p.fuse !== undefined && Math.sin(R.frame.time * 30) > 0 ? 0.6 : 0, 0, 1, 1, 1); FX.glow(p.x, p.y + 0.2, p.z, 0.45, [1, 0.7, 0.3], 0.04, 0.8); continue; }
+    if (p.kind === 'boulder') { if (R.enemyDraw.boulder1) pushEnemy('boulder1', false, p.x, p.y - 0.4, p.z, p.spin, MODELS.defs.boulder1.clips.still.row, 1.5, 1, 0, 0, 0, f.rockCol[0], f.rockCol[1], f.rockCol[2]); continue; }
     const u = clamp(p.t / p.dur, 0, 1), vy = -p.sy + Math.cos(u * Math.PI) * Math.PI * 4.2, vx = p.tx - p.sx, vz = p.tz - p.sz, l = Math.hypot(vx, vy, vz) || 1;
     pushImp(p.x, p.y, p.z, 0.62, vx / l, vy / l, vz / l, 1, 14, 0, 0, 0, 0, 0, 0, 1);
   }
@@ -875,19 +1117,28 @@ function cvEmitRoom(Rm) {
     const w = cvW(F, c.lx + (c.shake > 0 ? Math.sin(R.frame.time * 60) * 0.05 * c.shake : 0), c.lz);
     const dmg = c.pillar ? 0 : 1 - c.hp / c.maxHp, k = (0.95 - dmg * 0.3) * (1 + c.flash * 0.25);
     const m = c.broken ? 'rubble' : c.model, sc = c.pillar ? 2.35 : c.broken ? 2.6 : CAVE.coverScale;
-    if (R.enemyDraw[m]) pushEnemy(m, false, w[0], 0, w[1], F.yaw + c.yaw, MODELS.defs[m].clips.still.row, sc, c.broken || c.pillar ? 1 : 1 - dmg * 0.12, 0, 0, 0, rc[0] * k, rc[1] * k, rc[2] * k, c.fade || 0);
+    const dy = cvDropY(c);
+    if (dy > 50) continue;
+    // (while it falls: no damage tint, and a shadow on the floor that grows as it comes down)
+    if (dy > 0.05) pushDecal(w[0], w[1], 1.6, 1.0, -F.yaw, 1, 0, 0, 0.02, 0.02, 0.02, 0.7 * (1 - dy / CAVE.ceil));
+    if (R.enemyDraw[m]) pushEnemy(m, false, w[0], dy, w[1], F.yaw + c.yaw, MODELS.defs[m].clips.still.row, sc, c.broken || c.pillar ? 1 : 1 - dmg * 0.12, 0, 0, 0, rc[0] * k, rc[1] * k, rc[2] * k, c.fade || 0);
     if (!c.broken && dmg > 0.35) pushDecal(w[0], w[1], 1.6, 0.9, -F.yaw, 8, c.lx, 0.3, 0.03, 0.03, 0.05, 0.6);
   }
   for (const f of Rm.foes) {
     const T = f.T, s = T.scale, M = MODELS.defs[T.model];
     if (!M || !R.enemyDraw[T.model]) continue;
     const w = cvW(F, f.lx, f.lz), y = f.y - f.sink * 0.95 * s;
-    const c = M.clips[f.clip] || M.clips.run;
+    const cn = (T.clips && T.clips[f.clip]) || f.clip, c = M.clips[cn] || M.clips.run || M.clips[Object.keys(M.clips)[0]];
     const loop = f.clip === 'run' || f.clip === 'idle';
     const row = c.row + Math.floor((loop ? f.ph - Math.floor(f.ph) : clamp(f.u, 0, 0.999)) * c.frames);
     if (f.state === 'burst') continue;
+    if (f.type === 'spider' && f.state === 'drop' && f.y > CAVE.ceil) continue;
     pushEnemy(T.model, false, w[0], y, w[1], f.yaw + F.yaw, row, s, 1, f.dying ? clamp(f.dying, 0, 1) : 0, f.flash > 0 ? 0.85 : 0, 0, f.tint[0], f.tint[1], f.tint[2]);
-    pushDecal(w[0] + 0.15, w[1] + 0.1, 0.32 * s, 0.4 * s, 0, 1, 0, 0, 0.01, 0.01, 0.02, 0.55 * (1 - f.sink * 0.6));
+    pushDecal(w[0] + 0.15, w[1] + 0.1, (f.type === 'spider' ? 0.6 : 0.32) * s, (f.type === 'spider' ? 0.6 : 0.4) * s, 0, 1, 0, 0, 0.01, 0.01, 0.02, (T.fly ? 0.25 : 0.55) * (1 - f.sink * 0.6));
+    // a dropping spider hangs on its silk; a golem's core and eyes glow, blazing as it charges; a goblin's fuse sparks
+    if (f.type === 'spider' && f.state === 'drop') R.ribStrip([w[0], CAVE.ceil, w[1], w[0], y + 0.55 * s, w[1]], 2, 0.025, [0.92, 0.92, 0.95, 0.7], 0, 0, 1);
+    if (f.type === 'golem' && !f.dying) { const cw = cvW3(F, f.lx + Math.sin(f.yaw) * 0.16 * s, y + 0.66 * s, f.lz + Math.cos(f.yaw) * 0.16 * s); FX.glow(cw[0], cw[1], cw[2], 0.55 + (f.glow || 0) * 1.1, [0.45, 0.95, 1], 0.05, 0.4 + (f.glow || 0) * 0.3); }
+    if (f.type === 'goblin' && !f.dying && Math.random() < 0.3) { const cw = cvW3(F, f.lx, y + 1.05 * s, f.lz); FX.part(cw[0], cw[1], cw[2], rand(-0.5, 0.5), rand(0.5, 1.2), rand(-0.5, 0.5), 0.05, 0.02, 0.25, [1, 0.75, 0.3], 1, 0, -4); }
     // a crossbowman's aim: a red line from the bow to where it will shoot, blinking once it locks
     if (f.type === 'xbow' && f.state === 'aim') {
       const o = cvW3(F, f.lx + Math.sin(f.yaw) * 0.45 * s, 0.82 * s, f.lz + Math.cos(f.yaw) * 0.45 * s), t = cvW3(F, f.aimX, cvHeroTop(Rm) - 0.32, CAVE.rail);

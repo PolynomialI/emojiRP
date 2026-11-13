@@ -6,12 +6,29 @@
 // shieldmen, and the hard-hatted mole miner (also the crater's own creature). The Bagger is in 04j.
 // Rocks are 'crag' parts (faceted chunks, 03-sdfmesh.js); parts without col take the instance tint.
 // ============================================================
-Object.assign(THEME_CLIPS, { mole: ['run', 'slam', 'idle'], xbowman: ['run', 'aim', 'idle'], spearman: ['run', 'throw', 'slam', 'idle'], shieldman: ['run', 'slam', 'idle'] });
+Object.assign(THEME_CLIPS, { mole: ['run', 'slam', 'idle'], xbowman: ['run', 'aim', 'idle'], spearman: ['run', 'throw', 'slam', 'idle'], shieldman: ['run', 'slam', 'idle'],
+  cspider: ['skitter', 'bite'], cbat: ['batflap'], goblin: ['run', 'throw', 'idle'], ogre: ['run', 'throw', 'slam', 'idle'], golem: ['run', 'aim', 'slam', 'idle'] });
+// a cave spider's legs move in two alternating sets (bones 1 and 2), the front pair (bone 4) feels the air and the
+// abdomen (bone 3) bobs; biting, the front legs rear up and it lunges
+CLIPS.skitter = { frames: 12, fn(t) {
+  const a = t * TAU, s = Math.sin(a);
+  return { root: [0, 0.02 * Math.abs(Math.sin(a * 2)), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0, 0.32 * s, 0.12 * Math.max(0, s)] : b === 2 ? [0, -0.32 * s, 0.12 * Math.max(0, -s)] : b === 4 ? [0.25 * Math.sin(a * 2), 0, 0] : b === 3 ? [0.08 * Math.sin(a * 2), 0, 0] : [0, 0, 0])) };
+} };
+CLIPS.bite = { frames: 12, fn(t) {
+  const up = Math.sin(Math.min(1, t / 0.6) * Math.PI * 0.5), hit = t > 0.6 ? Math.sin((t - 0.6) / 0.4 * Math.PI) : 0;
+  return { root: [0, 0.05 * up, 0.18 * hit], rot: Array.from({ length: NBONES }, (_, b) => (b === 4 ? [-0.9 * up + 1.3 * hit, 0, 0] : b === 0 ? [-0.18 * up + 0.2 * hit, 0, 0] : [0, 0, 0])) };
+} };
+// a bat's wings beat (bones 1 and 2 about the body's length)
+CLIPS.batflap = { frames: 10, fn(t) {
+  const a = Math.sin(t * TAU) * 0.95;
+  return { root: [0, 0.04 * Math.cos(t * TAU), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0, 0, a] : b === 2 ? [0, 0, -a] : [0, 0, 0])) };
+} };
 Object.assign(THEME_CELLS, { boulder0: 0.025, boulder1: 0.025, boulder2: 0.025, cliff0: 0.03, cliff1: 0.03, cavemouth: 0.026, minecart: 0.014, lanternpost: 0.014, ore: 0.022,
   cwall0: 0.03, cwall1: 0.03, cwall2: 0.03, stalac: 0.02, stalag: 0.02, cover0: 0.022, cover1: 0.022, cover2: 0.022, rubble: 0.02, cpillar: 0.026, torch: 0.008, brazier: 0.012, mbeam: 0.02,
-  mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013 });
+  mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013, cspider: 0.012, cbat: 0.01, goblin: 0.012, ogre: 0.013, golem: 0.014, dynamite: 0.008 });
 MESH_ORDER.push('boulder0', 'boulder1', 'boulder2', 'cliff0', 'cliff1', 'cavemouth', 'minecart', 'lanternpost', 'ore', 'stalag', 'mole',
-  'cwall0', 'cwall1', 'cwall2', 'stalac', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman');
+  'cwall0', 'cwall1', 'cwall2', 'stalac', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman',
+  'cspider', 'cbat', 'goblin', 'ogre', 'golem', 'dynamite');
 
 function caveModels(defs) {
   const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
@@ -273,5 +290,113 @@ function caveModels(defs) {
     for (const [dx, dy, dz] of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0.6, 0.6, 0.4], [-0.6, -0.6, 0.4]]) m.parts.push({ s: 'cap', a: [h[0] + dx * 0.06, h[1] + 0.03 + dy * 0.06, h[2] + 0.44 + dz * 0.06], b: [h[0] + dx * 0.12, h[1] + 0.03 + dy * 0.12, h[2] + 0.44 + dz * 0.12], r: 0.022, r2: 0.003, col: steel, bone: 6, k: 0 });
     m.name = 'shieldman'; m.shieldArm = true; m.runAmp = 0.8; m.crownLift = 0.12;
     defs.shieldman = m;
+  }
+
+  // ---------- the deep mine's crowd ----------
+  // the cave spider: a dark hairy body with an orange hourglass on its abdomen, six red eyes, cream fangs and eight
+  // jointed legs (two alternating sets on bones 1 and 2, the front pair on bone 4, the abdomen on bone 3)
+  {
+    const body = C('#2a2232'), bodyL = C('#43384e'), mark = C('#ff7a2a'), eye = C('#ff3a3a'), fang = C('#f4e8d8');
+    const parts = [
+      { s: 'ell', c: [0, 0.32, 0.1], rr: [0.17, 0.12, 0.17], col: body, k: 0.03 },
+      { s: 'sph', c: [0, 0.33, 0.29], r: 0.11, col: bodyL, k: 0.04 },
+      { s: 'ell', c: [0, 0.38, -0.24], rr: [0.24, 0.2, 0.28], col: body, bone: 3, k: 0.04 },
+      { s: 'ell', c: [0, 0.55, -0.2], rr: [0.06, 0.035, 0.07], col: mark, bone: 3, k: 0.01 }, { s: 'ell', c: [0, 0.53, -0.31], rr: [0.05, 0.035, 0.06], col: mark, bone: 3, k: 0.01 },
+      ...[[0.04, 0.38, 0.38, 0.026], [-0.04, 0.38, 0.38, 0.026], [0.075, 0.36, 0.35, 0.02], [-0.075, 0.36, 0.35, 0.02], [0.025, 0.41, 0.36, 0.016], [-0.025, 0.41, 0.36, 0.016]].map(([x, y, z, r]) => ({ s: 'sph', c: [x, y, z], r, col: eye, k: 0 })),
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 0.035, 0.27, 0.36], b: [sx * 0.02, 0.17, 0.42], r: 0.022, r2: 0.006, col: fang, k: 0 })),
+    ];
+    for (let i = 0; i < 4; i++) for (const sx of [1, -1]) {
+      const z0 = 0.2 - i * 0.1, spread = 0.35 - i * 0.25, bone = i === 0 ? 4 : ((i + (sx > 0 ? 1 : 0)) % 2 ? 1 : 2);
+      const hip = [sx * 0.13, 0.33, z0], knee = [sx * 0.42, 0.56, z0 + spread * 0.5], foot = [sx * 0.66, 0.0, z0 + spread];
+      parts.push({ s: 'cap', a: hip, b: knee, r: 0.035, r2: 0.028, col: bodyL, bone, k: 0.01 }, { s: 'cap', a: knee, b: foot, r: 0.028, r2: 0.012, col: body, bone, k: 0.01 });
+      parts.push({ s: 'sph', c: knee, r: 0.034, col: body, bone, k: 0.01 });
+    }
+    rig(P('cspider', parts, { ao: 0.6 }), { 1: [0, 0.33, 0.05], 2: [0, 0.33, 0.05], 3: [0, 0.36, -0.05], 4: [0, 0.33, 0.2] });
+  }
+  // the cave bat: a furry body with big ears, red eyes and a pug snout, on leathery wings with finger bones (bones 1, 2)
+  {
+    const fur = C('#4a3a40'), wing = C('#6a4a52'), bone = C('#3a2a30'), eye = C('#ff4a3a');
+    const parts = [
+      { s: 'ell', c: [0, 0, 0], rr: [0.08, 0.09, 0.12], col: fur, k: 0.03 },
+      { s: 'sph', c: [0, 0.05, 0.13], r: 0.075, col: fur, k: 0.03 },
+      { s: 'ell', c: [0, 0.03, 0.2], rr: [0.035, 0.025, 0.02], col: C('#c87a8a'), k: 0.01 },
+      ...[1, -1].flatMap(sx => [
+        { s: 'cap', a: [sx * 0.04, 0.1, 0.12], b: [sx * 0.08, 0.22, 0.08], r: 0.035, r2: 0.008, col: fur, k: 0.02 },
+        { s: 'sph', c: [sx * 0.03, 0.07, 0.19], r: 0.016, col: eye, k: 0 },
+        { s: 'cap', a: [sx * 0.012, -0.0, 0.2], b: [sx * 0.014, -0.035, 0.205], r: 0.008, r2: 0.002, col: C('#f4e8d8'), k: 0 },
+      ]),
+    ];
+    for (const [sx, b] of [[1, 1], [-1, 2]]) {
+      parts.push({ s: 'ell', c: [sx * 0.3, 0.0, -0.02], rr: [0.26, 0.012, 0.14], col: wing, bone: b, k: 0 });
+      for (const [x, z] of [[0.52, 0.08], [0.46, -0.1], [0.32, -0.15]]) parts.push({ s: 'cap', a: [sx * 0.07, 0.01, 0.02], b: [sx * x, 0.01, z], r: 0.012, r2: 0.006, col: bone, bone: b, k: 0 });
+    }
+    rig(P('cbat', parts, { ao: 0.5 }), { 1: [0.06, 0.01, 0], 2: [-0.06, 0.01, 0] });
+  }
+  // a stick of dynamite with its fuse (thrown by goblins)
+  P('dynamite', [
+    { s: 'cap', a: [0, 0, -0.12], b: [0, 0, 0.12], r: 0.05, col: C('#d8282a'), k: 0 },
+    { s: 'tor', ax: 'z', c: [0, 0, 0.0], R: 0.052, r: 0.008, a0: -Math.PI, a1: Math.PI, col: C('#2a2018'), k: 0 },
+    { s: 'cap', a: [0, 0, 0.14], b: [0.02, 0.05, 0.2], r: 0.008, col: C('#e8dcc0'), k: 0 },
+  ], { ao: 0.4 });
+  // the goblin sapper: a small green goblin with long ears, a battered tin helmet with a candle on it, goggles, a
+  // satchel of dynamite on its back and a lit stick in its hand
+  {
+    const m = makeHumanoid({ ...STICK, headR: 0.15, torsoR: 0.09, torsoR2: 0.1 }), J = m.J, hd = J.head;
+    const tin = C('#8a8e96'), strap = C('#5a3a20'), red = C('#d8282a');
+    for (const sx of [1, -1]) m.parts.push({ s: 'cap', a: [hd[0] + sx * 0.12, hd[1] + 0.0, hd[2] - 0.02], b: [hd[0] + sx * 0.32, hd[1] + 0.08, hd[2] - 0.08], r: 0.05, r2: 0.012, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.09, hd[2] - 0.01], rr: [0.165, 0.1, 0.17], col: tin, bone: 2, k: 0 });
+    m.parts.push({ s: 'cyl', ax: 'y', c: [hd[0], hd[1] + 0.21, hd[2] + 0.02], r: 0.025, hh: 0.04, rd: 0.01, col: C('#f4ecd8'), bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [hd[0], hd[1] + 0.27, hd[2] + 0.02], r: 0.02, col: C('#ffd23a'), bone: 2, k: 0 });
+    for (const sx of [1, -1]) { m.parts.push({ s: 'cyl', ax: 'z', c: [hd[0] + sx * 0.055, hd[1] + 0.02, hd[2] + 0.135], r: 0.04, hh: 0.02, rd: 0.01, col: C('#3a3a40'), bone: 2, k: 0 }); m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.055, hd[1] + 0.02, hd[2] + 0.15], r: 0.028, col: C('#ffe08a'), bone: 2, k: 0 }); }
+    m.parts.push({ s: 'cap', a: [hd[0], hd[1] - 0.03, hd[2] + 0.13], b: [hd[0], hd[1] - 0.06, hd[2] + 0.2], r: 0.035, r2: 0.02, bone: 2, k: 0.03 });
+    m.parts.push({ s: 'box', c: [0, 0.66, -0.13], hs: [0.1, 0.1, 0.05], rd: 0.03, col: strap, bone: 1, k: 0 });
+    for (const x of [-0.06, 0, 0.06]) m.parts.push({ s: 'cap', a: [x, 0.7, -0.15], b: [x, 0.84, -0.15], r: 0.022, col: red, bone: 1, k: 0 });
+    m.parts.push({ s: 'cap', a: [0.1, 0.78, 0.06], b: [-0.12, 0.56, -0.08], r: 0.015, col: strap, bone: 1, k: 0 });
+    const h = J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.05, h[2] + 0.02], b: [h[0], h[1] + 0.13, h[2] + 0.06], r: 0.035, col: red, bone: 6, k: 0 });
+    m.parts.push({ s: 'cap', a: [h[0], h[1] + 0.13, h[2] + 0.06], b: [h[0] + 0.03, h[1] + 0.2, h[2] + 0.08], r: 0.008, col: C('#e8dcc0'), bone: 6, k: 0 });
+    m.parts.push({ s: 'sph', c: [h[0] + 0.03, h[1] + 0.21, h[2] + 0.085], r: 0.025, col: C('#ffb02a'), bone: 6, k: 0 });
+    m.name = 'goblin'; m.crownLift = 0.14; m.runAmp = 1.2; m.lean = 0.12;
+    defs.goblin = m;
+  }
+  // the ogre: a hulking brute with a pot belly, small eyes under a heavy brow, tusks, a loincloth, a tooth necklace,
+  // iron bracers and a great spiked club
+  {
+    const o = { ...STICK, torsoR: 0.17, torsoR2: 0.2, pelvisR: 0.15, shW: 0.17, armR: 0.095, handR: 0.11, legR: 0.1, headR: 0.15 };
+    const m = makeHumanoid(o), J = m.J, hd = J.head;
+    const hide = C('#7a5a3a'), tusk = C('#f4ecd8'), iron2 = C('#5a5e66');
+    m.parts.push({ s: 'ell', c: [0, 0.55, 0.08], rr: [0.2, 0.18, 0.17], bone: 1, k: 0.06 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.06, hd[2] + 0.1], rr: [0.15, 0.04, 0.06], bone: 2, k: 0.04 });
+    for (const sx of [1, -1]) {
+      m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.06, hd[1] + 0.02, hd[2] + 0.14], r: 0.022, col: C('#ffd23a'), bone: 2, k: 0 });
+      m.parts.push({ s: 'cap', a: [hd[0] + sx * 0.06, hd[1] - 0.08, hd[2] + 0.13], b: [hd[0] + sx * 0.08, hd[1] + 0.0, hd[2] + 0.18], r: 0.022, r2: 0.008, col: tusk, bone: 2, k: 0 });
+    }
+    m.parts.push({ s: 'ell', c: [0, STICK.hipY - 0.06, 0.03], rr: [0.18, 0.12, 0.15], col: hide, bone: 0, k: 0.02 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [0, 0.78, 0.0], R: 0.15, r: 0.012, a0: 0.3, a1: Math.PI - 0.3, col: C('#c8a870'), bone: 1, k: 0 });
+    for (const x of [-0.08, 0, 0.08]) m.parts.push({ s: 'cap', a: [x, 0.74, 0.15], b: [x, 0.68, 0.16], r: 0.014, r2: 0.005, col: tusk, bone: 1, k: 0 });
+    for (const [s, b] of [['L', 4], ['R', 6]]) { const hh = J['ha' + s]; m.parts.push({ s: 'cyl', ax: 'y', c: [hh[0], hh[1] + 0.1, hh[2]], r: 0.1, hh: 0.05, rd: 0.02, col: iron2, bone: b, k: 0 }); }
+    const h = J.haR;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.02, h[2] - 0.05], b: [h[0], h[1] + 0.05, h[2] + 0.55], r: 0.04, r2: 0.09, col: C('#6e4a2c'), bone: 6, k: 0.02 });
+    for (const [dx, dy, dz] of [[1, 0, 0.42], [-1, 0, 0.36], [0, 1, 0.48], [0.7, -0.7, 0.3], [-0.7, 0.7, 0.52]]) m.parts.push({ s: 'cap', a: [h[0] + dx * 0.06, h[1] + 0.04 + dy * 0.06, h[2] + dz], b: [h[0] + dx * 0.13, h[1] + 0.04 + dy * 0.13, h[2] + dz], r: 0.02, r2: 0.003, col: C('#c8ccd4'), bone: 6, k: 0 });
+    m.name = 'ogre'; m.crownLift = 0.1; m.runAmp = 0.7;
+    defs.ogre = m;
+  }
+  // the crystal golem: a body of rough rock chunks with cyan crystals growing out of its back and shoulders, glowing
+  // eyes and a glowing crystal core in its chest (its weak spot)
+  {
+    const o = { ...STICK, torsoR: 0.15, torsoR2: 0.17, pelvisR: 0.13, shW: 0.16, armR: 0.09, handR: 0.11, legR: 0.1, headR: 0.13 };
+    const m = makeHumanoid(o), J = m.J, hd = J.head;
+    const rock = C('#7a7068'), rockD = C('#5a524c'), cr = C('#6ae8ff'), crB = C('#bff6ff');
+    m.parts.push({ ...crag([0, 0.66, 0.0], 0.2, 301, [1, 0.9, 0.85], 0.04, rock), bone: 1 });
+    m.parts.push(crag([0, 0.48, 0.0], 0.16, 302, [1.1, 0.7, 0.9], 0.04, rockD));
+    for (const [s, b] of [['L', 3], ['R', 5]]) { const p = J['sh' + s]; m.parts.push({ ...crag([p[0] * 1.2, p[1] + 0.04, p[2]], 0.11, 310 + b, null, 0.03, rock), bone: b }); }
+    for (const [s, b] of [['L', 4], ['R', 6]]) { const hh = J['ha' + s]; m.parts.push({ ...crag([hh[0], hh[1], hh[2]], 0.12, 320 + b, null, 0.03, rockD), bone: b }); }
+    m.parts.push({ ...crag([hd[0], hd[1] + 0.02, hd[2]], 0.14, 330, [1, 0.9, 1], 0.03, rock), bone: 2 });
+    for (const sx of [1, -1]) m.parts.push({ s: 'sph', c: [hd[0] + sx * 0.05, hd[1] + 0.02, hd[2] + 0.12], r: 0.022, col: crB, bone: 2, k: 0 });
+    m.parts.push({ s: 'sph', c: [0, 0.66, 0.16], r: 0.075, col: crB, bone: 1, k: 0.01 });
+    for (const [x, y, z, dx, dy, dz, r] of [[0.08, 0.72, -0.12, 0.1, 0.22, -0.12, 0.045], [-0.1, 0.68, -0.13, -0.08, 0.18, -0.16, 0.04], [0, 0.6, -0.14, 0.02, 0.14, -0.2, 0.035], [0.18, 0.86, -0.02, 0.12, 0.16, -0.05, 0.035], [-0.18, 0.86, -0.02, -0.12, 0.16, -0.05, 0.035]])
+      m.parts.push({ s: 'cap', a: [x, y, z], b: [x + dx, y + dy, z + dz], r, r2: 0.006, col: cr, bone: 1, k: 0.01 });
+    m.name = 'golem'; m.crownLift = 0.08; m.runAmp = 0.6;
+    defs.golem = m;
   }
 }
