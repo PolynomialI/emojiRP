@@ -629,9 +629,9 @@ function chapterInfo(n) {
 
 // XP needed to go from level L to L+1
 const xpFor = L => Math.round(4 + 1.6 * L + 0.03 * L * L);
-// at sea a level costs far more: about six times as much early on, ten times by level 20 (a chapter there is longer
+// at sea a level costs far more: about three times as much early on, six times by level 20 (a chapter there is longer
 // and has more swimmers, and the ship's upgrades should take the whole chapter to build up)
-const xpForSea = L => Math.round(25 + 8 * L + 0.35 * L * L);
+const xpForSea = L => Math.round(12 + 6 * L + 0.5 * L * L);
 
 // every permanent upgrade stops at level 20 (past that, damage and health made runs far too easy)
 const META_MAX = 20;

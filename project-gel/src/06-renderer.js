@@ -306,17 +306,22 @@ R.drawScene = function () {
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, MODELS.boneTex); gl.uniform1i(ep.u.uBones, 1);
   gl.uniform1f(ep.u.uOutline, 0);
   const outlines = [];
+  let stat = 0;
   for (const name in R.enemyDraw) {
     const e = R.enemyDraw[name];
+    // (a model that only stands still skips the bone lookups; the cave draws hundreds of them)
+    if (e.still === undefined && MODELS.defs) { const cn = MODELS.defs[name] && MODELS.defs[name].clipNames; e.still = !!cn && cn.length === 1 && cn[0] === 'still'; }
     for (const kind of ['normal', 'elite']) {
       const d = e[kind];
       if (!d.stream.count) continue;
+      if (!!e.still !== !!stat) { stat = e.still ? 1 : 0; gl.uniform1f(ep.u.uStatic, stat); }
       d.stream.upload();
       gl.bindVertexArray(d.vao);
       gl.drawElementsInstanced(gl.TRIANGLES, d.ni, d.itype, 0, d.stream.count);
       if (kind === 'elite') outlines.push(e);
     }
   }
+  if (stat) gl.uniform1f(ep.u.uStatic, 0);
   for (const e of outlines) {
     if (e.crown) { gl.bindVertexArray(e.crown.vao); gl.drawElementsInstanced(gl.TRIANGLES, e.crown.ni, e.crown.itype, 0, e.elite.stream.count); }
   }

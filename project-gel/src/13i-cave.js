@@ -1047,6 +1047,21 @@ function cvSetCam(eye, tgt, fov, dt) {
 }
 
 // ---------- drawing ----------
+// the camera's view as five planes (left, right, bottom, top, near; normalized), to skip what it cannot see
+const CV_PLANES = new Float32Array(20);
+function cvViewPlanes() {
+  const m = R.cam.viewProj, P = CV_PLANES;
+  const set = (k, row, sg) => {
+    const a = m[3] + sg * m[row], b = m[7] + sg * m[4 + row], c = m[11] + sg * m[8 + row], d = m[15] + sg * m[12 + row], l = Math.hypot(a, b, c) || 1;
+    P[k * 4] = a / l; P[k * 4 + 1] = b / l; P[k * 4 + 2] = c / l; P[k * 4 + 3] = d / l;
+  };
+  set(0, 0, 1); set(1, 0, -1); set(2, 1, 1); set(3, 1, -1); set(4, 2, 1);
+}
+function cvInView(x, y, z, r) {
+  const P = CV_PLANES;
+  for (let k = 0; k < 20; k += 4) if (P[k] * x + P[k + 1] * y + P[k + 2] * z + P[k + 3] < -r) return false;
+  return true;
+}
 function emitCave() {
   const f = R.frame, h = G.hero.pos;
   if (CV.phase === 'enter') {
@@ -1059,8 +1074,11 @@ function emitCave() {
   f.spot = [h[0] + fw[0] / fl * 3, 0, h[2] + fw[1] / fl * 3, 8];
   f.fogRange = CV.boss ? [26, 62] : [18, 44];
   SCENE.arenaBox = null;
-  // the pieces near the hero (and the peek down both ways at the fork)
+  // the pieces near the hero (and the peek down both ways at the fork); rock out of view, or so far off it is
+  // lost in the fog, is not drawn
   const list = [];
+  cvViewPlanes();
+  const fogEnd = f.fogRange[1], sx = f.spot[0], sz = f.spot[2];
   for (let i = Math.max(0, CV.pi - 1); i <= Math.min(CV.pieces.length - 1, CV.pi + 2); i++) list.push(CV.pieces[i]);
   if (CV.peek) list.push(CV.peek.L, CV.peek.R);
   const rc = f.rockCol, torches = [];
@@ -1068,6 +1086,8 @@ function emitCave() {
   for (const P of list) {
     for (const o of P.inst) {
       if (!R.enemyDraw[o.m]) continue;
+      if (o.cr === undefined) { const B = MESHB[o.m]; if (!B) continue; o.cy = o.y + (B.lo[1] + B.hi[1]) * 0.5 * o.s; o.cr = o.s * (0.5 * Math.hypot(B.hi[0] - B.lo[0], B.hi[1] - B.lo[1], B.hi[2] - B.lo[2]) + Math.hypot((B.lo[0] + B.hi[0]) * 0.5, (B.lo[2] + B.hi[2]) * 0.5)); }
+      if (Math.hypot(o.x - sx, o.z - sz) > fogEnd + o.cr || !cvInView(o.x, o.cy, o.z, o.cr)) continue;
       const M = MODELS.defs[o.m], tint = o.sh === 1 ? PROP_WHITE : rc;
       const k = o.sh === 1 ? 1 : o.sh;
       pushEnemy(o.m, false, o.x, o.y, o.z, o.yaw, M.clips.still.row, o.s, 1, 0, 0, 0, tint[0] * k, tint[1] * k, tint[2] * k, o.fade || 0);

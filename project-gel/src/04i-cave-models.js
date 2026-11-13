@@ -23,8 +23,11 @@ CLIPS.batflap = { frames: 10, fn(t) {
   const a = Math.sin(t * TAU) * 0.95;
   return { root: [0, 0.04 * Math.cos(t * TAU), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 1 ? [0, 0, a] : b === 2 ? [0, 0, -a] : [0, 0, 0])) };
 } };
-Object.assign(THEME_CELLS, { boulder0: 0.025, boulder1: 0.025, boulder2: 0.025, cliff0: 0.03, cliff1: 0.03, cavemouth: 0.026, minecart: 0.014, lanternpost: 0.014, ore: 0.022,
-  cwall0: 0.03, cwall1: 0.03, cwall2: 0.03, stalac: 0.02, stalag: 0.02, cover0: 0.022, cover1: 0.022, cover2: 0.022, rubble: 0.02, cpillar: 0.026, torch: 0.008, brazier: 0.012, mbeam: 0.02,
+// (the cave's rock is drawn by the hundred, so its meshes are coarse: walls 0.06 (they were 0.03 and made the cave
+// draw about four million triangles a frame), the rest about a third to a half coarser than they were. Crag
+// facets are big and flat, so they keep their look)
+Object.assign(THEME_CELLS, { boulder0: 0.035, boulder1: 0.035, boulder2: 0.035, cliff0: 0.03, cliff1: 0.03, cavemouth: 0.026, minecart: 0.014, lanternpost: 0.014, ore: 0.022,
+  cwall0: 0.06, cwall1: 0.06, cwall2: 0.06, stalac: 0.03, stalag: 0.03, cover0: 0.028, cover1: 0.028, cover2: 0.028, rubble: 0.028, cpillar: 0.04, torch: 0.008, brazier: 0.012, mbeam: 0.024,
   mole: 0.014, xbowman: 0.013, spearman: 0.013, shieldman: 0.013, cspider: 0.012, cbat: 0.01, goblin: 0.012, ogre: 0.013, cgolem: 0.014 });
 MESH_ORDER.push('boulder0', 'boulder1', 'boulder2', 'cliff0', 'cliff1', 'cavemouth', 'minecart', 'lanternpost', 'ore', 'stalag', 'mole',
   'cwall0', 'cwall1', 'cwall2', 'stalac', 'cover0', 'cover1', 'cover2', 'rubble', 'cpillar', 'torch', 'brazier', 'mbeam', 'xbowman', 'spearman', 'shieldman',

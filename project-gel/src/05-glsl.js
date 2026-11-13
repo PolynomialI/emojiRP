@@ -1606,6 +1606,8 @@ in vec4 iFx;
 in vec4 iTint;
 uniform sampler2D uBones;
 uniform float uOutline;
+// 1 for a model whose only pose is 'still' (rocks, walls, props): its bones are all identity, so skip them
+uniform float uStatic;
 out vec3 vN;
 out vec3 vW;
 out vec3 vRest;
@@ -1620,11 +1622,14 @@ mat4 boneMat(int row, int b) {
   return mat4(r0.x, r1.x, r2.x, 0.0, r0.y, r1.y, r2.y, 0.0, r0.z, r1.z, r2.z, 0.0, r0.w, r1.w, r2.w, 1.0);
 }
 void main() {
-  int row = int(iAnim.x + 0.5);
-  mat4 m0 = boneMat(row, int(aBones.x + 0.5));
-  mat4 m1 = boneMat(row, int(aBones.y + 0.5));
-  vec3 p = (m0 * vec4(aPos, 1.0)).xyz * aW0 + (m1 * vec4(aPos, 1.0)).xyz * (1.0 - aW0);
-  vec3 n = mat3(m0) * aNrm * aW0 + mat3(m1) * aNrm * (1.0 - aW0);
+  vec3 p = aPos, n = aNrm;
+  if (uStatic < 0.5) {
+    int row = int(iAnim.x + 0.5);
+    mat4 m0 = boneMat(row, int(aBones.x + 0.5));
+    mat4 m1 = boneMat(row, int(aBones.y + 0.5));
+    p = (m0 * vec4(aPos, 1.0)).xyz * aW0 + (m1 * vec4(aPos, 1.0)).xyz * (1.0 - aW0);
+    n = mat3(m0) * aNrm * aW0 + mat3(m1) * aNrm * (1.0 - aW0);
+  }
   float dead = iAnim.w;
   float sy = iAnim.z * (1.0 - 0.82 * dead);
   float sxz = inversesqrt(max(sy, 0.08)) * (1.0 + 0.35 * dead);

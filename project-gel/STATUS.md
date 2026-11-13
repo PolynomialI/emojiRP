@@ -15,7 +15,44 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - Buttons slide a little to the left under the pointer (CSS `translate`, so it stacks with each button's own
   `transform`); a new button with its own `transition` list must add `translate` to it.
 
-## Ship upgrade without the freeze, harder seas (latest)
+## Ocean map, tank steering, slower sea leveling, blob levels, a faster cave (latest)
+- **Ocean map.** On the ocean page the Chapters button opens a map of the twenty oceans (`renderOceans`, 14-ui.js):
+  the sea boss's portrait, the ocean's name, its boss and best time; oceans not reached yet are locked. It used to
+  show the land chapters.
+- **Tank steering at sea.** W / up sails ahead the way the bow points, S / down backs astern at 40%, A / D turn the bow
+  left and right (`seaSteer`, 13k-ocean.js). The touch stick and a gamepad still point the way to go.
+- **Slower sea leveling, longer and busier oceans** (every ocean):
+  - Its own XP curve (`xpForSea`, 10-data.js): `12 + 6L + 0.5L^2`, about three times land's early on and six times
+    by level 20.
+  - Big ships no longer pull in gems from far off (magnet `1.6 + length x 0.2`, was `length x 0.45`), which with the
+    old curve gave ten levels at once when the boss came.
+  - The boss comes at 7:30 (was 5:00), with the swarms spread to match and 50% more foes throughout (`SEA_BOSS_T`,
+    `seaEvents`).
+  - One more skill slot at sea (`slotLimit`, 5 instead of 4).
+  - Homing cannons hit 40% softer and fire a little slower (count unchanged, up to 4); the battleship gunner hits
+    about half as hard and fires a little slower.
+  - Autopilot (takes the first card, no revive): ocean 1 sank at 4:01 on level 10 (another try lived to 6:43, level
+    18); ocean 5 sank at 5:10 on level 15. No upgrade went past level 4 of 10 before the boss.
+- **Blob levels.** A blob color has one level (`G.save.blobLv[color]`, 0-20) instead of three stats bought one by one:
+  - A level raises all three of that color's stats at once, each by its own amount (`BLOB_UPS`: a speed color gains
+    the most speed, Classic plain damage, health and armor).
+  - Each color keeps its own level.
+  - A level costs about three of the old single-stat steps (`blobUpCost`).
+  - Old saves convert each color's per-stat levels to their average.
+  - The Gear > Upgrade window shows the level, the three stats (per level and in total) and one LEVEL UP button. The
+    two blob-level goals ask for 10 and 30 levels.
+- **The cave runs much lighter.** It drew about 3.9 million triangles a frame in a room and 4.9 million in the Bagger's
+  hall (a chapter arena draws about 0.5 million); the rock wall meshes alone were 62-66 thousand triangles each, about
+  40 at a time. Now:
+  - Coarser rock meshes: walls 0.06 (were 0.03), stalactites, stalagmites, boulders, pillars, rubble, cover and mine
+    beams a third to a half coarser, the Bagger's body and wheel a little. The rock looks the same (`test/shots/perf-*`).
+  - Rock out of the camera's view, or lost in the fog, is not drawn (`cvViewPlanes`, `cvInView` in `emitCave`).
+  - Models that only stand still skip the bone lookups in the vertex shader (`uStatic`).
+  - Result: a room is about 1.1 million triangles, the walk between rooms 1.0 million and the Bagger's hall 1.8
+    million. `test/_caveperf.mjs` times each part of a frame and lists the triangles by model (SwiftShader's timings
+    are dominated by pixel shading, so compare the triangle counts).
+
+## Ship upgrade without the freeze, harder seas
 - **No freeze on the Ship upgrade.** Picking it used to build the new hull's (and rigging's) meshes on the main thread
   (`ensureMeshNow`): 3-14 s a ship on the test machine, about 20 s for a hull and its rig. Now nothing is built on the
   spot: the Ship level rises at once, and the new ship (stats, hull, mounts, the splash and banner) takes to the
@@ -165,7 +202,7 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
 - **Upgrades moved to the blob.** The Upgrades tab is gone and the old permanent upgrades no longer count. In Gear,
   the Upgrade button under the blob opens that color's own upgrades (`BLOB_UPS`, 10-data.js): three stats each,
   up to level 20, matched to the color's bonus (a speed color gets a lot of speed and less health; Classic gets
-  plain damage, health and armor). The cost is `blobUpCost`.
+  plain damage, health and armor). The cost is `blobUpCost`. (Now one level per color raising all three; see the latest section.)
 - **Selling gear.** Gear has a Sell button: tap an item to sell it for `SELL_PRICE` by rarity (5, 12, 30, 60, 120,
   300 coins).
 - **Restart run** in the pause menu (with a confirm); it starts the same chapter, sea chapter, Endless or Boss Rush.

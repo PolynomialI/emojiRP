@@ -12,7 +12,7 @@
 // instance tint colors them (orange, then red-hot in stage 2); everything else has its own color.
 // ============================================================
 Object.assign(THEME_CLIPS, { bg_boom: ['bpitch'], bg_wheel: ['wspin'] });
-Object.assign(THEME_CELLS, { bg_base: 0.016, bg_body: 0.012, bg_mast: 0.012, bg_cwt: 0.014, bg_boom: 0.011, bg_wheel: 0.0105 });
+Object.assign(THEME_CELLS, { bg_base: 0.016, bg_body: 0.015, bg_mast: 0.012, bg_cwt: 0.014, bg_boom: 0.011, bg_wheel: 0.0125 });
 MESH_ORDER.push('bg_base', 'bg_body', 'bg_mast', 'bg_cwt', 'bg_boom', 'bg_wheel');
 // the boom's pitch, from raised (-0.35) to lowered (+0.3), one frame per step; the wheel turns one bucket (30 deg) per loop
 const BAG_PITCH = [-0.35, 0.3], BAG_PITCH_FRAMES = 17;
