@@ -536,7 +536,8 @@ function homeCamera(dt) {
   HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
   // the ocean page frames the whole ship from a little higher up
   const sea = seaStageOn(), D = sea ? shipDef() : null;
-  const viewH = (sea ? Math.max(1.9, D.len * 0.62 + D.deck * 0.5) : 2.2) / HOME.frac, d = viewH / (2 * half);
+  // (long ships are framed a little tighter: seen from the corner, their length is foreshortened)
+  const viewH = (sea ? Math.max(1.9, D.len * lerp(0.62, 0.46, clamp((D.len - 6) / 12, 0, 1)) + D.deck * 0.5) : 2.2) / HOME.frac, d = viewH / (2 * half);
   const tgt = [HOME.side * viewH * aspect, (sea ? D.deck * 0.6 + 0.25 : portrait ? 1.15 : 1.1) - HOME.lift * viewH, 0];
   const pitch = sea ? 0.6 : 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
   R.setCamera([tgt[0] + Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);

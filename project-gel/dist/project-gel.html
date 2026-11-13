@@ -5130,6 +5130,15 @@ function shipModels(defs) {
     { s: 'box', c: [x, y + 0.04, z], hs: [w, 0.05, l], rd: 0.03, col, k: 0 },
     ...Array.from({ length: Math.max(2, Math.round(l / 0.12)) }, (_, i, A) => ({ s: 'box', c: [x, y + 0.095, z - l + (i + 0.5) * (2 * l / A.length)], hs: [w * 0.82, 0.012, 0.025], rd: 0.008, col: slat, k: 0 }))];
   // the rudder below the stern and a rope ladder of shrouds from a mast top to the rail on both sides
+  // signal flags dressed overall: a line from a to b, sagging a little, hung with small bright pennants
+  const FLAG_COLS = ['#e8283a', '#ffd23a', '#2a5ad8', '#ffffff', '#3aa84a', '#ff8a1a'].map(C);
+  const dressLine = (a, b, n) => {
+    const pt = u => [lerp(a[0], b[0], u), lerp(a[1], b[1], u) - Math.sin(u * Math.PI) * 0.3, lerp(a[2], b[2], u)], out = [];
+    for (let i = 0; i < 8; i++) out.push({ s: 'cap', a: pt(i / 8), b: pt((i + 1) / 8), r: 0.05, col: C('#2a2e38'), k: 0 });
+    // (thick enough to survive these big ships' coarse meshes, 0.07-0.08 a cell)
+    for (let i = 1; i < n; i++) { const q = pt(i / n); out.push({ s: 'box', c: [q[0], q[1] - 0.24, q[2]], hs: [0.08, 0.2, 0.17], rd: 0.03, col: FLAG_COLS[i % FLAG_COLS.length], k: 0 }); }
+    return out;
+  };
   const rudder = (o, s, col) => ({ s: 'box', c: [0, o.bot * 0.3 + 0.1 * s, -o.len / 2 + 0.02], hs: [0.05 * s, 0.32 * s, 0.16 * s], rd: 0.03 * s, col, k: 0 });
   const shrouds = (z, top, deckY, half, col, n = 3) => [-1, 1].flatMap(sx => [
     ...[-0.35, 0, 0.35].map(dz => ({ s: 'cap', a: [0, top, z], b: [sx * half, deckY, z + dz], r: 0.022, col, k: 0 })),
@@ -5447,6 +5456,12 @@ function shipModels(defs) {
         ...[-0.06, 0.06].map(dx => ({ s: 'cap', a: [sx * 1.3 + dx, 3.0, 1.85], b: [sx * 1.3 + dx, 3.12, 2.35], r: 0.025, col: iron, k: 0 }))]),
       ...[-1, 1].map(sx => ({ s: 'sph', c: [sx * 0.95, 3.6, 1.3], r: 0.1, col: C('#fff6c8'), k: 0 })),
       { s: 'cap', a: [-0.55, 4.08, 1.1], b: [0.55, 4.08, 1.1], r: 0.07, col: greyD, k: 0 }, { s: 'box', c: [0, 4.04, 1.1], hs: [0.15, 0.06, 0.12], rd: 0.03, col: greyD, k: 0 },
+      // a second, smaller funnel with a black cap, windows down the bridge's sides, and signal flags dressed from
+      // the mast to the bow and the stern
+      { s: 'box', c: [0, 2.6, -3.3], hs: [0.5, 0.9, 0.6], rd: 0.28, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.55, -3.32], hs: [0.46, 0.1, 0.56], rd: 0.1, col: C('#2a2e38'), k: 0 },
+      ...[-1, 1].flatMap(sx => [{ s: 'box', c: [sx * 1.51, 2.3, 0.6], hs: [0.02, 0.08, 1.15], rd: 0.02, col: C('#1a2638'), k: 0 }, { s: 'box', c: [sx * 1.16, 3.2, 0.4], hs: [0.02, 0.07, 0.85], rd: 0.02, col: C('#1a2638'), k: 0 }]),
+      ...dressLine([0, 6.1, 0.2], [0, 1.9, 7.9], 11), ...dressLine([0, 6.1, 0.2], [0, 2.9, -7.6], 11),
     ];
     ship('battleship', p, 8.25, -2.7, 2.7, { piv: 1.0, ao: 0.4 });
   }
@@ -5493,6 +5508,8 @@ function shipModels(defs) {
       ...anchor(o, 8.0, 1.5, 1.1, iron),
       ...[[1.0, 7.0, '#ffd34a'], [1.2, 1.5, '#3ac86a'], [-0.4, -4.4, '#ff4a3a'], [2.7, -6.2, '#2f8bff'], [-0.2, 1.4, '#ffd34a'], [2.9, 4.6, '#b05ae8']].flatMap(([x, z, c]) => [
         { s: 'cap', a: [x, 2.95, z], b: [x, 3.2, z], r: 0.085, col: C(c), k: 0 }, { s: 'sph', c: [x, 3.3, z], r: 0.075, col: C('#f4f4f0'), k: 0 }]),
+      // signal flags from the island's mast down to the bow and the stern
+      ...dressLine([-2.35, 7.2, -1.6], [0.6, 3.05, 9.7], 13), ...dressLine([-2.35, 7.2, -1.6], [0.6, 3.05, -9.3], 13),
     ];
     ship('carrier', p, 9.5, -3.1, 3.1, { piv: 1.2, ao: 0.35 });
   }
@@ -11236,6 +11253,15 @@ function shipModels(defs) {
     { s: 'box', c: [x, y + 0.04, z], hs: [w, 0.05, l], rd: 0.03, col, k: 0 },
     ...Array.from({ length: Math.max(2, Math.round(l / 0.12)) }, (_, i, A) => ({ s: 'box', c: [x, y + 0.095, z - l + (i + 0.5) * (2 * l / A.length)], hs: [w * 0.82, 0.012, 0.025], rd: 0.008, col: slat, k: 0 }))];
   // the rudder below the stern and a rope ladder of shrouds from a mast top to the rail on both sides
+  // signal flags dressed overall: a line from a to b, sagging a little, hung with small bright pennants
+  const FLAG_COLS = ['#e8283a', '#ffd23a', '#2a5ad8', '#ffffff', '#3aa84a', '#ff8a1a'].map(C);
+  const dressLine = (a, b, n) => {
+    const pt = u => [lerp(a[0], b[0], u), lerp(a[1], b[1], u) - Math.sin(u * Math.PI) * 0.3, lerp(a[2], b[2], u)], out = [];
+    for (let i = 0; i < 8; i++) out.push({ s: 'cap', a: pt(i / 8), b: pt((i + 1) / 8), r: 0.05, col: C('#2a2e38'), k: 0 });
+    // (thick enough to survive these big ships' coarse meshes, 0.07-0.08 a cell)
+    for (let i = 1; i < n; i++) { const q = pt(i / n); out.push({ s: 'box', c: [q[0], q[1] - 0.24, q[2]], hs: [0.08, 0.2, 0.17], rd: 0.03, col: FLAG_COLS[i % FLAG_COLS.length], k: 0 }); }
+    return out;
+  };
   const rudder = (o, s, col) => ({ s: 'box', c: [0, o.bot * 0.3 + 0.1 * s, -o.len / 2 + 0.02], hs: [0.05 * s, 0.32 * s, 0.16 * s], rd: 0.03 * s, col, k: 0 });
   const shrouds = (z, top, deckY, half, col, n = 3) => [-1, 1].flatMap(sx => [
     ...[-0.35, 0, 0.35].map(dz => ({ s: 'cap', a: [0, top, z], b: [sx * half, deckY, z + dz], r: 0.022, col, k: 0 })),
@@ -11553,6 +11579,12 @@ function shipModels(defs) {
         ...[-0.06, 0.06].map(dx => ({ s: 'cap', a: [sx * 1.3 + dx, 3.0, 1.85], b: [sx * 1.3 + dx, 3.12, 2.35], r: 0.025, col: iron, k: 0 }))]),
       ...[-1, 1].map(sx => ({ s: 'sph', c: [sx * 0.95, 3.6, 1.3], r: 0.1, col: C('#fff6c8'), k: 0 })),
       { s: 'cap', a: [-0.55, 4.08, 1.1], b: [0.55, 4.08, 1.1], r: 0.07, col: greyD, k: 0 }, { s: 'box', c: [0, 4.04, 1.1], hs: [0.15, 0.06, 0.12], rd: 0.03, col: greyD, k: 0 },
+      // a second, smaller funnel with a black cap, windows down the bridge's sides, and signal flags dressed from
+      // the mast to the bow and the stern
+      { s: 'box', c: [0, 2.6, -3.3], hs: [0.5, 0.9, 0.6], rd: 0.28, col: grey, k: 0 },
+      { s: 'box', c: [0, 3.55, -3.32], hs: [0.46, 0.1, 0.56], rd: 0.1, col: C('#2a2e38'), k: 0 },
+      ...[-1, 1].flatMap(sx => [{ s: 'box', c: [sx * 1.51, 2.3, 0.6], hs: [0.02, 0.08, 1.15], rd: 0.02, col: C('#1a2638'), k: 0 }, { s: 'box', c: [sx * 1.16, 3.2, 0.4], hs: [0.02, 0.07, 0.85], rd: 0.02, col: C('#1a2638'), k: 0 }]),
+      ...dressLine([0, 6.1, 0.2], [0, 1.9, 7.9], 11), ...dressLine([0, 6.1, 0.2], [0, 2.9, -7.6], 11),
     ];
     ship('battleship', p, 8.25, -2.7, 2.7, { piv: 1.0, ao: 0.4 });
   }
@@ -11599,6 +11631,8 @@ function shipModels(defs) {
       ...anchor(o, 8.0, 1.5, 1.1, iron),
       ...[[1.0, 7.0, '#ffd34a'], [1.2, 1.5, '#3ac86a'], [-0.4, -4.4, '#ff4a3a'], [2.7, -6.2, '#2f8bff'], [-0.2, 1.4, '#ffd34a'], [2.9, 4.6, '#b05ae8']].flatMap(([x, z, c]) => [
         { s: 'cap', a: [x, 2.95, z], b: [x, 3.2, z], r: 0.085, col: C(c), k: 0 }, { s: 'sph', c: [x, 3.3, z], r: 0.075, col: C('#f4f4f0'), k: 0 }]),
+      // signal flags from the island's mast down to the bow and the stern
+      ...dressLine([-2.35, 7.2, -1.6], [0.6, 3.05, 9.7], 13), ...dressLine([-2.35, 7.2, -1.6], [0.6, 3.05, -9.3], 13),
     ];
     ship('carrier', p, 9.5, -3.1, 3.1, { piv: 1.2, ao: 0.35 });
   }
@@ -32866,7 +32900,8 @@ function homeCamera(dt) {
   HOME.frac += (wantFrac - HOME.frac) * k; HOME.lift += (wantLift - HOME.lift) * k; HOME.side += (wantSide - HOME.side) * k;
   // the ocean page frames the whole ship from a little higher up
   const sea = seaStageOn(), D = sea ? shipDef() : null;
-  const viewH = (sea ? Math.max(1.9, D.len * 0.62 + D.deck * 0.5) : 2.2) / HOME.frac, d = viewH / (2 * half);
+  // (long ships are framed a little tighter: seen from the corner, their length is foreshortened)
+  const viewH = (sea ? Math.max(1.9, D.len * lerp(0.62, 0.46, clamp((D.len - 6) / 12, 0, 1)) + D.deck * 0.5) : 2.2) / HOME.frac, d = viewH / (2 * half);
   const tgt = [HOME.side * viewH * aspect, (sea ? D.deck * 0.6 + 0.25 : portrait ? 1.15 : 1.1) - HOME.lift * viewH, 0];
   const pitch = sea ? 0.6 : 0.2, yaw = Math.sin(HOME.t * 0.15) * 0.12;
   R.setCamera([tgt[0] + Math.sin(yaw) * Math.cos(pitch) * d, tgt[1] + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d], tgt, fov);
