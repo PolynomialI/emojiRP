@@ -14,8 +14,44 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   (`test/_menus.mjs`, every menu at 1100x720) against this before committing.
 - Buttons slide a little to the left under the pointer (CSS `translate`, so it stacks with each button's own
   `transform`); a new button with its own `transition` list must add `translate` to it.
+- **Each new chapter power-up beats the last.** A power-up a chapter introduces (`from: N` in `SKILLS`) must be
+  stronger, or plainly better, than the one before it: finding a new one should feel rewarding. Check a new one
+  with `test/_dps.mjs` (IDS=its id plus the previous chapter's) and by playing it.
 
-## Blob Buddies and Sandstorm buffs (latest)
+## Ground-game balance, big-enemy gems, power changes, a lighter blob in the menus (latest)
+- **Ground game** (every chapter, Endless and Boss Rush; the sea is unchanged): constants at the top of the enemy
+  section of 11-game.js.
+  - **Bosses:** 20% less health (`LAND_BOSS_HP`), the Bagger too (4080, was 5100).
+  - **Spawns:** 25% fewer enemies (`LAND_SPAWN`): steady spawning, swarms and surges. Measured: 29.5 groups a minute,
+    was 39.5.
+  - **Minibosses:** 40% less health and 30% less damage (`MINI_HP`, `MINI_DMG`). That counts the first bosses that
+    return as minibosses (Charger, Twins, Conductor): their own attacks hit 30% softer too (`updateBoss` lowers
+    `run.info.dmgMul` while a miniboss acts).
+  - **Hurler:** left as it was last round in both roles (`spareHurler`).
+  - **Nothing runs away:** no miniboss or boss moves away from the player now (the Hurler's hop was the only one).
+  - **XP:** 15% more (`LAND_XP`).
+  - **Scrolls:** 10% more. Every random scroll drop's odds are 10% higher, and a boss now and then drops a second.
+- **Big enemies drop more gems, green and blue** (ground only, `dropGemMix`): enemies worth 3+ XP (axemen,
+  shieldmen, brutes, knights, bison...) drop a handful (a green is worth two blues) worth about 2.2x their XP, was
+  one blue. For example, a brute drops 2 green and 3 blue (11 in all), was one blue worth 5. An elite drops 3 green
+  and 3 blue worth 30, was one green worth 25. Minibosses add 4 blue to their 4 green, bosses 6 blue to their 6.
+- **Powers** (`test/_dps.mjs`, damage a second against 24 tough dummies, level 1 / level 10):
+  - Sandstorm back to how it was before the last buff: 16 / 872.
+  - Blob Ball 4 / 42 -> 7 / 113: more damage, quicker, up to 4 balls.
+  - Neon Drone 3 / 118 -> 7 / 350: twice the damage, up to 4 drones, quicker zaps, longer range.
+  - Blob Buddies 5 / 105 -> 15 / 310: twice the headbutt again, up to 5 buddies, a headbutt every 0.45 s (was 0.6).
+  - Blob Fists a fifth more damage, punching a little sooner (7 -> 9 at level 10).
+  - Regen 0.5% of max health a second per level (was 0.3%). Goo Leech 1.2% chance per level (was 1.5%).
+- **The menus' blob draws about 5x faster.** The gear screen was slow because of the blob, not the page: the
+  blob is ray-marched per pixel, drawn very big there, and with all its gear on it is about 50 shapes, every one
+  evaluated at every march step of every pixel. Now each pixel first tests its ray against every shape's padded
+  bounding sphere (once) and the march evaluates only the shapes it passes near (about 3 of 50), walking the
+  set bits of a mask (`gMask0-2` in FS_HERO). SwiftShader, gear screen: 12.0 s -> 2.5 s a frame (blob left out:
+  0.27 s); home 1.33 -> 1.03 s. The same blob state drawn by the old and new shader differs in 10 of 770,000
+  pixels. The page itself costs little (script, style and layout under 10 ms a second, `test/_menuperf.mjs`).
+- `test/_l.mjs` checks the balance numbers (HTML=an old build prints the old ones).
+
+## Blob Buddies and Sandstorm buffs
 - **Blob Buddies:** about twice the headbutt damage (4-12 after the power-up halving, was 2-5.5), a buddy more from
   level 3 (up to 4), and they last as long as the wait for the next batch (10-15 s, every 10-7.5 s; was 8-12 s every
   14-12 s).

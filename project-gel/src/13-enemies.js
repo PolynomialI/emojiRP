@@ -34,7 +34,7 @@ function startBoss(list) {
 
 function spawnBoss(id, x, z, opts) {
   const run = G.run, B = BOSS_TYPES[id], info = run.info;
-  const hp = B.hp * info.bossHpMul;
+  const hp = B.hp * info.bossHpMul * (run.sea || spareHurler(id) ? 1 : LAND_BOSS_HP);
   // later chapters' bosses are bigger (and hit bigger)
   const gm = run.rush ? 1 + 0.025 * run.rushK : info.grand || 1;
   const e = {
@@ -99,6 +99,13 @@ function bossStage2Tick(e, dt) {
   if (Math.random() < 0.35) FX.part(e.x + rand(-1, 1) * e.radius, rand(0.3, 1.4) * e.scale, e.z + rand(-1, 1) * e.radius, 0, rand(1, 2.2), 0, 0.14, 0.03, rand(0.5, 0.9), [1, rand(0.25, 0.5), 0.15], 0.9, 0, 0, 0.5);
 }
 function updateBoss(e, dt) {
+  // a first boss come back as a miniboss hits 30% softer: its attacks read run.info.dmgMul as they land or fly
+  if (e.mini && !spareHurler(e.type) && !e.inMini) {
+    const info = G.run.info, keep = info.dmgMul;
+    info.dmgMul = keep * MINI_DMG; e.inMini = true;
+    try { updateBoss(e, dt); } finally { info.dmgMul = keep; e.inMini = false; }
+    return;
+  }
   const ai = e.ai, h = G.hero.pos, run = G.run;
   if (!ai.stage2 && !e.dying && ai.state !== 'enter' && ai.state !== 'intro' && e.hp < e.maxHp * STAGE2.at) bossStage2(e);
   if (ai.stage2) bossStage2Tick(e, dt);
@@ -302,8 +309,12 @@ function onBossKilled(e) {
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
   for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 25, 1);
-  // (in Boss Rush only every third boss carries a scroll)
-  if ((!run.rush || run.rushK % 3 === 2) && Math.random() < (run.endless || run.rush ? 0.25 : 1) * (run.endless ? 0.5 : 1)) spawnPickup('scroll', e.x, e.z);
+  if (!run.sea) for (let i = 0; i < 6; i++) dropGem(e.x + rand(-1.4, 1.4), e.z + rand(-1.4, 1.4), 8, 0);
+  // (in Boss Rush only every third boss carries a scroll; 1 in 10 carries a second)
+  if ((!run.rush || run.rushK % 3 === 2) && Math.random() < (run.endless || run.rush ? 0.25 : 1) * (run.endless ? 0.5 : 1)) {
+    spawnPickup('scroll', e.x, e.z);
+    if (Math.random() < 0.1) spawnPickup('scroll', e.x + 0.7, e.z + 0.3);
+  }
   if (e.ai.partner && !e.ai.partner.dying) e.ai.partner.ai.enraged = false;
   G.timeScale = 0.35;
   setTimeout(() => { G.timeScale = 1; }, 700);

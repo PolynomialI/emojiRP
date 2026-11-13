@@ -769,6 +769,10 @@ uniform vec4 uGearMat[3]; // how metallic each gear color is (palette 8-19)
 uniform vec3 uBoxLo;    // the shapes' world-space box (padded): rays that miss it are dropped
 uniform vec3 uBoxHi;
 uniform int uZero; // never set, so always 0: loops that start at it cannot be unrolled
+// the shapes this pixel's ray passes near (bit i: shape i). Each pixel tests its ray once against every shape's
+// padded bounding sphere; the march then skips the rest. With all the gear on (about 50 shapes) a ray meets only
+// a handful, so the march does a fraction of the work (the menus draw the blob big and were very slow)
+uint gMask0, gMask1, gMask2;
 
 float prim(vec3 p, int i) {
   vec4 A = uPA[i], B = uPB[i], C = uPC[i];
@@ -801,11 +805,18 @@ float mapH(vec3 p, bool wantCol, out vec3 col, out float g, out vec2 mat) {
   float d = prim(p, 0);
   col = vec3(0.0); g = 0.0; mat = vec2(0.0);
   if (wantCol) { col = primCol(uPC[0].y, p); g = uPC[0].w; mat = primMat(uPC[0].y); }
-  for (int i = 1; i < MAXP; i++) {
-    if (i >= uPCount) break;
-    vec2 r = sminW(d, prim(p, i), uPB[i].w);
-    d = r.x;
-    if (wantCol) { float t = 1.0 - r.y; col = mix(col, primCol(uPC[i].y, p), t); g = mix(g, uPC[i].w, t); mat = mix(mat, primMat(uPC[i].y), t); }
+  // only the shapes this ray passes near, lowest first (their bits, one at a time: the loop runs as many times as
+  // there are shapes near, not once per shape)
+  for (int w = uZero; w < 3; w++) {
+    uint m = w == 0 ? gMask0 & ~1u : w == 1 ? gMask1 : gMask2;
+    while (m != 0u) {
+      uint low = m & (~m + 1u);
+      m ^= low;
+      int i = w * 32 + int(log2(float(low)) + 0.5);
+      vec2 r = sminW(d, prim(p, i), uPB[i].w);
+      d = r.x;
+      if (wantCol) { float t = 1.0 - r.y; col = mix(col, primCol(uPC[i].y, p), t); g = mix(g, uPC[i].w, t); mat = mix(mat, primMat(uPC[i].y), t); }
+    }
   }
   return d + wob(p);
 }
@@ -820,6 +831,23 @@ void main() {
   vec3 bn = min(b0, b1), bf = max(b0, b1);
   bs = vec2(max(bs.x, max(max(bn.x, bn.y), bn.z)), min(bs.y, min(min(bf.x, bf.y), bf.z)));
   if (bs.y < 0.0 || bs.y < bs.x) discard;
+  // which shapes this ray comes near: each one's bounding sphere, padded by its blend, the wobble and the reach
+  // of the occlusion samples (0.13) so nothing it could touch is left out (shape 0, the body, always counts).
+  // (a ray meets about 3 of 50 shapes with all the gear on)
+  gMask0 = 1u; gMask1 = 0u; gMask2 = 0u;
+  float pad = 0.2 + abs(uWobble);
+  for (int i = uZero + 1; i < MAXP; i++) {
+    if (i >= uPCount) break;
+    vec4 A = uPA[i], B = uPB[i], C = uPC[i];
+    vec3 sc = A.xyz; float sr = A.w;
+    if (C.x > 0.5 && C.x < 1.5) { sc = (A.xyz + B.xyz) * 0.5; sr = length(B.xyz - A.xyz) * 0.5 + max(A.w, C.z); }
+    else if (C.x >= 1.5) sr = max(B.x, max(B.y, B.z));
+    sr += B.w + pad;
+    vec3 oc = ro - sc; float hb = dot(oc, rd), hh = hb * hb - dot(oc, oc) + sr * sr;
+    if (hh < 0.0 || sqrt(hh) - hb < 0.0) continue;
+    uint bit = 1u << uint(i & 31);
+    if (i < 32) gMask0 |= bit; else if (i < 64) gMask1 |= bit; else gMask2 |= bit;
+  }
   float t = max(bs.x, 0.0), tEnd = bs.y;
   float bestR = 1e9, bestT = t;
   bool hit = false;

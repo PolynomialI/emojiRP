@@ -39,10 +39,11 @@ function spawnMiniboss(k) {
     const ids = M.boss === 'twins' ? ['twins', 'twins'] : [M.boss];
     const made = ids.map((id, i) => {
       const B = BOSS_TYPES[id], e = spawnEnemy('stickman', x + i * 2.4, z, {});
-      const hp = B.hp * 0.32 * run.info.hpMul * hpK * (ids.length > 1 ? 0.6 : 1);
-      Object.assign(e, { type: id, def: B, model: B.model, boss: true, mini: true, name: M.name, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * run.info.dmgMul,
+      const spare = spareHurler(id), mh = spare ? 1 : MINI_HP, md = spare ? 1 : MINI_DMG;
+      const hp = B.hp * 0.32 * run.info.hpMul * hpK * (ids.length > 1 ? 0.6 : 1) * mh;
+      Object.assign(e, { type: id, def: B, model: B.model, boss: true, mini: true, name: M.name, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * run.info.dmgMul * md,
         radius: B.radius * 0.8 * scK, scale: B.scale * 0.8 * scK, mass: 40, xp: 30, tint: hexToRgb(i ? B.tint2 || B.tint : B.tint), y: 9, spawnT: 1.2,
-        clip: 'run', clipU: 0, dizzy: 0, contactDmg: B.dmg * run.info.dmgMul,
+        clip: 'run', clipU: 0, dizzy: 0, contactDmg: B.dmg * run.info.dmgMul * md,
         ai: { state: 'enter', t: 1.2, summonT: 8, throwT: 2.5, jumpCd: 2, attackT: 2.5, charges: 0, anchor: [x, z], orbit: rand(0, TAU), mode: 0 } });
       addTele({ kind: 'circle', x: e.x, z: e.z, r: e.radius * 2.2, dur: 1.2 });
       return e;
@@ -50,8 +51,8 @@ function spawnMiniboss(k) {
     if (made.length === 2) { made[0].ai.partner = made[1]; made[1].ai.partner = made[0]; made[0].ai.side = 1; made[1].ai.side = -1; }
   } else {
     const e = spawnEnemy(M.type, x, z, { scale: M.scale / ENEMY_TYPES[M.type].scale * scK, tint: M.tint });
-    const hp = M.hp * run.info.hpMul * hpK;
-    Object.assign(e, { mini: true, miniDef: M, name: M.name, hp, maxHp: hp, mass: 30, xp: 30, dmg: e.dmg * 1.6, speed: e.speed * 0.9,
+    const hp = M.hp * run.info.hpMul * hpK * MINI_HP;
+    Object.assign(e, { mini: true, miniDef: M, name: M.name, hp, maxHp: hp, mass: 30, xp: 30, dmg: e.dmg * 1.6 * MINI_DMG, speed: e.speed * 0.9,
       ai: { state: 'walk', t: 0, cd: 1.6, next: 0 } });
     e.contactDmg = e.dmg;
   }
@@ -180,6 +181,7 @@ function onMiniKilled(e) {
   spawnPickup('chest', e.x, e.z);
   for (let i = 0; i < 8; i++) spawnPickup('coin', e.x + rand(-1.2, 1.2), e.z + rand(-1.2, 1.2), 2);
   for (let i = 0; i < 4; i++) dropGem(e.x + rand(-1, 1), e.z + rand(-1, 1), 15, 1);
+  for (let i = 0; i < 4; i++) dropGem(e.x + rand(-1.2, 1.2), e.z + rand(-1.2, 1.2), 6, 0);
   if (Math.random() < 0.5 * scrollOdds()) spawnPickup('scroll', e.x + 0.6, e.z);
   FX.ring(e.x, e.z, 5, [1, 0.8, 0.4], 0.6); G.cam.shake = Math.max(G.cam.shake, 0.2);
 }

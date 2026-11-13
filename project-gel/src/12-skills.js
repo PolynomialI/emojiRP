@@ -516,7 +516,7 @@ function updateBuddies(dt) {
     b.sq = clamp(b.sq + b.sqV * dt, 0.55, 1.4);
     if (b.state === 'fight' && b.target && !b.target.dying && b.hitT <= 0) {
       const t = b.target, dx = t.x - b.x, dz = t.z - b.z, d = Math.hypot(dx, dz) || 1;
-      if (d < 0.45 + t.radius) { b.hitT = 0.6; hurtEnemy(t, b.dmg, dx / d * 4, dz / d * 4); b.sqV -= 4; }
+      if (d < 0.45 + t.radius) { b.hitT = 0.45; hurtEnemy(t, b.dmg, dx / d * 4, dz / d * 4); b.sqV -= 4; }
     }
     if (b.state === 'return' && Math.hypot(h[0] - b.x, h[2] - b.z) < 0.7) {
       b.dead = true; G.hero.impulse(0.8); FX.glow(h[0], 0.7, h[2], 0.8, COLORS.cyanHi, 0.2); AUDIO.play('drip');

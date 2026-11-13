@@ -226,8 +226,8 @@ function recomputeStats() {
     areaMul: (1 + 0.05 * lv('reach')) * (1 + g('area')),
     extra: lv('multishot'),
     xpMul: (1 + 0.04 * lv('growth')) * (1 + g('xp')),
-    regen: 0.003 * lv('regen') + g('regen'),
-    crit: 0.03 * lv('crit'), leech: 0.015 * lv('leech'), dodge: 0.025 * lv('dodge'), second: lv('second'),
+    regen: 0.005 * lv('regen') + g('regen'),
+    crit: 0.03 * lv('crit'), leech: 0.012 * lv('leech'), dodge: 0.025 * lv('dodge'), second: lv('second'),
   };
   run.maxHp = 140 * (1 + 0.12 * lv('thick')) * (1 + g('hp'));
   if (run.hp > run.maxHp) run.hp = run.maxHp;
@@ -246,6 +246,10 @@ function recomputeStats() {
 // ---------- enemies ----------
 // regular enemies are a little frailer than their table says (with weaker power-ups, the numbers do the work)
 const ENEMY_HP = 0.7, XP_MUL = 0.75;
+// the ground game's balance: 25% fewer enemies spawn (steady spawning, swarms and surges), 15% more XP, bosses 20%
+// less health and minibosses 40% less health and 30% less damage (the Hurler, already cut down, is left as it is)
+const LAND_SPAWN = 0.75, LAND_XP = 1.15, LAND_BOSS_HP = 0.8, MINI_HP = 0.6, MINI_DMG = 0.7;
+const spareHurler = id => id === 'hurler';
 function spawnEnemy(type, x, z, opts = {}) {
   const run = G.run, d = ENEMY_TYPES[type], info = run.info;
   const elite = !!opts.elite;
@@ -319,9 +323,11 @@ function killEnemy(e) {
   if (e.mini) { onMiniKilled(e); return; }
   if (e.boss) { onBossKilled(e); return; }
   if (e.def.flee) gooblinLoot(e);
-  // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and sometimes a scroll; elites always drop one
+  // tougher enemies (tier 2 and up) sometimes drop an emerald instead, and sometimes a scroll. On the ground the
+  // big ones (tier 3 and up) and elites drop a handful, green and blue mixed: about twice their old worth
   const tough = e.elite || e.def.xp >= 2;
-  if (e.elite || (tough && Math.random() < EMERALD_CHANCE)) dropGem(e.x, e.z, e.elite ? e.xp : e.xp * 3 + 2, 1);
+  if (!run.sea && (e.elite || e.def.xp >= 3)) dropGemMix(e.x, e.z, e.elite ? 3 : Math.ceil(e.def.xp / 3), e.elite ? 3 : e.def.xp - Math.ceil(e.def.xp / 3), e.elite ? 30 : e.def.xp * 2.2);
+  else if (e.elite || (tough && Math.random() < EMERALD_CHANCE)) dropGem(e.x, e.z, e.elite ? e.xp : e.xp * 3 + 2, 1);
   else dropGem(e.x, e.z, e.xp, 0);
   if ((e.elite || (tough && Math.random() < SCROLL_CHANCE)) && Math.random() < scrollOdds()) spawnPickup('scroll', e.x + 0.5, e.z);
   if (e.elite) {
@@ -402,7 +408,7 @@ function secondWind(run) {
 const EMERALD_CHANCE = 0.1, SCROLL_CHANCE = 0.028;
 // every random scroll drop passes this: 3 in 4 (scrolls are 25% rarer), and half of that again in Endless
 // (Endless and Boss Rush: a quarter of that again, and Endless half of what is left)
-const scrollOdds = () => 0.75 * (G.run && (G.run.endless || G.run.rush) ? 0.25 : 1) * (G.run && G.run.endless ? 0.5 : 1);
+const scrollOdds = () => 0.75 * 1.1 * (G.run && (G.run.endless || G.run.rush) ? 0.25 : 1) * (G.run && G.run.endless ? 0.5 : 1);
 function dropGem(x, z, value, tier = 0) {
   const run = G.run;
   if (run.gems.length > 320) {
@@ -414,6 +420,12 @@ function dropGem(x, z, value, tier = 0) {
   const a = rand(0, TAU);
   run.gems.push({ x, z, y: 0.3, vx: Math.cos(a) * 1.2, vz: Math.sin(a) * 1.2, vy: 3.2, value, tier, pull: false, sp: 0, ph: rand(0, 10) });
 }
+// a spray of green and blue gems worth `total` in all (a green is worth two blues)
+function dropGemMix(x, z, greens, blues, total) {
+  const b = total / (blues + greens * 2);
+  for (let i = 0; i < greens; i++) dropGem(x + rand(-0.6, 0.6), z + rand(-0.6, 0.6), +(b * 2).toFixed(2), 1);
+  for (let i = 0; i < blues; i++) dropGem(x + rand(-0.6, 0.6), z + rand(-0.6, 0.6), +b.toFixed(2), 0);
+}
 function spawnPickup(kind, x, z, value = 1) {
   const a = rand(0, TAU);
   G.run.pickups.push({ kind, x, z, y: 0.3, vx: Math.cos(a) * 1.5, vz: Math.sin(a) * 1.5, vy: 4, value, ph: rand(0, 10), pull: false, sp: 0, t: 0 });
@@ -421,7 +433,7 @@ function spawnPickup(kind, x, z, value = 1) {
 function gainXp(v) {
   const run = G.run;
   // (Endless and Boss Rush level up far more slowly: 40% of the XP)
-  run.xp += v * run.stats.xpMul * XP_MUL * (run.endless || run.rush ? 0.4 : 1);
+  run.xp += v * run.stats.xpMul * XP_MUL * (run.endless || run.rush ? 0.4 : 1) * (run.sea ? 1 : LAND_XP);
   const need = run.sea ? xpForSea : xpFor;
   while (run.xp >= run.xpNext) { run.xp -= run.xpNext; run.level++; run.xpNext = need(run.level); run.pending++; }
 }
@@ -464,7 +476,7 @@ function updateRun(dt) {
     // continuous spawning
     const alive = run.enemies.length;
     if (run.endless) endlessTick(run);
-    const rate = run.endless ? endlessRate(run.t) : run.rush ? 1.6 : (run.bossStarted ? 2.5 : spawnRate(run.t)) * run.info.rateMul;
+    const rate = (run.endless ? endlessRate(run.t) : run.rush ? 1.6 : (run.bossStarted ? 2.5 : spawnRate(run.t)) * run.info.rateMul) * LAND_SPAWN;
     run.spawnAcc += rate * dt;
     while (run.spawnAcc >= 1) {
       run.spawnAcc -= 1;
@@ -526,7 +538,7 @@ function updateRun(dt) {
 function runEvent(ev) {
   const run = G.run;
   if (ev.kind === 'swarm') {
-    const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU), n = Math.round(ev.n * run.info.rateMul);
+    const h = G.hero.pos, r = VIEW.radius + 1.5, off = rand(0, TAU), n = Math.round(ev.n * run.info.rateMul * (run.sea ? 1 : LAND_SPAWN));
     // a ring of stickmen closing in, with a gap to break out through (bigger in later chapters)
     for (let i = 0; i < n; i++) { const a = off + (i / n) * TAU * 0.75; const e = spawnEnemy('stickman', h[0] + Math.cos(a) * r, h[2] + Math.sin(a) * r); resolveCircle(e, e.radius); }
   } else if (ev.kind === 'elite') {
@@ -534,7 +546,7 @@ function runEvent(ev) {
     const [x, z] = spawnPoint(2);
     spawnEnemy(pick(types), x, z, { elite: true });
   } else if (ev.kind === 'surge') {
-    for (let i = 0; i < Math.round((ev.n || 18) * run.info.rateMul); i++) spawnFromMix();
+    for (let i = 0; i < Math.round((ev.n || 18) * run.info.rateMul * (run.sea ? 1 : LAND_SPAWN)); i++) spawnFromMix();
   } else if (ev.kind === 'boss') {
     startBoss();
   } else if (ev.kind === 'mini') {

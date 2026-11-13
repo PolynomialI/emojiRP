@@ -12,7 +12,7 @@
 // ============================================================
 // the hall is wide and deep, so the fight can be seen from four sides
 const BAG_ROOM = { hw: 21, len: 58, look: 'boss', hero: [-9, -3, 3, 9], mid: [], foe: [[-11.5, -17], [-8, -20.5], [8, -20.5], [11.5, -17]], pillars: [[-6, -9.8], [6, -9.8]] };
-const BAG = { S: 4, z: -29, hp: 5100, heart: [0, 1.62, 0.42], heartR: 0.55, gooDmg: 14, rockDmg: 18, beamDmg: 15, smashDmg: 24, beamY: 0.85, quakeDmg: 22, rainDmg: 16 };
+const BAG = { S: 4, z: -29, hp: 4080, heart: [0, 1.62, 0.42], heartR: 0.55, gooDmg: 14, rockDmg: 18, beamDmg: 15, smashDmg: 24, beamY: 0.85, quakeDmg: 22, rainDmg: 16 };
 // Four stages, each fought from another side of the machine (ang: about the Bagger, from the hall's entrance; d: how
 // far the hero's rail is from it; hw: the rail's half length; covers: the rocks along it, in the rail's own frame).
 // Each stage has its own moves; the last, from behind it, uses all of them, red-hot and faster.

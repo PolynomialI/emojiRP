@@ -15,12 +15,14 @@ const SKILLS = {
   ball: {
     name: 'Blob Ball', intro: 'Fires balls of goo at the closest enemy.', icon: { type: 0, colw: 0 },
     fields: [['dmg', 'Damage'], ['cd', 'Cooldown', 's'], ['count', 'Balls'], ['pierce', 'Pierce']],
-    levels: L10({ dmg: [8, 9, 9, 10, 10, 11, 12, 13, 14, 15], cd: [1.1, 1.1, 1.0, 1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
+    // (buffed hard: nearly twice the damage, quicker, and more balls sooner, up to 4)
+    levels: L10({ dmg: [14, 15, 16, 18, 19, 21, 23, 25, 27, 30], cd: [1.0, 0.95, 0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], pierce: [0, 0, 0, 0, 0, 1, 1, 1, 1, 2] }),
   },
   fists: {
     name: 'Blob Fists', intro: 'Your arms stretch out and punch nearby enemies, knocking them back.', icon: { type: 17, colw: 1 },
     fields: [['dmg', 'Damage'], ['cd', 'Punch every', 's'], ['fists', 'Fists'], ['reach', 'Reach', 'm'], ['shock', 'Shockwave', 'm']],
-    levels: L10({ dmg: [10, 12, 13, 15, 16, 18, 20, 22, 24, 28], cd: [2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5], fists: [2, 2, 2, 2, 3, 3, 3, 3, 4, 4], reach: [2.4, 2.4, 2.5, 2.5, 2.6, 2.6, 2.8, 2.8, 3.0, 3.2], shock: [0, 0, 0, 0, 0, 0, 0, 0, 0.8, 1.0] }),
+    // (buffed a little: a fifth more damage, punching a little sooner)
+    levels: L10({ dmg: [12, 14, 16, 18, 19, 22, 24, 26, 29, 34], cd: [2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4], fists: [2, 2, 2, 2, 3, 3, 3, 3, 4, 4], reach: [2.4, 2.4, 2.5, 2.5, 2.6, 2.6, 2.8, 2.8, 3.0, 3.2], shock: [0, 0, 0, 0, 0, 0, 0, 0, 0.8, 1.0] }),
   },
   grenade: {
     name: 'Blob Grenade', intro: 'Drops a fused goo grenade at your feet. It bursts a moment later in a big splash.', icon: { type: 6, colw: 1 },
@@ -60,8 +62,9 @@ const SKILLS = {
   buddies: {
     name: 'Blob Buddies', intro: 'You split off small copies of yourself that hop at enemies and headbutt them.', icon: { type: 7, colw: 0 },
     fields: [['count', 'Buddies'], ['dmg', 'Headbutt damage'], ['life', 'Lifetime', 's']],
-    // (buffed: about twice the headbutt, a buddy more from level 3, and they last as long as the wait for the next)
-    levels: L10({ count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], dmg: [8, 9, 10, 11, 12, 14, 16, 18, 20, 24], life: [10, 10, 11, 11, 12, 12, 13, 13, 14, 15], cd: [10, 10, 9.5, 9.5, 9, 9, 8.5, 8.5, 8, 7.5] }),
+    // (buffed hard, twice: four times the old headbutt, more buddies sooner (up to 5), and they last as long as the
+    // wait for the next; they headbutt more often too, see updateBuddies)
+    levels: L10({ count: [1, 2, 2, 2, 3, 3, 3, 4, 4, 5], dmg: [16, 18, 20, 22, 25, 28, 32, 36, 40, 48], life: [10, 10, 11, 11, 12, 12, 13, 13, 14, 15], cd: [10, 10, 9.5, 9.5, 9, 9, 8.5, 8.5, 8, 7.5] }),
   },
   axe: {
     name: 'Goo Axe', intro: 'Throws spinning axes that cut through everything and fly back to you.', icon: { type: 4, colw: 0.5 },
@@ -77,8 +80,7 @@ const SKILLS = {
   sandstorm: {
     name: 'Sandstorm', from: 2, intro: 'Whips up goo tornadoes that wander into crowds, pulling enemies in and grinding them down.', icon: { type: 32, colw: 0 },
     fields: [['dmg', 'Damage per tick'], ['count', 'Tornadoes'], ['radius', 'Radius', 'm'], ['life', 'Lasts', 's']],
-    // (buffed: about twice the damage, wider, longer-lived, sooner and a second tornado from level 4)
-    levels: L10({ dmg: [6, 6, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], radius: [1.6, 1.7, 1.8, 1.9, 1.9, 2.0, 2.1, 2.2, 2.3, 2.5], life: [4, 4.3, 4.6, 5, 5.3, 5.6, 6, 6.4, 6.8, 7.5], cd: [7, 6.8, 6.6, 6.4, 6.2, 6, 5.7, 5.4, 5.1, 4.8] }),
+    levels: L10({ dmg: [3, 3, 4, 4, 5, 5, 6, 7, 8, 9], count: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], radius: [1.4, 1.5, 1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.1, 2.3], life: [3, 3.2, 3.4, 3.6, 3.8, 4, 4.3, 4.6, 5, 5.5], cd: [8, 7.8, 7.6, 7.4, 7.2, 7, 6.6, 6.3, 6, 5.5] }),
   },
   bouncy: {
     name: 'Bouncy Ball', from: 4, intro: 'Launches rubber goo balls that ricochet from enemy to enemy and off the walls.', icon: { type: 35, colw: 0 },
@@ -88,7 +90,8 @@ const SKILLS = {
   drone: {
     name: 'Neon Drone', from: 3, intro: 'Little neon drones orbit you and zap the closest enemies; the zaps chain to their neighbours.', icon: { type: 34, colw: 0 },
     fields: [['dmg', 'Damage'], ['count', 'Drones'], ['chain', 'Chains'], ['cd', 'Zaps every', 's'], ['range', 'Range', 'm']],
-    levels: L10({ dmg: [6, 7, 7, 8, 9, 10, 11, 12, 14, 16], count: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3], chain: [0, 0, 1, 1, 1, 2, 2, 2, 3, 3], cd: [0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5], range: [5, 5, 5.3, 5.3, 5.6, 5.6, 6, 6.3, 6.6, 7] }),
+    // (buffed hard: about twice the damage, a drone more sooner (up to 4), zapping quicker and a little farther)
+    levels: L10({ dmg: [12, 13, 14, 15, 17, 19, 21, 23, 26, 30], count: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], chain: [0, 0, 1, 1, 1, 2, 2, 2, 3, 3], cd: [0.8, 0.75, 0.72, 0.7, 0.65, 0.6, 0.55, 0.5, 0.47, 0.42], range: [5.5, 5.5, 5.8, 5.8, 6.1, 6.1, 6.5, 6.8, 7.1, 7.5] }),
   },
   meteor: {
     name: 'Meteor', from: 7, intro: 'Calls flaming meteors down on the thickest crowds nearby; the ground keeps burning where they land.', icon: { type: 39, colw: 0 },
@@ -170,7 +173,7 @@ const SKILLS = {
 // Passives ("blob abilities"): 10 levels each (Projectile Count adds a whole projectile per level, so it stays at 2)
 const PASSIVES = {
   thick: { name: 'Thick Goo', short: '+12% health', desc: '+12% max health, and heals that amount.', max: 10, icon: { type: 25, colw: 0 } },
-  regen: { name: 'Regen', short: '+0.3% health/s', desc: 'Heal 0.3% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
+  regen: { name: 'Regen', short: '+0.5% health/s', desc: 'Heal 0.5% of max health every second.', max: 10, icon: { type: 10, colw: 4 } },
   speed: { name: 'Speed', short: '+4% speed', desc: '+4% move speed.', max: 10, icon: { type: 1, colw: 0 } },
   magnet: { name: 'Magnet', short: '+15% pickup range', desc: '+15% gem pickup radius.', max: 10, icon: { type: 11, colw: 4 } },
   power: { name: 'Power', short: '+5% damage', desc: '+5% damage.', max: 10, icon: { type: 20, colw: 0 } },
@@ -181,7 +184,7 @@ const PASSIVES = {
   sugar: { name: 'Sugar Rush', short: '+3% rush', from: 5, desc: 'Every 25 kills sends you on a 4 s sugar rush: +12% speed and +12% faster skills, +3% more each level.', max: 10, icon: { type: 37, colw: 0 } },
   thorns: { name: 'Thorns', short: '+3 thorn damage', from: 8, desc: 'Enemies that touch you take 6 damage and get shoved away, +3 damage each level.', max: 10, icon: { type: 40, colw: 2.5 } },
   crit: { name: 'Lucky Splat', short: '+3% double hits', from: 2, desc: 'Each hit has a 3% chance per level to do double damage.', max: 10, icon: { type: 20, colw: 2 } },
-  leech: { name: 'Goo Leech', short: '+1.5% heal on kill', from: 3, desc: 'Each kill has a 1.5% chance per level to heal 1% of your max health.', max: 10, icon: { type: 10, colw: 2.5 } },
+  leech: { name: 'Goo Leech', short: '+1.2% heal on kill', from: 3, desc: 'Each kill has a 1.2% chance per level to heal 1% of your max health.', max: 10, icon: { type: 10, colw: 2.5 } },
   dodge: { name: 'Slippery', short: '+2.5% dodge', from: 4, desc: 'A 2.5% chance per level to slip out of a hit completely.', max: 10, icon: { type: 1, colw: 4 } },
   second: { name: 'Second Wind', short: '+2% rescue heal', from: 6, desc: 'Dropping under 30% health heals 6% of your max health, +2% per level, once every 45 s.', max: 10, icon: { type: 25, colw: 3 } },
   growth: { name: 'Growth', short: '+4% XP', desc: '+4% XP from gems.', max: 10, icon: { type: 8, colw: 0 } },
