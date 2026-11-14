@@ -503,7 +503,7 @@ function seaModels(defs) {
   // the whale (13s-sea-extras.js): a big blue-grey humpback, its pale belly and long flippers, small eyes, a mouth line,
   // a blowhole on top and a few barnacles; facing +z, drawn sunk so only its back shows above the water
   {
-    const body = C('#4a6886'), belly = C('#d6e2ea'), dark = C('#1e2a38');
+    const body = C('#3c5878'), belly = C('#d6e2ea'), dark = C('#1e2a38');
     P('whale', [
       { s: 'ell', c: [0, 0, 0], rr: [1.35, 1.0, 3.4], col: body, k: 0 },
       { s: 'ell', c: [0, 0.05, 2.3], rr: [1.15, 0.86, 1.65], col: body, k: 0.6 },

@@ -18,7 +18,92 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   stronger, or plainly better, than the one before it: finding a new one should feel rewarding. Check a new one
   with `test/_dps.mjs` (IDS=its id plus the previous chapter's) and by playing it.
 
-## Islands with their own shapes, the drowned city, six sea slots, evolution hints, projectgel (latest)
+## Runs survive sleep, save export, Codex, medals, faces, music, trails, sea weather, treasure, whale (latest)
+- **Closing the laptop no longer loses the run** (15a-resume.js). The cause: while the computer slept the browser
+  either dropped the game's graphics (it showed an error and needed a reload) or put the tab away and reloaded it on
+  return, and the run lived only in memory.
+  - The run is now kept as a checkpoint every 4 s, whenever the page hides, and when it closes. The next start goes
+    straight back into it, paused: mode and chapter (or ocean, Boss Rush, Endless), time, level, XP and owed
+    level-ups, every power with its level and evolution, health, coins, scrolls, kills, rerolls, the revive, where
+    the blob or ship was, and the timeline to come.
+  - A boss or miniboss alive at the time drops back in with the health it had. The swarm on screen is not kept:
+    fresh foes stream in.
+  - Inside chapter 20's cave, the run picks up on the crater with the cave mouth open (the cave starts again).
+  - Lost graphics mid-run: the page saves and reloads itself into the run (up to 3 times in 2 minutes, then an
+    error). A finished run, quitting, or falling clears the checkpoint (no going back to before a fall).
+  - The start-up guard now also counts a resumed run as a good start (it used to wait for the home screen).
+  - `test/_resume.mjs`: land run, boss fight, finished run, sea run, lost graphics.
+- **Save export/import** (Settings, home screen only). Export downloads the save as JSON and copies a `PGEL1:` code
+  to the clipboard. Import takes a pasted code or a loaded file, checks it is a Project Gel save, and replaces this
+  browser's progress.
+- **Graphics:**
+  - A Medium preset: screen resolution (at most 1x), glow, no edge smoothing.
+  - Each preset caps particles, ground marks and goo droplets (High 3200/700/420, Medium 2000/450/260, Low
+    1200/300/160, Ultra low 700/200/100).
+  - A line under the buttons says what each preset does, and an FPS counter (frames a second and the slowest frame)
+    can be switched on.
+  - Elite outlines stay on at every preset, for readability.
+- **The blob's face**, painted in the hero shader on the head's goo only (never on a costume, hat or gear), so it
+  costs no shapes:
+  - it blinks and glances about;
+  - it squints `> <` when hit and grins `^ ^` on a level-up, a chest, an evolution, a boss kill or a treasure;
+  - it looks worried under 30% health;
+  - left alone 18 s on the home screen it dozes (closed eyes, a sleepy mouth, little goo bubbles) and stops
+    shooting until a grunt comes close or you touch it.
+  - Dark features on light blobs, light ones on very dark blobs.
+- **Music** (09a-music.js), synthesized live like the sound effects:
+  - Four four-bar loops: home (gentle C), land (livelier C), sea (D minor, a rolling shanty swing), boss (A minor,
+    faster).
+  - Layers fade in with the fight (foes about, a boss, low health): pad and tune always, then bass, hats, kick and
+    snare, toms for a boss.
+  - Menus, pauses and level-ups play it soft and muffled. Its own switch in Settings.
+- **Goo trails** (10e-trails.js), a Trails tab on the Blobs screen (land only): Goo Puddles, Bubbles, Sparkles, Petals,
+  Hearts, Snowflakes, Flames, Stardust, Rainbow (150-800 coins). Dropped by distance moved, at most about a dozen
+  puffs a second (half on Low and Ultra low). New heart and snowflake particle shapes.
+- **Boss weak points** (13r-boss-extras.js):
+  - When one of a boss's big warnings runs out (a circle of radius 2.6 or more, a long wide lane, a wide cone), its
+    attack has landed. A glowing weak spot opens on it for 2 s, with a gold ring and "WEAK POINT!", and every hit
+    then does double.
+  - At most once every 7 s. Land and sea bosses, not minibosses.
+- **New and spread enemy roles** (shield-bearers, splitters and burrowing moles already existed):
+  - The **goo medic** (from chapter 5, at most three at once) hangs back behind the pack. Every 3.2 s, if a foe near
+    it is hurt, it raises its staff and heals every foe within 4.5 by 30%, with green beams. Never bosses.
+  - **Burrowers** now stop and show a warning circle for 0.6 s before they burst up, and moles appear from
+    chapter 8 (they were only in the crater).
+- **Boss Rush medals:**
+  - Each boss's kill time earns gold, silver or bronze. The targets come from its Boss Rush health at its place in
+    the line-up and the damage a build has by then, with extra time for bosses that hide.
+  - The time and medal show as each boss falls and on the results screen. Bests are kept.
+  - New achievements: Medalist (a medal on 10 bosses), and Rush Champion (gold on all 19), which earns the **Rush
+    Crown** hat.
+- **The Codex**, a tab on the Achievements screen:
+  - Every foe, miniboss and boss, land and sea (144 entries).
+  - The ones met show their picture (rendered once, a couple a frame), kills and where they were first met. Bosses
+    also show their fastest kill and Boss Rush medal; tap an entry for its medal targets.
+  - The unmet show a silhouette and where to find them.
+  - A Field Guide achievement for 60 entries.
+- **Sea weather fronts** (13s-sea-extras.js), each ocean with its own mix:
+  - fog banks, inside which the fog closes in (foes loom out of it);
+  - tailwind lanes of white arrows: 40% faster sailing along them, 15% slower against;
+  - drifting squalls: rain, storm light, lightning where the ocean has it, and gusts that shove the ship (spray
+    shows the way first).
+- **Treasure maps:**
+  - A bottle with a map piece bobs by some islands; sail into it.
+  - Three pieces put an X on the shore of an island at least 35 away, and a gold arrow by the ship points to it.
+  - Stop beside the X for 3 s: coins (40 + 8 per ocean), a chest of powers and a scroll.
+- **The whale:** every 1.5-2 minutes (not during a boss) a whale surfaces by the ship, swims along for 16 s and spouts
+  every 3.6 s. Sailing through the spout patches 12% of the hull. It dips under the ship as the ship crosses it.
+- **The drowned city (ocean 20)** is laid out in blocks: two towers to a block, square to the streets, with canals
+  about 15 wide on the grid lines and the start at a crossroads. A third of its foes come round the far side of a
+  tower near the ship.
+- **New meshes:** goo medic 0.9 s and whale 3.8 s, both built in the background. The whale is never needed to start
+  an ocean.
+- **Tests:**
+  - `test/_features.mjs` (ONLY=face,settings,menus,land,rush,sea,city): everything above, with screenshots
+    (`shots/feat-*.png`).
+  - `test/_resume.mjs`: picking runs back up.
+
+## Islands with their own shapes, the drowned city, six sea slots, evolution hints, projectgel
 - **Islands** (04k `ISLE_LOBES` / `ISLE_LOOK` / `isleLobeParts`, 13k `seaMakeIsle`):
   - Every island kind is its main mound plus two or three lobes of land in its own layout, so no two kinds share an
     outline and none is a plain disc.

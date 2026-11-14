@@ -225,7 +225,10 @@ function seaWhaleTick(dt) {
 function emitSeaWhale() {
   const W = OC.whale;
   if (!W || W.t < 1.5 || !R.enemyDraw.whale || !onScreen(W.x, W.z, 6)) return;
-  const e = easeOutBack(clamp(W.rise, 0, 1)), y = -1.9 + 1.25 * e + Math.sin(OC.t * 0.9) * 0.06, M = MODELS.defs.whale;
+  // (it dips under the ship as the ship sails over it)
+  const S = OC.ship, ux = Math.sin(W.yaw), uz = Math.cos(W.yaw), al = clamp((S.x - W.x) * ux + (S.z - W.z) * uz, -5, 3.5);
+  const sd = Math.hypot(S.x - W.x - ux * al, S.z - W.z - uz * al), dip = 0.75 * clamp(1 - sd / (2.4 + shipDef().wid * 0.5), 0, 1);
+  const e = easeOutBack(clamp(W.rise, 0, 1)), y = -1.9 + 1.25 * e + Math.sin(OC.t * 0.9) * 0.06 - dip, M = MODELS.defs.whale;
   seaShadow(W.x, W.z, 1.8, 4.6, -W.yaw, 0.7 * W.rise);
   pushEnemy('whale', false, W.x, y, W.z, W.yaw, M.clips.still.row, 1, 1, 0, 0, 0, 1, 1, 1);
   const br = 1 + 0.05 * Math.sin(OC.t * 2);

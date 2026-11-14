@@ -5148,7 +5148,7 @@ function seaModels(defs) {
   // the whale (13s-sea-extras.js): a big blue-grey humpback, its pale belly and long flippers, small eyes, a mouth line,
   // a blowhole on top and a few barnacles; facing +z, drawn sunk so only its back shows above the water
   {
-    const body = C('#4a6886'), belly = C('#d6e2ea'), dark = C('#1e2a38');
+    const body = C('#3c5878'), belly = C('#d6e2ea'), dark = C('#1e2a38');
     P('whale', [
       { s: 'ell', c: [0, 0, 0], rr: [1.35, 1.0, 3.4], col: body, k: 0 },
       { s: 'ell', c: [0, 0.05, 2.3], rr: [1.15, 0.86, 1.65], col: body, k: 0.6 },
@@ -11483,7 +11483,7 @@ function seaModels(defs) {
   // the whale (13s-sea-extras.js): a big blue-grey humpback, its pale belly and long flippers, small eyes, a mouth line,
   // a blowhole on top and a few barnacles; facing +z, drawn sunk so only its back shows above the water
   {
-    const body = C('#4a6886'), belly = C('#d6e2ea'), dark = C('#1e2a38');
+    const body = C('#3c5878'), belly = C('#d6e2ea'), dark = C('#1e2a38');
     P('whale', [
       { s: 'ell', c: [0, 0, 0], rr: [1.35, 1.0, 3.4], col: body, k: 0 },
       { s: 'ell', c: [0, 0.05, 2.3], rr: [1.15, 0.86, 1.65], col: body, k: 0.6 },
@@ -31681,7 +31681,10 @@ function seaWhaleTick(dt) {
 function emitSeaWhale() {
   const W = OC.whale;
   if (!W || W.t < 1.5 || !R.enemyDraw.whale || !onScreen(W.x, W.z, 6)) return;
-  const e = easeOutBack(clamp(W.rise, 0, 1)), y = -1.9 + 1.25 * e + Math.sin(OC.t * 0.9) * 0.06, M = MODELS.defs.whale;
+  // (it dips under the ship as the ship sails over it)
+  const S = OC.ship, ux = Math.sin(W.yaw), uz = Math.cos(W.yaw), al = clamp((S.x - W.x) * ux + (S.z - W.z) * uz, -5, 3.5);
+  const sd = Math.hypot(S.x - W.x - ux * al, S.z - W.z - uz * al), dip = 0.75 * clamp(1 - sd / (2.4 + shipDef().wid * 0.5), 0, 1);
+  const e = easeOutBack(clamp(W.rise, 0, 1)), y = -1.9 + 1.25 * e + Math.sin(OC.t * 0.9) * 0.06 - dip, M = MODELS.defs.whale;
   seaShadow(W.x, W.z, 1.8, 4.6, -W.yaw, 0.7 * W.rise);
   pushEnemy('whale', false, W.x, y, W.z, W.yaw, M.clips.still.row, 1, 1, 0, 0, 0, 1, 1, 1);
   const br = 1 + 0.05 * Math.sin(OC.t * 2);
