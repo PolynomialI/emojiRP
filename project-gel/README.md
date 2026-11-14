@@ -3,6 +3,8 @@
 A survivor-style action game about a goo blob, in one self-contained HTML file (raw WebGL2, no engine). The ground
 game has 20 chapters (the last ending in the cave and the Bagger); the Ocean Update adds 20 oceans played from a ship.
 
+Working on it? Read `PROJECT_GUIDE.md` (intent, quality bar, performance, code map, open items), then `STATUS.md`.
+
 ## Play
 
 Open `dist/project-gel.html` in a recent Chrome, Edge, Firefox or Safari. Progress is saved in the browser.

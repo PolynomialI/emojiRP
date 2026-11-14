@@ -5,6 +5,9 @@ Play it by opening `dist/project-gel.html` in a recent Chrome, Edge, Firefox or 
 
 Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `last-ember.html` (the earlier prototype).
 
+**New to the project? Read `PROJECT_GUIDE.md` first**: what the game is for, what the owner cares about, the quality bar, how
+performance is treated, how the code fits together, and what is still open.
+
 ## Standing rules (apply to every change)
 - **Text fills its space.** Every menu, title, button and label is sized to fill the box it sits in, never small
   text in a big box: titles and headers large (the PROJECT GEL logo largest of all), button text near the button's
@@ -968,7 +971,7 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - `check-goals.mjs [wide|phone]`: run counters, the toast and menu dot, claiming once, the goal colors not for sale, screenshots.
   - `check-rush.mjs`: Boss Rush (open from a fresh save) through all 15 bosses (cards, picks, healing) to CHAMPION, then a lost rush.
   - `check-parallel.mjs`: fakes `KHR_parallel_shader_compile`, then checks that every shader finishes in the background and that nothing queries one early.
-- **Scratch scripts** (git-ignored `test/_*.mjs`, recreate as needed): `_west.mjs` photographs the Wild West town from several spots, its creatures attacking and each of The Outlaw's attacks; `_boss.mjs` (`CH=13 STEPS=60,75,90`) forces each attack of a chapter's boss and photographs it; `_cos.mjs` renders costume or color sheets; `_icon.mjs` (`IDS=gale,yoyo`) shows skill icons; `_chap.mjs` (`CH=13`) photographs the Chapters screen.
+- **Feature scripts** (`test/_*.mjs`, committed; `node test/meshtime.mjs` times model builds and `node test/syntax.mjs` checks the built bundle): `_west.mjs` photographs the Wild West town from several spots, its creatures attacking and each of The Outlaw's attacks; `_boss.mjs` (`CH=13 STEPS=60,75,90`) forces each attack of a chapter's boss and photographs it; `_cos.mjs` renders costume or color sheets; `_icon.mjs` (`IDS=gale,yoyo`) shows skill icons; `_chap.mjs` (`CH=13`) photographs the Chapters screen.
   - `flows`: chest, melt, revive, victory, results, purchases, offline earnings and the Low preset.
   - `input`: keyboard, drag joystick, Esc and number keys.
   - `roster`: every enemy type in a row, plain and elite.
@@ -989,5 +992,5 @@ Runs reach about level 33-36. Chapter scaling lives in `chapterInfo()` in `src/1
   - To stop stray test processes, use `pkill -f "[n]ode test/game.mjs"`. The bracket keeps the pattern from matching the shell running the command.
 
 ## Known limits
-- Performance on real phones hasn't been measured. There are Auto, High and Low quality presets, and Auto scales resolution.
+- Performance on real phones hasn't been measured. There are Auto, High, Medium, Low and Ultra low presets, and Auto scales resolution.
 - The UI font (Fredoka) loads from Google Fonts. Offline, it falls back to the system rounded font.
