@@ -102,6 +102,8 @@ function beginSea(n) {
 function startSea(chapter) {
   const info = seaInfo(chapter);
   OC.ship = { x: 0, z: 0, yaw: 0, yawV: 0, speed: 0, vx: 0, vz: 0, y: 0 };
+  // (weather fronts, the treasure hunt and the whale: 13s-sea-extras.js)
+  OC.extra = { pieces: 0, x: null, dig: 0, found: 0 }; OC.fronts = []; OC.fchunks = new Map(); OC.fogIn = 0; OC.squallIn = 0; OC.windMul = 1; OC.gust = null; OC.gustT = 2; OC.whale = null; OC.whaleT = rand(40, 80);
   OC.wake.length = 0; OC.isles.length = 0; OC.chunks.clear(); OC.balls.length = 0; OC.shot.length = 0; OC.mines.length = 0; OC.nets.length = 0; OC.crew.length = 0; OC.hz.length = 0; OC.look = null; OC.boltT = 5; OC.sink = null; OC.stage = 0; OC.wantStage = 0; OC.t = 0; OC.wakeT = 0; OC.storm = 0;
   const run = G.run = {
     chapter, info, t: 0, kills: 0, bossKills: 0, eliteKills: 0, gooblins: 0, evos: 0, coins: 0, level: 1, xp: 0, xpNext: xpForSea(1), pending: 0, rerolls: 2,
@@ -216,6 +218,7 @@ function updateOcean(dt) {
   updateSeaHazards(dt);
   seaBossHazards(dt);
   seaWeather(dt);
+  seaFronts(); seaFrontsTick(dt); seaTreasureTick(dt); seaWhaleTick(dt);
   seaDeepTick(dt);
   updateProjectiles(dt);
   updateEnemyShots(dt);
@@ -224,7 +227,8 @@ function updateOcean(dt) {
   secondWind(run);
   R.frame.lowHp = run.hp / run.maxHp < 0.25 ? 0.35 : 0;
   // a storm rolls in with the boss in some chapters
-  const C = SEA_CHAPTERS[run.chapter - 1], want = C.storm >= 1 || (C.storm > 0 && run.bossStarted) ? 1 : 0;
+  // (a squall the ship sails into brings the storm with it, 13s-sea-extras.js)
+  const C = SEA_CHAPTERS[run.chapter - 1], want = Math.max(C.storm >= 1 || (C.storm > 0 && run.bossStarted) ? 1 : 0, OC.squallIn || 0);
   OC.storm += (want - OC.storm) * Math.min(1, dt * 0.25);
   R.frame.sea[1] = OC.storm;
   const bossesDown = live && run.bossStarted && run.bosses.length && run.bosses.every(b => b.dying);
@@ -246,7 +250,8 @@ function seaSteer(dt) {
   const S = OC.ship, D = shipDef(), run = G.run;
   const ix = G.input.x, iz = G.input.z, m = Math.min(1, Math.hypot(ix, iz));
   // (kelp and frost patches grip the hull)
-  const top = D.speed * run.stats.speedMul * (1 - (OC.snared || 0));
+  // (and a tailwind lane speeds it along, 13s-sea-extras.js)
+  const top = D.speed * run.stats.speedMul * (1 - (OC.snared || 0)) * (OC.windMul || 1);
   let steer = 0, thr = 0;
   const KY = INPUT.keys, ahead = (KY.has('w') || KY.has('arrowup') ? 1 : 0) - (KY.has('s') || KY.has('arrowdown') ? 1 : 0);
   const turnK = (KY.has('a') || KY.has('arrowleft') ? 1 : 0) - (KY.has('d') || KY.has('arrowright') ? 1 : 0);
@@ -298,6 +303,8 @@ function seaIslands(first) {
     if (OC.chunks.has(key)) continue;
     OC.chunks.set(key, true);
     const rnd = mulberry((cx + i) * 7919 + (cz + j) * 104729 + G.run.chapter * 31);
+    // the drowned city lays its towers out in blocks along streets instead (13s-sea-extras.js)
+    if (seaCity()) { seaCityBlock(cx + i, cz + j, rnd); continue; }
     // islands aren't common: about one chunk in three has one, never right where the ship starts
     if (rnd() > 0.36) continue;
     const x = (cx + i + 0.2 + rnd() * 0.6) * ISLE_CHUNK, z = (cz + j + 0.2 + rnd() * 0.6) * ISLE_CHUNK;
@@ -323,20 +330,22 @@ function isleOut(I, x, z, rad, k = 0.92) {
   }
   return hit ? _io : null;
 }
-function seaMakeIsle(x, z, rnd) {
+function seaMakeIsle(x, z, rnd, o = {}) {
   const kinds = SEA_CHAPTERS[G.run.chapter - 1].isles || ['isle0', 'isle1'];
-  const r = 2.9 + rnd() * 2.7, kind = kinds[Math.floor(rnd() * kinds.length)], yaw = rnd() * TAU;
+  // (the city's towers: a steadier size, square to the streets)
+  const r = o.city ? 3.4 + rnd() * 1.0 : 2.9 + rnd() * 2.7, kind = kinds[Math.floor(rnd() * kinds.length)], yaw = o.city ? Math.floor(rnd() * 4) * Math.PI / 2 + (rnd() - 0.5) * 0.3 : rnd() * TAU;
   const I = { x, z, r, kind, yaw, key: Math.floor(x / ISLE_CHUNK) + ',' + Math.floor(z / ISLE_CHUNK), deco: [], ob: { x, z, r: r * 0.92, shape: 'circle', shots: false, isle: true } };
   const c = Math.cos(yaw), s = Math.sin(yaw), sc = r / 4;
   I.lobes = [{ x, z, r }, ...(ISLE_LOBES[kind] || []).map(([lx, lz, lr]) => ({ x: x + (c * lx + s * lz) * sc, z: z + (-s * lx + c * lz) * sc, r: lr * sc * 0.95 }))];
   I.obs = I.lobes.map((L, i) => i ? { x: L.x, z: L.z, r: L.r * 0.92, shape: 'circle', shots: false, isle: true } : I.ob);
   I.reach = Math.max(...I.lobes.map(L => Math.hypot(L.x - x, L.z - z) + L.r));
   // (neighbours' land never runs together into one long wall)
-  if (OC.isles.some(J => Math.hypot(J.x - x, J.z - z) < I.reach + isleReach(J) + 6)) return;
+  if (OC.isles.some(J => Math.hypot(J.x - x, J.z - z) < I.reach + isleReach(J) + (o.city ? 1 : 6))) return;
   // palms and rocks on top (in the island's own frame, as a share of its radius)
   // palms and rocks dress the plain sandy islands; the themed ones bring their own
   const n = kind === 'isle0' || kind === 'isle1' ? 1 + Math.floor(rnd() * 3) : kind === 'ihut' ? 1 : 0;
   for (let i = 0; i < n; i++) { const a = rnd() * TAU, d = rnd() * 0.45; I.deco.push({ m: 'palm', x: x + Math.cos(a) * d * r, z: z + Math.sin(a) * d * r, s: 1.3 + rnd() * 0.5, yaw: rnd() * TAU }); }
+  seaTreasureIsle(I, rnd);
   for (let i = 0; i < (n ? 2 : 0); i++) { const a = rnd() * TAU, d = 0.55 + rnd() * 0.25; I.deco.push({ m: 'rock' + Math.floor(rnd() * 3), x: x + Math.cos(a) * d * r, z: z + Math.sin(a) * d * r, s: 0.9 + rnd() * 0.6, yaw: rnd() * TAU, y: 0.15 }); }
   OC.isles.push(I);
 }
@@ -371,6 +380,8 @@ function seaTrailFx(x, z, D) {
 
 // ---------- spawning ----------
 function seaSpawnPoint() {
+  // in the drowned city a third come round the far side of a tower near the ship
+  if (seaCity() && Math.random() < 0.35) { const p = seaAmbushPoint(); if (p) return p; }
   const S = OC.ship, r = VIEW.radius + 2.5;
   const sp = Math.hypot(S.vx, S.vz), head = Math.atan2(S.vx, S.vz);
   for (let i = 0; i < 8; i++) {
@@ -697,10 +708,13 @@ function isleLife(I, t) {
 function emitSea() {
   const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
   const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
-  f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view * fog * fog, 140 * SEA.view * fog];
+  // (inside a fog bank the fog closes right in)
+  const fogIn = 1 - 0.66 * (OC.fogIn || 0);
+  f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view * fog * fog * fogIn, 140 * SEA.view * fog * fogIn];
   SCENE.arenaBox = null; SCENE.pools = [];
   // (warnings used to be drawn only on land: the pirate captain's ram lane, the musket pirates' aim)
   emitTelegraphs(run);
+  emitSeaFronts(); emitSeaTreasure(); emitSeaWhale();
   // the ship (or its pieces)
   if (OC.sink) {
     for (const P of OC.sink.pieces) {

@@ -7,7 +7,7 @@ const SEA_DEEP_BOSS_MESHES = ['bangler', 'bbarge', 'bwyrm', 'btitan', 'bcake', '
 for (const id of SEA_DEEP_BOSS_MESHES) { THEME_CLIPS[id] = ['rock']; THEME_CELLS[id] = 0.05; }
 for (const id of ['bangler', 'bwyrm', 'btitan', 'bwhale', 'blevi', 'bneptune']) THEME_CLIPS[id] = ['cswim'];
 Object.assign(THEME_CELLS, { bufo: 0.045, bcake: 0.045, btitan: 0.045 });
-MESH_ORDER.push(...SEA_DEEP_BOSS_MESHES);
+MESH_ORDER.push(...SEA_DEEP_BOSS_MESHES, 'whale');
 CLIPS.cswim = { frames: 32, fn(t) {
   const a = t * TAU;
   return { root: [0, 0.08 * Math.sin(a), 0], rot: Array.from({ length: NBONES }, (_, b) => (b === 3 ? [0.16 + 0.16 * Math.sin(a * 2), 0, 0] : b === 4 ? [0, 0.32 * Math.sin(a), 0] : b === 5 ? [0, 0, 0.25 * Math.sin(a + 1)] : b === 6 ? [0, 0, -0.25 * Math.sin(a + 1)] : b === 0 ? [0.03 * Math.sin(a + 0.5), 0, 0.02 * Math.sin(a)] : [0, 0, 0])) };

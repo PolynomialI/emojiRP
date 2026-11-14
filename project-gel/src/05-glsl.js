@@ -937,7 +937,8 @@ void main() {
     float fl = length(fq), fz = dot(fq, uFaceF) / fl;
     if (abs(fl - uFaceC.w) < uFaceC.w * 0.16 && fz > 0.35) {
       vec3 fr = normalize(cross(uFaceU, uFaceF));
-      vec2 q = vec2(dot(fq, fr), dot(fq, uFaceU)) / uFaceC.w;
+      // (0.78: the features drawn a little larger than the head's own units)
+      vec2 q = vec2(dot(fq, fr), dot(fq, uFaceU)) / uFaceC.w * 0.78;
       float aa = max(fwidth(q.x) + fwidth(q.y), 0.012);
       float dE = min(faceEye(q, -1.0), faceEye(q, 1.0));
       float inside; float dM = faceMouth(q, inside);

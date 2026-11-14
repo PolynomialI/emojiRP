@@ -14,6 +14,8 @@ const SEA_MESHES = ['raft', 'pswim', 'scannon', 'isle0', 'isle1', 'pfloat', 'ptu
 // the rest of the sea's folk (needed from chapter 2 on, or for minibosses)
 const SEA_FOLK = ['phat', 'pdiver', 'pbomb', 'pparka', 'pmusket', 'pcapt'];
 MESH_ORDER.push(...SEA_MESHES, ...SEA_FOLK, ...SEA_ISLES);
+// the whale surfaces now and then (13s-sea-extras.js): built last, it is never needed to start
+THEME_CLIPS.whale = ['still']; THEME_CELLS.whale = 0.07;
 
 // a ship rocks gently on the swell (bone 0 about the deck's middle): one loop of a slow roll and pitch
 // (the bigger the ship, the less: m.rockAmp)
@@ -497,5 +499,22 @@ function seaModels(defs) {
       ...[[1, 1], [-1, 1], [1, -1], [-1, -1]].flatMap(([sx, sz]) => [{ s: 'cyl', ax: 'y', c: [sx * 2.2, 1.7, sz * 1.8], r: 0.45, hh: 0.3, rd: 0.05, col: C('#a8a49a'), k: 0 },
         { s: 'cap', a: [sx * 2.2, 2.1, sz * 1.8], b: [sx * 2.2, 2.75, sz * 1.8], r: 0.55, r2: 0.04, col: C('#8a2a2a'), k: 0 }]),
       ...pebbles(6, 3.4, rockG, 23)], { ao: 0.45 });
+  }
+  // the whale (13s-sea-extras.js): a big blue-grey humpback, its pale belly and long flippers, small eyes, a mouth line,
+  // a blowhole on top and a few barnacles; facing +z, drawn sunk so only its back shows above the water
+  {
+    const body = C('#4a6886'), belly = C('#d6e2ea'), dark = C('#1e2a38');
+    P('whale', [
+      { s: 'ell', c: [0, 0, 0], rr: [1.35, 1.0, 3.4], col: body, k: 0 },
+      { s: 'ell', c: [0, 0.05, 2.3], rr: [1.15, 0.86, 1.65], col: body, k: 0.6 },
+      { s: 'ell', c: [0, -0.48, 0.7], rr: [1.05, 0.5, 2.9], col: belly, k: 0.35 },
+      { s: 'cap', a: [0, 0.1, -2.6], b: [0, 0.28, -5.0], r: 0.78, r2: 0.3, col: body, k: 0.45 },
+      ...[1, -1].map(sx => ({ s: 'ell', c: [sx * 0.78, 0.32, -5.3], rr: [0.95, 0.13, 0.46], col: body, k: 0.18 })),
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 1.05, -0.4, 1.4], b: [sx * 2.3, -0.75, -0.2], r: 0.3, r2: 0.16, col: body, k: 0.25 })),
+      ...[1, -1].map(sx => ({ s: 'sph', c: [sx * 0.98, 0.02, 2.55], r: 0.12, col: dark, k: 0 })),
+      ...[1, -1].map(sx => ({ s: 'cap', a: [sx * 1.0, -0.32, 2.0], b: [sx * 0.4, -0.42, 3.55], r: 0.06, col: dark, k: 0 })),
+      { s: 'ell', c: [0, 0.86, 1.9], rr: [0.18, 0.06, 0.12], col: dark, k: 0.02 },
+      ...[[0.3, 0.8, 2.6], [-0.4, 0.75, 2.9], [0.15, 0.82, 3.1], [0.55, 0.62, 3.25]].map(c => ({ s: 'sph', c, r: 0.1, col: C('#c8ccd0'), k: 0.03 })),
+    ], { ao: 0.6 });
   }
 }
