@@ -65,7 +65,11 @@ function partDist(pt, x, y, z) {
       return Math.hypot(u - cx, v - cy, w) - pt.r;
     }
     case 'box': {
-      const qx = Math.abs(x - pt.c[0]) - pt.hs[0] + pt.rd, qy = Math.abs(y - pt.c[1]) - pt.hs[1] + pt.rd, qz = Math.abs(z - pt.c[2]) - pt.hs[2] + pt.rd;
+      // (rot: [rx, ry, rz] turns the box about its center; prepParts keeps the matrix in _m)
+      let px = x - pt.c[0], py = y - pt.c[1], pz = z - pt.c[2];
+      const m = pt._m;
+      if (m) { const lx = m[0] * px + m[3] * py + m[6] * pz, ly = m[1] * px + m[4] * py + m[7] * pz; pz = m[2] * px + m[5] * py + m[8] * pz; px = lx; py = ly; }
+      const qx = Math.abs(px) - pt.hs[0] + pt.rd, qy = Math.abs(py) - pt.hs[1] + pt.rd, qz = Math.abs(pz) - pt.hs[2] + pt.rd;
       return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - pt.rd;
     }
     case 'gable': {
@@ -112,9 +116,17 @@ function partBounds(pt) {
   }
   return [[0, 0, 0], 1e9];
 }
+// a rotation matrix (row-major, world = M * local) from [rx, ry, rz]: z first, then x, then y
+function rotMat(r) {
+  const [a, b, c] = r, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cc = Math.cos(c), sc = Math.sin(c);
+  // Ry * Rx * Rz
+  return [cb * cc + sb * sa * sc, -cb * sc + sb * sa * cc, sb * ca,
+    ca * sc, ca * cc, -sa,
+    -sb * cc + cb * sa * sc, sb * sc + cb * sa * cc, cb * ca];
+}
 function prepParts(parts) {
   // (boxes and cylinders without a rounding radius would give NaN)
-  for (const pt of parts) { if ((pt.s === 'box' || pt.s === 'cyl') && pt.rd === undefined) pt.rd = 0; const [c, r] = partBounds(pt); pt.bc = c; pt.br = r; }
+  for (const pt of parts) { if ((pt.s === 'box' || pt.s === 'cyl') && pt.rd === undefined) pt.rd = 0; if (pt.s === 'box' && pt.rot && !pt._m) pt._m = rotMat(pt.rot); const [c, r] = partBounds(pt); pt.bc = c; pt.br = r; }
   return parts;
 }
 function modelSdf(parts, x, y, z) {
@@ -255,7 +267,13 @@ function binnedSdf(parts, bmin, bmax, reach) {
   const nb = ext.map(e => Math.max(1, Math.ceil(e / bs))), lists = [], hd = bs * 0.8661;
   for (let k = 0; k < nb[2]; k++) for (let j = 0; j < nb[1]; j++) for (let i = 0; i < nb[0]; i++) {
     const cx = bmin[0] + (i + 0.5) * bs, cy = bmin[1] + (j + 0.5) * bs, cz = bmin[2] + (k + 0.5) * bs;
-    lists.push(parts.filter(pt => Math.hypot(cx - pt.bc[0], cy - pt.bc[1], cz - pt.bc[2]) - pt.br - (pt.k || 0) < hd + reach));
+    // (spheres, boxes, cylinders and even capsules give their true distance, which is a far closer test than the
+    // bounding sphere for long or flat parts: a slab, a tower, a mast)
+    lists.push(parts.filter(pt => {
+      const lim = hd + reach + (pt.k || 0);
+      if (Math.hypot(cx - pt.bc[0], cy - pt.bc[1], cz - pt.bc[2]) - pt.br >= lim) return false;
+      return !(pt.s === 'box' || pt.s === 'sph' || pt.s === 'cyl' || (pt.s === 'cap' && pt.r2 === undefined)) || partDist(pt, cx, cy, cz) < lim;
+    }));
   }
   return (x, y, z) => {
     // (a NaN coordinate lands in bin 0 rather than off the end)
@@ -319,6 +337,18 @@ function buildSkinnedMesh(model, cell) {
     // (w: 0 a fixed color, 1 the instance tint, 2 a fixed color the tint multiplies: a ship's paint, 10c-ship-cosmetics.js)
     if (bp && bp.col) { V[o + 10] = bp.col[0]; V[o + 11] = bp.col[1]; V[o + 12] = bp.col[2]; V[o + 13] = bp.paint ? 2 : 0; }
     else { V[o + 10] = 1; V[o + 11] = 1; V[o + 12] = 1; V[o + 13] = 1; }
+    // a box's window grid, painted on its walls (win: { col, col2, sy floor height, fy share of it glazed, sx bay width, fx share glazed })
+    if (bp && bp.win) {
+      const W = bp.win, m = bp._m;
+      let px = x - bp.c[0], py = y - bp.c[1], pz = z - bp.c[2], qx = nx, qy = ny, qz = nz;
+      if (m) { const lx = m[0] * px + m[3] * py + m[6] * pz, ly = m[1] * px + m[4] * py + m[7] * pz; pz = m[2] * px + m[5] * py + m[8] * pz; px = lx; py = ly;
+        const ax = m[0] * qx + m[3] * qy + m[6] * qz, ay = m[1] * qx + m[4] * qy + m[7] * qz; qz = m[2] * qx + m[5] * qy + m[8] * qz; qx = ax; qy = ay; }
+      const fl = (py + bp.hs[1]) / W.sy, u = (Math.abs(qx) > Math.abs(qz) ? pz : px) / W.sx + 50.5;
+      if (Math.abs(qy) < 0.6 && fl > 0.6 && fl % 1 > 1 - W.fy && Math.abs(u % 1 - 0.5) < W.fx / 2) {
+        const c = W.col2 && Math.abs(Math.sin(Math.floor(fl) * 12.99 + Math.floor(u) * 78.23 + bp.c[0]) * 437.5) % 1 < 0.25 ? W.col2 : W.col;
+        V[o + 10] = c[0]; V[o + 11] = c[1]; V[o + 12] = c[2]; V[o + 13] = 0;
+      }
+    }
   }
   return { verts: V, idx: mesh.idx, nv, ni: mesh.idx.length };
 }

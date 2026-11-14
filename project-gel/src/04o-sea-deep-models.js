@@ -5,10 +5,12 @@
 // Islands are radius 4 at scale 1 and drawn at radius / 4, like the others.
 // ============================================================
 const SEA_DEEP_FOLK = ['pweed', 'pmer', 'pblink', 'pskel', 'pballoon', 'pjelly', 'pgummy', 'pangler'];
-const SEA_DEEP_ISLES = ['iglow', 'iweed', 'istack', 'iruin', 'icandy', 'itri', 'isky', 'ibones', 'ilocker', 'iedge', 'icol'];
+const SEA_DEEP_ISLES = ['iglow', 'iweed', 'istack', 'iruin', 'icandy', 'itri', 'isky', 'ibones', 'ilocker', 'icol', 'bruin1', 'bruin2', 'bruin3'];
 Object.assign(THEME_CLIPS, { pweed: ['paddle', 'hack'], pmer: ['paddle', 'hack', 'throw'], pblink: ['paddle', 'hack'], pskel: ['paddle', 'hack'], pballoon: ['hang'], pjelly: ['jpulse'], pgummy: ['gbob'], pangler: ['aswim'] });
 for (const id of SEA_DEEP_FOLK) THEME_CELLS[id] = 0.017;
 for (const id of SEA_DEEP_ISLES) { THEME_CLIPS[id] = ['still']; THEME_CELLS[id] = 0.1; }
+// (the drowned towers are big and blocky: a coarser cell keeps their build quick; nothing on them is under 0.26 thick)
+Object.assign(THEME_CELLS, { bruin1: 0.12, bruin2: 0.12, bruin3: 0.12 });
 MESH_ORDER.push(...SEA_DEEP_FOLK, ...SEA_DEEP_ISLES);
 
 // hanging from a balloon: arms up on the ropes, legs dangling and swinging a little
@@ -37,7 +39,7 @@ CLIPS.aswim = { frames: 32, fn(t) {
 } };
 
 function seaDeepModels(defs) {
-  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const C = hexToRgb, P = (name, parts, o) => isleProp(defs, name, parts, o);
   const white = C('#fbf6ee'), dark = C('#16101a');
 
   // ---------- the glowing jellyfish: a domed bell (it takes the tint), a bright core, a frilled rim, trailing
@@ -162,6 +164,80 @@ function seaDeepModels(defs) {
       ...Array.from({ length: 10 }, (_, i) => { const a = i / 10 * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 2.6, 2.6, Math.sin(a) * 2.6], r: 0.28, hh: 3.0, rd: 0.1, sub: true, k: 0.1 }; }),
       { s: 'box', c: [0, 6.1, 0], hs: [3.2, 0.45, 3.2], rd: 0.12, col: gold, k: 0 }, { s: 'cyl', ax: 'y', c: [0, 6.75, 0], r: 2.2, hh: 0.25, rd: 0.08, col: marble, k: 0 },
       { s: 'tor', ax: 'y', c: [0, 0.3, 0], R: 2.7, r: 0.35, a0: -Math.PI, a1: Math.PI, col: C('#5affe0'), k: 0 }], { ao: 0.35 });
+  }
+  // ---------- the Edge of the World's drowned city (ocean 20): big office towers standing in the sea, cracked, broken
+  // off and overgrown: dark glass between concrete floor slabs and pillars, jagged broken tops with rusty rebar,
+  // holes blown through, vines down the walls, moss on the ledges, trees on the roofs, rubble heaped at the foot ----------
+  {
+    const wall = C('#b8b3a6'), wallD = C('#8e897e'), glass = C('#26343c'), glassB = C('#3e6470'), moss = C('#5a8a3a'), mossD = C('#40702c');
+    const crack = C('#38342e'), vine = C('#3a6a28'), leaf = C('#4f9a3a'), leafL = C('#74c04e'), bark = C('#6a4a2a'), rust = C('#9a5030'), rnd = mulberry32(2020);
+    // a tower block (half sizes hx, hy, hz, standing on y0): concrete walls with rows of dark windows (some broken
+    // through, lighter), corner pillars, a ledge halfway up and a parapet on the roof
+    const WIN = { col: glass, col2: glassB, sy: 0.9, fy: 0.55, sx: 0.7, fx: 0.62 };
+    const tower = (cx, cz, hx, hy, hz, y0) => {
+      const cy = y0 + hy, out = [{ s: 'box', c: [cx, cy, cz], hs: [hx, hy, hz], rd: 0.05, col: wall, win: WIN, k: 0 }];
+      for (const x of [-hx, hx]) for (const z of [-hz, hz]) out.push({ s: 'box', c: [cx + x, cy, cz + z], hs: [0.2, hy, 0.2], rd: 0.03, col: wallD, k: 0 });
+      out.push({ s: 'box', c: [cx, y0 + Math.round(hy) * 0.9 + 0.05, cz], hs: [hx + 0.14, 0.13, hz + 0.14], rd: 0.03, col: wallD, k: 0 });
+      out.push({ s: 'box', c: [cx, y0 + hy * 2 + 0.1, cz], hs: [hx + 0.1, 0.16, hz + 0.1], rd: 0.04, col: wallD, k: 0 });
+      // cracks: dark zigzags running down a wall or two (sunk all but a hair into the wall, so they only darken it)
+      for (let n = 0; n < (hy > 2.8 ? 2 : 1); n++) {
+        const f = Math.floor(rnd() * 4), alongX = f < 2, sg = f % 2 ? -1 : 1, half = alongX ? hx : hz;
+        let u = (rnd() - 0.5) * half * 1.2, y = y0 + hy * 2 - 0.2 - rnd() * 0.6;
+        for (let k = 0; k < 3; k++) {
+          const u2 = clamp(u + (rnd() - 0.5) * 0.9, -half * 0.85, half * 0.85), y2 = y - 0.45 - rnd() * 0.5;
+          const P = (uu, yy) => alongX ? [cx + uu, yy, cz + sg * (hz - 0.05)] : [cx + sg * (hx - 0.05), yy, cz + uu];
+          out.push({ s: 'cap', a: P(u, y), b: P(u2, y2), r: 0.1, col: crack, k: 0 });
+          u = u2; y = y2;
+        }
+      }
+      return out;
+    };
+    // a jagged break: convex chunks carved out of the top, and rusty rebar left poking up
+    const breakTop = (cx, cy, cz, w, n) => [...Array.from({ length: n }, (_, i) => ({ s: 'crag', c: [cx + (rnd() - 0.5) * w * 1.6, cy + rnd() * 0.6, cz + (rnd() - 0.5) * w * 1.6], r: w * (0.55 + rnd() * 0.4), seed: Math.floor(rnd() * 999), n: 8, sub: true, k: 0.05 })),
+      ...Array.from({ length: 4 }, () => { const x = cx + (rnd() - 0.5) * w * 1.4, z = cz + (rnd() - 0.5) * w * 1.4; return { s: 'cap', a: [x, cy - 0.8, z], b: [x + (rnd() - 0.5) * 0.5, cy + 0.2 + rnd() * 0.5, z + (rnd() - 0.5) * 0.5], r: 0.13, col: rust, k: 0 }; })];
+    // vines hanging down a face (side: +x/-x/+z/-z), moss blobs on the slab edges, a tree on top
+    const vines = (cx, cz, hx, hz, top, side, n) => Array.from({ length: n }, (_, i) => {
+      const u = (i + 0.5) / n * 2 - 1, len = 1.6 + rnd() * 2.6;
+      const [x, z] = side === 'x' ? [cx + hx + 0.18, cz + u * hz * 0.85] : side === '-x' ? [cx - hx - 0.18, cz + u * hz * 0.85] : side === 'z' ? [cx + u * hx * 0.85, cz + hz + 0.18] : [cx + u * hx * 0.85, cz - hz - 0.18];
+      return { s: 'cap', a: [x, top, z], b: [x + (rnd() - 0.5) * 0.4, top - len, z + (rnd() - 0.5) * 0.4], r: 0.19, r2: 0.13, col: rnd() < 0.5 ? vine : mossD, k: 0.04 };
+    });
+    const mossOn = (cx, cz, hx, hz, y, n) => Array.from({ length: n }, () => { const e = rnd() < 0.5, sx = rnd() < 0.5 ? -1 : 1; return { s: 'ell', c: [e ? cx + sx * (hx + 0.1) : cx + (rnd() - 0.5) * hx * 1.6, y, e ? cz + (rnd() - 0.5) * hz * 1.6 : cz + sx * (hz + 0.1)], rr: [0.45 + rnd() * 0.3, 0.2, 0.45 + rnd() * 0.3], col: rnd() < 0.5 ? moss : mossD, k: 0.1 }; });
+    const tree = (x, y, z, s = 1) => [{ s: 'cap', a: [x, y - 0.3, z], b: [x + 0.15 * s, y + 1.1 * s, z], r: 0.18 * s, r2: 0.13 * s, col: bark, k: 0.05 },
+      { s: 'sph', c: [x + 0.15 * s, y + 1.45 * s, z], r: 0.7 * s, col: leaf, k: 0.2 }, { s: 'sph', c: [x + 0.55 * s, y + 1.2 * s, z + 0.3 * s], r: 0.48 * s, col: leafL, k: 0.2 }, { s: 'sph', c: [x - 0.35 * s, y + 1.25 * s, z - 0.25 * s], r: 0.5 * s, col: leaf, k: 0.2 }];
+    const bush = (x, y, z) => [{ s: 'sph', c: [x, y, z], r: 0.42, col: leaf, k: 0.15 }, { s: 'sph', c: [x + 0.35, y - 0.05, z + 0.2], r: 0.32, col: leafL, k: 0.15 }];
+    // turn a group of parts about a pivot (boxes turn too; capsules and spheres just move)
+    const lean = (parts, piv, rot) => {
+      const M = rotMat(rot), mv = p => { const d = [p[0] - piv[0], p[1] - piv[1], p[2] - piv[2]]; return [piv[0] + M[0] * d[0] + M[1] * d[1] + M[2] * d[2], piv[1] + M[3] * d[0] + M[4] * d[1] + M[5] * d[2], piv[2] + M[6] * d[0] + M[7] * d[1] + M[8] * d[2]]; };
+      return parts.map(p => { const q = { ...p }; if (q.c) q.c = mv(q.c); if (q.a) { q.a = mv(q.a); q.b = mv(q.b); } if (q.s === 'box') q.rot = rot; return q; });
+    };
+    // rubble heaped at the foot: a low mound of broken concrete with tipped slabs, mossy on top
+    const rubble = (rx, rz, n) => [{ s: 'ell', c: [0, -0.35, 0], rr: [rx, 0.75, rz], col: wallD, k: 0.3 }, { s: 'ell', c: [0, 0.05, 0], rr: [rx * 0.75, 0.3, rz * 0.7], col: mossD, k: 0.3 },
+      ...Array.from({ length: n }, () => { const a = rnd() * TAU, d = 0.65 + rnd() * 0.3; return { s: 'box', c: [Math.cos(a) * rx * d, 0.1 + rnd() * 0.3, Math.sin(a) * rz * d], hs: [0.35 + rnd() * 0.45, 0.14 + rnd() * 0.12, 0.3 + rnd() * 0.4], rd: 0.04, rot: [(rnd() - 0.5) * 0.9, rnd() * TAU, (rnd() - 0.5) * 0.9], col: rnd() < 0.5 ? wall : wallD, k: 0 }; })];
+    // bruin1: a tall tower leaning over, its top snapped off, a hole blown through one side
+    {
+      const T = [...tower(0, 0, 1.7, 3.3, 1.6, -0.6),
+        ...breakTop(0.6, 6.0, 0.3, 1.3, 3), { s: 'sph', c: [1.75, 2.6, 0.5], r: 0.85, sub: true, k: 0.05 }, { s: 'sph', c: [-0.6, 3.6, -1.65], r: 0.6, sub: true, k: 0.05 },
+        ...vines(0, 0, 1.7, 1.6, 5.4, 'z', 4), ...vines(0, 0, 1.7, 1.6, 5.0, '-x', 3), ...mossOn(0, 0, 1.7, 1.6, 2.35, 3), ...mossOn(0, 0, 1.7, 1.6, 4.15, 2),
+        ...tree(-0.8, 5.0, -0.6, 0.9), ...bush(0.9, 5.2, -0.9)];
+      P('bruin1', [...rubble(3.6, 3.3, 7), ...lean(T, [0, -0.6, 0], [0.1, 0.5, -0.17]), ...bush(-2.6, 0.45, 1.4), ...tree(2.5, 0.4, -1.8, 0.8)], { ao: 0.5 });
+    }
+    // bruin2: a wide office block broken in two: one half still standing, the other slumped over into the sea
+    {
+      const A = [...tower(-1.5, 0, 1.4, 2.3, 2.2, -0.6), ...breakTop(-0.2, 4.0, 0, 1.1, 3), { s: 'crag', c: [0.1, 1.8, 0.6], r: 1.1, seed: 31, n: 8, sub: true, k: 0.05 },
+        ...vines(-1.5, 0, 1.4, 2.2, 4.0, '-x', 4), ...vines(-1.5, 0, 1.4, 2.2, 3.8, 'z', 3), ...mossOn(-1.5, 0, 1.4, 2.2, 1.75, 3), ...tree(-2.1, 4.1, 0.9, 1.0), ...bush(-1.2, 4.2, -1.3)];
+      const B = [...tower(1.9, 0, 1.2, 1.9, 2.1, -0.6), ...breakTop(0.8, 3.0, 0, 1.0, 2), ...vines(1.9, 0, 1.2, 2.1, 3.2, 'x', 3), ...mossOn(1.9, 0, 1.2, 2.1, 1.25, 3), ...bush(2.2, 3.4, 0.4)];
+      // floor slabs torn loose at the break, hanging between the halves
+      const slabs = [0.8, 1.7, 2.6].map((y, i) => ({ s: 'box', c: [0.25, y, (i - 1) * 0.5], hs: [0.6, 0.12, 1.2], rd: 0.03, rot: [0.2 * (i - 1), 0.1, -0.45 + i * 0.25], col: wall, k: 0 }));
+      P('bruin2', [...rubble(4.0, 3.4, 8), ...A, ...lean(B, [0.7, -0.6, 0], [0.05, -0.1, -0.5]), ...slabs], { ao: 0.5 });
+    }
+    // bruin3: a broken skyline: three stumps snapped at different heights and a fallen tower lying across them
+    {
+      const s1 = [...tower(-1.3, -1.0, 1.0, 2.6, 1.0, -0.6), ...breakTop(-1.3, 4.4, -1.0, 0.9, 2), ...vines(-1.3, -1.0, 1.0, 1.0, 4.2, '-z', 3), ...mossOn(-1.3, -1.0, 1.0, 1.0, 2.15, 2), ...tree(-1.5, 4.0, -1.2, 0.85)];
+      const s2 = [...tower(1.5, -1.4, 0.9, 1.6, 0.9, -0.6), ...breakTop(1.5, 2.4, -1.4, 0.8, 2), ...vines(1.5, -1.4, 0.9, 0.9, 2.4, 'x', 2), ...bush(1.4, 2.6, -1.2)];
+      const s3 = lean([...tower(0.3, 1.7, 0.85, 3.0, 0.85, -0.6), ...breakTop(0.3, 5.2, 1.7, 0.8, 2), ...vines(0.3, 1.7, 0.85, 0.85, 5.0, 'z', 3), ...mossOn(0.3, 1.7, 0.85, 0.85, 3.05, 2), ...tree(0.2, 4.7, 1.6, 0.75)], [0.3, -0.6, 1.7], [0.12, 0, 0.1]);
+      const fallen = lean([...tower(0, 0, 0.75, 2.6, 0.75, -2.6), ...vines(0, 0, 0.75, 0.75, 2.0, 'x', 3)], [0, 0, 0], [Math.PI / 2 - 0.12, 1.1, 0]).map(p => p.c ? { ...p, c: [p.c[0] + 0.6, p.c[1] + 0.35, p.c[2] - 0.2] } : { ...p, a: [p.a[0] + 0.6, p.a[1] + 0.35, p.a[2] - 0.2], b: [p.b[0] + 0.6, p.b[1] + 0.35, p.b[2] - 0.2] });
+      P('bruin3', [...rubble(3.8, 3.6, 8), ...s1, ...s2, ...s3, ...fallen, ...bush(-2.8, 0.45, 1.6), ...bush(2.9, 0.4, 1.0)], { ao: 0.5 });
+    }
   }
   // the Soda Sea: gumdrop hills sugared with sprinkles on pink frosting, candy canes, swirl lollipops, chocolate rocks
   {

@@ -524,6 +524,10 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .card .nm { display: block; font-size: 25px; line-height: 1.1; }
 .card .ds { display: block; font-size: 17.5px; font-weight: 500; color: var(--ink-dim); margin-top: 3px; }
 .card .ds em { font-style: normal; color: var(--ink); font-weight: 700; }
+.card .evo-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; margin-top: 5px; }
+.card .evo-row small { font-size: 15px; font-weight: 700; color: #b06a00; margin-right: 2px; }
+.card .evo-row img { width: 36px; height: 36px; border-radius: 9px; background: #e8f0fb; opacity: .72; filter: grayscale(.3); }
+.card .evo-row img.held { opacity: 1; filter: none; background: #fff2c8; box-shadow: 0 0 0 2px #ffc93a; }
 .row-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 @media (min-width: 820px) and (min-aspect-ratio: 1/1) {
   #levelup .modal-body { width: min(100%, 820px); }
@@ -1010,7 +1014,11 @@ function partDist(pt, x, y, z) {
       return Math.hypot(u - cx, v - cy, w) - pt.r;
     }
     case 'box': {
-      const qx = Math.abs(x - pt.c[0]) - pt.hs[0] + pt.rd, qy = Math.abs(y - pt.c[1]) - pt.hs[1] + pt.rd, qz = Math.abs(z - pt.c[2]) - pt.hs[2] + pt.rd;
+      // (rot: [rx, ry, rz] turns the box about its center; prepParts keeps the matrix in _m)
+      let px = x - pt.c[0], py = y - pt.c[1], pz = z - pt.c[2];
+      const m = pt._m;
+      if (m) { const lx = m[0] * px + m[3] * py + m[6] * pz, ly = m[1] * px + m[4] * py + m[7] * pz; pz = m[2] * px + m[5] * py + m[8] * pz; px = lx; py = ly; }
+      const qx = Math.abs(px) - pt.hs[0] + pt.rd, qy = Math.abs(py) - pt.hs[1] + pt.rd, qz = Math.abs(pz) - pt.hs[2] + pt.rd;
       return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - pt.rd;
     }
     case 'gable': {
@@ -1057,9 +1065,17 @@ function partBounds(pt) {
   }
   return [[0, 0, 0], 1e9];
 }
+// a rotation matrix (row-major, world = M * local) from [rx, ry, rz]: z first, then x, then y
+function rotMat(r) {
+  const [a, b, c] = r, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cc = Math.cos(c), sc = Math.sin(c);
+  // Ry * Rx * Rz
+  return [cb * cc + sb * sa * sc, -cb * sc + sb * sa * cc, sb * ca,
+    ca * sc, ca * cc, -sa,
+    -sb * cc + cb * sa * sc, sb * sc + cb * sa * cc, cb * ca];
+}
 function prepParts(parts) {
   // (boxes and cylinders without a rounding radius would give NaN)
-  for (const pt of parts) { if ((pt.s === 'box' || pt.s === 'cyl') && pt.rd === undefined) pt.rd = 0; const [c, r] = partBounds(pt); pt.bc = c; pt.br = r; }
+  for (const pt of parts) { if ((pt.s === 'box' || pt.s === 'cyl') && pt.rd === undefined) pt.rd = 0; if (pt.s === 'box' && pt.rot && !pt._m) pt._m = rotMat(pt.rot); const [c, r] = partBounds(pt); pt.bc = c; pt.br = r; }
   return parts;
 }
 function modelSdf(parts, x, y, z) {
@@ -1200,7 +1216,13 @@ function binnedSdf(parts, bmin, bmax, reach) {
   const nb = ext.map(e => Math.max(1, Math.ceil(e / bs))), lists = [], hd = bs * 0.8661;
   for (let k = 0; k < nb[2]; k++) for (let j = 0; j < nb[1]; j++) for (let i = 0; i < nb[0]; i++) {
     const cx = bmin[0] + (i + 0.5) * bs, cy = bmin[1] + (j + 0.5) * bs, cz = bmin[2] + (k + 0.5) * bs;
-    lists.push(parts.filter(pt => Math.hypot(cx - pt.bc[0], cy - pt.bc[1], cz - pt.bc[2]) - pt.br - (pt.k || 0) < hd + reach));
+    // (spheres, boxes, cylinders and even capsules give their true distance, which is a far closer test than the
+    // bounding sphere for long or flat parts: a slab, a tower, a mast)
+    lists.push(parts.filter(pt => {
+      const lim = hd + reach + (pt.k || 0);
+      if (Math.hypot(cx - pt.bc[0], cy - pt.bc[1], cz - pt.bc[2]) - pt.br >= lim) return false;
+      return !(pt.s === 'box' || pt.s === 'sph' || pt.s === 'cyl' || (pt.s === 'cap' && pt.r2 === undefined)) || partDist(pt, cx, cy, cz) < lim;
+    }));
   }
   return (x, y, z) => {
     // (a NaN coordinate lands in bin 0 rather than off the end)
@@ -1264,6 +1286,18 @@ function buildSkinnedMesh(model, cell) {
     // (w: 0 a fixed color, 1 the instance tint, 2 a fixed color the tint multiplies: a ship's paint, 10c-ship-cosmetics.js)
     if (bp && bp.col) { V[o + 10] = bp.col[0]; V[o + 11] = bp.col[1]; V[o + 12] = bp.col[2]; V[o + 13] = bp.paint ? 2 : 0; }
     else { V[o + 10] = 1; V[o + 11] = 1; V[o + 12] = 1; V[o + 13] = 1; }
+    // a box's window grid, painted on its walls (win: { col, col2, sy floor height, fy share of it glazed, sx bay width, fx share glazed })
+    if (bp && bp.win) {
+      const W = bp.win, m = bp._m;
+      let px = x - bp.c[0], py = y - bp.c[1], pz = z - bp.c[2], qx = nx, qy = ny, qz = nz;
+      if (m) { const lx = m[0] * px + m[3] * py + m[6] * pz, ly = m[1] * px + m[4] * py + m[7] * pz; pz = m[2] * px + m[5] * py + m[8] * pz; px = lx; py = ly;
+        const ax = m[0] * qx + m[3] * qy + m[6] * qz, ay = m[1] * qx + m[4] * qy + m[7] * qz; qz = m[2] * qx + m[5] * qy + m[8] * qz; qx = ax; qy = ay; }
+      const fl = (py + bp.hs[1]) / W.sy, u = (Math.abs(qx) > Math.abs(qz) ? pz : px) / W.sx + 50.5;
+      if (Math.abs(qy) < 0.6 && fl > 0.6 && fl % 1 > 1 - W.fy && Math.abs(u % 1 - 0.5) < W.fx / 2) {
+        const c = W.col2 && Math.abs(Math.sin(Math.floor(fl) * 12.99 + Math.floor(u) * 78.23 + bp.c[0]) * 437.5) % 1 < 0.25 ? W.col2 : W.col;
+        V[o + 10] = c[0]; V[o + 11] = c[1]; V[o + 12] = c[2]; V[o + 13] = 0;
+      }
+    }
   }
   return { verts: V, idx: mesh.idx, nv, ni: mesh.idx.length };
 }
@@ -4612,8 +4646,86 @@ CLIPS.hack = { frames: 16, fn(t) {
   ] };
 } };
 
+// ---------- island outlines: each kind is its main mound (r 4 at the origin, model units) plus lobes of land round
+// it, so no two kinds share a shape and none is a plain disc. The models grow the lobes with their own ground, shore
+// rocks and life (ISLE_LOOK), and the game collides with the same circles (seaMakeIsle). [x, z, r]
+const ISLE_LOBES = {
+  isle0: [[4.2, 1.5, 2.4], [-2.5, 3.6, 1.8]], isle1: [[-3.8, -2.2, 2.6], [1.5, 4.3, 1.6], [4.0, -2.8, 1.5]],
+  icoral: [[3.8, 2.6, 2.2], [1.0, 4.6, 1.8], [-2.6, 4.2, 1.6]], ikelp: [[-4.4, 0.5, 2.2], [3.2, -3.4, 1.9]],
+  ihut: [[4.0, -1.0, 2.6], [5.6, 2.4, 1.4]], iice: [[3.6, 3.0, 2.0], [-3.8, -2.6, 2.4], [-0.5, -4.8, 1.6]],
+  ivolc: [[-4.2, 2.0, 2.4], [2.0, 4.4, 1.6]], ighost: [[4.4, 0.8, 2.0], [-1.6, -4.4, 2.2]],
+  ispire: [[-3.6, 3.2, 1.8], [4.2, -2.2, 2.4], [2.0, 4.6, 1.4]], iwreck: [[4.6, 1.4, 2.0], [-4.0, -1.8, 1.6]],
+  ifort: [[0, 5.0, 2.4], [0, -5.0, 2.4]], iglow: [[3.8, -3.0, 2.2], [-3.2, -3.8, 1.8], [-4.4, 1.6, 1.6]],
+  iweed: [[-4.6, -0.8, 2.6], [2.2, 4.4, 2.0]], istack: [[5.0, 3.0, 1.4], [-4.6, 3.4, 1.2], [1.0, -5.4, 1.5]],
+  iruin: [[4.0, 2.8, 2.2], [-3.4, 3.0, 1.6]], icandy: [[3.6, -3.2, 2.4], [-4.0, -2.0, 2.0], [0.4, 4.8, 1.8]],
+  itri: [[4.4, -2.0, 1.8], [-2.8, 4.0, 2.2]], isky: [[3.6, 2.2, 2.4], [-3.8, 1.4, 2.2], [0.2, -4.2, 2.0]],
+  ibones: [[-4.4, -2.4, 2.0], [3.6, 3.4, 1.8]], ilocker: [[4.2, -2.6, 2.2], [-2.4, 4.4, 1.6]], iedge: [[-4.0, 3.0, 2.2], [4.2, 2.6, 1.6]],
+  bruin1: [[3.8, 3.4, 1.7]], bruin2: [[4.8, -1.6, 1.9]], bruin3: [[-4.3, 2.6, 1.7], [3.6, -3.8, 1.5]],
+};
+// each kind's lobes: ground, a top (grass, snow, moss...), shore rocks, and what lives on them (isleDeco)
+const ISLE_LOOK = {
+  isle0: { ground: '#f2dc9a', top: '#6cc34a', rock: '#a89e8a', deco: 'palm' }, isle1: { ground: '#f2dc9a', top: '#7ad04e', rock: '#9a9488', deco: 'bush' },
+  icoral: { ground: '#f4e2b0', rock: '#e8a0a8', deco: 'coral', n: 3 }, ikelp: { ground: '#c8b47a', top: '#5a8a4a', rock: '#7a7a72', deco: 'kelp', n: 3 },
+  ihut: { ground: '#f2dc9a', top: '#6cc34a', rock: '#a89e8a', deco: 'crates' }, iice: { ground: '#d8f0ff', top: '#ffffff', rock: '#9ad0f0', deco: 'crystal', n: 3 },
+  ivolc: { ground: '#3a3036', rock: '#2a2228', rockD: '#5a2a1a', deco: 'ember', n: 2 }, ighost: { ground: '#4a5248', top: '#3a4a3a', rock: '#5a5e58', deco: 'tomb', n: 2 },
+  ispire: { ground: '#5a5a62', rock: '#3a3a44', deco: 'spike', n: 3 }, iwreck: { ground: '#d8c08a', rock: '#7a6a5a', deco: 'wreckage', n: 2 },
+  ifort: { ground: '#d8c8a0', top: '#7ab04a', rock: '#a8a49a', deco: 'wall', n: 2 }, iglow: { ground: '#2a2e40', top: '#3a3a5a', rock: '#22263a', deco: 'shroom', n: 3 },
+  iweed: { ground: '#8a8a4a', top: '#6a7a2a', rock: '#5a5a3a', deco: 'weed', n: 3 }, istack: { ground: '#c89a6a', top: '#7ab04a', rock: '#a87a4a', deco: 'stack', n: 1 },
+  iruin: { ground: '#e8e2d0', rock: '#c8c0a8', deco: 'column', n: 2 }, icandy: { ground: '#ffb8d8', top: '#fff0f6', rock: '#ff8ac0', deco: 'candy', n: 3 },
+  itri: { ground: '#f2dc9a', rock: '#a89e8a', deco: 'buoy', n: 2 }, isky: { ground: '#ffffff', top: '#eef6ff', rock: '#dfe8f4', deco: 'puff', n: 3 },
+  ibones: { ground: '#3a3a40', rock: '#26262c', deco: 'bone', n: 2 }, ilocker: { ground: '#24302c', rock: '#1a2420', deco: 'chest', n: 2 },
+  iedge: { ground: '#f4d48a', top: '#ffe8a8', rock: '#e8b84a', deco: 'gold', n: 2 },
+  bruin1: { ground: '#8a8a84', top: '#5a8a3a', rock: '#6a6c68', deco: 'rubble', n: 2 }, bruin2: { ground: '#8a8a84', top: '#4a7a32', rock: '#6a6c68', deco: 'rubble', n: 2 },
+  bruin3: { ground: '#8a8a84', top: '#5a8a3a', rock: '#6a6c68', deco: 'rubble', n: 2 },
+};
+// a little life for a lobe (model units; island meshes are coarse, 0.1 a cell, so nothing here is thinner than 0.2)
+function isleDeco(kind, x, z, rnd) {
+  const C = hexToRgb, h = 0.25;
+  const green = C('#4fa63a'), greenL = C('#7ad04e'), bark = C('#8a5a30');
+  switch (kind) {
+    case 'palm': { const lx = (rnd() - 0.5) * 0.8, lz = (rnd() - 0.5) * 0.8, top = [x + lx, h + 2.2, z + lz];
+      return [{ s: 'cap', a: [x, h, z], b: top, r: 0.16, r2: 0.11, col: bark, k: 0.05 }, ...[0, 1, 2, 3, 4].map(i => { const a = i / 5 * TAU + rnd(); return { s: 'cap', a: top, b: [top[0] + Math.cos(a) * 1.1, top[1] - 0.45, top[2] + Math.sin(a) * 1.1], r: 0.16, r2: 0.1, col: i % 2 ? green : greenL, k: 0.05 }; })]; }
+    case 'bush': return [0, 1, 2].map(i => ({ s: 'sph', c: [x + (rnd() - 0.5) * 0.7, h + 0.35, z + (rnd() - 0.5) * 0.7], r: 0.4 + rnd() * 0.2, col: i % 2 ? green : greenL, k: 0.2 }));
+    case 'coral': return [0, 1, 2].map(i => { const col = C(['#ff7aa8', '#ff9a4a', '#c86aff'][Math.floor(rnd() * 3)]), a = rnd() * TAU; return { s: 'cap', a: [x, h, z], b: [x + Math.cos(a) * 0.4, h + 0.9 + rnd() * 0.6, z + Math.sin(a) * 0.4], r: 0.2, r2: 0.13, col, k: 0.12 }; });
+    case 'kelp': return [0, 1].map(i => ({ s: 'cap', a: [x + i * 0.4, h, z], b: [x + i * 0.4 + 0.2, h + 1.8 + rnd(), z - 0.2], r: 0.18, r2: 0.12, col: C(i ? '#4a8a3a' : '#6aa84a'), k: 0.05 }));
+    case 'crates': return [{ s: 'box', c: [x, h + 0.3, z], hs: [0.35, 0.3, 0.35], rd: 0.04, col: C('#a8693a'), k: 0 }, { s: 'cyl', ax: 'y', c: [x + 0.7, h + 0.35, z + 0.2], r: 0.3, hh: 0.35, rd: 0.06, col: C('#8a5a30'), k: 0 }];
+    case 'crystal': return [0, 1, 2].map(() => { const a = rnd() * TAU, l = 0.8 + rnd() * 1.2; return { s: 'cap', a: [x, h, z], b: [x + Math.cos(a) * 0.35, h + l, z + Math.sin(a) * 0.35], r: 0.26, r2: 0.05, col: C('#bfe8ff'), k: 0.03 }; });
+    case 'ember': return [{ s: 'ell', c: [x, h + 0.05, z], rr: [0.7, 0.2, 0.6], col: C('#ff6a1a'), k: 0.05 }, { s: 'crag', c: [x + 0.6, h + 0.3, z - 0.3], r: 0.45, seed: 7, n: 9, col: C('#2a2228'), k: 0.1 }];
+    case 'tomb': return [{ s: 'box', c: [x, h + 0.45, z], hs: [0.3, 0.45, 0.12], rd: 0.12, col: C('#8a8e88'), k: 0 }, { s: 'cap', a: [x + 0.8, h, z], b: [x + 1.0, h + 1.6, z + 0.2], r: 0.13, r2: 0.08, col: C('#3a2e28'), k: 0.03 }, { s: 'cap', a: [x + 0.95, h + 1.1, z + 0.1], b: [x + 1.5, h + 1.5, z + 0.2], r: 0.1, col: C('#3a2e28'), k: 0.03 }];
+    case 'spike': return [0, 1].map(() => ({ s: 'cap', a: [x + (rnd() - 0.5) * 0.6, h, z + (rnd() - 0.5) * 0.6], b: [x, h + 1.4 + rnd() * 1.2, z], r: 0.38, r2: 0.05, col: C('#3a3a44'), k: 0.08 }));
+    case 'wreckage': return [{ s: 'box', c: [x, h + 0.15, z], hs: [0.9, 0.1, 0.22], rd: 0.05, col: C('#7a4f2a'), k: 0 }, { s: 'box', c: [x + 0.2, h + 0.35, z + 0.4], hs: [0.25, 0.25, 0.7], rd: 0.05, col: C('#8a5a30'), k: 0 }, { s: 'cyl', ax: 'z', c: [x - 0.6, h + 0.3, z - 0.5], r: 0.28, hh: 0.35, rd: 0.06, col: C('#6e4426'), k: 0 }];
+    case 'wall': return [{ s: 'box', c: [x, h + 0.45, z], hs: [0.9, 0.45, 0.25], rd: 0.05, col: C('#c8c0a8'), k: 0 }, ...[-0.6, 0, 0.6].map(dx => ({ s: 'box', c: [x + dx, h + 1.0, z], hs: [0.18, 0.12, 0.25], rd: 0.03, col: C('#c8c0a8'), k: 0 }))];
+    case 'shroom': return [0, 1].map(i => { const sx = x + i * 0.6, hh = 0.7 + rnd() * 0.7, col = C(['#4ad8ff', '#ff5ab4', '#7aff8a'][Math.floor(rnd() * 3)]); return [{ s: 'cap', a: [sx, h, z], b: [sx, h + hh, z], r: 0.14, col: C('#e8e4f0'), k: 0.03 }, { s: 'ell', c: [sx, h + hh, z], rr: [0.5, 0.25, 0.5], col, k: 0.03 }]; }).flat();
+    case 'weed': return [0, 1, 2].map(i => ({ s: 'cap', a: [x + i * 0.3, h, z], b: [x + i * 0.3 + (rnd() - 0.5), h + 0.9 + rnd() * 0.6, z + (rnd() - 0.5)], r: 0.17, r2: 0.1, col: C(i % 2 ? '#6a7a2a' : '#8a9a3a'), k: 0.08 }));
+    case 'stack': return [{ s: 'cap', a: [x, h, z], b: [x + 0.2, h + 2.6 + rnd(), z], r: 0.75, r2: 0.5, col: C('#a87a4a'), k: 0.2 }, { s: 'ell', c: [x + 0.2, h + 3.0, z], rr: [0.6, 0.25, 0.6], col: C('#7ab04a'), k: 0.1 }];
+    case 'column': return [{ s: 'cyl', ax: 'y', c: [x, h + 0.7, z], r: 0.3, hh: 0.7 + rnd() * 0.5, rd: 0.04, col: C('#f4f0e4'), k: 0 }, { s: 'box', c: [x + 0.6, h + 0.15, z + 0.3], hs: [0.5, 0.15, 0.3], rd: 0.04, col: C('#e8e2d0'), k: 0 }];
+    case 'candy': return [{ s: 'cap', a: [x, h, z], b: [x, h + 1.2, z], r: 0.08 + 0.06, col: C('#ffffff'), k: 0 }, { s: 'sph', c: [x, h + 1.4, z], r: 0.4, col: C(['#ff5ab4', '#ffd23a', '#4ad8ff'][Math.floor(rnd() * 3)]), k: 0.02 }, { s: 'ell', c: [x + 0.7, h + 0.2, z], rr: [0.35, 0.3, 0.35], col: C('#7aff8a'), k: 0.05 }];
+    case 'buoy': return [{ s: 'cyl', ax: 'y', c: [x, h + 0.5, z], r: 0.3, hh: 0.5, rd: 0.08, col: C('#e8283a'), k: 0 }, { s: 'cyl', ax: 'y', c: [x, h + 0.75, z], r: 0.31, hh: 0.12, rd: 0.04, col: C('#ffffff'), k: 0 }, { s: 'sph', c: [x, h + 1.15, z], r: 0.15, col: C('#ffe08a'), k: 0 }];
+    case 'puff': return [0, 1, 2].map(() => ({ s: 'sph', c: [x + (rnd() - 0.5), h + 0.5 + rnd() * 0.4, z + (rnd() - 0.5)], r: 0.5 + rnd() * 0.3, col: C('#ffffff'), k: 0.3 }));
+    case 'bone': return [0, 1, 2].map(i => ({ s: 'cap', a: [x + i * 0.35, h, z - 0.4], b: [x + i * 0.35 + 0.2, h + 0.9, z + 0.3], r: 0.12, r2: 0.09, col: C('#f0e8d8'), k: 0.03 }));
+    case 'chest': return [{ s: 'box', c: [x, h + 0.3, z], hs: [0.45, 0.28, 0.3], rd: 0.06, col: C('#6e4426'), k: 0 }, { s: 'box', c: [x, h + 0.62, z], hs: [0.46, 0.1, 0.31], rd: 0.05, col: C('#f2c440'), k: 0 }];
+    case 'gold': return [0, 1].map(() => ({ s: 'cap', a: [x + (rnd() - 0.5) * 0.6, h, z + (rnd() - 0.5) * 0.6], b: [x, h + 1.0 + rnd(), z], r: 0.3, r2: 0.06, col: C('#f2c440'), k: 0.05 }));
+    case 'rubble': return [0, 1, 2].map(() => ({ s: 'box', c: [x + (rnd() - 0.5) * 1.2, h + 0.2 + rnd() * 0.3, z + (rnd() - 0.5) * 1.2], hs: [0.3 + rnd() * 0.3, 0.2 + rnd() * 0.2, 0.3 + rnd() * 0.3], rd: 0.05, rot: [(rnd() - 0.5) * 0.8, rnd() * TAU, (rnd() - 0.5) * 0.8], col: C(rnd() < 0.5 ? '#9a9c98' : '#7e807c'), k: 0 }));
+  }
+  return [];
+}
+// the lobes round a kind's main mound: ground blended into it (a smooth isthmus), a top, rocks on the outer shore
+function isleLobeParts(kind) {
+  const L = ISLE_LOOK[kind], C = hexToRgb, out = [];
+  let seed = 7; for (const ch of kind) seed = seed * 31 + ch.charCodeAt(0);
+  const rnd = mulberry32(seed), g = C(L.ground), top = L.top && C(L.top), rock = C(L.rock), rockD = C(L.rockD || L.rock);
+  for (const [x, z, r] of ISLE_LOBES[kind]) {
+    out.push({ s: 'ell', c: [x, -0.25, z], rr: [r, 0.72, r * (0.8 + rnd() * 0.3)], col: g, k: 0.9 });
+    if (top) out.push({ s: 'ell', c: [x * 0.97, 0.12, z * 0.97], rr: [r * 0.66, 0.32, r * 0.58], col: top, k: 0.5 });
+    const out0 = Math.atan2(z, x);
+    for (let i = 0; i < 3; i++) { const a = out0 + (i - 1) * 0.7 + (rnd() - 0.5) * 0.4, d = r * (0.72 + rnd() * 0.2); out.push({ s: 'crag', c: [x + Math.cos(a) * d, 0.05 + rnd() * 0.2, z + Math.sin(a) * d], r: 0.38 + rnd() * 0.35, seed: Math.floor(rnd() * 999), n: 9, col: i % 2 ? rock : rockD, k: 0.12 }); }
+    for (let i = 0; i < (L.n ?? 2); i++) { const a = rnd() * TAU, d = rnd() * r * 0.45; out.push(...isleDeco(L.deco, x + Math.cos(a) * d, z + Math.sin(a) * d, rnd)); }
+  }
+  return out;
+}
+const isleProp = (defs, name, parts, o) => prop(defs, name, ISLE_LOBES[name] ? parts.concat(isleLobeParts(name)) : parts, o);
 function seaModels(defs) {
-  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const C = hexToRgb, P = (name, parts, o) => isleProp(defs, name, parts, o);
   const wood = C('#b07a45'), woodL = C('#c99358'), woodD = C('#7a4f2a'), bark = C('#8a5a30'), rope = C('#e2c98f'), ropeD = C('#b89a5e');
   const white = C('#fbf6ee'), red = C('#e8414a'), pupil = C('#16101a');
 
@@ -6193,10 +6305,12 @@ function seaBossModels(defs) {
 // Islands are radius 4 at scale 1 and drawn at radius / 4, like the others.
 // ============================================================
 const SEA_DEEP_FOLK = ['pweed', 'pmer', 'pblink', 'pskel', 'pballoon', 'pjelly', 'pgummy', 'pangler'];
-const SEA_DEEP_ISLES = ['iglow', 'iweed', 'istack', 'iruin', 'icandy', 'itri', 'isky', 'ibones', 'ilocker', 'iedge', 'icol'];
+const SEA_DEEP_ISLES = ['iglow', 'iweed', 'istack', 'iruin', 'icandy', 'itri', 'isky', 'ibones', 'ilocker', 'icol', 'bruin1', 'bruin2', 'bruin3'];
 Object.assign(THEME_CLIPS, { pweed: ['paddle', 'hack'], pmer: ['paddle', 'hack', 'throw'], pblink: ['paddle', 'hack'], pskel: ['paddle', 'hack'], pballoon: ['hang'], pjelly: ['jpulse'], pgummy: ['gbob'], pangler: ['aswim'] });
 for (const id of SEA_DEEP_FOLK) THEME_CELLS[id] = 0.017;
 for (const id of SEA_DEEP_ISLES) { THEME_CLIPS[id] = ['still']; THEME_CELLS[id] = 0.1; }
+// (the drowned towers are big and blocky: a coarser cell keeps their build quick; nothing on them is under 0.26 thick)
+Object.assign(THEME_CELLS, { bruin1: 0.12, bruin2: 0.12, bruin3: 0.12 });
 MESH_ORDER.push(...SEA_DEEP_FOLK, ...SEA_DEEP_ISLES);
 
 // hanging from a balloon: arms up on the ropes, legs dangling and swinging a little
@@ -6225,7 +6339,7 @@ CLIPS.aswim = { frames: 32, fn(t) {
 } };
 
 function seaDeepModels(defs) {
-  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const C = hexToRgb, P = (name, parts, o) => isleProp(defs, name, parts, o);
   const white = C('#fbf6ee'), dark = C('#16101a');
 
   // ---------- the glowing jellyfish: a domed bell (it takes the tint), a bright core, a frilled rim, trailing
@@ -6350,6 +6464,80 @@ function seaDeepModels(defs) {
       ...Array.from({ length: 10 }, (_, i) => { const a = i / 10 * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 2.6, 2.6, Math.sin(a) * 2.6], r: 0.28, hh: 3.0, rd: 0.1, sub: true, k: 0.1 }; }),
       { s: 'box', c: [0, 6.1, 0], hs: [3.2, 0.45, 3.2], rd: 0.12, col: gold, k: 0 }, { s: 'cyl', ax: 'y', c: [0, 6.75, 0], r: 2.2, hh: 0.25, rd: 0.08, col: marble, k: 0 },
       { s: 'tor', ax: 'y', c: [0, 0.3, 0], R: 2.7, r: 0.35, a0: -Math.PI, a1: Math.PI, col: C('#5affe0'), k: 0 }], { ao: 0.35 });
+  }
+  // ---------- the Edge of the World's drowned city (ocean 20): big office towers standing in the sea, cracked, broken
+  // off and overgrown: dark glass between concrete floor slabs and pillars, jagged broken tops with rusty rebar,
+  // holes blown through, vines down the walls, moss on the ledges, trees on the roofs, rubble heaped at the foot ----------
+  {
+    const wall = C('#b8b3a6'), wallD = C('#8e897e'), glass = C('#26343c'), glassB = C('#3e6470'), moss = C('#5a8a3a'), mossD = C('#40702c');
+    const crack = C('#38342e'), vine = C('#3a6a28'), leaf = C('#4f9a3a'), leafL = C('#74c04e'), bark = C('#6a4a2a'), rust = C('#9a5030'), rnd = mulberry32(2020);
+    // a tower block (half sizes hx, hy, hz, standing on y0): concrete walls with rows of dark windows (some broken
+    // through, lighter), corner pillars, a ledge halfway up and a parapet on the roof
+    const WIN = { col: glass, col2: glassB, sy: 0.9, fy: 0.55, sx: 0.7, fx: 0.62 };
+    const tower = (cx, cz, hx, hy, hz, y0) => {
+      const cy = y0 + hy, out = [{ s: 'box', c: [cx, cy, cz], hs: [hx, hy, hz], rd: 0.05, col: wall, win: WIN, k: 0 }];
+      for (const x of [-hx, hx]) for (const z of [-hz, hz]) out.push({ s: 'box', c: [cx + x, cy, cz + z], hs: [0.2, hy, 0.2], rd: 0.03, col: wallD, k: 0 });
+      out.push({ s: 'box', c: [cx, y0 + Math.round(hy) * 0.9 + 0.05, cz], hs: [hx + 0.14, 0.13, hz + 0.14], rd: 0.03, col: wallD, k: 0 });
+      out.push({ s: 'box', c: [cx, y0 + hy * 2 + 0.1, cz], hs: [hx + 0.1, 0.16, hz + 0.1], rd: 0.04, col: wallD, k: 0 });
+      // cracks: dark zigzags running down a wall or two (sunk all but a hair into the wall, so they only darken it)
+      for (let n = 0; n < (hy > 2.8 ? 2 : 1); n++) {
+        const f = Math.floor(rnd() * 4), alongX = f < 2, sg = f % 2 ? -1 : 1, half = alongX ? hx : hz;
+        let u = (rnd() - 0.5) * half * 1.2, y = y0 + hy * 2 - 0.2 - rnd() * 0.6;
+        for (let k = 0; k < 3; k++) {
+          const u2 = clamp(u + (rnd() - 0.5) * 0.9, -half * 0.85, half * 0.85), y2 = y - 0.45 - rnd() * 0.5;
+          const P = (uu, yy) => alongX ? [cx + uu, yy, cz + sg * (hz - 0.05)] : [cx + sg * (hx - 0.05), yy, cz + uu];
+          out.push({ s: 'cap', a: P(u, y), b: P(u2, y2), r: 0.1, col: crack, k: 0 });
+          u = u2; y = y2;
+        }
+      }
+      return out;
+    };
+    // a jagged break: convex chunks carved out of the top, and rusty rebar left poking up
+    const breakTop = (cx, cy, cz, w, n) => [...Array.from({ length: n }, (_, i) => ({ s: 'crag', c: [cx + (rnd() - 0.5) * w * 1.6, cy + rnd() * 0.6, cz + (rnd() - 0.5) * w * 1.6], r: w * (0.55 + rnd() * 0.4), seed: Math.floor(rnd() * 999), n: 8, sub: true, k: 0.05 })),
+      ...Array.from({ length: 4 }, () => { const x = cx + (rnd() - 0.5) * w * 1.4, z = cz + (rnd() - 0.5) * w * 1.4; return { s: 'cap', a: [x, cy - 0.8, z], b: [x + (rnd() - 0.5) * 0.5, cy + 0.2 + rnd() * 0.5, z + (rnd() - 0.5) * 0.5], r: 0.13, col: rust, k: 0 }; })];
+    // vines hanging down a face (side: +x/-x/+z/-z), moss blobs on the slab edges, a tree on top
+    const vines = (cx, cz, hx, hz, top, side, n) => Array.from({ length: n }, (_, i) => {
+      const u = (i + 0.5) / n * 2 - 1, len = 1.6 + rnd() * 2.6;
+      const [x, z] = side === 'x' ? [cx + hx + 0.18, cz + u * hz * 0.85] : side === '-x' ? [cx - hx - 0.18, cz + u * hz * 0.85] : side === 'z' ? [cx + u * hx * 0.85, cz + hz + 0.18] : [cx + u * hx * 0.85, cz - hz - 0.18];
+      return { s: 'cap', a: [x, top, z], b: [x + (rnd() - 0.5) * 0.4, top - len, z + (rnd() - 0.5) * 0.4], r: 0.19, r2: 0.13, col: rnd() < 0.5 ? vine : mossD, k: 0.04 };
+    });
+    const mossOn = (cx, cz, hx, hz, y, n) => Array.from({ length: n }, () => { const e = rnd() < 0.5, sx = rnd() < 0.5 ? -1 : 1; return { s: 'ell', c: [e ? cx + sx * (hx + 0.1) : cx + (rnd() - 0.5) * hx * 1.6, y, e ? cz + (rnd() - 0.5) * hz * 1.6 : cz + sx * (hz + 0.1)], rr: [0.45 + rnd() * 0.3, 0.2, 0.45 + rnd() * 0.3], col: rnd() < 0.5 ? moss : mossD, k: 0.1 }; });
+    const tree = (x, y, z, s = 1) => [{ s: 'cap', a: [x, y - 0.3, z], b: [x + 0.15 * s, y + 1.1 * s, z], r: 0.18 * s, r2: 0.13 * s, col: bark, k: 0.05 },
+      { s: 'sph', c: [x + 0.15 * s, y + 1.45 * s, z], r: 0.7 * s, col: leaf, k: 0.2 }, { s: 'sph', c: [x + 0.55 * s, y + 1.2 * s, z + 0.3 * s], r: 0.48 * s, col: leafL, k: 0.2 }, { s: 'sph', c: [x - 0.35 * s, y + 1.25 * s, z - 0.25 * s], r: 0.5 * s, col: leaf, k: 0.2 }];
+    const bush = (x, y, z) => [{ s: 'sph', c: [x, y, z], r: 0.42, col: leaf, k: 0.15 }, { s: 'sph', c: [x + 0.35, y - 0.05, z + 0.2], r: 0.32, col: leafL, k: 0.15 }];
+    // turn a group of parts about a pivot (boxes turn too; capsules and spheres just move)
+    const lean = (parts, piv, rot) => {
+      const M = rotMat(rot), mv = p => { const d = [p[0] - piv[0], p[1] - piv[1], p[2] - piv[2]]; return [piv[0] + M[0] * d[0] + M[1] * d[1] + M[2] * d[2], piv[1] + M[3] * d[0] + M[4] * d[1] + M[5] * d[2], piv[2] + M[6] * d[0] + M[7] * d[1] + M[8] * d[2]]; };
+      return parts.map(p => { const q = { ...p }; if (q.c) q.c = mv(q.c); if (q.a) { q.a = mv(q.a); q.b = mv(q.b); } if (q.s === 'box') q.rot = rot; return q; });
+    };
+    // rubble heaped at the foot: a low mound of broken concrete with tipped slabs, mossy on top
+    const rubble = (rx, rz, n) => [{ s: 'ell', c: [0, -0.35, 0], rr: [rx, 0.75, rz], col: wallD, k: 0.3 }, { s: 'ell', c: [0, 0.05, 0], rr: [rx * 0.75, 0.3, rz * 0.7], col: mossD, k: 0.3 },
+      ...Array.from({ length: n }, () => { const a = rnd() * TAU, d = 0.65 + rnd() * 0.3; return { s: 'box', c: [Math.cos(a) * rx * d, 0.1 + rnd() * 0.3, Math.sin(a) * rz * d], hs: [0.35 + rnd() * 0.45, 0.14 + rnd() * 0.12, 0.3 + rnd() * 0.4], rd: 0.04, rot: [(rnd() - 0.5) * 0.9, rnd() * TAU, (rnd() - 0.5) * 0.9], col: rnd() < 0.5 ? wall : wallD, k: 0 }; })];
+    // bruin1: a tall tower leaning over, its top snapped off, a hole blown through one side
+    {
+      const T = [...tower(0, 0, 1.7, 3.3, 1.6, -0.6),
+        ...breakTop(0.6, 6.0, 0.3, 1.3, 3), { s: 'sph', c: [1.75, 2.6, 0.5], r: 0.85, sub: true, k: 0.05 }, { s: 'sph', c: [-0.6, 3.6, -1.65], r: 0.6, sub: true, k: 0.05 },
+        ...vines(0, 0, 1.7, 1.6, 5.4, 'z', 4), ...vines(0, 0, 1.7, 1.6, 5.0, '-x', 3), ...mossOn(0, 0, 1.7, 1.6, 2.35, 3), ...mossOn(0, 0, 1.7, 1.6, 4.15, 2),
+        ...tree(-0.8, 5.0, -0.6, 0.9), ...bush(0.9, 5.2, -0.9)];
+      P('bruin1', [...rubble(3.6, 3.3, 7), ...lean(T, [0, -0.6, 0], [0.1, 0.5, -0.17]), ...bush(-2.6, 0.45, 1.4), ...tree(2.5, 0.4, -1.8, 0.8)], { ao: 0.5 });
+    }
+    // bruin2: a wide office block broken in two: one half still standing, the other slumped over into the sea
+    {
+      const A = [...tower(-1.5, 0, 1.4, 2.3, 2.2, -0.6), ...breakTop(-0.2, 4.0, 0, 1.1, 3), { s: 'crag', c: [0.1, 1.8, 0.6], r: 1.1, seed: 31, n: 8, sub: true, k: 0.05 },
+        ...vines(-1.5, 0, 1.4, 2.2, 4.0, '-x', 4), ...vines(-1.5, 0, 1.4, 2.2, 3.8, 'z', 3), ...mossOn(-1.5, 0, 1.4, 2.2, 1.75, 3), ...tree(-2.1, 4.1, 0.9, 1.0), ...bush(-1.2, 4.2, -1.3)];
+      const B = [...tower(1.9, 0, 1.2, 1.9, 2.1, -0.6), ...breakTop(0.8, 3.0, 0, 1.0, 2), ...vines(1.9, 0, 1.2, 2.1, 3.2, 'x', 3), ...mossOn(1.9, 0, 1.2, 2.1, 1.25, 3), ...bush(2.2, 3.4, 0.4)];
+      // floor slabs torn loose at the break, hanging between the halves
+      const slabs = [0.8, 1.7, 2.6].map((y, i) => ({ s: 'box', c: [0.25, y, (i - 1) * 0.5], hs: [0.6, 0.12, 1.2], rd: 0.03, rot: [0.2 * (i - 1), 0.1, -0.45 + i * 0.25], col: wall, k: 0 }));
+      P('bruin2', [...rubble(4.0, 3.4, 8), ...A, ...lean(B, [0.7, -0.6, 0], [0.05, -0.1, -0.5]), ...slabs], { ao: 0.5 });
+    }
+    // bruin3: a broken skyline: three stumps snapped at different heights and a fallen tower lying across them
+    {
+      const s1 = [...tower(-1.3, -1.0, 1.0, 2.6, 1.0, -0.6), ...breakTop(-1.3, 4.4, -1.0, 0.9, 2), ...vines(-1.3, -1.0, 1.0, 1.0, 4.2, '-z', 3), ...mossOn(-1.3, -1.0, 1.0, 1.0, 2.15, 2), ...tree(-1.5, 4.0, -1.2, 0.85)];
+      const s2 = [...tower(1.5, -1.4, 0.9, 1.6, 0.9, -0.6), ...breakTop(1.5, 2.4, -1.4, 0.8, 2), ...vines(1.5, -1.4, 0.9, 0.9, 2.4, 'x', 2), ...bush(1.4, 2.6, -1.2)];
+      const s3 = lean([...tower(0.3, 1.7, 0.85, 3.0, 0.85, -0.6), ...breakTop(0.3, 5.2, 1.7, 0.8, 2), ...vines(0.3, 1.7, 0.85, 0.85, 5.0, 'z', 3), ...mossOn(0.3, 1.7, 0.85, 0.85, 3.05, 2), ...tree(0.2, 4.7, 1.6, 0.75)], [0.3, -0.6, 1.7], [0.12, 0, 0.1]);
+      const fallen = lean([...tower(0, 0, 0.75, 2.6, 0.75, -2.6), ...vines(0, 0, 0.75, 0.75, 2.0, 'x', 3)], [0, 0, 0], [Math.PI / 2 - 0.12, 1.1, 0]).map(p => p.c ? { ...p, c: [p.c[0] + 0.6, p.c[1] + 0.35, p.c[2] - 0.2] } : { ...p, a: [p.a[0] + 0.6, p.a[1] + 0.35, p.a[2] - 0.2], b: [p.b[0] + 0.6, p.b[1] + 0.35, p.b[2] - 0.2] });
+      P('bruin3', [...rubble(3.8, 3.6, 8), ...s1, ...s2, ...s3, ...fallen, ...bush(-2.8, 0.45, 1.6), ...bush(2.9, 0.4, 1.0)], { ao: 0.5 });
+    }
   }
   // the Soda Sea: gumdrop hills sugared with sprinkles on pink frosting, candy canes, swirl lollipops, chocolate rocks
   {
@@ -7120,7 +7308,11 @@ function partDist(pt, x, y, z) {
       return Math.hypot(u - cx, v - cy, w) - pt.r;
     }
     case 'box': {
-      const qx = Math.abs(x - pt.c[0]) - pt.hs[0] + pt.rd, qy = Math.abs(y - pt.c[1]) - pt.hs[1] + pt.rd, qz = Math.abs(z - pt.c[2]) - pt.hs[2] + pt.rd;
+      // (rot: [rx, ry, rz] turns the box about its center; prepParts keeps the matrix in _m)
+      let px = x - pt.c[0], py = y - pt.c[1], pz = z - pt.c[2];
+      const m = pt._m;
+      if (m) { const lx = m[0] * px + m[3] * py + m[6] * pz, ly = m[1] * px + m[4] * py + m[7] * pz; pz = m[2] * px + m[5] * py + m[8] * pz; px = lx; py = ly; }
+      const qx = Math.abs(px) - pt.hs[0] + pt.rd, qy = Math.abs(py) - pt.hs[1] + pt.rd, qz = Math.abs(pz) - pt.hs[2] + pt.rd;
       return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - pt.rd;
     }
     case 'gable': {
@@ -7167,9 +7359,17 @@ function partBounds(pt) {
   }
   return [[0, 0, 0], 1e9];
 }
+// a rotation matrix (row-major, world = M * local) from [rx, ry, rz]: z first, then x, then y
+function rotMat(r) {
+  const [a, b, c] = r, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cc = Math.cos(c), sc = Math.sin(c);
+  // Ry * Rx * Rz
+  return [cb * cc + sb * sa * sc, -cb * sc + sb * sa * cc, sb * ca,
+    ca * sc, ca * cc, -sa,
+    -sb * cc + cb * sa * sc, sb * sc + cb * sa * cc, cb * ca];
+}
 function prepParts(parts) {
   // (boxes and cylinders without a rounding radius would give NaN)
-  for (const pt of parts) { if ((pt.s === 'box' || pt.s === 'cyl') && pt.rd === undefined) pt.rd = 0; const [c, r] = partBounds(pt); pt.bc = c; pt.br = r; }
+  for (const pt of parts) { if ((pt.s === 'box' || pt.s === 'cyl') && pt.rd === undefined) pt.rd = 0; if (pt.s === 'box' && pt.rot && !pt._m) pt._m = rotMat(pt.rot); const [c, r] = partBounds(pt); pt.bc = c; pt.br = r; }
   return parts;
 }
 function modelSdf(parts, x, y, z) {
@@ -7310,7 +7510,13 @@ function binnedSdf(parts, bmin, bmax, reach) {
   const nb = ext.map(e => Math.max(1, Math.ceil(e / bs))), lists = [], hd = bs * 0.8661;
   for (let k = 0; k < nb[2]; k++) for (let j = 0; j < nb[1]; j++) for (let i = 0; i < nb[0]; i++) {
     const cx = bmin[0] + (i + 0.5) * bs, cy = bmin[1] + (j + 0.5) * bs, cz = bmin[2] + (k + 0.5) * bs;
-    lists.push(parts.filter(pt => Math.hypot(cx - pt.bc[0], cy - pt.bc[1], cz - pt.bc[2]) - pt.br - (pt.k || 0) < hd + reach));
+    // (spheres, boxes, cylinders and even capsules give their true distance, which is a far closer test than the
+    // bounding sphere for long or flat parts: a slab, a tower, a mast)
+    lists.push(parts.filter(pt => {
+      const lim = hd + reach + (pt.k || 0);
+      if (Math.hypot(cx - pt.bc[0], cy - pt.bc[1], cz - pt.bc[2]) - pt.br >= lim) return false;
+      return !(pt.s === 'box' || pt.s === 'sph' || pt.s === 'cyl' || (pt.s === 'cap' && pt.r2 === undefined)) || partDist(pt, cx, cy, cz) < lim;
+    }));
   }
   return (x, y, z) => {
     // (a NaN coordinate lands in bin 0 rather than off the end)
@@ -7374,6 +7580,18 @@ function buildSkinnedMesh(model, cell) {
     // (w: 0 a fixed color, 1 the instance tint, 2 a fixed color the tint multiplies: a ship's paint, 10c-ship-cosmetics.js)
     if (bp && bp.col) { V[o + 10] = bp.col[0]; V[o + 11] = bp.col[1]; V[o + 12] = bp.col[2]; V[o + 13] = bp.paint ? 2 : 0; }
     else { V[o + 10] = 1; V[o + 11] = 1; V[o + 12] = 1; V[o + 13] = 1; }
+    // a box's window grid, painted on its walls (win: { col, col2, sy floor height, fy share of it glazed, sx bay width, fx share glazed })
+    if (bp && bp.win) {
+      const W = bp.win, m = bp._m;
+      let px = x - bp.c[0], py = y - bp.c[1], pz = z - bp.c[2], qx = nx, qy = ny, qz = nz;
+      if (m) { const lx = m[0] * px + m[3] * py + m[6] * pz, ly = m[1] * px + m[4] * py + m[7] * pz; pz = m[2] * px + m[5] * py + m[8] * pz; px = lx; py = ly;
+        const ax = m[0] * qx + m[3] * qy + m[6] * qz, ay = m[1] * qx + m[4] * qy + m[7] * qz; qz = m[2] * qx + m[5] * qy + m[8] * qz; qx = ax; qy = ay; }
+      const fl = (py + bp.hs[1]) / W.sy, u = (Math.abs(qx) > Math.abs(qz) ? pz : px) / W.sx + 50.5;
+      if (Math.abs(qy) < 0.6 && fl > 0.6 && fl % 1 > 1 - W.fy && Math.abs(u % 1 - 0.5) < W.fx / 2) {
+        const c = W.col2 && Math.abs(Math.sin(Math.floor(fl) * 12.99 + Math.floor(u) * 78.23 + bp.c[0]) * 437.5) % 1 < 0.25 ? W.col2 : W.col;
+        V[o + 10] = c[0]; V[o + 11] = c[1]; V[o + 12] = c[2]; V[o + 13] = 0;
+      }
+    }
   }
   return { verts: V, idx: mesh.idx, nv, ni: mesh.idx.length };
 }
@@ -10734,8 +10952,86 @@ CLIPS.hack = { frames: 16, fn(t) {
   ] };
 } };
 
+// ---------- island outlines: each kind is its main mound (r 4 at the origin, model units) plus lobes of land round
+// it, so no two kinds share a shape and none is a plain disc. The models grow the lobes with their own ground, shore
+// rocks and life (ISLE_LOOK), and the game collides with the same circles (seaMakeIsle). [x, z, r]
+const ISLE_LOBES = {
+  isle0: [[4.2, 1.5, 2.4], [-2.5, 3.6, 1.8]], isle1: [[-3.8, -2.2, 2.6], [1.5, 4.3, 1.6], [4.0, -2.8, 1.5]],
+  icoral: [[3.8, 2.6, 2.2], [1.0, 4.6, 1.8], [-2.6, 4.2, 1.6]], ikelp: [[-4.4, 0.5, 2.2], [3.2, -3.4, 1.9]],
+  ihut: [[4.0, -1.0, 2.6], [5.6, 2.4, 1.4]], iice: [[3.6, 3.0, 2.0], [-3.8, -2.6, 2.4], [-0.5, -4.8, 1.6]],
+  ivolc: [[-4.2, 2.0, 2.4], [2.0, 4.4, 1.6]], ighost: [[4.4, 0.8, 2.0], [-1.6, -4.4, 2.2]],
+  ispire: [[-3.6, 3.2, 1.8], [4.2, -2.2, 2.4], [2.0, 4.6, 1.4]], iwreck: [[4.6, 1.4, 2.0], [-4.0, -1.8, 1.6]],
+  ifort: [[0, 5.0, 2.4], [0, -5.0, 2.4]], iglow: [[3.8, -3.0, 2.2], [-3.2, -3.8, 1.8], [-4.4, 1.6, 1.6]],
+  iweed: [[-4.6, -0.8, 2.6], [2.2, 4.4, 2.0]], istack: [[5.0, 3.0, 1.4], [-4.6, 3.4, 1.2], [1.0, -5.4, 1.5]],
+  iruin: [[4.0, 2.8, 2.2], [-3.4, 3.0, 1.6]], icandy: [[3.6, -3.2, 2.4], [-4.0, -2.0, 2.0], [0.4, 4.8, 1.8]],
+  itri: [[4.4, -2.0, 1.8], [-2.8, 4.0, 2.2]], isky: [[3.6, 2.2, 2.4], [-3.8, 1.4, 2.2], [0.2, -4.2, 2.0]],
+  ibones: [[-4.4, -2.4, 2.0], [3.6, 3.4, 1.8]], ilocker: [[4.2, -2.6, 2.2], [-2.4, 4.4, 1.6]], iedge: [[-4.0, 3.0, 2.2], [4.2, 2.6, 1.6]],
+  bruin1: [[3.8, 3.4, 1.7]], bruin2: [[4.8, -1.6, 1.9]], bruin3: [[-4.3, 2.6, 1.7], [3.6, -3.8, 1.5]],
+};
+// each kind's lobes: ground, a top (grass, snow, moss...), shore rocks, and what lives on them (isleDeco)
+const ISLE_LOOK = {
+  isle0: { ground: '#f2dc9a', top: '#6cc34a', rock: '#a89e8a', deco: 'palm' }, isle1: { ground: '#f2dc9a', top: '#7ad04e', rock: '#9a9488', deco: 'bush' },
+  icoral: { ground: '#f4e2b0', rock: '#e8a0a8', deco: 'coral', n: 3 }, ikelp: { ground: '#c8b47a', top: '#5a8a4a', rock: '#7a7a72', deco: 'kelp', n: 3 },
+  ihut: { ground: '#f2dc9a', top: '#6cc34a', rock: '#a89e8a', deco: 'crates' }, iice: { ground: '#d8f0ff', top: '#ffffff', rock: '#9ad0f0', deco: 'crystal', n: 3 },
+  ivolc: { ground: '#3a3036', rock: '#2a2228', rockD: '#5a2a1a', deco: 'ember', n: 2 }, ighost: { ground: '#4a5248', top: '#3a4a3a', rock: '#5a5e58', deco: 'tomb', n: 2 },
+  ispire: { ground: '#5a5a62', rock: '#3a3a44', deco: 'spike', n: 3 }, iwreck: { ground: '#d8c08a', rock: '#7a6a5a', deco: 'wreckage', n: 2 },
+  ifort: { ground: '#d8c8a0', top: '#7ab04a', rock: '#a8a49a', deco: 'wall', n: 2 }, iglow: { ground: '#2a2e40', top: '#3a3a5a', rock: '#22263a', deco: 'shroom', n: 3 },
+  iweed: { ground: '#8a8a4a', top: '#6a7a2a', rock: '#5a5a3a', deco: 'weed', n: 3 }, istack: { ground: '#c89a6a', top: '#7ab04a', rock: '#a87a4a', deco: 'stack', n: 1 },
+  iruin: { ground: '#e8e2d0', rock: '#c8c0a8', deco: 'column', n: 2 }, icandy: { ground: '#ffb8d8', top: '#fff0f6', rock: '#ff8ac0', deco: 'candy', n: 3 },
+  itri: { ground: '#f2dc9a', rock: '#a89e8a', deco: 'buoy', n: 2 }, isky: { ground: '#ffffff', top: '#eef6ff', rock: '#dfe8f4', deco: 'puff', n: 3 },
+  ibones: { ground: '#3a3a40', rock: '#26262c', deco: 'bone', n: 2 }, ilocker: { ground: '#24302c', rock: '#1a2420', deco: 'chest', n: 2 },
+  iedge: { ground: '#f4d48a', top: '#ffe8a8', rock: '#e8b84a', deco: 'gold', n: 2 },
+  bruin1: { ground: '#8a8a84', top: '#5a8a3a', rock: '#6a6c68', deco: 'rubble', n: 2 }, bruin2: { ground: '#8a8a84', top: '#4a7a32', rock: '#6a6c68', deco: 'rubble', n: 2 },
+  bruin3: { ground: '#8a8a84', top: '#5a8a3a', rock: '#6a6c68', deco: 'rubble', n: 2 },
+};
+// a little life for a lobe (model units; island meshes are coarse, 0.1 a cell, so nothing here is thinner than 0.2)
+function isleDeco(kind, x, z, rnd) {
+  const C = hexToRgb, h = 0.25;
+  const green = C('#4fa63a'), greenL = C('#7ad04e'), bark = C('#8a5a30');
+  switch (kind) {
+    case 'palm': { const lx = (rnd() - 0.5) * 0.8, lz = (rnd() - 0.5) * 0.8, top = [x + lx, h + 2.2, z + lz];
+      return [{ s: 'cap', a: [x, h, z], b: top, r: 0.16, r2: 0.11, col: bark, k: 0.05 }, ...[0, 1, 2, 3, 4].map(i => { const a = i / 5 * TAU + rnd(); return { s: 'cap', a: top, b: [top[0] + Math.cos(a) * 1.1, top[1] - 0.45, top[2] + Math.sin(a) * 1.1], r: 0.16, r2: 0.1, col: i % 2 ? green : greenL, k: 0.05 }; })]; }
+    case 'bush': return [0, 1, 2].map(i => ({ s: 'sph', c: [x + (rnd() - 0.5) * 0.7, h + 0.35, z + (rnd() - 0.5) * 0.7], r: 0.4 + rnd() * 0.2, col: i % 2 ? green : greenL, k: 0.2 }));
+    case 'coral': return [0, 1, 2].map(i => { const col = C(['#ff7aa8', '#ff9a4a', '#c86aff'][Math.floor(rnd() * 3)]), a = rnd() * TAU; return { s: 'cap', a: [x, h, z], b: [x + Math.cos(a) * 0.4, h + 0.9 + rnd() * 0.6, z + Math.sin(a) * 0.4], r: 0.2, r2: 0.13, col, k: 0.12 }; });
+    case 'kelp': return [0, 1].map(i => ({ s: 'cap', a: [x + i * 0.4, h, z], b: [x + i * 0.4 + 0.2, h + 1.8 + rnd(), z - 0.2], r: 0.18, r2: 0.12, col: C(i ? '#4a8a3a' : '#6aa84a'), k: 0.05 }));
+    case 'crates': return [{ s: 'box', c: [x, h + 0.3, z], hs: [0.35, 0.3, 0.35], rd: 0.04, col: C('#a8693a'), k: 0 }, { s: 'cyl', ax: 'y', c: [x + 0.7, h + 0.35, z + 0.2], r: 0.3, hh: 0.35, rd: 0.06, col: C('#8a5a30'), k: 0 }];
+    case 'crystal': return [0, 1, 2].map(() => { const a = rnd() * TAU, l = 0.8 + rnd() * 1.2; return { s: 'cap', a: [x, h, z], b: [x + Math.cos(a) * 0.35, h + l, z + Math.sin(a) * 0.35], r: 0.26, r2: 0.05, col: C('#bfe8ff'), k: 0.03 }; });
+    case 'ember': return [{ s: 'ell', c: [x, h + 0.05, z], rr: [0.7, 0.2, 0.6], col: C('#ff6a1a'), k: 0.05 }, { s: 'crag', c: [x + 0.6, h + 0.3, z - 0.3], r: 0.45, seed: 7, n: 9, col: C('#2a2228'), k: 0.1 }];
+    case 'tomb': return [{ s: 'box', c: [x, h + 0.45, z], hs: [0.3, 0.45, 0.12], rd: 0.12, col: C('#8a8e88'), k: 0 }, { s: 'cap', a: [x + 0.8, h, z], b: [x + 1.0, h + 1.6, z + 0.2], r: 0.13, r2: 0.08, col: C('#3a2e28'), k: 0.03 }, { s: 'cap', a: [x + 0.95, h + 1.1, z + 0.1], b: [x + 1.5, h + 1.5, z + 0.2], r: 0.1, col: C('#3a2e28'), k: 0.03 }];
+    case 'spike': return [0, 1].map(() => ({ s: 'cap', a: [x + (rnd() - 0.5) * 0.6, h, z + (rnd() - 0.5) * 0.6], b: [x, h + 1.4 + rnd() * 1.2, z], r: 0.38, r2: 0.05, col: C('#3a3a44'), k: 0.08 }));
+    case 'wreckage': return [{ s: 'box', c: [x, h + 0.15, z], hs: [0.9, 0.1, 0.22], rd: 0.05, col: C('#7a4f2a'), k: 0 }, { s: 'box', c: [x + 0.2, h + 0.35, z + 0.4], hs: [0.25, 0.25, 0.7], rd: 0.05, col: C('#8a5a30'), k: 0 }, { s: 'cyl', ax: 'z', c: [x - 0.6, h + 0.3, z - 0.5], r: 0.28, hh: 0.35, rd: 0.06, col: C('#6e4426'), k: 0 }];
+    case 'wall': return [{ s: 'box', c: [x, h + 0.45, z], hs: [0.9, 0.45, 0.25], rd: 0.05, col: C('#c8c0a8'), k: 0 }, ...[-0.6, 0, 0.6].map(dx => ({ s: 'box', c: [x + dx, h + 1.0, z], hs: [0.18, 0.12, 0.25], rd: 0.03, col: C('#c8c0a8'), k: 0 }))];
+    case 'shroom': return [0, 1].map(i => { const sx = x + i * 0.6, hh = 0.7 + rnd() * 0.7, col = C(['#4ad8ff', '#ff5ab4', '#7aff8a'][Math.floor(rnd() * 3)]); return [{ s: 'cap', a: [sx, h, z], b: [sx, h + hh, z], r: 0.14, col: C('#e8e4f0'), k: 0.03 }, { s: 'ell', c: [sx, h + hh, z], rr: [0.5, 0.25, 0.5], col, k: 0.03 }]; }).flat();
+    case 'weed': return [0, 1, 2].map(i => ({ s: 'cap', a: [x + i * 0.3, h, z], b: [x + i * 0.3 + (rnd() - 0.5), h + 0.9 + rnd() * 0.6, z + (rnd() - 0.5)], r: 0.17, r2: 0.1, col: C(i % 2 ? '#6a7a2a' : '#8a9a3a'), k: 0.08 }));
+    case 'stack': return [{ s: 'cap', a: [x, h, z], b: [x + 0.2, h + 2.6 + rnd(), z], r: 0.75, r2: 0.5, col: C('#a87a4a'), k: 0.2 }, { s: 'ell', c: [x + 0.2, h + 3.0, z], rr: [0.6, 0.25, 0.6], col: C('#7ab04a'), k: 0.1 }];
+    case 'column': return [{ s: 'cyl', ax: 'y', c: [x, h + 0.7, z], r: 0.3, hh: 0.7 + rnd() * 0.5, rd: 0.04, col: C('#f4f0e4'), k: 0 }, { s: 'box', c: [x + 0.6, h + 0.15, z + 0.3], hs: [0.5, 0.15, 0.3], rd: 0.04, col: C('#e8e2d0'), k: 0 }];
+    case 'candy': return [{ s: 'cap', a: [x, h, z], b: [x, h + 1.2, z], r: 0.08 + 0.06, col: C('#ffffff'), k: 0 }, { s: 'sph', c: [x, h + 1.4, z], r: 0.4, col: C(['#ff5ab4', '#ffd23a', '#4ad8ff'][Math.floor(rnd() * 3)]), k: 0.02 }, { s: 'ell', c: [x + 0.7, h + 0.2, z], rr: [0.35, 0.3, 0.35], col: C('#7aff8a'), k: 0.05 }];
+    case 'buoy': return [{ s: 'cyl', ax: 'y', c: [x, h + 0.5, z], r: 0.3, hh: 0.5, rd: 0.08, col: C('#e8283a'), k: 0 }, { s: 'cyl', ax: 'y', c: [x, h + 0.75, z], r: 0.31, hh: 0.12, rd: 0.04, col: C('#ffffff'), k: 0 }, { s: 'sph', c: [x, h + 1.15, z], r: 0.15, col: C('#ffe08a'), k: 0 }];
+    case 'puff': return [0, 1, 2].map(() => ({ s: 'sph', c: [x + (rnd() - 0.5), h + 0.5 + rnd() * 0.4, z + (rnd() - 0.5)], r: 0.5 + rnd() * 0.3, col: C('#ffffff'), k: 0.3 }));
+    case 'bone': return [0, 1, 2].map(i => ({ s: 'cap', a: [x + i * 0.35, h, z - 0.4], b: [x + i * 0.35 + 0.2, h + 0.9, z + 0.3], r: 0.12, r2: 0.09, col: C('#f0e8d8'), k: 0.03 }));
+    case 'chest': return [{ s: 'box', c: [x, h + 0.3, z], hs: [0.45, 0.28, 0.3], rd: 0.06, col: C('#6e4426'), k: 0 }, { s: 'box', c: [x, h + 0.62, z], hs: [0.46, 0.1, 0.31], rd: 0.05, col: C('#f2c440'), k: 0 }];
+    case 'gold': return [0, 1].map(() => ({ s: 'cap', a: [x + (rnd() - 0.5) * 0.6, h, z + (rnd() - 0.5) * 0.6], b: [x, h + 1.0 + rnd(), z], r: 0.3, r2: 0.06, col: C('#f2c440'), k: 0.05 }));
+    case 'rubble': return [0, 1, 2].map(() => ({ s: 'box', c: [x + (rnd() - 0.5) * 1.2, h + 0.2 + rnd() * 0.3, z + (rnd() - 0.5) * 1.2], hs: [0.3 + rnd() * 0.3, 0.2 + rnd() * 0.2, 0.3 + rnd() * 0.3], rd: 0.05, rot: [(rnd() - 0.5) * 0.8, rnd() * TAU, (rnd() - 0.5) * 0.8], col: C(rnd() < 0.5 ? '#9a9c98' : '#7e807c'), k: 0 }));
+  }
+  return [];
+}
+// the lobes round a kind's main mound: ground blended into it (a smooth isthmus), a top, rocks on the outer shore
+function isleLobeParts(kind) {
+  const L = ISLE_LOOK[kind], C = hexToRgb, out = [];
+  let seed = 7; for (const ch of kind) seed = seed * 31 + ch.charCodeAt(0);
+  const rnd = mulberry32(seed), g = C(L.ground), top = L.top && C(L.top), rock = C(L.rock), rockD = C(L.rockD || L.rock);
+  for (const [x, z, r] of ISLE_LOBES[kind]) {
+    out.push({ s: 'ell', c: [x, -0.25, z], rr: [r, 0.72, r * (0.8 + rnd() * 0.3)], col: g, k: 0.9 });
+    if (top) out.push({ s: 'ell', c: [x * 0.97, 0.12, z * 0.97], rr: [r * 0.66, 0.32, r * 0.58], col: top, k: 0.5 });
+    const out0 = Math.atan2(z, x);
+    for (let i = 0; i < 3; i++) { const a = out0 + (i - 1) * 0.7 + (rnd() - 0.5) * 0.4, d = r * (0.72 + rnd() * 0.2); out.push({ s: 'crag', c: [x + Math.cos(a) * d, 0.05 + rnd() * 0.2, z + Math.sin(a) * d], r: 0.38 + rnd() * 0.35, seed: Math.floor(rnd() * 999), n: 9, col: i % 2 ? rock : rockD, k: 0.12 }); }
+    for (let i = 0; i < (L.n ?? 2); i++) { const a = rnd() * TAU, d = rnd() * r * 0.45; out.push(...isleDeco(L.deco, x + Math.cos(a) * d, z + Math.sin(a) * d, rnd)); }
+  }
+  return out;
+}
+const isleProp = (defs, name, parts, o) => prop(defs, name, ISLE_LOBES[name] ? parts.concat(isleLobeParts(name)) : parts, o);
 function seaModels(defs) {
-  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const C = hexToRgb, P = (name, parts, o) => isleProp(defs, name, parts, o);
   const wood = C('#b07a45'), woodL = C('#c99358'), woodD = C('#7a4f2a'), bark = C('#8a5a30'), rope = C('#e2c98f'), ropeD = C('#b89a5e');
   const white = C('#fbf6ee'), red = C('#e8414a'), pupil = C('#16101a');
 
@@ -12319,10 +12615,12 @@ function seaBossModels(defs) {
 // Islands are radius 4 at scale 1 and drawn at radius / 4, like the others.
 // ============================================================
 const SEA_DEEP_FOLK = ['pweed', 'pmer', 'pblink', 'pskel', 'pballoon', 'pjelly', 'pgummy', 'pangler'];
-const SEA_DEEP_ISLES = ['iglow', 'iweed', 'istack', 'iruin', 'icandy', 'itri', 'isky', 'ibones', 'ilocker', 'iedge', 'icol'];
+const SEA_DEEP_ISLES = ['iglow', 'iweed', 'istack', 'iruin', 'icandy', 'itri', 'isky', 'ibones', 'ilocker', 'icol', 'bruin1', 'bruin2', 'bruin3'];
 Object.assign(THEME_CLIPS, { pweed: ['paddle', 'hack'], pmer: ['paddle', 'hack', 'throw'], pblink: ['paddle', 'hack'], pskel: ['paddle', 'hack'], pballoon: ['hang'], pjelly: ['jpulse'], pgummy: ['gbob'], pangler: ['aswim'] });
 for (const id of SEA_DEEP_FOLK) THEME_CELLS[id] = 0.017;
 for (const id of SEA_DEEP_ISLES) { THEME_CLIPS[id] = ['still']; THEME_CELLS[id] = 0.1; }
+// (the drowned towers are big and blocky: a coarser cell keeps their build quick; nothing on them is under 0.26 thick)
+Object.assign(THEME_CELLS, { bruin1: 0.12, bruin2: 0.12, bruin3: 0.12 });
 MESH_ORDER.push(...SEA_DEEP_FOLK, ...SEA_DEEP_ISLES);
 
 // hanging from a balloon: arms up on the ropes, legs dangling and swinging a little
@@ -12351,7 +12649,7 @@ CLIPS.aswim = { frames: 32, fn(t) {
 } };
 
 function seaDeepModels(defs) {
-  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const C = hexToRgb, P = (name, parts, o) => isleProp(defs, name, parts, o);
   const white = C('#fbf6ee'), dark = C('#16101a');
 
   // ---------- the glowing jellyfish: a domed bell (it takes the tint), a bright core, a frilled rim, trailing
@@ -12476,6 +12774,80 @@ function seaDeepModels(defs) {
       ...Array.from({ length: 10 }, (_, i) => { const a = i / 10 * TAU; return { s: 'cyl', ax: 'y', c: [Math.cos(a) * 2.6, 2.6, Math.sin(a) * 2.6], r: 0.28, hh: 3.0, rd: 0.1, sub: true, k: 0.1 }; }),
       { s: 'box', c: [0, 6.1, 0], hs: [3.2, 0.45, 3.2], rd: 0.12, col: gold, k: 0 }, { s: 'cyl', ax: 'y', c: [0, 6.75, 0], r: 2.2, hh: 0.25, rd: 0.08, col: marble, k: 0 },
       { s: 'tor', ax: 'y', c: [0, 0.3, 0], R: 2.7, r: 0.35, a0: -Math.PI, a1: Math.PI, col: C('#5affe0'), k: 0 }], { ao: 0.35 });
+  }
+  // ---------- the Edge of the World's drowned city (ocean 20): big office towers standing in the sea, cracked, broken
+  // off and overgrown: dark glass between concrete floor slabs and pillars, jagged broken tops with rusty rebar,
+  // holes blown through, vines down the walls, moss on the ledges, trees on the roofs, rubble heaped at the foot ----------
+  {
+    const wall = C('#b8b3a6'), wallD = C('#8e897e'), glass = C('#26343c'), glassB = C('#3e6470'), moss = C('#5a8a3a'), mossD = C('#40702c');
+    const crack = C('#38342e'), vine = C('#3a6a28'), leaf = C('#4f9a3a'), leafL = C('#74c04e'), bark = C('#6a4a2a'), rust = C('#9a5030'), rnd = mulberry32(2020);
+    // a tower block (half sizes hx, hy, hz, standing on y0): concrete walls with rows of dark windows (some broken
+    // through, lighter), corner pillars, a ledge halfway up and a parapet on the roof
+    const WIN = { col: glass, col2: glassB, sy: 0.9, fy: 0.55, sx: 0.7, fx: 0.62 };
+    const tower = (cx, cz, hx, hy, hz, y0) => {
+      const cy = y0 + hy, out = [{ s: 'box', c: [cx, cy, cz], hs: [hx, hy, hz], rd: 0.05, col: wall, win: WIN, k: 0 }];
+      for (const x of [-hx, hx]) for (const z of [-hz, hz]) out.push({ s: 'box', c: [cx + x, cy, cz + z], hs: [0.2, hy, 0.2], rd: 0.03, col: wallD, k: 0 });
+      out.push({ s: 'box', c: [cx, y0 + Math.round(hy) * 0.9 + 0.05, cz], hs: [hx + 0.14, 0.13, hz + 0.14], rd: 0.03, col: wallD, k: 0 });
+      out.push({ s: 'box', c: [cx, y0 + hy * 2 + 0.1, cz], hs: [hx + 0.1, 0.16, hz + 0.1], rd: 0.04, col: wallD, k: 0 });
+      // cracks: dark zigzags running down a wall or two (sunk all but a hair into the wall, so they only darken it)
+      for (let n = 0; n < (hy > 2.8 ? 2 : 1); n++) {
+        const f = Math.floor(rnd() * 4), alongX = f < 2, sg = f % 2 ? -1 : 1, half = alongX ? hx : hz;
+        let u = (rnd() - 0.5) * half * 1.2, y = y0 + hy * 2 - 0.2 - rnd() * 0.6;
+        for (let k = 0; k < 3; k++) {
+          const u2 = clamp(u + (rnd() - 0.5) * 0.9, -half * 0.85, half * 0.85), y2 = y - 0.45 - rnd() * 0.5;
+          const P = (uu, yy) => alongX ? [cx + uu, yy, cz + sg * (hz - 0.05)] : [cx + sg * (hx - 0.05), yy, cz + uu];
+          out.push({ s: 'cap', a: P(u, y), b: P(u2, y2), r: 0.1, col: crack, k: 0 });
+          u = u2; y = y2;
+        }
+      }
+      return out;
+    };
+    // a jagged break: convex chunks carved out of the top, and rusty rebar left poking up
+    const breakTop = (cx, cy, cz, w, n) => [...Array.from({ length: n }, (_, i) => ({ s: 'crag', c: [cx + (rnd() - 0.5) * w * 1.6, cy + rnd() * 0.6, cz + (rnd() - 0.5) * w * 1.6], r: w * (0.55 + rnd() * 0.4), seed: Math.floor(rnd() * 999), n: 8, sub: true, k: 0.05 })),
+      ...Array.from({ length: 4 }, () => { const x = cx + (rnd() - 0.5) * w * 1.4, z = cz + (rnd() - 0.5) * w * 1.4; return { s: 'cap', a: [x, cy - 0.8, z], b: [x + (rnd() - 0.5) * 0.5, cy + 0.2 + rnd() * 0.5, z + (rnd() - 0.5) * 0.5], r: 0.13, col: rust, k: 0 }; })];
+    // vines hanging down a face (side: +x/-x/+z/-z), moss blobs on the slab edges, a tree on top
+    const vines = (cx, cz, hx, hz, top, side, n) => Array.from({ length: n }, (_, i) => {
+      const u = (i + 0.5) / n * 2 - 1, len = 1.6 + rnd() * 2.6;
+      const [x, z] = side === 'x' ? [cx + hx + 0.18, cz + u * hz * 0.85] : side === '-x' ? [cx - hx - 0.18, cz + u * hz * 0.85] : side === 'z' ? [cx + u * hx * 0.85, cz + hz + 0.18] : [cx + u * hx * 0.85, cz - hz - 0.18];
+      return { s: 'cap', a: [x, top, z], b: [x + (rnd() - 0.5) * 0.4, top - len, z + (rnd() - 0.5) * 0.4], r: 0.19, r2: 0.13, col: rnd() < 0.5 ? vine : mossD, k: 0.04 };
+    });
+    const mossOn = (cx, cz, hx, hz, y, n) => Array.from({ length: n }, () => { const e = rnd() < 0.5, sx = rnd() < 0.5 ? -1 : 1; return { s: 'ell', c: [e ? cx + sx * (hx + 0.1) : cx + (rnd() - 0.5) * hx * 1.6, y, e ? cz + (rnd() - 0.5) * hz * 1.6 : cz + sx * (hz + 0.1)], rr: [0.45 + rnd() * 0.3, 0.2, 0.45 + rnd() * 0.3], col: rnd() < 0.5 ? moss : mossD, k: 0.1 }; });
+    const tree = (x, y, z, s = 1) => [{ s: 'cap', a: [x, y - 0.3, z], b: [x + 0.15 * s, y + 1.1 * s, z], r: 0.18 * s, r2: 0.13 * s, col: bark, k: 0.05 },
+      { s: 'sph', c: [x + 0.15 * s, y + 1.45 * s, z], r: 0.7 * s, col: leaf, k: 0.2 }, { s: 'sph', c: [x + 0.55 * s, y + 1.2 * s, z + 0.3 * s], r: 0.48 * s, col: leafL, k: 0.2 }, { s: 'sph', c: [x - 0.35 * s, y + 1.25 * s, z - 0.25 * s], r: 0.5 * s, col: leaf, k: 0.2 }];
+    const bush = (x, y, z) => [{ s: 'sph', c: [x, y, z], r: 0.42, col: leaf, k: 0.15 }, { s: 'sph', c: [x + 0.35, y - 0.05, z + 0.2], r: 0.32, col: leafL, k: 0.15 }];
+    // turn a group of parts about a pivot (boxes turn too; capsules and spheres just move)
+    const lean = (parts, piv, rot) => {
+      const M = rotMat(rot), mv = p => { const d = [p[0] - piv[0], p[1] - piv[1], p[2] - piv[2]]; return [piv[0] + M[0] * d[0] + M[1] * d[1] + M[2] * d[2], piv[1] + M[3] * d[0] + M[4] * d[1] + M[5] * d[2], piv[2] + M[6] * d[0] + M[7] * d[1] + M[8] * d[2]]; };
+      return parts.map(p => { const q = { ...p }; if (q.c) q.c = mv(q.c); if (q.a) { q.a = mv(q.a); q.b = mv(q.b); } if (q.s === 'box') q.rot = rot; return q; });
+    };
+    // rubble heaped at the foot: a low mound of broken concrete with tipped slabs, mossy on top
+    const rubble = (rx, rz, n) => [{ s: 'ell', c: [0, -0.35, 0], rr: [rx, 0.75, rz], col: wallD, k: 0.3 }, { s: 'ell', c: [0, 0.05, 0], rr: [rx * 0.75, 0.3, rz * 0.7], col: mossD, k: 0.3 },
+      ...Array.from({ length: n }, () => { const a = rnd() * TAU, d = 0.65 + rnd() * 0.3; return { s: 'box', c: [Math.cos(a) * rx * d, 0.1 + rnd() * 0.3, Math.sin(a) * rz * d], hs: [0.35 + rnd() * 0.45, 0.14 + rnd() * 0.12, 0.3 + rnd() * 0.4], rd: 0.04, rot: [(rnd() - 0.5) * 0.9, rnd() * TAU, (rnd() - 0.5) * 0.9], col: rnd() < 0.5 ? wall : wallD, k: 0 }; })];
+    // bruin1: a tall tower leaning over, its top snapped off, a hole blown through one side
+    {
+      const T = [...tower(0, 0, 1.7, 3.3, 1.6, -0.6),
+        ...breakTop(0.6, 6.0, 0.3, 1.3, 3), { s: 'sph', c: [1.75, 2.6, 0.5], r: 0.85, sub: true, k: 0.05 }, { s: 'sph', c: [-0.6, 3.6, -1.65], r: 0.6, sub: true, k: 0.05 },
+        ...vines(0, 0, 1.7, 1.6, 5.4, 'z', 4), ...vines(0, 0, 1.7, 1.6, 5.0, '-x', 3), ...mossOn(0, 0, 1.7, 1.6, 2.35, 3), ...mossOn(0, 0, 1.7, 1.6, 4.15, 2),
+        ...tree(-0.8, 5.0, -0.6, 0.9), ...bush(0.9, 5.2, -0.9)];
+      P('bruin1', [...rubble(3.6, 3.3, 7), ...lean(T, [0, -0.6, 0], [0.1, 0.5, -0.17]), ...bush(-2.6, 0.45, 1.4), ...tree(2.5, 0.4, -1.8, 0.8)], { ao: 0.5 });
+    }
+    // bruin2: a wide office block broken in two: one half still standing, the other slumped over into the sea
+    {
+      const A = [...tower(-1.5, 0, 1.4, 2.3, 2.2, -0.6), ...breakTop(-0.2, 4.0, 0, 1.1, 3), { s: 'crag', c: [0.1, 1.8, 0.6], r: 1.1, seed: 31, n: 8, sub: true, k: 0.05 },
+        ...vines(-1.5, 0, 1.4, 2.2, 4.0, '-x', 4), ...vines(-1.5, 0, 1.4, 2.2, 3.8, 'z', 3), ...mossOn(-1.5, 0, 1.4, 2.2, 1.75, 3), ...tree(-2.1, 4.1, 0.9, 1.0), ...bush(-1.2, 4.2, -1.3)];
+      const B = [...tower(1.9, 0, 1.2, 1.9, 2.1, -0.6), ...breakTop(0.8, 3.0, 0, 1.0, 2), ...vines(1.9, 0, 1.2, 2.1, 3.2, 'x', 3), ...mossOn(1.9, 0, 1.2, 2.1, 1.25, 3), ...bush(2.2, 3.4, 0.4)];
+      // floor slabs torn loose at the break, hanging between the halves
+      const slabs = [0.8, 1.7, 2.6].map((y, i) => ({ s: 'box', c: [0.25, y, (i - 1) * 0.5], hs: [0.6, 0.12, 1.2], rd: 0.03, rot: [0.2 * (i - 1), 0.1, -0.45 + i * 0.25], col: wall, k: 0 }));
+      P('bruin2', [...rubble(4.0, 3.4, 8), ...A, ...lean(B, [0.7, -0.6, 0], [0.05, -0.1, -0.5]), ...slabs], { ao: 0.5 });
+    }
+    // bruin3: a broken skyline: three stumps snapped at different heights and a fallen tower lying across them
+    {
+      const s1 = [...tower(-1.3, -1.0, 1.0, 2.6, 1.0, -0.6), ...breakTop(-1.3, 4.4, -1.0, 0.9, 2), ...vines(-1.3, -1.0, 1.0, 1.0, 4.2, '-z', 3), ...mossOn(-1.3, -1.0, 1.0, 1.0, 2.15, 2), ...tree(-1.5, 4.0, -1.2, 0.85)];
+      const s2 = [...tower(1.5, -1.4, 0.9, 1.6, 0.9, -0.6), ...breakTop(1.5, 2.4, -1.4, 0.8, 2), ...vines(1.5, -1.4, 0.9, 0.9, 2.4, 'x', 2), ...bush(1.4, 2.6, -1.2)];
+      const s3 = lean([...tower(0.3, 1.7, 0.85, 3.0, 0.85, -0.6), ...breakTop(0.3, 5.2, 1.7, 0.8, 2), ...vines(0.3, 1.7, 0.85, 0.85, 5.0, 'z', 3), ...mossOn(0.3, 1.7, 0.85, 0.85, 3.05, 2), ...tree(0.2, 4.7, 1.6, 0.75)], [0.3, -0.6, 1.7], [0.12, 0, 0.1]);
+      const fallen = lean([...tower(0, 0, 0.75, 2.6, 0.75, -2.6), ...vines(0, 0, 0.75, 0.75, 2.0, 'x', 3)], [0, 0, 0], [Math.PI / 2 - 0.12, 1.1, 0]).map(p => p.c ? { ...p, c: [p.c[0] + 0.6, p.c[1] + 0.35, p.c[2] - 0.2] } : { ...p, a: [p.a[0] + 0.6, p.a[1] + 0.35, p.a[2] - 0.2], b: [p.b[0] + 0.6, p.b[1] + 0.35, p.b[2] - 0.2] });
+      P('bruin3', [...rubble(3.8, 3.6, 8), ...s1, ...s2, ...s3, ...fallen, ...bush(-2.8, 0.45, 1.6), ...bush(2.9, 0.4, 1.0)], { ao: 0.5 });
+    }
   }
   // the Soda Sea: gumdrop hills sugared with sprinkles on pink frosting, candy canes, swirl lollipops, chocolate rocks
   {
@@ -16800,8 +17172,8 @@ function featuredPowerup(chapter) {
 }
 // a run holds at most this many different skills and this many different passives
 const SLOT_LIMIT = { skill: 4, passive: 4 };
-// (at sea the Ship and the Homing Cannon take two of the weapon slots, so there is one more)
-const slotLimit = kind => SLOT_LIMIT[kind] + (kind === 'skill' && G.run && G.run.sea ? 1 : 0);
+// (at sea the Ship takes a skill slot of its own, and there are five for weapons, the Homing Cannon among them)
+const slotLimit = kind => SLOT_LIMIT[kind] + (kind === 'skill' && G.run && G.run.sea ? 2 : 0);
 
 // Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1).
 // ai: how the enemy attacks besides walking into you. lunge = spear thrust, chop = overhead swing,
@@ -27480,10 +27852,10 @@ function seaSteer(dt) {
   S.x += S.vx * dt; S.z += S.vz * dt;
   // islands stop the ship (three circles along the keel)
   const [hl, hr] = hullSeg(D), p = [0, 0];
-  for (const I of OC.isles) {
+  for (const I of OC.isles) for (const L of isleLobes(I)) {
     for (const u of [-1, 0, 1]) {
       shipW(0, u * hl, p);
-      const dx = p[0] - I.x, dz = p[1] - I.z, d = Math.hypot(dx, dz) || 1e-4, ov = I.r + hr - d;
+      const dx = p[0] - L.x, dz = p[1] - L.z, d = Math.hypot(dx, dz) || 1e-4, ov = L.r + hr - d;
       if (ov <= 0) continue;
       S.x += dx / d * ov; S.z += dz / d * ov;
       const vn = (S.vx * dx + S.vz * dz) / d;
@@ -27514,16 +27886,38 @@ function seaIslands(first) {
     // islands aren't common: about one chunk in three has one, never right where the ship starts
     if (rnd() > 0.36) continue;
     const x = (cx + i + 0.2 + rnd() * 0.6) * ISLE_CHUNK, z = (cz + j + 0.2 + rnd() * 0.6) * ISLE_CHUNK;
-    if (Math.hypot(x, z) < 16) continue;
+    if (Math.hypot(x, z) < 22) continue;
     seaMakeIsle(x, z, rnd);
   }
   if (!first) OC.isles = OC.isles.filter(I => Math.hypot(I.x - S.x, I.z - S.z) < ISLE_CHUNK * 3.5 || !OC.chunks.delete(I.key));
-  ARENA.obstacles = OC.isles.map(I => I.ob);
+  ARENA.obstacles = isleObs();
+}
+// an island is its main mound plus the lobes of land round it (ISLE_LOBES, in model units at radius 4), as world
+// circles; the ship, swimmers and shots meet every one of them. Floes and the Atlantis column are one circle.
+const isleLobes = I => I.lobes || (I.lobes = [{ x: I.x, z: I.z, r: I.r }]);
+const isleObs = () => OC.isles.flatMap(I => I.obs || [I.ob]);
+// how far an island's land reaches from its middle
+const isleReach = I => I.reach || I.r;
+// push a circle (x, z, rad) clear of an island's land: the offset to add, or null when it's already clear
+const _io = [0, 0];
+function isleOut(I, x, z, rad, k = 0.92) {
+  let hit = false; _io[0] = _io[1] = 0;
+  for (const L of isleLobes(I)) {
+    const ix = x + _io[0] - L.x, iz = z + _io[1] - L.z, id = Math.hypot(ix, iz) || 1e-4, ov = L.r * k + rad - id;
+    if (ov > 0) { _io[0] += ix / id * ov; _io[1] += iz / id * ov; hit = true; }
+  }
+  return hit ? _io : null;
 }
 function seaMakeIsle(x, z, rnd) {
   const kinds = SEA_CHAPTERS[G.run.chapter - 1].isles || ['isle0', 'isle1'];
-  const r = 3.2 + rnd() * 3.4, kind = kinds[Math.floor(rnd() * kinds.length)], yaw = rnd() * TAU;
+  const r = 2.9 + rnd() * 2.7, kind = kinds[Math.floor(rnd() * kinds.length)], yaw = rnd() * TAU;
   const I = { x, z, r, kind, yaw, key: Math.floor(x / ISLE_CHUNK) + ',' + Math.floor(z / ISLE_CHUNK), deco: [], ob: { x, z, r: r * 0.92, shape: 'circle', shots: false, isle: true } };
+  const c = Math.cos(yaw), s = Math.sin(yaw), sc = r / 4;
+  I.lobes = [{ x, z, r }, ...(ISLE_LOBES[kind] || []).map(([lx, lz, lr]) => ({ x: x + (c * lx + s * lz) * sc, z: z + (-s * lx + c * lz) * sc, r: lr * sc * 0.95 }))];
+  I.obs = I.lobes.map((L, i) => i ? { x: L.x, z: L.z, r: L.r * 0.92, shape: 'circle', shots: false, isle: true } : I.ob);
+  I.reach = Math.max(...I.lobes.map(L => Math.hypot(L.x - x, L.z - z) + L.r));
+  // (neighbours' land never runs together into one long wall)
+  if (OC.isles.some(J => Math.hypot(J.x - x, J.z - z) < I.reach + isleReach(J) + 6)) return;
   // palms and rocks on top (in the island's own frame, as a share of its radius)
   // palms and rocks dress the plain sandy islands; the themed ones bring their own
   const n = kind === 'isle0' || kind === 'isle1' ? 1 + Math.floor(rnd() * 3) : kind === 'ihut' ? 1 : 0;
@@ -27532,7 +27926,7 @@ function seaMakeIsle(x, z, rnd) {
   OC.isles.push(I);
 }
 function mulberry(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-const inIsle = (x, z, pad = 0) => OC.isles.some(I => Math.hypot(x - I.x, z - I.z) < I.r + pad);
+const inIsle = (x, z, pad = 0) => OC.isles.some(I => Math.hypot(x - I.x, z - I.z) < isleReach(I) + pad && isleLobes(I).some(L => Math.hypot(x - L.x, z - L.z) < L.r + pad));
 
 // ---------- the wake: foam dropped at the stern, spreading in a V ----------
 function seaWake(dt) {
@@ -27678,10 +28072,7 @@ function seaFoes(dt) {
       else { e.x += n[0] * (e.radius * 0.6 - d2); e.z += n[1] * (e.radius * 0.6 - d2); }
     }
     // around the islands
-    for (const I of OC.isles) {
-      const ix = e.x - I.x, iz = e.z - I.z, id = Math.hypot(ix, iz) || 1e-4, ov = I.ob.r + e.radius - id;
-      if (ov > 0) { e.x += ix / id * ov; e.z += iz / id * ov; }
-    }
+    for (const I of OC.isles) { const o = isleOut(I, e.x, e.z, e.radius); if (o) { e.x += o[0]; e.z += o[1]; } }
   }
   // keep a little room between swimmers
   const cell = GRID.cell, map = GRID.map;
@@ -27848,6 +28239,42 @@ function seaShadow(x, z, sx, sz, rot, a, off = 0.12) {
   const k = Math.max(sx, sz) * off;
   pushDecal(x + 0.55 * k, z - 0.45 * k, sx, sz, rot, 12, (x * 0.37 + z * 0.11) % 7, 0, SEA_SH[0], SEA_SH[1], SEA_SH[2], a);
 }
+// an island's life: a gull or two wheeling over it, and its own air (volcano smoke and embers, ghost wisps,
+// glowing spores, snow, sparkles, drifting leaves, dust off the ruins)
+const ISLE_AIR = {
+  ivolc: [0.35, [0.45, 0.42, 0.45], 'smoke'], ighost: [0.25, [0.7, 1, 0.85], 'wisp'], iglow: [0.3, [0.4, 0.9, 1], 'spore'],
+  iice: [0.3, [1, 1, 1], 'snow'], icandy: [0.25, [1, 0.6, 0.85], 'spark'], isky: [0.2, [1, 1, 1], 'spark'],
+  icoral: [0.15, [1, 0.7, 0.8], 'bubble'], ilocker: [0.2, [0.4, 1, 0.7], 'wisp'], ibones: [0.15, [0.7, 0.7, 0.8], 'wisp'],
+  iweed: [0.2, [0.6, 0.8, 0.3], 'leaf'], ikelp: [0.15, [0.5, 0.8, 0.4], 'leaf'], isle0: [0.12, [0.5, 0.85, 0.35], 'leaf'], isle1: [0.12, [0.5, 0.85, 0.35], 'leaf'],
+  iruin: [0.15, [0.9, 0.88, 0.8], 'dust'], bruin1: [0.3, [0.75, 0.74, 0.7], 'dust'], bruin2: [0.3, [0.75, 0.74, 0.7], 'dust'], bruin3: [0.3, [0.75, 0.74, 0.7], 'dust'],
+};
+const NO_GULLS = new Set(['ivolc', 'ighost', 'ibones', 'ilocker', 'iglow', 'icol', 'iice']);
+function isleLife(I, t) {
+  if (I.floe !== undefined) return;
+  const sc = I.r / 4, h = (I.x * 0.61 + I.z * 0.37) % 1, nG = NO_GULLS.has(I.kind) ? 0 : 1 + (h > 0.5 ? 1 : 0);
+  if (R.enemyDraw.sgull) {
+    const M = MODELS.defs.sgull, c = M.clips.flap;
+    for (let g = 0; g < nG; g++) {
+      const w = 0.28 + g * 0.09, a = t * w * (g ? -1 : 1) + h * TAU + g * 2.1, rad = isleReach(I) * (0.55 + g * 0.2);
+      const x = I.x + Math.cos(a) * rad, z = I.z + Math.sin(a) * rad, y = 3.4 + g * 0.8 + Math.sin(t * 0.7 + g) * 0.4;
+      const dir = g ? -1 : 1;
+      pushEnemy('sgull', false, x, y, z, Math.atan2(-Math.sin(a) * dir, Math.cos(a) * dir), c.row + Math.floor(((t * 1.6 + g * 0.37) % 1) * c.frames), 1.3, 1, 0, 0, 0, 1, 1, 1);
+    }
+  }
+  const air = ISLE_AIR[I.kind];
+  if (!air || Math.random() > air[0]) return;
+  const L = pick(isleLobes(I)), a = rand(0, TAU), d = Math.sqrt(Math.random()) * L.r * 0.8, x = L.x + Math.cos(a) * d, z = L.z + Math.sin(a) * d, col = air[1];
+  switch (air[2]) {
+    case 'smoke': FX.smoke(I.x + rand(-0.4, 0.4) * sc, 4.6 * sc, I.z + rand(-0.4, 0.4) * sc, 0.7 * sc, col, 1.6, 1); if (Math.random() < 0.3) FX.part(I.x, 4.4 * sc, I.z, rand(-1, 1), rand(2, 4), rand(-1, 1), 0.07, 0.03, 1.1, [1, 0.5, 0.15], 1, 5); break;
+    case 'wisp': FX.part(x, rand(0.4, 1.4), z, rand(-0.2, 0.2), rand(0.3, 0.6), rand(-0.2, 0.2), 0.12, 0.05, 2.2, col, 1, 0); break;
+    case 'spore': FX.part(x, rand(0.5, 1.5), z, rand(-0.2, 0.2), rand(0.2, 0.5), rand(-0.2, 0.2), 0.08, 0.03, 2.5, col, 1, 0); break;
+    case 'snow': FX.part(x, rand(3, 5), z, rand(-0.3, 0.3), -rand(0.6, 1.0), rand(-0.3, 0.3), 0.07, 0.04, 3, col, 1, 0); break;
+    case 'spark': FX.part(x, rand(0.5, 2.5), z, 0, rand(0.2, 0.5), 0, 0.07, 0.03, 0.9, col, 1, 3); break;
+    case 'bubble': FX.part(x, 0.2, z, 0, rand(0.4, 0.8), 0, 0.07, 0.04, 0.8, col, 1, 0); break;
+    case 'leaf': FX.part(x, rand(1.5, 3), z, rand(-0.8, 0.8), -rand(0.3, 0.5), rand(-0.8, 0.8), 0.07, 0.05, 3, col, 1, 1, 0, 0.5); break;
+    case 'dust': FX.part(x, rand(0.5, 3) * sc * 2, z, rand(-0.3, 0.3), -rand(0.2, 0.6), rand(-0.3, 0.3), 0.2, 0.5, 1.8, col, 0.4, 2, 0, 1.5); break;
+  }
+}
 function emitSea() {
   const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
   const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
@@ -27885,13 +28312,17 @@ function emitSea() {
   }
   // islands
   for (const I of OC.isles) {
-    if (!onScreen(I.x, I.z, I.r + 4)) continue;
-    // the rock going down into deep water, shallow light water over it, and a foam ring that breathes
-    seaShadow(I.x, I.z, I.r * 3.0, I.r * 3.0, I.yaw, 0.75, 0.05);
-    pushDecal(I.x, I.z, I.r * 1.7, I.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, 0.38, true);
-    const br = 1.06 + 0.04 * Math.sin(t * 1.4 + I.x);
-    pushDecal(I.x, I.z, I.r * br, I.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
-    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, I.rise !== undefined ? -2.6 * I.r / 4 * (1 - easeOutBack(clamp(I.rise, 0, 1))) : 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1);
+    if (!onScreen(I.x, I.z, isleReach(I) + 4)) continue;
+    // the rock going down into deep water, shallow light water over it, and a foam ring that breathes, round
+    // every lobe of land, so the shore follows the island's own outline
+    isleLobes(I).forEach((L, i) => {
+      seaShadow(L.x, L.z, L.r * 3.0, L.r * 3.0, I.yaw, i ? 0.45 : 0.75, 0.05);
+      pushDecal(L.x, L.z, L.r * 1.7, L.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, i ? 0.3 : 0.38, true);
+      const br = 1.06 + 0.04 * Math.sin(t * 1.4 + L.x + i * 1.7);
+      pushDecal(L.x, L.z, L.r * br, L.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
+    });
+    isleLife(I, t);
+    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, I.rise !== undefined ? -2.6 * I.r / 4 * (1 - easeOutBack(clamp(I.rise, 0, 1))) : 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1, I.fade || 0);
     for (const o of I.deco) if (R.enemyDraw[o.m]) pushEnemy(o.m, false, o.x, (o.y || 0) + I.r * 0.145, o.z, o.yaw, MODELS.defs[o.m].clips.still.row, o.s, 1, 0, 0, 0, PROP_WHITE[0], PROP_WHITE[1], PROP_WHITE[2]);
   }
   // swimmers: only head and shoulders above the water, with a little foam ring
@@ -28874,6 +29305,12 @@ SEA_DRAW.pdiver = e => {
   if (Math.random() < 0.25) FX.part(e.x + rand(-0.2, 0.2), 0.05, e.z + rand(-0.2, 0.2), 0, rand(0.3, 0.6), 0, 0.05, 0.02, 0.4, [0.9, 0.97, 1], 0.9, 4, -0.5);
   return true;
 };
+// a telegraphed cannonball or trident: its line shows on the water for `wait` seconds, then it flies down it
+function seaBall(o, wait = 0.6) {
+  const sp = Math.hypot(o.vx, o.vz) || 1;
+  addTele({ kind: 'lane', x: o.x, z: o.z, r: 0.45, len: Math.min(24, sp * (o.life || 2)), rot: Math.atan2(o.vx, o.vz), dur: wait });
+  o.wait = wait; OC.hz.push(o);
+}
 // ---------- keg pushers: the keg blows up against the hull, or wherever its pusher is sunk ----------
 function seaKegBoom(e, onHull) {
   if (e.kegDone) return;
@@ -28931,6 +29368,13 @@ function seaIsleTick(dt) {
   if (OC.sink || G.state !== 'run') return;
   for (const I of OC.isles) {
     const d = Math.hypot(I.x - S.x, I.z - S.z) - I.r;
+    // see-through: a tall island (the drowned towers, the spires) fades while it hides the blob on deck
+    const m = MODELS.defs[I.kind], top = m ? m.top * I.r / 4 : 0;
+    if (top > 4 && (d < 14 || I.fade)) {
+      const h = G.hero.pos, w = I.r * 0.62;
+      const behind = (Math.abs(h[0] - I.x) < w && h[2] < I.z + w * 0.5 && h[2] > I.z - top * 0.8 - w) || hidesHero(I.x - w, I.x + w, top, I.z - w, I.z + w);
+      I.fade = clamp((I.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.7);
+    }
     if (d > 22) continue;
     const post = ISLE_POSTS[I.kind];
     if (post) {
@@ -28974,6 +29418,7 @@ function updateSeaHazards(dt) {
   for (const h of OC.hz) {
     if (SEA_HZ_LIVE.includes(h.k)) continue;
     if (h.k === 'ball') {
+      if (h.wait > 0) { h.wait -= dt; continue; }
       h.life -= dt; h.x += h.vx * dt; h.z += h.vz * dt;
       if (hullDist(h.x, h.z) < 0.1 && !OC.sink) { h.dead = true; hurtHero(h.dmg, h.x, h.z); FX.burst(h.x, 0.6, h.z, 6, [0.8, 0.6, 0.4], 2.5, 0.06, 0.3, 2, 1); }
       else if (h.life <= 0) { h.dead = true; seaSplash(h.x, h.z, 0.5); }
@@ -29001,8 +29446,11 @@ function updateSeaHazards(dt) {
 // (these the bosses' code runs and draws: 13n-sea-bosses.js)
 const SEA_HZ_LIVE = ['snare', 'mine', 'tent', 'ink'];
 function emitSeaHazards() {
+  // a keg pusher closing on the hull: its blast ring fills as it nears
+  for (const e of G.run.enemies) if (e.def && e.def.keg && !e.dying && !e.kegDone) { const d = hullDist(e.x, e.z); if (d < 4.5) pushDecal(e.x, e.z, 2.0, 2.0, 0, 4, 0, clamp(1 - d / 4.5, 0, 1), 1, 0.22, 0.18, 0.75); }
   for (const h of OC.hz) {
     if (SEA_HZ_LIVE.includes(h.k)) continue;
+    if (h.k === 'ball' && h.wait > 0) continue;
     if (h.k === 'ball') { if (h.trident) continue; if (h.pearl) pushImp(h.x, h.y, h.z, 0.24, 0, 1, 0, 1, 27, 4, 0.5, OC.t, 0, 0, 0, 1); else pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
     if (h.t < 0) continue;
     const u = clamp(h.t / h.dur, 0, 1);
@@ -29122,7 +29570,7 @@ SEA_AI.pcapt = (e, dt) => {
   const kd = Math.exp(-3 * dt); e.kx *= kd; e.kz *= kd;
   if (Math.hypot(e.vx, e.vz) > 0.4) e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 3));
   if (ai.state !== 'charge') seaVehicleContact(e);
-  for (const I of OC.isles) { const ix = e.x - I.x, iz = e.z - I.z, id = Math.hypot(ix, iz) || 1, ov = I.ob.r + e.radius - id; if (ov > 0) { e.x += ix / id * ov; e.z += iz / id * ov; } }
+  for (const I of OC.isles) { const o = isleOut(I, e.x, e.z, e.radius); if (o) { e.x += o[0]; e.z += o[1]; } }
   return true;
 };
 SEA_DRAW.pcapt = e => {
@@ -29296,7 +29744,8 @@ function seaBossAI(e, dt) {
       if (ai.t <= 0 && ai.k < 3) {
         ai.k++; ai.t = 0.35;
         const a0 = Math.atan2(dx, dz);
-        for (let k = -3; k <= 3; k++) { const a = a0 + k * 0.12 + (ai.k - 2) * 0.05; hz({ k: 'ball', x: e.x, y: B.deck + 1.2, z: e.z, vx: Math.sin(a) * 13, vz: Math.cos(a) * 13, life: 2.4, dmg: e.dmg * 0.35 }); }
+        // (each ball's line shows first, then it flies down it)
+        for (let k = -3; k <= 3; k++) { const a = a0 + k * 0.12 + (ai.k - 2) * 0.05; seaBall({ k: 'ball', x: e.x, y: B.deck + 1.2, z: e.z, vx: Math.sin(a) * 13, vz: Math.cos(a) * 13, life: 2.4, dmg: e.dmg * 0.35 }, 0.55); }
         AUDIO.play('bang');
       }
       if (ai.k >= 3 && ai.t <= 0) { ai.state = 'circle'; ai.t = 2.2; }
@@ -29415,7 +29864,7 @@ function seaBossAI(e, dt) {
   e.x += (e.vx + e.kx) * dt; e.z += (e.vz + e.kz) * dt;
   const kd = Math.exp(-3 * dt); e.kx *= kd; e.kz *= kd;
   if (ai.state !== 'charge' && !e.hidden) seaVehicleContact(e);
-  for (const I of OC.isles) { const ix = e.x - I.x, iz = e.z - I.z, id = Math.hypot(ix, iz) || 1, ov = I.ob.r + e.radius - id; if (ov > 0) { e.x += ix / id * ov; e.z += iz / id * ov; } }
+  for (const I of OC.isles) { const o = isleOut(I, e.x, e.z, e.radius); if (o) { e.x += o[0]; e.z += o[1]; } }
   if (Math.hypot(e.vx, e.vz) > 1 && Math.random() < 0.5) OC.wake.push({ x: e.x - Math.sin(e.yaw) * B.len * 0.45, z: e.z - Math.cos(e.yaw) * B.len * 0.45, yaw: e.yaw, t: 0.3, w: B.len * 0.18, k: 0.8, seed: Math.random() * 10 });
   return true;
 }
@@ -29423,7 +29872,7 @@ function seaBossAI(e, dt) {
 function seaFloe(x, z) {
   if (inIsle(x, z, 2) || hullDist(x, z) < 3) return;
   const r = rand(1.6, 2.4), I = { x, z, r, kind: 'iice', yaw: rand(0, TAU), key: 'floe' + Math.random(), deco: [], floe: 12, ob: { x, z, r: r * 0.9, shape: 'circle', shots: false, isle: true } };
-  OC.isles.push(I); ARENA.obstacles = OC.isles.map(J => J.ob);
+  OC.isles.push(I); ARENA.obstacles = isleObs();
   seaSplash(x, z, r);
 }
 // the boss hazards that live in the water: snares, mines, tentacles, ink (the rest are in updateSeaHazards)
@@ -29455,7 +29904,7 @@ function seaBossHazards(dt) {
   }
   // floes melt away after a while
   for (const I of OC.isles) if (I.floe !== undefined && (I.floe -= dt) <= 0) I.gone = true;
-  if (OC.isles.some(I => I.gone)) { OC.isles = OC.isles.filter(I => !I.gone); ARENA.obstacles = OC.isles.map(J => J.ob); }
+  if (OC.isles.some(I => I.gone)) { OC.isles = OC.isles.filter(I => !I.gone); ARENA.obstacles = isleObs(); }
 }
 function emitSeaBossHazards() {
   const t = OC.t;
@@ -29552,7 +30001,7 @@ const SEA_DEEP_THEMES = [
     mini: { name: 'Abyssal Ahab', ride: 'canoe', tint: '#2a4a8a', atk: ['ram', 'call', 'bombs'] } },
   { mech: 'gfire', isles: ['ilocker'], fogK: 0.6, mix: [['pskel', 0, 1], ['pghost', 0, 0.6], ['phat', 20, 0.4], ['pdiver', 50, 0.4], ['pbomb', 80, 0.3]],
     mini: { name: 'Bosun Bones', ride: 'raft', tint: '#d8d8c0', ghost: true, atk: ['call', 'ram', 'volley'] } },
-  { mech: 'edge', isles: ['iedge', 'iruin'], current: 0.7, zap: true, mix: [['pswim', 0, 1], ['pfloat', 30, 0.4], ['phat', 60, 0.5], ['pmer', 80, 0.4], ['pskel', 90, 0.4], ['pjelly', 100, 0.35], ['pgummy', 110, 0.3], ['pangler', 120, 0.35], ['pballoon', 140, 0.3], ['pweed', 160, 0.3]],
+  { mech: 'edge', isles: ['bruin1', 'bruin2', 'bruin3'], current: 0.7, zap: true, mix: [['pswim', 0, 1], ['pfloat', 30, 0.4], ['phat', 60, 0.5], ['pmer', 80, 0.4], ['pskel', 90, 0.4], ['pjelly', 100, 0.35], ['pgummy', 110, 0.3], ['pangler', 120, 0.35], ['pballoon', 140, 0.3], ['pweed', 160, 0.3]],
     mini: { name: 'Herald Triton', ride: 'canoe', tint: '#ffd34a', atk: ['volley', 'ram', 'bombs', 'call'] } },
 ];
 SEA_DEEP_THEMES.forEach((T, i) => Object.assign(SEA_CHAPTERS[10 + i], T));
@@ -29584,12 +30033,13 @@ SEA_AI.pmer = (e, dt) => {
   e.yaw = angleLerp(e.yaw, Math.atan2(S.x - e.x, S.z - e.z), Math.min(1, dt * 5));
   e.phase += dt * 0.6;
   if (e.throwT <= 0 && !OC.sink) {
-    e.throwT = rand(4, 5.5); e.actT = 0.5;
-    const tx = S.x + S.vx * 0.5, tz = S.z + S.vz * 0.5, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
-    OC.hz.push({ k: 'ball', trident: true, x: e.x, y: 0.9, z: e.z, vx: dx / l * 11, vz: dz / l * 11, life: 1.6, dmg: e.dmg * 0.7 });
+    // the throw's line shows on the water while it winds up; the trident then flies down it
+    e.throwT = rand(4, 5.5); e.actT = 1.1;
+    const tx = S.x + S.vx * 1.1, tz = S.z + S.vz * 1.1, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
+    seaBall({ k: 'ball', trident: true, x: e.x, y: 0.9, z: e.z, vx: dx / l * 11, vz: dz / l * 11, life: 1.6, dmg: e.dmg * 0.7 }, 0.6);
     AUDIO.play('throw');
   }
-  e.act = e.actT > 0 ? { clip: 'throw', u: clamp(1 - e.actT / 0.5, 0, 0.999) } : null;
+  e.act = e.actT > 0 ? { clip: 'throw', u: clamp(1 - e.actT / 1.1, 0, 0.999) } : null;
   return true;
 };
 // gummy bears split in two when sunk (the halves don't)
@@ -29744,7 +30194,7 @@ function seaDeepTick(dt) {
         enemiesInRadius(h.x, h.z, h.r, e => { if (!e.boss) hurtEnemy(e, 60, 0, 0, { sound: false }); });
         if (hullDist(h.x, h.z) > h.r * 0.6) {
           const I = { x: h.x, z: h.z, r: h.r, kind: 'icol', yaw: rand(0, TAU), key: 'col' + Math.random(), deco: [], floe: 9, rise: 0, ob: { x: h.x, z: h.z, r: h.r * 0.9, shape: 'circle', shots: false, isle: true } };
-          OC.isles.push(I); ARENA.obstacles = OC.isles.map(J => J.ob);
+          OC.isles.push(I); ARENA.obstacles = isleObs();
         }
         seaSplash(h.x, h.z, h.r * 1.2); FX.burst(h.x, 1, h.z, 20, [0.95, 0.95, 0.9], 6, 0.12, 0.6, 2, 3); AUDIO.play('crumble'); AUDIO.play('splash');
       }
@@ -29830,7 +30280,7 @@ function emitSeaDeep() {
     }
     else if (h.k === 'gfire') { const a = clamp(Math.min(h.t * 2, h.life - h.t), 0, 1); pushDecal(h.x, h.z, h.r, h.r, h.t * 0.2, 2, h.x, 0, 0.3, 1, 0.5, 0.55 * a, true); }
     else if (h.k === 'bones') { pushDecal(h.x, h.z, 0.7, 0.7, 0, 3, 0, h.t / h.dur % 1, 0.95, 0.92, 0.85, 0.6, true); }
-    else if (h.k === 'ball' && h.trident) { const l = Math.hypot(h.vx, h.vz) || 1, ux = h.vx / l, uz = h.vz / l; R.ribStrip([h.x - ux * 0.5, h.y, h.z - uz * 0.5, h.x + ux * 0.4, h.y, h.z + uz * 0.4], 2, 0.06, [1, 0.82, 0.3, 1], 1, 0, 1); FX.glow(h.x, h.y, h.z, 0.4, [1, 0.85, 0.4], 0.04, 0.5); }
+    else if (h.k === 'ball' && h.trident && !(h.wait > 0)) { const l = Math.hypot(h.vx, h.vz) || 1, ux = h.vx / l, uz = h.vz / l; R.ribStrip([h.x - ux * 0.5, h.y, h.z - uz * 0.5, h.x + ux * 0.4, h.y, h.z + uz * 0.4], 2, 0.06, [1, 0.82, 0.3, 1], 1, 0, 1); FX.glow(h.x, h.y, h.z, 0.4, [1, 0.85, 0.4], 0.04, 0.5); }
   }
   // the islands' own light: glowing mushrooms, ghost lanterns, the lighthouse
   for (const I of OC.isles) {
@@ -30791,7 +31241,7 @@ const UI = {
         }
         if (kind === 'skill') { const gap = document.createElement('span'); gap.className = 'slot-gap'; cells.push(gap); }
       }
-      // one row however many slots there are (the sea has a fifth skill slot): a column each, the gap between
+      // one row however many slots there are (the sea has six skill slots: the Ship and five weapons): a column each, the gap between
       const nS = slotLimit('skill'), nP = slotLimit('passive'), box = $('slots');
       box.style.gridTemplateColumns = `repeat(${nS}, minmax(0, 1fr)) 6px repeat(${nP}, minmax(0, 1fr))`;
       box.style.maxWidth = Math.round(450 * (nS + nP) / 8) + 'px';
@@ -30891,6 +31341,13 @@ const UI = {
       // level dots: filled up to the level this pick reaches
       if (d.max > 1) b.querySelector('.pips').innerHTML = Array.from({ length: d.max }, (_, k) => `<i class="${k < d.lvl ? 'on' : ''}"></i>`).join('');
       b.querySelector('.ds').innerHTML = d.desc;
+      // which passive takes this attack to its evolved form, or which attacks this passive evolves
+      if (d.links && d.links.length) {
+        const row = document.createElement('span'); row.className = 'evo-row';
+        row.innerHTML = `<small>${d.kind === 'skill' ? 'Evolves with' : 'Evolves'}</small>`;
+        for (const L of d.links.slice(0, 6)) { const im = document.createElement('img'); im.alt = L.name; im.title = L.name; im.src = ICONS.get(L.icon); if (L.held) im.className = 'held'; row.append(im); }
+        b.querySelector('.ds').after(row);
+      }
       b.addEventListener('click', () => this.pick(i));
       return b;
     }));
@@ -31231,10 +31688,18 @@ function describeChoice(c) {
     }
     if (ABILITIES[c.id] && lvl + 1 === max) line += `<br><b class="abil-note">Max level: unlocks the ${ABILITIES[c.id].name} ability</b>`;
     else if (lvl + 1 === max && max > 1) line += '<br><b class="abil-note">Takes it to max level</b>';
-    return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id] };
+    return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id], links: evoLinks(c.id) };
   }
   const partner = Object.keys(EVOLUTIONS).some(k => EVOLUTIONS[k].with === c.id && G.run && slotOf(k) && !slotOf(k).evo);
-  return { name: ps.name, desc: `<em>${ps.short}</em>` + (lvl + 1 === max && max > 1 ? '<br><b class="abil-note">Takes it to max level</b>' : ''), icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner };
+  return { name: ps.name, desc: `<em>${ps.short}</em>` + (lvl + 1 === max && max > 1 ? '<br><b class="abil-note">Takes it to max level</b>' : ''), icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner, links: evoLinks(c.id) };
+}
+// what evolves with what, for a level-up card: a passive lists the attacks it evolves (in this mode: land or sea),
+// an attack the passive it needs. Ones the run holds come first and are lit
+function evoLinks(id) {
+  const run = G.run, mode = def => !!(def && def.sea) === !!(run && run.sea);
+  const ids = SKILLS[id] ? (EVOLUTIONS[id] ? [EVOLUTIONS[id].with] : []) : Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].with === id && mode(SKILLS[k]));
+  return ids.map(k => ({ id: k, icon: (SKILLS[k] ? 'skill-' : 'passive-') + k, name: (SKILLS[k] || PASSIVES[k]).name, held: !!(run && slotOf(k)) }))
+    .sort((a, b) => b.held - a.held);
 }
 function applyChoice(c) {
   const run = G.run;

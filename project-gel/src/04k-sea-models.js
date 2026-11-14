@@ -47,8 +47,86 @@ CLIPS.hack = { frames: 16, fn(t) {
   ] };
 } };
 
+// ---------- island outlines: each kind is its main mound (r 4 at the origin, model units) plus lobes of land round
+// it, so no two kinds share a shape and none is a plain disc. The models grow the lobes with their own ground, shore
+// rocks and life (ISLE_LOOK), and the game collides with the same circles (seaMakeIsle). [x, z, r]
+const ISLE_LOBES = {
+  isle0: [[4.2, 1.5, 2.4], [-2.5, 3.6, 1.8]], isle1: [[-3.8, -2.2, 2.6], [1.5, 4.3, 1.6], [4.0, -2.8, 1.5]],
+  icoral: [[3.8, 2.6, 2.2], [1.0, 4.6, 1.8], [-2.6, 4.2, 1.6]], ikelp: [[-4.4, 0.5, 2.2], [3.2, -3.4, 1.9]],
+  ihut: [[4.0, -1.0, 2.6], [5.6, 2.4, 1.4]], iice: [[3.6, 3.0, 2.0], [-3.8, -2.6, 2.4], [-0.5, -4.8, 1.6]],
+  ivolc: [[-4.2, 2.0, 2.4], [2.0, 4.4, 1.6]], ighost: [[4.4, 0.8, 2.0], [-1.6, -4.4, 2.2]],
+  ispire: [[-3.6, 3.2, 1.8], [4.2, -2.2, 2.4], [2.0, 4.6, 1.4]], iwreck: [[4.6, 1.4, 2.0], [-4.0, -1.8, 1.6]],
+  ifort: [[0, 5.0, 2.4], [0, -5.0, 2.4]], iglow: [[3.8, -3.0, 2.2], [-3.2, -3.8, 1.8], [-4.4, 1.6, 1.6]],
+  iweed: [[-4.6, -0.8, 2.6], [2.2, 4.4, 2.0]], istack: [[5.0, 3.0, 1.4], [-4.6, 3.4, 1.2], [1.0, -5.4, 1.5]],
+  iruin: [[4.0, 2.8, 2.2], [-3.4, 3.0, 1.6]], icandy: [[3.6, -3.2, 2.4], [-4.0, -2.0, 2.0], [0.4, 4.8, 1.8]],
+  itri: [[4.4, -2.0, 1.8], [-2.8, 4.0, 2.2]], isky: [[3.6, 2.2, 2.4], [-3.8, 1.4, 2.2], [0.2, -4.2, 2.0]],
+  ibones: [[-4.4, -2.4, 2.0], [3.6, 3.4, 1.8]], ilocker: [[4.2, -2.6, 2.2], [-2.4, 4.4, 1.6]], iedge: [[-4.0, 3.0, 2.2], [4.2, 2.6, 1.6]],
+  bruin1: [[3.8, 3.4, 1.7]], bruin2: [[4.8, -1.6, 1.9]], bruin3: [[-4.3, 2.6, 1.7], [3.6, -3.8, 1.5]],
+};
+// each kind's lobes: ground, a top (grass, snow, moss...), shore rocks, and what lives on them (isleDeco)
+const ISLE_LOOK = {
+  isle0: { ground: '#f2dc9a', top: '#6cc34a', rock: '#a89e8a', deco: 'palm' }, isle1: { ground: '#f2dc9a', top: '#7ad04e', rock: '#9a9488', deco: 'bush' },
+  icoral: { ground: '#f4e2b0', rock: '#e8a0a8', deco: 'coral', n: 3 }, ikelp: { ground: '#c8b47a', top: '#5a8a4a', rock: '#7a7a72', deco: 'kelp', n: 3 },
+  ihut: { ground: '#f2dc9a', top: '#6cc34a', rock: '#a89e8a', deco: 'crates' }, iice: { ground: '#d8f0ff', top: '#ffffff', rock: '#9ad0f0', deco: 'crystal', n: 3 },
+  ivolc: { ground: '#3a3036', rock: '#2a2228', rockD: '#5a2a1a', deco: 'ember', n: 2 }, ighost: { ground: '#4a5248', top: '#3a4a3a', rock: '#5a5e58', deco: 'tomb', n: 2 },
+  ispire: { ground: '#5a5a62', rock: '#3a3a44', deco: 'spike', n: 3 }, iwreck: { ground: '#d8c08a', rock: '#7a6a5a', deco: 'wreckage', n: 2 },
+  ifort: { ground: '#d8c8a0', top: '#7ab04a', rock: '#a8a49a', deco: 'wall', n: 2 }, iglow: { ground: '#2a2e40', top: '#3a3a5a', rock: '#22263a', deco: 'shroom', n: 3 },
+  iweed: { ground: '#8a8a4a', top: '#6a7a2a', rock: '#5a5a3a', deco: 'weed', n: 3 }, istack: { ground: '#c89a6a', top: '#7ab04a', rock: '#a87a4a', deco: 'stack', n: 1 },
+  iruin: { ground: '#e8e2d0', rock: '#c8c0a8', deco: 'column', n: 2 }, icandy: { ground: '#ffb8d8', top: '#fff0f6', rock: '#ff8ac0', deco: 'candy', n: 3 },
+  itri: { ground: '#f2dc9a', rock: '#a89e8a', deco: 'buoy', n: 2 }, isky: { ground: '#ffffff', top: '#eef6ff', rock: '#dfe8f4', deco: 'puff', n: 3 },
+  ibones: { ground: '#3a3a40', rock: '#26262c', deco: 'bone', n: 2 }, ilocker: { ground: '#24302c', rock: '#1a2420', deco: 'chest', n: 2 },
+  iedge: { ground: '#f4d48a', top: '#ffe8a8', rock: '#e8b84a', deco: 'gold', n: 2 },
+  bruin1: { ground: '#8a8a84', top: '#5a8a3a', rock: '#6a6c68', deco: 'rubble', n: 2 }, bruin2: { ground: '#8a8a84', top: '#4a7a32', rock: '#6a6c68', deco: 'rubble', n: 2 },
+  bruin3: { ground: '#8a8a84', top: '#5a8a3a', rock: '#6a6c68', deco: 'rubble', n: 2 },
+};
+// a little life for a lobe (model units; island meshes are coarse, 0.1 a cell, so nothing here is thinner than 0.2)
+function isleDeco(kind, x, z, rnd) {
+  const C = hexToRgb, h = 0.25;
+  const green = C('#4fa63a'), greenL = C('#7ad04e'), bark = C('#8a5a30');
+  switch (kind) {
+    case 'palm': { const lx = (rnd() - 0.5) * 0.8, lz = (rnd() - 0.5) * 0.8, top = [x + lx, h + 2.2, z + lz];
+      return [{ s: 'cap', a: [x, h, z], b: top, r: 0.16, r2: 0.11, col: bark, k: 0.05 }, ...[0, 1, 2, 3, 4].map(i => { const a = i / 5 * TAU + rnd(); return { s: 'cap', a: top, b: [top[0] + Math.cos(a) * 1.1, top[1] - 0.45, top[2] + Math.sin(a) * 1.1], r: 0.16, r2: 0.1, col: i % 2 ? green : greenL, k: 0.05 }; })]; }
+    case 'bush': return [0, 1, 2].map(i => ({ s: 'sph', c: [x + (rnd() - 0.5) * 0.7, h + 0.35, z + (rnd() - 0.5) * 0.7], r: 0.4 + rnd() * 0.2, col: i % 2 ? green : greenL, k: 0.2 }));
+    case 'coral': return [0, 1, 2].map(i => { const col = C(['#ff7aa8', '#ff9a4a', '#c86aff'][Math.floor(rnd() * 3)]), a = rnd() * TAU; return { s: 'cap', a: [x, h, z], b: [x + Math.cos(a) * 0.4, h + 0.9 + rnd() * 0.6, z + Math.sin(a) * 0.4], r: 0.2, r2: 0.13, col, k: 0.12 }; });
+    case 'kelp': return [0, 1].map(i => ({ s: 'cap', a: [x + i * 0.4, h, z], b: [x + i * 0.4 + 0.2, h + 1.8 + rnd(), z - 0.2], r: 0.18, r2: 0.12, col: C(i ? '#4a8a3a' : '#6aa84a'), k: 0.05 }));
+    case 'crates': return [{ s: 'box', c: [x, h + 0.3, z], hs: [0.35, 0.3, 0.35], rd: 0.04, col: C('#a8693a'), k: 0 }, { s: 'cyl', ax: 'y', c: [x + 0.7, h + 0.35, z + 0.2], r: 0.3, hh: 0.35, rd: 0.06, col: C('#8a5a30'), k: 0 }];
+    case 'crystal': return [0, 1, 2].map(() => { const a = rnd() * TAU, l = 0.8 + rnd() * 1.2; return { s: 'cap', a: [x, h, z], b: [x + Math.cos(a) * 0.35, h + l, z + Math.sin(a) * 0.35], r: 0.26, r2: 0.05, col: C('#bfe8ff'), k: 0.03 }; });
+    case 'ember': return [{ s: 'ell', c: [x, h + 0.05, z], rr: [0.7, 0.2, 0.6], col: C('#ff6a1a'), k: 0.05 }, { s: 'crag', c: [x + 0.6, h + 0.3, z - 0.3], r: 0.45, seed: 7, n: 9, col: C('#2a2228'), k: 0.1 }];
+    case 'tomb': return [{ s: 'box', c: [x, h + 0.45, z], hs: [0.3, 0.45, 0.12], rd: 0.12, col: C('#8a8e88'), k: 0 }, { s: 'cap', a: [x + 0.8, h, z], b: [x + 1.0, h + 1.6, z + 0.2], r: 0.13, r2: 0.08, col: C('#3a2e28'), k: 0.03 }, { s: 'cap', a: [x + 0.95, h + 1.1, z + 0.1], b: [x + 1.5, h + 1.5, z + 0.2], r: 0.1, col: C('#3a2e28'), k: 0.03 }];
+    case 'spike': return [0, 1].map(() => ({ s: 'cap', a: [x + (rnd() - 0.5) * 0.6, h, z + (rnd() - 0.5) * 0.6], b: [x, h + 1.4 + rnd() * 1.2, z], r: 0.38, r2: 0.05, col: C('#3a3a44'), k: 0.08 }));
+    case 'wreckage': return [{ s: 'box', c: [x, h + 0.15, z], hs: [0.9, 0.1, 0.22], rd: 0.05, col: C('#7a4f2a'), k: 0 }, { s: 'box', c: [x + 0.2, h + 0.35, z + 0.4], hs: [0.25, 0.25, 0.7], rd: 0.05, col: C('#8a5a30'), k: 0 }, { s: 'cyl', ax: 'z', c: [x - 0.6, h + 0.3, z - 0.5], r: 0.28, hh: 0.35, rd: 0.06, col: C('#6e4426'), k: 0 }];
+    case 'wall': return [{ s: 'box', c: [x, h + 0.45, z], hs: [0.9, 0.45, 0.25], rd: 0.05, col: C('#c8c0a8'), k: 0 }, ...[-0.6, 0, 0.6].map(dx => ({ s: 'box', c: [x + dx, h + 1.0, z], hs: [0.18, 0.12, 0.25], rd: 0.03, col: C('#c8c0a8'), k: 0 }))];
+    case 'shroom': return [0, 1].map(i => { const sx = x + i * 0.6, hh = 0.7 + rnd() * 0.7, col = C(['#4ad8ff', '#ff5ab4', '#7aff8a'][Math.floor(rnd() * 3)]); return [{ s: 'cap', a: [sx, h, z], b: [sx, h + hh, z], r: 0.14, col: C('#e8e4f0'), k: 0.03 }, { s: 'ell', c: [sx, h + hh, z], rr: [0.5, 0.25, 0.5], col, k: 0.03 }]; }).flat();
+    case 'weed': return [0, 1, 2].map(i => ({ s: 'cap', a: [x + i * 0.3, h, z], b: [x + i * 0.3 + (rnd() - 0.5), h + 0.9 + rnd() * 0.6, z + (rnd() - 0.5)], r: 0.17, r2: 0.1, col: C(i % 2 ? '#6a7a2a' : '#8a9a3a'), k: 0.08 }));
+    case 'stack': return [{ s: 'cap', a: [x, h, z], b: [x + 0.2, h + 2.6 + rnd(), z], r: 0.75, r2: 0.5, col: C('#a87a4a'), k: 0.2 }, { s: 'ell', c: [x + 0.2, h + 3.0, z], rr: [0.6, 0.25, 0.6], col: C('#7ab04a'), k: 0.1 }];
+    case 'column': return [{ s: 'cyl', ax: 'y', c: [x, h + 0.7, z], r: 0.3, hh: 0.7 + rnd() * 0.5, rd: 0.04, col: C('#f4f0e4'), k: 0 }, { s: 'box', c: [x + 0.6, h + 0.15, z + 0.3], hs: [0.5, 0.15, 0.3], rd: 0.04, col: C('#e8e2d0'), k: 0 }];
+    case 'candy': return [{ s: 'cap', a: [x, h, z], b: [x, h + 1.2, z], r: 0.08 + 0.06, col: C('#ffffff'), k: 0 }, { s: 'sph', c: [x, h + 1.4, z], r: 0.4, col: C(['#ff5ab4', '#ffd23a', '#4ad8ff'][Math.floor(rnd() * 3)]), k: 0.02 }, { s: 'ell', c: [x + 0.7, h + 0.2, z], rr: [0.35, 0.3, 0.35], col: C('#7aff8a'), k: 0.05 }];
+    case 'buoy': return [{ s: 'cyl', ax: 'y', c: [x, h + 0.5, z], r: 0.3, hh: 0.5, rd: 0.08, col: C('#e8283a'), k: 0 }, { s: 'cyl', ax: 'y', c: [x, h + 0.75, z], r: 0.31, hh: 0.12, rd: 0.04, col: C('#ffffff'), k: 0 }, { s: 'sph', c: [x, h + 1.15, z], r: 0.15, col: C('#ffe08a'), k: 0 }];
+    case 'puff': return [0, 1, 2].map(() => ({ s: 'sph', c: [x + (rnd() - 0.5), h + 0.5 + rnd() * 0.4, z + (rnd() - 0.5)], r: 0.5 + rnd() * 0.3, col: C('#ffffff'), k: 0.3 }));
+    case 'bone': return [0, 1, 2].map(i => ({ s: 'cap', a: [x + i * 0.35, h, z - 0.4], b: [x + i * 0.35 + 0.2, h + 0.9, z + 0.3], r: 0.12, r2: 0.09, col: C('#f0e8d8'), k: 0.03 }));
+    case 'chest': return [{ s: 'box', c: [x, h + 0.3, z], hs: [0.45, 0.28, 0.3], rd: 0.06, col: C('#6e4426'), k: 0 }, { s: 'box', c: [x, h + 0.62, z], hs: [0.46, 0.1, 0.31], rd: 0.05, col: C('#f2c440'), k: 0 }];
+    case 'gold': return [0, 1].map(() => ({ s: 'cap', a: [x + (rnd() - 0.5) * 0.6, h, z + (rnd() - 0.5) * 0.6], b: [x, h + 1.0 + rnd(), z], r: 0.3, r2: 0.06, col: C('#f2c440'), k: 0.05 }));
+    case 'rubble': return [0, 1, 2].map(() => ({ s: 'box', c: [x + (rnd() - 0.5) * 1.2, h + 0.2 + rnd() * 0.3, z + (rnd() - 0.5) * 1.2], hs: [0.3 + rnd() * 0.3, 0.2 + rnd() * 0.2, 0.3 + rnd() * 0.3], rd: 0.05, rot: [(rnd() - 0.5) * 0.8, rnd() * TAU, (rnd() - 0.5) * 0.8], col: C(rnd() < 0.5 ? '#9a9c98' : '#7e807c'), k: 0 }));
+  }
+  return [];
+}
+// the lobes round a kind's main mound: ground blended into it (a smooth isthmus), a top, rocks on the outer shore
+function isleLobeParts(kind) {
+  const L = ISLE_LOOK[kind], C = hexToRgb, out = [];
+  let seed = 7; for (const ch of kind) seed = seed * 31 + ch.charCodeAt(0);
+  const rnd = mulberry32(seed), g = C(L.ground), top = L.top && C(L.top), rock = C(L.rock), rockD = C(L.rockD || L.rock);
+  for (const [x, z, r] of ISLE_LOBES[kind]) {
+    out.push({ s: 'ell', c: [x, -0.25, z], rr: [r, 0.72, r * (0.8 + rnd() * 0.3)], col: g, k: 0.9 });
+    if (top) out.push({ s: 'ell', c: [x * 0.97, 0.12, z * 0.97], rr: [r * 0.66, 0.32, r * 0.58], col: top, k: 0.5 });
+    const out0 = Math.atan2(z, x);
+    for (let i = 0; i < 3; i++) { const a = out0 + (i - 1) * 0.7 + (rnd() - 0.5) * 0.4, d = r * (0.72 + rnd() * 0.2); out.push({ s: 'crag', c: [x + Math.cos(a) * d, 0.05 + rnd() * 0.2, z + Math.sin(a) * d], r: 0.38 + rnd() * 0.35, seed: Math.floor(rnd() * 999), n: 9, col: i % 2 ? rock : rockD, k: 0.12 }); }
+    for (let i = 0; i < (L.n ?? 2); i++) { const a = rnd() * TAU, d = rnd() * r * 0.45; out.push(...isleDeco(L.deco, x + Math.cos(a) * d, z + Math.sin(a) * d, rnd)); }
+  }
+  return out;
+}
+const isleProp = (defs, name, parts, o) => prop(defs, name, ISLE_LOBES[name] ? parts.concat(isleLobeParts(name)) : parts, o);
 function seaModels(defs) {
-  const C = hexToRgb, P = (name, parts, o) => prop(defs, name, parts, o);
+  const C = hexToRgb, P = (name, parts, o) => isleProp(defs, name, parts, o);
   const wood = C('#b07a45'), woodL = C('#c99358'), woodD = C('#7a4f2a'), bark = C('#8a5a30'), rope = C('#e2c98f'), ropeD = C('#b89a5e');
   const white = C('#fbf6ee'), red = C('#e8414a'), pupil = C('#16101a');
 

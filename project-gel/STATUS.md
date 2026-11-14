@@ -18,7 +18,58 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   stronger, or plainly better, than the one before it: finding a new one should feel rewarding. Check a new one
   with `test/_dps.mjs` (IDS=its id plus the previous chapter's) and by playing it.
 
-## Attack warnings everywhere, warnings at sea, the slot bar in one row (latest)
+## Islands with their own shapes, the drowned city, six sea slots, evolution hints, projectgel (latest)
+- **Islands** (04k `ISLE_LOBES` / `ISLE_LOOK` / `isleLobeParts`, 13k `seaMakeIsle`):
+  - Every island kind is its main mound plus two or three lobes of land in its own layout, so no two kinds share an
+    outline and none is a plain disc.
+  - Each lobe brings the kind's ground and top (grass, snow, frosting...), rocks on its outer shore, and a little
+    life of its own: palms, coral, kelp, crystals, embers, tombstones, spikes, wreckage, walls, mushrooms, candy,
+    buoys, cloud puffs, bones, chests, gold.
+  - The game uses the same circles (`I.lobes`): the ship, swimmers, bosses and `inIsle` meet every lobe, and each
+    lobe gets its own shallow light, shadow and breathing foam ring, so the shore follows the outline.
+  - Islands are a little smaller at their middle (radius 2.9-5.6, was 3.2-6.6), since the lobes add land. A new
+    island never runs into a neighbour's land (6 apart at least), and none sits within 22 of the start.
+  - **Life:** one or two gulls wheel over each island, except the grim and icy ones. Each kind has its own air:
+    - volcano smoke and embers;
+    - ghost and locker wisps, glowing spores, snow;
+    - sparkles, coral bubbles, drifting leaves, dust off the ruins.
+- **Ocean 20, the drowned city** (04o `bruin1`-`bruin3`). Instead of islands, the Edge of the World has big office
+  towers standing in the sea, with rubble heaped at their feet:
+  - `bruin1`: a tall tower leaning over, its top snapped off, a hole blown through its side.
+  - `bruin2`: a wide block broken in two. One half still stands; the other slumps over into the water, with
+    floor slabs torn loose between them.
+  - `bruin3`: a broken skyline, three stumps snapped at different heights with a fallen tower lying across them.
+  - All of them have rows of dark windows (some broken through), corner pillars, jagged tops with rusty rebar,
+    vines down the walls, moss on the ledges, and trees and bushes on the roofs.
+  - A tall island fades while it hides the blob on deck (the land's `hidesHero` sightline test).
+- **Mesher** (03-sdfmesh.js):
+  - Boxes can turn (`rot: [rx, ry, rz]`), for the leaning towers, slumped halves and tipped rubble.
+  - A box can paint a window grid on its walls (`win`), so a tower is one part rather than a stack of slabs.
+  - The bin lists now test boxes, spheres, cylinders and plain capsules by their true distance, not their bounding
+    sphere (which is poor for slabs, towers and masts).
+    - The same meshes come out, except where ellipsoids are involved: their distance is approximate, so they may
+      come out a hair different.
+    - Measured on a set of 12 meshes: 97 -> 87 s (10%); the raft 16 -> 12 s.
+  - The ruins use a 0.12 cell (9-18 s each in Node here). Islands with lobes take about twice as long as before
+    (5-10 s). Islands build in the background workers, and a chapter's islands are put first when it is picked.
+  - All meshes in `test/game.mjs`: 294 s, about the same as before (the faster bins pay for the bigger islands).
+- **Tests:** `test/_isles.mjs` (EACH=1 for a close look at each island, CH=20 for the drowned city), `test/_evo.mjs`
+  (the hints and the one-row slot bar, land and sea), `test/_tele.mjs` (now also the merfolk trident).
+- **Sea slots:** 6 skill boxes at sea: the Ship plus five weapons, the Homing Cannon among them (was 5). There are
+  still 4 passives, all in one row.
+- **Evolution hints:**
+  - A level-up card for an attack that evolves shows "Evolves with" and the passive it needs.
+  - A passive's card shows "Evolves" and the icons of every attack (in this mode) it takes to its final form.
+  - Icons of the ones already held are bright and ringed in gold; the rest are dimmed.
+- **More sea warnings** (`seaBall`, 13m):
+  - The sea boss's cannon volley holds 0.55 s on its lanes before it fires.
+  - The merfolk trident shows its lane for 0.6 s.
+  - A keg pusher near the hull shows a blast ring that fills as it closes in.
+- **projectgel repository:** the whole project (with its history) is also the root of `polynomiali/projectgel`
+  (main), kept in step with the `project-gel/` folder here. Scratch tests (`test/_*.mjs`) are now committed, and
+  there is a README.
+
+## Attack warnings everywhere, warnings at sea, the slot bar in one row
 - **Attack telegraphs** for every enemy that needs one (they already covered most melee and boss attacks: spear and
   bison lanes, axe/knight chop circles, bomb circles, javelin landing circles, most boss moves).
   - **Ranged foes** (archers, gunslingers, magma imps, peppers, cloudlings) show a red aim lane while they draw.

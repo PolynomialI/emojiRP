@@ -44,7 +44,7 @@ const SEA_DEEP_THEMES = [
     mini: { name: 'Abyssal Ahab', ride: 'canoe', tint: '#2a4a8a', atk: ['ram', 'call', 'bombs'] } },
   { mech: 'gfire', isles: ['ilocker'], fogK: 0.6, mix: [['pskel', 0, 1], ['pghost', 0, 0.6], ['phat', 20, 0.4], ['pdiver', 50, 0.4], ['pbomb', 80, 0.3]],
     mini: { name: 'Bosun Bones', ride: 'raft', tint: '#d8d8c0', ghost: true, atk: ['call', 'ram', 'volley'] } },
-  { mech: 'edge', isles: ['iedge', 'iruin'], current: 0.7, zap: true, mix: [['pswim', 0, 1], ['pfloat', 30, 0.4], ['phat', 60, 0.5], ['pmer', 80, 0.4], ['pskel', 90, 0.4], ['pjelly', 100, 0.35], ['pgummy', 110, 0.3], ['pangler', 120, 0.35], ['pballoon', 140, 0.3], ['pweed', 160, 0.3]],
+  { mech: 'edge', isles: ['bruin1', 'bruin2', 'bruin3'], current: 0.7, zap: true, mix: [['pswim', 0, 1], ['pfloat', 30, 0.4], ['phat', 60, 0.5], ['pmer', 80, 0.4], ['pskel', 90, 0.4], ['pjelly', 100, 0.35], ['pgummy', 110, 0.3], ['pangler', 120, 0.35], ['pballoon', 140, 0.3], ['pweed', 160, 0.3]],
     mini: { name: 'Herald Triton', ride: 'canoe', tint: '#ffd34a', atk: ['volley', 'ram', 'bombs', 'call'] } },
 ];
 SEA_DEEP_THEMES.forEach((T, i) => Object.assign(SEA_CHAPTERS[10 + i], T));
@@ -76,12 +76,13 @@ SEA_AI.pmer = (e, dt) => {
   e.yaw = angleLerp(e.yaw, Math.atan2(S.x - e.x, S.z - e.z), Math.min(1, dt * 5));
   e.phase += dt * 0.6;
   if (e.throwT <= 0 && !OC.sink) {
-    e.throwT = rand(4, 5.5); e.actT = 0.5;
-    const tx = S.x + S.vx * 0.5, tz = S.z + S.vz * 0.5, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
-    OC.hz.push({ k: 'ball', trident: true, x: e.x, y: 0.9, z: e.z, vx: dx / l * 11, vz: dz / l * 11, life: 1.6, dmg: e.dmg * 0.7 });
+    // the throw's line shows on the water while it winds up; the trident then flies down it
+    e.throwT = rand(4, 5.5); e.actT = 1.1;
+    const tx = S.x + S.vx * 1.1, tz = S.z + S.vz * 1.1, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
+    seaBall({ k: 'ball', trident: true, x: e.x, y: 0.9, z: e.z, vx: dx / l * 11, vz: dz / l * 11, life: 1.6, dmg: e.dmg * 0.7 }, 0.6);
     AUDIO.play('throw');
   }
-  e.act = e.actT > 0 ? { clip: 'throw', u: clamp(1 - e.actT / 0.5, 0, 0.999) } : null;
+  e.act = e.actT > 0 ? { clip: 'throw', u: clamp(1 - e.actT / 1.1, 0, 0.999) } : null;
   return true;
 };
 // gummy bears split in two when sunk (the halves don't)
@@ -236,7 +237,7 @@ function seaDeepTick(dt) {
         enemiesInRadius(h.x, h.z, h.r, e => { if (!e.boss) hurtEnemy(e, 60, 0, 0, { sound: false }); });
         if (hullDist(h.x, h.z) > h.r * 0.6) {
           const I = { x: h.x, z: h.z, r: h.r, kind: 'icol', yaw: rand(0, TAU), key: 'col' + Math.random(), deco: [], floe: 9, rise: 0, ob: { x: h.x, z: h.z, r: h.r * 0.9, shape: 'circle', shots: false, isle: true } };
-          OC.isles.push(I); ARENA.obstacles = OC.isles.map(J => J.ob);
+          OC.isles.push(I); ARENA.obstacles = isleObs();
         }
         seaSplash(h.x, h.z, h.r * 1.2); FX.burst(h.x, 1, h.z, 20, [0.95, 0.95, 0.9], 6, 0.12, 0.6, 2, 3); AUDIO.play('crumble'); AUDIO.play('splash');
       }
@@ -322,7 +323,7 @@ function emitSeaDeep() {
     }
     else if (h.k === 'gfire') { const a = clamp(Math.min(h.t * 2, h.life - h.t), 0, 1); pushDecal(h.x, h.z, h.r, h.r, h.t * 0.2, 2, h.x, 0, 0.3, 1, 0.5, 0.55 * a, true); }
     else if (h.k === 'bones') { pushDecal(h.x, h.z, 0.7, 0.7, 0, 3, 0, h.t / h.dur % 1, 0.95, 0.92, 0.85, 0.6, true); }
-    else if (h.k === 'ball' && h.trident) { const l = Math.hypot(h.vx, h.vz) || 1, ux = h.vx / l, uz = h.vz / l; R.ribStrip([h.x - ux * 0.5, h.y, h.z - uz * 0.5, h.x + ux * 0.4, h.y, h.z + uz * 0.4], 2, 0.06, [1, 0.82, 0.3, 1], 1, 0, 1); FX.glow(h.x, h.y, h.z, 0.4, [1, 0.85, 0.4], 0.04, 0.5); }
+    else if (h.k === 'ball' && h.trident && !(h.wait > 0)) { const l = Math.hypot(h.vx, h.vz) || 1, ux = h.vx / l, uz = h.vz / l; R.ribStrip([h.x - ux * 0.5, h.y, h.z - uz * 0.5, h.x + ux * 0.4, h.y, h.z + uz * 0.4], 2, 0.06, [1, 0.82, 0.3, 1], 1, 0, 1); FX.glow(h.x, h.y, h.z, 0.4, [1, 0.85, 0.4], 0.04, 0.5); }
   }
   // the islands' own light: glowing mushrooms, ghost lanterns, the lighthouse
   for (const I of OC.isles) {

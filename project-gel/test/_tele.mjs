@@ -65,5 +65,18 @@ r = await page.evaluate(() => {
 });
 await shot('musket');
 ok(r.lane, 'musket pirate: an aim lane at sea ' + JSON.stringify(r));
+// at sea: a merfolk's trident shows its lane, waits on it, then flies down it
+r = await page.evaluate(() => {
+  const run = G.run; run.enemies.length = 0; run.tele = []; OC.hz.length = 0;
+  const S = OC.ship, e = seaFoe('pmer', S.x + 9, S.z + 2); e.spawnT = 0;
+  let ball = null;
+  for (let f = 0; f < 600 && !ball; f++) { __frames(1); ball = OC.hz.find(h => h.trident); }
+  if (!ball) return { thrown: false };
+  const lane = (run.tele || []).some(t => t.kind === 'lane'), x0 = ball.x, waiting = ball.wait > 0;
+  __frames(20); const still = Math.abs(ball.x - x0) < 1e-6;
+  __frames(30); const moved = Math.abs(ball.x - x0) > 0.5 || !OC.hz.includes(ball);
+  return { thrown: true, lane, waiting, still, moved };
+});
+ok(r.thrown && r.lane && r.waiting && r.still && r.moved, 'merfolk trident: lane, a wait, then it flies ' + JSON.stringify(r));
 console.log(errs.length ? errs.slice(0, 6) : 'no errors');
 await browser.close();

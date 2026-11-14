@@ -152,7 +152,8 @@ function seaBossAI(e, dt) {
       if (ai.t <= 0 && ai.k < 3) {
         ai.k++; ai.t = 0.35;
         const a0 = Math.atan2(dx, dz);
-        for (let k = -3; k <= 3; k++) { const a = a0 + k * 0.12 + (ai.k - 2) * 0.05; hz({ k: 'ball', x: e.x, y: B.deck + 1.2, z: e.z, vx: Math.sin(a) * 13, vz: Math.cos(a) * 13, life: 2.4, dmg: e.dmg * 0.35 }); }
+        // (each ball's line shows first, then it flies down it)
+        for (let k = -3; k <= 3; k++) { const a = a0 + k * 0.12 + (ai.k - 2) * 0.05; seaBall({ k: 'ball', x: e.x, y: B.deck + 1.2, z: e.z, vx: Math.sin(a) * 13, vz: Math.cos(a) * 13, life: 2.4, dmg: e.dmg * 0.35 }, 0.55); }
         AUDIO.play('bang');
       }
       if (ai.k >= 3 && ai.t <= 0) { ai.state = 'circle'; ai.t = 2.2; }
@@ -271,7 +272,7 @@ function seaBossAI(e, dt) {
   e.x += (e.vx + e.kx) * dt; e.z += (e.vz + e.kz) * dt;
   const kd = Math.exp(-3 * dt); e.kx *= kd; e.kz *= kd;
   if (ai.state !== 'charge' && !e.hidden) seaVehicleContact(e);
-  for (const I of OC.isles) { const ix = e.x - I.x, iz = e.z - I.z, id = Math.hypot(ix, iz) || 1, ov = I.ob.r + e.radius - id; if (ov > 0) { e.x += ix / id * ov; e.z += iz / id * ov; } }
+  for (const I of OC.isles) { const o = isleOut(I, e.x, e.z, e.radius); if (o) { e.x += o[0]; e.z += o[1]; } }
   if (Math.hypot(e.vx, e.vz) > 1 && Math.random() < 0.5) OC.wake.push({ x: e.x - Math.sin(e.yaw) * B.len * 0.45, z: e.z - Math.cos(e.yaw) * B.len * 0.45, yaw: e.yaw, t: 0.3, w: B.len * 0.18, k: 0.8, seed: Math.random() * 10 });
   return true;
 }
@@ -279,7 +280,7 @@ function seaBossAI(e, dt) {
 function seaFloe(x, z) {
   if (inIsle(x, z, 2) || hullDist(x, z) < 3) return;
   const r = rand(1.6, 2.4), I = { x, z, r, kind: 'iice', yaw: rand(0, TAU), key: 'floe' + Math.random(), deco: [], floe: 12, ob: { x, z, r: r * 0.9, shape: 'circle', shots: false, isle: true } };
-  OC.isles.push(I); ARENA.obstacles = OC.isles.map(J => J.ob);
+  OC.isles.push(I); ARENA.obstacles = isleObs();
   seaSplash(x, z, r);
 }
 // the boss hazards that live in the water: snares, mines, tentacles, ink (the rest are in updateSeaHazards)
@@ -311,7 +312,7 @@ function seaBossHazards(dt) {
   }
   // floes melt away after a while
   for (const I of OC.isles) if (I.floe !== undefined && (I.floe -= dt) <= 0) I.gone = true;
-  if (OC.isles.some(I => I.gone)) { OC.isles = OC.isles.filter(I => !I.gone); ARENA.obstacles = OC.isles.map(J => J.ob); }
+  if (OC.isles.some(I => I.gone)) { OC.isles = OC.isles.filter(I => !I.gone); ARENA.obstacles = isleObs(); }
 }
 function emitSeaBossHazards() {
   const t = OC.t;

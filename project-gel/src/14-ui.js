@@ -485,7 +485,7 @@ const UI = {
         }
         if (kind === 'skill') { const gap = document.createElement('span'); gap.className = 'slot-gap'; cells.push(gap); }
       }
-      // one row however many slots there are (the sea has a fifth skill slot): a column each, the gap between
+      // one row however many slots there are (the sea has six skill slots: the Ship and five weapons): a column each, the gap between
       const nS = slotLimit('skill'), nP = slotLimit('passive'), box = $('slots');
       box.style.gridTemplateColumns = `repeat(${nS}, minmax(0, 1fr)) 6px repeat(${nP}, minmax(0, 1fr))`;
       box.style.maxWidth = Math.round(450 * (nS + nP) / 8) + 'px';
@@ -585,6 +585,13 @@ const UI = {
       // level dots: filled up to the level this pick reaches
       if (d.max > 1) b.querySelector('.pips').innerHTML = Array.from({ length: d.max }, (_, k) => `<i class="${k < d.lvl ? 'on' : ''}"></i>`).join('');
       b.querySelector('.ds').innerHTML = d.desc;
+      // which passive takes this attack to its evolved form, or which attacks this passive evolves
+      if (d.links && d.links.length) {
+        const row = document.createElement('span'); row.className = 'evo-row';
+        row.innerHTML = `<small>${d.kind === 'skill' ? 'Evolves with' : 'Evolves'}</small>`;
+        for (const L of d.links.slice(0, 6)) { const im = document.createElement('img'); im.alt = L.name; im.title = L.name; im.src = ICONS.get(L.icon); if (L.held) im.className = 'held'; row.append(im); }
+        b.querySelector('.ds').after(row);
+      }
       b.addEventListener('click', () => this.pick(i));
       return b;
     }));
@@ -925,10 +932,18 @@ function describeChoice(c) {
     }
     if (ABILITIES[c.id] && lvl + 1 === max) line += `<br><b class="abil-note">Max level: unlocks the ${ABILITIES[c.id].name} ability</b>`;
     else if (lvl + 1 === max && max > 1) line += '<br><b class="abil-note">Takes it to max level</b>';
-    return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id] };
+    return { name: sk.name, desc: line, icon: 'skill-' + c.id, kind: 'skill', lvl: lvl + 1, max, evo: !!EVOLUTIONS[c.id], links: evoLinks(c.id) };
   }
   const partner = Object.keys(EVOLUTIONS).some(k => EVOLUTIONS[k].with === c.id && G.run && slotOf(k) && !slotOf(k).evo);
-  return { name: ps.name, desc: `<em>${ps.short}</em>` + (lvl + 1 === max && max > 1 ? '<br><b class="abil-note">Takes it to max level</b>' : ''), icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner };
+  return { name: ps.name, desc: `<em>${ps.short}</em>` + (lvl + 1 === max && max > 1 ? '<br><b class="abil-note">Takes it to max level</b>' : ''), icon: 'passive-' + c.id, kind: 'passive', lvl: lvl + 1, max, evo: partner, links: evoLinks(c.id) };
+}
+// what evolves with what, for a level-up card: a passive lists the attacks it evolves (in this mode: land or sea),
+// an attack the passive it needs. Ones the run holds come first and are lit
+function evoLinks(id) {
+  const run = G.run, mode = def => !!(def && def.sea) === !!(run && run.sea);
+  const ids = SKILLS[id] ? (EVOLUTIONS[id] ? [EVOLUTIONS[id].with] : []) : Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].with === id && mode(SKILLS[k]));
+  return ids.map(k => ({ id: k, icon: (SKILLS[k] ? 'skill-' : 'passive-') + k, name: (SKILLS[k] || PASSIVES[k]).name, held: !!(run && slotOf(k)) }))
+    .sort((a, b) => b.held - a.held);
 }
 function applyChoice(c) {
   const run = G.run;

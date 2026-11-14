@@ -266,10 +266,10 @@ function seaSteer(dt) {
   S.x += S.vx * dt; S.z += S.vz * dt;
   // islands stop the ship (three circles along the keel)
   const [hl, hr] = hullSeg(D), p = [0, 0];
-  for (const I of OC.isles) {
+  for (const I of OC.isles) for (const L of isleLobes(I)) {
     for (const u of [-1, 0, 1]) {
       shipW(0, u * hl, p);
-      const dx = p[0] - I.x, dz = p[1] - I.z, d = Math.hypot(dx, dz) || 1e-4, ov = I.r + hr - d;
+      const dx = p[0] - L.x, dz = p[1] - L.z, d = Math.hypot(dx, dz) || 1e-4, ov = L.r + hr - d;
       if (ov <= 0) continue;
       S.x += dx / d * ov; S.z += dz / d * ov;
       const vn = (S.vx * dx + S.vz * dz) / d;
@@ -300,16 +300,38 @@ function seaIslands(first) {
     // islands aren't common: about one chunk in three has one, never right where the ship starts
     if (rnd() > 0.36) continue;
     const x = (cx + i + 0.2 + rnd() * 0.6) * ISLE_CHUNK, z = (cz + j + 0.2 + rnd() * 0.6) * ISLE_CHUNK;
-    if (Math.hypot(x, z) < 16) continue;
+    if (Math.hypot(x, z) < 22) continue;
     seaMakeIsle(x, z, rnd);
   }
   if (!first) OC.isles = OC.isles.filter(I => Math.hypot(I.x - S.x, I.z - S.z) < ISLE_CHUNK * 3.5 || !OC.chunks.delete(I.key));
-  ARENA.obstacles = OC.isles.map(I => I.ob);
+  ARENA.obstacles = isleObs();
+}
+// an island is its main mound plus the lobes of land round it (ISLE_LOBES, in model units at radius 4), as world
+// circles; the ship, swimmers and shots meet every one of them. Floes and the Atlantis column are one circle.
+const isleLobes = I => I.lobes || (I.lobes = [{ x: I.x, z: I.z, r: I.r }]);
+const isleObs = () => OC.isles.flatMap(I => I.obs || [I.ob]);
+// how far an island's land reaches from its middle
+const isleReach = I => I.reach || I.r;
+// push a circle (x, z, rad) clear of an island's land: the offset to add, or null when it's already clear
+const _io = [0, 0];
+function isleOut(I, x, z, rad, k = 0.92) {
+  let hit = false; _io[0] = _io[1] = 0;
+  for (const L of isleLobes(I)) {
+    const ix = x + _io[0] - L.x, iz = z + _io[1] - L.z, id = Math.hypot(ix, iz) || 1e-4, ov = L.r * k + rad - id;
+    if (ov > 0) { _io[0] += ix / id * ov; _io[1] += iz / id * ov; hit = true; }
+  }
+  return hit ? _io : null;
 }
 function seaMakeIsle(x, z, rnd) {
   const kinds = SEA_CHAPTERS[G.run.chapter - 1].isles || ['isle0', 'isle1'];
-  const r = 3.2 + rnd() * 3.4, kind = kinds[Math.floor(rnd() * kinds.length)], yaw = rnd() * TAU;
+  const r = 2.9 + rnd() * 2.7, kind = kinds[Math.floor(rnd() * kinds.length)], yaw = rnd() * TAU;
   const I = { x, z, r, kind, yaw, key: Math.floor(x / ISLE_CHUNK) + ',' + Math.floor(z / ISLE_CHUNK), deco: [], ob: { x, z, r: r * 0.92, shape: 'circle', shots: false, isle: true } };
+  const c = Math.cos(yaw), s = Math.sin(yaw), sc = r / 4;
+  I.lobes = [{ x, z, r }, ...(ISLE_LOBES[kind] || []).map(([lx, lz, lr]) => ({ x: x + (c * lx + s * lz) * sc, z: z + (-s * lx + c * lz) * sc, r: lr * sc * 0.95 }))];
+  I.obs = I.lobes.map((L, i) => i ? { x: L.x, z: L.z, r: L.r * 0.92, shape: 'circle', shots: false, isle: true } : I.ob);
+  I.reach = Math.max(...I.lobes.map(L => Math.hypot(L.x - x, L.z - z) + L.r));
+  // (neighbours' land never runs together into one long wall)
+  if (OC.isles.some(J => Math.hypot(J.x - x, J.z - z) < I.reach + isleReach(J) + 6)) return;
   // palms and rocks on top (in the island's own frame, as a share of its radius)
   // palms and rocks dress the plain sandy islands; the themed ones bring their own
   const n = kind === 'isle0' || kind === 'isle1' ? 1 + Math.floor(rnd() * 3) : kind === 'ihut' ? 1 : 0;
@@ -318,7 +340,7 @@ function seaMakeIsle(x, z, rnd) {
   OC.isles.push(I);
 }
 function mulberry(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-const inIsle = (x, z, pad = 0) => OC.isles.some(I => Math.hypot(x - I.x, z - I.z) < I.r + pad);
+const inIsle = (x, z, pad = 0) => OC.isles.some(I => Math.hypot(x - I.x, z - I.z) < isleReach(I) + pad && isleLobes(I).some(L => Math.hypot(x - L.x, z - L.z) < L.r + pad));
 
 // ---------- the wake: foam dropped at the stern, spreading in a V ----------
 function seaWake(dt) {
@@ -464,10 +486,7 @@ function seaFoes(dt) {
       else { e.x += n[0] * (e.radius * 0.6 - d2); e.z += n[1] * (e.radius * 0.6 - d2); }
     }
     // around the islands
-    for (const I of OC.isles) {
-      const ix = e.x - I.x, iz = e.z - I.z, id = Math.hypot(ix, iz) || 1e-4, ov = I.ob.r + e.radius - id;
-      if (ov > 0) { e.x += ix / id * ov; e.z += iz / id * ov; }
-    }
+    for (const I of OC.isles) { const o = isleOut(I, e.x, e.z, e.radius); if (o) { e.x += o[0]; e.z += o[1]; } }
   }
   // keep a little room between swimmers
   const cell = GRID.cell, map = GRID.map;
@@ -634,6 +653,42 @@ function seaShadow(x, z, sx, sz, rot, a, off = 0.12) {
   const k = Math.max(sx, sz) * off;
   pushDecal(x + 0.55 * k, z - 0.45 * k, sx, sz, rot, 12, (x * 0.37 + z * 0.11) % 7, 0, SEA_SH[0], SEA_SH[1], SEA_SH[2], a);
 }
+// an island's life: a gull or two wheeling over it, and its own air (volcano smoke and embers, ghost wisps,
+// glowing spores, snow, sparkles, drifting leaves, dust off the ruins)
+const ISLE_AIR = {
+  ivolc: [0.35, [0.45, 0.42, 0.45], 'smoke'], ighost: [0.25, [0.7, 1, 0.85], 'wisp'], iglow: [0.3, [0.4, 0.9, 1], 'spore'],
+  iice: [0.3, [1, 1, 1], 'snow'], icandy: [0.25, [1, 0.6, 0.85], 'spark'], isky: [0.2, [1, 1, 1], 'spark'],
+  icoral: [0.15, [1, 0.7, 0.8], 'bubble'], ilocker: [0.2, [0.4, 1, 0.7], 'wisp'], ibones: [0.15, [0.7, 0.7, 0.8], 'wisp'],
+  iweed: [0.2, [0.6, 0.8, 0.3], 'leaf'], ikelp: [0.15, [0.5, 0.8, 0.4], 'leaf'], isle0: [0.12, [0.5, 0.85, 0.35], 'leaf'], isle1: [0.12, [0.5, 0.85, 0.35], 'leaf'],
+  iruin: [0.15, [0.9, 0.88, 0.8], 'dust'], bruin1: [0.3, [0.75, 0.74, 0.7], 'dust'], bruin2: [0.3, [0.75, 0.74, 0.7], 'dust'], bruin3: [0.3, [0.75, 0.74, 0.7], 'dust'],
+};
+const NO_GULLS = new Set(['ivolc', 'ighost', 'ibones', 'ilocker', 'iglow', 'icol', 'iice']);
+function isleLife(I, t) {
+  if (I.floe !== undefined) return;
+  const sc = I.r / 4, h = (I.x * 0.61 + I.z * 0.37) % 1, nG = NO_GULLS.has(I.kind) ? 0 : 1 + (h > 0.5 ? 1 : 0);
+  if (R.enemyDraw.sgull) {
+    const M = MODELS.defs.sgull, c = M.clips.flap;
+    for (let g = 0; g < nG; g++) {
+      const w = 0.28 + g * 0.09, a = t * w * (g ? -1 : 1) + h * TAU + g * 2.1, rad = isleReach(I) * (0.55 + g * 0.2);
+      const x = I.x + Math.cos(a) * rad, z = I.z + Math.sin(a) * rad, y = 3.4 + g * 0.8 + Math.sin(t * 0.7 + g) * 0.4;
+      const dir = g ? -1 : 1;
+      pushEnemy('sgull', false, x, y, z, Math.atan2(-Math.sin(a) * dir, Math.cos(a) * dir), c.row + Math.floor(((t * 1.6 + g * 0.37) % 1) * c.frames), 1.3, 1, 0, 0, 0, 1, 1, 1);
+    }
+  }
+  const air = ISLE_AIR[I.kind];
+  if (!air || Math.random() > air[0]) return;
+  const L = pick(isleLobes(I)), a = rand(0, TAU), d = Math.sqrt(Math.random()) * L.r * 0.8, x = L.x + Math.cos(a) * d, z = L.z + Math.sin(a) * d, col = air[1];
+  switch (air[2]) {
+    case 'smoke': FX.smoke(I.x + rand(-0.4, 0.4) * sc, 4.6 * sc, I.z + rand(-0.4, 0.4) * sc, 0.7 * sc, col, 1.6, 1); if (Math.random() < 0.3) FX.part(I.x, 4.4 * sc, I.z, rand(-1, 1), rand(2, 4), rand(-1, 1), 0.07, 0.03, 1.1, [1, 0.5, 0.15], 1, 5); break;
+    case 'wisp': FX.part(x, rand(0.4, 1.4), z, rand(-0.2, 0.2), rand(0.3, 0.6), rand(-0.2, 0.2), 0.12, 0.05, 2.2, col, 1, 0); break;
+    case 'spore': FX.part(x, rand(0.5, 1.5), z, rand(-0.2, 0.2), rand(0.2, 0.5), rand(-0.2, 0.2), 0.08, 0.03, 2.5, col, 1, 0); break;
+    case 'snow': FX.part(x, rand(3, 5), z, rand(-0.3, 0.3), -rand(0.6, 1.0), rand(-0.3, 0.3), 0.07, 0.04, 3, col, 1, 0); break;
+    case 'spark': FX.part(x, rand(0.5, 2.5), z, 0, rand(0.2, 0.5), 0, 0.07, 0.03, 0.9, col, 1, 3); break;
+    case 'bubble': FX.part(x, 0.2, z, 0, rand(0.4, 0.8), 0, 0.07, 0.04, 0.8, col, 1, 0); break;
+    case 'leaf': FX.part(x, rand(1.5, 3), z, rand(-0.8, 0.8), -rand(0.3, 0.5), rand(-0.8, 0.8), 0.07, 0.05, 3, col, 1, 1, 0, 0.5); break;
+    case 'dust': FX.part(x, rand(0.5, 3) * sc * 2, z, rand(-0.3, 0.3), -rand(0.2, 0.6), rand(-0.3, 0.3), 0.2, 0.5, 1.8, col, 0.4, 2, 0, 1.5); break;
+  }
+}
 function emitSea() {
   const run = G.run, S = OC.ship, D = shipDef(), f = R.frame, t = OC.t;
   const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
@@ -671,13 +726,17 @@ function emitSea() {
   }
   // islands
   for (const I of OC.isles) {
-    if (!onScreen(I.x, I.z, I.r + 4)) continue;
-    // the rock going down into deep water, shallow light water over it, and a foam ring that breathes
-    seaShadow(I.x, I.z, I.r * 3.0, I.r * 3.0, I.yaw, 0.75, 0.05);
-    pushDecal(I.x, I.z, I.r * 1.7, I.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, 0.38, true);
-    const br = 1.06 + 0.04 * Math.sin(t * 1.4 + I.x);
-    pushDecal(I.x, I.z, I.r * br, I.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
-    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, I.rise !== undefined ? -2.6 * I.r / 4 * (1 - easeOutBack(clamp(I.rise, 0, 1))) : 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1);
+    if (!onScreen(I.x, I.z, isleReach(I) + 4)) continue;
+    // the rock going down into deep water, shallow light water over it, and a foam ring that breathes, round
+    // every lobe of land, so the shore follows the island's own outline
+    isleLobes(I).forEach((L, i) => {
+      seaShadow(L.x, L.z, L.r * 3.0, L.r * 3.0, I.yaw, i ? 0.45 : 0.75, 0.05);
+      pushDecal(L.x, L.z, L.r * 1.7, L.r * 1.7, 0, 1, 0, 0, 0.45, 0.95, 0.9, i ? 0.3 : 0.38, true);
+      const br = 1.06 + 0.04 * Math.sin(t * 1.4 + L.x + i * 1.7);
+      pushDecal(L.x, L.z, L.r * br, L.r * br, 0, 3, 0, 0.5, 1, 1, 1, 0.5, true);
+    });
+    isleLife(I, t);
+    if (R.enemyDraw[I.kind]) pushEnemy(I.kind, false, I.x, I.rise !== undefined ? -2.6 * I.r / 4 * (1 - easeOutBack(clamp(I.rise, 0, 1))) : 0, I.z, I.yaw, MODELS.defs[I.kind].clips.still.row, I.r / 4, 1, 0, 0, 0, 1, 1, 1, I.fade || 0);
     for (const o of I.deco) if (R.enemyDraw[o.m]) pushEnemy(o.m, false, o.x, (o.y || 0) + I.r * 0.145, o.z, o.yaw, MODELS.defs[o.m].clips.still.row, o.s, 1, 0, 0, 0, PROP_WHITE[0], PROP_WHITE[1], PROP_WHITE[2]);
   }
   // swimmers: only head and shoulders above the water, with a little foam ring

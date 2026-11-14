@@ -241,8 +241,8 @@ function featuredPowerup(chapter) {
 }
 // a run holds at most this many different skills and this many different passives
 const SLOT_LIMIT = { skill: 4, passive: 4 };
-// (at sea the Ship and the Homing Cannon take two of the weapon slots, so there is one more)
-const slotLimit = kind => SLOT_LIMIT[kind] + (kind === 'skill' && G.run && G.run.sea ? 1 : 0);
+// (at sea the Ship takes a skill slot of its own, and there are five for weapons, the Homing Cannon among them)
+const slotLimit = kind => SLOT_LIMIT[kind] + (kind === 'skill' && G.run && G.run.sea ? 2 : 0);
 
 // Enemies stand a little shorter than the hero (the hero is about 1.9 tall, a stickman model 1.13 at scale 1).
 // ai: how the enemy attacks besides walking into you. lunge = spear thrust, chop = overhead swing,

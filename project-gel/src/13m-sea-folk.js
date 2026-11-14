@@ -58,6 +58,12 @@ SEA_DRAW.pdiver = e => {
   if (Math.random() < 0.25) FX.part(e.x + rand(-0.2, 0.2), 0.05, e.z + rand(-0.2, 0.2), 0, rand(0.3, 0.6), 0, 0.05, 0.02, 0.4, [0.9, 0.97, 1], 0.9, 4, -0.5);
   return true;
 };
+// a telegraphed cannonball or trident: its line shows on the water for `wait` seconds, then it flies down it
+function seaBall(o, wait = 0.6) {
+  const sp = Math.hypot(o.vx, o.vz) || 1;
+  addTele({ kind: 'lane', x: o.x, z: o.z, r: 0.45, len: Math.min(24, sp * (o.life || 2)), rot: Math.atan2(o.vx, o.vz), dur: wait });
+  o.wait = wait; OC.hz.push(o);
+}
 // ---------- keg pushers: the keg blows up against the hull, or wherever its pusher is sunk ----------
 function seaKegBoom(e, onHull) {
   if (e.kegDone) return;
@@ -115,6 +121,13 @@ function seaIsleTick(dt) {
   if (OC.sink || G.state !== 'run') return;
   for (const I of OC.isles) {
     const d = Math.hypot(I.x - S.x, I.z - S.z) - I.r;
+    // see-through: a tall island (the drowned towers, the spires) fades while it hides the blob on deck
+    const m = MODELS.defs[I.kind], top = m ? m.top * I.r / 4 : 0;
+    if (top > 4 && (d < 14 || I.fade)) {
+      const h = G.hero.pos, w = I.r * 0.62;
+      const behind = (Math.abs(h[0] - I.x) < w && h[2] < I.z + w * 0.5 && h[2] > I.z - top * 0.8 - w) || hidesHero(I.x - w, I.x + w, top, I.z - w, I.z + w);
+      I.fade = clamp((I.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.7);
+    }
     if (d > 22) continue;
     const post = ISLE_POSTS[I.kind];
     if (post) {
@@ -158,6 +171,7 @@ function updateSeaHazards(dt) {
   for (const h of OC.hz) {
     if (SEA_HZ_LIVE.includes(h.k)) continue;
     if (h.k === 'ball') {
+      if (h.wait > 0) { h.wait -= dt; continue; }
       h.life -= dt; h.x += h.vx * dt; h.z += h.vz * dt;
       if (hullDist(h.x, h.z) < 0.1 && !OC.sink) { h.dead = true; hurtHero(h.dmg, h.x, h.z); FX.burst(h.x, 0.6, h.z, 6, [0.8, 0.6, 0.4], 2.5, 0.06, 0.3, 2, 1); }
       else if (h.life <= 0) { h.dead = true; seaSplash(h.x, h.z, 0.5); }
@@ -185,8 +199,11 @@ function updateSeaHazards(dt) {
 // (these the bosses' code runs and draws: 13n-sea-bosses.js)
 const SEA_HZ_LIVE = ['snare', 'mine', 'tent', 'ink'];
 function emitSeaHazards() {
+  // a keg pusher closing on the hull: its blast ring fills as it nears
+  for (const e of G.run.enemies) if (e.def && e.def.keg && !e.dying && !e.kegDone) { const d = hullDist(e.x, e.z); if (d < 4.5) pushDecal(e.x, e.z, 2.0, 2.0, 0, 4, 0, clamp(1 - d / 4.5, 0, 1), 1, 0.22, 0.18, 0.75); }
   for (const h of OC.hz) {
     if (SEA_HZ_LIVE.includes(h.k)) continue;
+    if (h.k === 'ball' && h.wait > 0) continue;
     if (h.k === 'ball') { if (h.trident) continue; if (h.pearl) pushImp(h.x, h.y, h.z, 0.24, 0, 1, 0, 1, 27, 4, 0.5, OC.t, 0, 0, 0, 1); else pushImp(h.x, h.y, h.z, 0.14, 0, 1, 0, 1, 13, 0, 0.1, 0, 0, 0, 0, 1); continue; }
     if (h.t < 0) continue;
     const u = clamp(h.t / h.dur, 0, 1);
@@ -306,7 +323,7 @@ SEA_AI.pcapt = (e, dt) => {
   const kd = Math.exp(-3 * dt); e.kx *= kd; e.kz *= kd;
   if (Math.hypot(e.vx, e.vz) > 0.4) e.yaw = angleLerp(e.yaw, Math.atan2(e.vx, e.vz), Math.min(1, dt * 3));
   if (ai.state !== 'charge') seaVehicleContact(e);
-  for (const I of OC.isles) { const ix = e.x - I.x, iz = e.z - I.z, id = Math.hypot(ix, iz) || 1, ov = I.ob.r + e.radius - id; if (ov > 0) { e.x += ix / id * ov; e.z += iz / id * ov; } }
+  for (const I of OC.isles) { const o = isleOut(I, e.x, e.z, e.radius); if (o) { e.x += o[0]; e.z += o[1]; } }
   return true;
 };
 SEA_DRAW.pcapt = e => {
