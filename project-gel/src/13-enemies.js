@@ -47,7 +47,7 @@ function spawnBoss(id, x, z, opts) {
   };
   e.contactDmg = e.dmg;
   resolveCircle(e, e.radius * 1.4);
-  run.enemies.push(e); run.bosses.push(e);
+  run.enemies.push(e); run.bosses.push(e); codexSeen(e);
   if (B.noDrop) { e.ai.state = 'intro'; e.y = 0; return e; }
   e.y = 9;
   addTele({ kind: 'circle', x: e.x, z: e.z, r: e.radius * 2.2, dur: 1.2 });

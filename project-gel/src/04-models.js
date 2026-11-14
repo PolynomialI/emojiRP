@@ -164,6 +164,16 @@ function modelDefs() {
       m.parts.push({ s: 'cap', a: [0.05 + dx - 0.04, 1.0, -0.16 + dz], b: [0.05 + dx - 0.04, 1.08, -0.165 + dz], r: 0.026, r2: 0.003, col: COL.tip, bone: 1, k: 0 });
     }
   });
+  // the goo medic: a staff topped with a glowing green orb, a white medic's cap with a red cross
+  add('healer', { ...STICK, torsoR: 0.09, torsoR2: 0.1 }, m => {
+    const h = m.J.haR, hd = m.J.head;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.42, h[2] + 0.02], b: [h[0], h[1] + 0.36, h[2] + 0.04], r: 0.022, col: COL.wood, bone: 6, k: 0 });
+    m.parts.push({ s: 'sph', c: [h[0], h[1] + 0.42, h[2] + 0.04], r: 0.068, col: hexToRgb('#6aff9a'), bone: 6, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [h[0], h[1] + 0.42, h[2] + 0.04], R: 0.075, r: 0.016, a0: -Math.PI, a1: Math.PI, col: COL.gold, bone: 6, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.07, hd[2]], rr: [0.15, 0.08, 0.15], col: hexToRgb('#ffffff'), bone: 2, k: 0.02 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.1, hd[2] + 0.13], hs: [0.05, 0.016, 0.022], rd: 0.006, col: hexToRgb('#ff3a4a'), bone: 2, k: 0 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.1, hd[2] + 0.13], hs: [0.016, 0.05, 0.022], rd: 0.006, col: hexToRgb('#ff3a4a'), bone: 2, k: 0 });
+  });
   add('bomber', { ...STICK, hipY: 0.52, shY: 0.81, headY: 0.99, headR: 0.15, armR: 0.052, legR: 0.062 }, m => {
     m.parts.push({ s: 'sph', c: [0, 0.66, 0.15], r: 0.13, col: COL.bomb, bone: 1, k: 0 });
     m.parts.push({ s: 'cap', a: [0, 0.78, 0.17], b: [0.03, 0.87, 0.2], r: 0.014, col: COL.fuse, bone: 1, k: 0 });
@@ -382,20 +392,20 @@ function bakeAnimations(defs) {
 
 const MODEL_CLIPS = {
   stickman: ['run', 'idle'], sprinter: ['run'], brute: ['run', 'slam'], archer: ['run', 'aim'], splitter: ['run'], shield: ['run'],
-  helmet: ['run'], spear: ['run', 'throw'], axe: ['run', 'slam'], javelin: ['run', 'throw'], bomber: ['run', 'idle'], knight: ['run', 'slam'],
+  helmet: ['run'], spear: ['run', 'throw'], axe: ['run', 'slam'], javelin: ['run', 'throw'], bomber: ['run', 'idle'], knight: ['run', 'slam'], healer: ['run'],
   stomper: ['run', 'slam', 'idle'], hurler: ['run', 'throw', 'idle'], charger: ['run', 'dizzy', 'idle'], twin: ['run', 'idle'], conductor: ['conduct', 'run', 'idle'],
   rock0: ['still'], rock1: ['still'], rock2: ['still'],
 };
 const MESH_CELLS = {
   stickman: 0.032, sprinter: 0.029, brute: 0.034, archer: 0.03, splitter: 0.032, shield: 0.03,
-  helmet: 0.03, spear: 0.029, axe: 0.029, javelin: 0.029, bomber: 0.03, knight: 0.029,
+  helmet: 0.03, spear: 0.029, axe: 0.029, javelin: 0.029, bomber: 0.03, knight: 0.029, healer: 0.029,
   stomper: 0.015, hurler: 0.015, charger: 0.015, twin: 0.015, conductor: 0.015,
   rock0: 0.045, rock1: 0.045, rock2: 0.045,
 };
 const CROWN_CELL = 0.02;
 // Build order: what chapter 1 needs first, bosses last
 const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'helmet', 'spear', 'stickman_crown', 'spear_crown', 'helmet_crown',
-  'axe', 'archer', 'brute', 'axe_crown', 'archer_crown', 'brute_crown', 'shield', 'javelin', 'bomber', 'splitter', 'knight', 'shield_crown', 'javelin_crown',
+  'axe', 'archer', 'brute', 'axe_crown', 'archer_crown', 'brute_crown', 'shield', 'javelin', 'bomber', 'splitter', 'knight', 'healer', 'shield_crown', 'javelin_crown',
   'stomper', 'hurler', 'charger', 'twin', 'conductor'];
 
 function prepareModelDefs() {

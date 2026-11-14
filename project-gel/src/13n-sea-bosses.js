@@ -59,7 +59,7 @@ function seaBossStart() {
     slowT: 0, slowMul: 1, auraTint: 0, tint: hexToRgb(B.tint), spawnT: 0, ramCd: 0, clip: 'idle', clipU: 0,
     ai: { state: 'enter', t: 2.2, ang: Math.atan2(x - S.x, z - S.z), n: 0, tempo: 1 },
   };
-  run.enemies.push(e); run.bosses.push(e); run.bossTotalHp = hp;
+  run.enemies.push(e); run.bosses.push(e); run.bossTotalHp = hp; codexSeen(e);
   UI.bossIntro([id]); AUDIO.play('boss'); AUDIO.play('horn');
   G.cam.shake = 0.15;
 }

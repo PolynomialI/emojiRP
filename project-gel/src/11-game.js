@@ -270,6 +270,7 @@ function spawnEnemy(type, x, z, opts = {}) {
     aim: 0, reload: rand(1, 2.5), spawnT: 0,
   };
   run.enemies.push(e);
+  codexSeen(e);
   return e;
 }
 
@@ -314,6 +315,7 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
 function killEnemy(e) {
   const run = G.run;
   e.dying = 0.0001;
+  codexKill(e);
   run.kills++;
   if (e.elite) run.eliteKills++;
   sugarKill(run);
@@ -583,6 +585,8 @@ function spawnFromMix() {
   let total = 0; for (const k in w) total += w[k];
   let r = Math.random() * total, type = 'stickman';
   for (const k in w) { r -= w[k]; if (r <= 0) { type = k; break; } }
+  // (never more than three medics at once)
+  if (type === 'healer' && run.enemies.filter(o => o.type === 'healer' && !o.dying).length >= 3) type = 'stickman';
   const [x, z] = spawnPoint();
   if (type === 'sprinter') {
     const n = randInt(3, 5), h = G.hero.pos, dx = h[0] - x, dz = h[2] - z, d = Math.hypot(dx, dz) || 1;
@@ -705,6 +709,7 @@ function updateEnemyAI(e, dt) {
   if (e.def.ai && e.cool <= 0 && e.spawnT <= 0 && startEnemyAct(e, d, dx, dz)) return;
   let want = e.speed * e.slowMul;
   if (e.def.ai === 'toss' && d < 4.5) want = -e.speed * 0.6;
+  if (e.def.heal) want = healerAI(e, dt, d, want);
   if (e.def.ranged) {
     if (e.aim > 0) {
       want = 0;
@@ -746,7 +751,18 @@ function burrowAI(e, dt) {
   let dx = h[0] - e.x, dz = h[2] - e.z;
   const d = Math.hypot(dx, dz) || 1;
   e.underT += dt;
-  if (d < 2.6 || e.underT > 9) {
+  // close by: it stops and the ground shakes under a warning circle, then it bursts up
+  if (e.warnT > 0) {
+    e.warnT -= dt;
+    if (Math.random() < dt * 24) FX.part(e.x + rand(-0.5, 0.5), 0.1, e.z + rand(-0.5, 0.5), rand(-0.5, 0.5), rand(1.2, 2.4), rand(-0.5, 0.5), 0.07, 0.03, 0.45, [0.42, 0.34, 0.26], 1, 1, 6);
+    if (e.warnT > 0) return true;
+  } else if (d < 3.4 || e.underT > 9) {
+    e.warnT = 0.6;
+    addTele({ kind: 'circle', x: e.x, z: e.z, r: 1.25, dur: 0.6 });
+    return true;
+  }
+  if (e.warnT !== undefined && e.warnT <= 0) {
+    e.warnT = undefined;
     e.under = false; e.hidden = false; e.upT = 0; e.cool = 0.25; e.squash = 0.62; e.squashV = 6;
     FX.burst(e.x, 0.4, e.z, 16, [0.45, 0.36, 0.28], 4.5, 0.14, 0.6, 1, 3);
     FX.crack(e.x, e.z, 1.1);

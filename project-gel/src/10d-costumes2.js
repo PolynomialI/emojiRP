@@ -165,7 +165,14 @@ const MORE_COSTUMES = [
     ...[1, -1].flatMap(sx => [['sph', 'head', [sx * 0.03, 0.43, 0.12], 0.012, 0.002, 2], ['ell', 'head', [sx * 0.1, 0.3, 0], [0.03, 0.05, 0.07], 0.005, 0]]),
   ] },
 ];
+// the Rush Crown: gold medals against every Boss Rush boss (the Rush Champion achievement)
+MORE_COSTUMES.push({ id: 'rushcrown', name: 'Rush Crown', cost: 0, goal: 'rush2', boost: { dmg: 8, cd: 4 }, pal: ['#ffc21a', '#ff3b4f', '#fff6c8'], parts: [
+  ['ell', 'head', [0, 0.17, 0], [0.235, 0.06, 0.235], 0.01, 0],
+  ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = i / 8 * TAU; return ['cap', 'head', [Math.sin(a) * 0.22, 0.2, Math.cos(a) * 0.22], [Math.sin(a) * 0.25, 0.4 + (i % 2) * 0.07, Math.cos(a) * 0.25], 0.04, 0.012, 0.01, 0]; }),
+  ...[0, 2, 4, 6].map(i => { const a = i / 8 * TAU; return ['sph', 'head', [Math.sin(a) * 0.25, 0.41, Math.cos(a) * 0.25], 0.035, 0.005, 1]; }),
+  ['sph', 'head', [0, 0.24, 0.235], 0.05, 0.01, 2, 0.02],
+] });
 COSTUMES.push(...MORE_COSTUMES);
-HAT_IDS.push('gradcap', 'fez', 'beret', 'hardhat', 'baseball', 'cone', 'tiara', 'pharaoh', 'buckethat', 'bulb', 'flowerpot', 'chickhat');
+HAT_IDS.push('rushcrown', 'gradcap', 'fez', 'beret', 'hardhat', 'baseball', 'cone', 'tiara', 'pharaoh', 'buckethat', 'bulb', 'flowerpot', 'chickhat');
 for (const c of MORE_COSTUMES) c.slot = HAT_IDS.includes(c.id) ? 'hat' : 'hood';
 COSTUMES.sort((a, b) => a.cost - b.cost);

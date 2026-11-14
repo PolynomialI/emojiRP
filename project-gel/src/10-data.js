@@ -264,6 +264,8 @@ const ENEMY_TYPES = {
   // the Golden Gooblin: a rare treasure runner that flees, spills coins when hit and escapes after a while
   gooblin: { model: 'gooblin', hp: 90, speed: 3.5, dmg: 0, xp: 8, radius: 0.55, scale: 1.65, tint: '#ffc93a', mass: 1.5, flee: true },
   knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
+  // the goo medic hangs back behind the pack and, every few seconds, heals the foes round it (not bosses): take it out first
+  healer: { model: 'healer', name: 'Goo Medic', hp: 30, speed: 1.9, dmg: 4, xp: 4, radius: 0.4, scale: 1.4, tint: '#3fcf9a', mass: 1.1, heal: true },
   // ---------- chapters 1-10: each map's own enemy (see THEME_ENEMIES) ----------
   pigeon: { model: 'pigeon', hp: 10, speed: 2.8, dmg: 4, xp: 1, radius: 0.36, scale: 1.2, tint: '#9aa6bc', mass: 0.6, weave: 0.6, float: 0.12 },
   scarab: { model: 'scarab', hp: 22, speed: 2.2, dmg: 5, xp: 2, radius: 0.42, scale: 1.3, tint: '#2fb5a0', mass: 1.3, ai: 'lunge', hit: 9 },
@@ -333,6 +335,8 @@ const ENEMY_MIX = {
   sprinter: [1, 40, 0.18], helmet: [1, 60, 0.16], spear: [1, 90, 0.14], splitter: [4, 60, 0.1],
   axe: [2, 100, 0.12], archer: [2, 90, 0.1], shield: [3, 120, 0.1], brute: [3, 150, 0.07],
   javelin: [3, 120, 0.08], bomber: [4, 100, 0.08], knight: [5, 150, 0.06],
+  // the support roles spread through the later chapters: medics from 5, burrowing moles from 8 (inside the cap)
+  healer: [5, 110, 0.05], mole: [8, 140, 0.04],
 };
 const ELITE_TYPES = ['stickman', 'helmet', 'spear', 'axe', 'archer', 'brute', 'shield', 'javelin'];
 

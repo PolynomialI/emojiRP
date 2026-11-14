@@ -575,6 +575,24 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .seg { display: inline-flex; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 3px 0 #a9cdf5; }
 .seg button { padding: 8px 12px; font-size: 18px; color: var(--ink-dim); }
 #qualitySeg button { padding: 8px 9px; white-space: nowrap; flex: 1 1 0; }
+#goals .col { display: flex; flex-direction: column; }
+#goals .list, #goals .codex { flex: 1 1 auto; min-height: 0; max-height: none; }
+.goal-tabs { align-self: center; margin: 2px 0 4px; }
+.goal-tabs button { padding: 8px 22px; font-size: 18px; }
+.codex { overflow-y: auto; min-height: 0; padding: 2px 4px 16px; display: grid; gap: 6px; align-content: start; }
+.cx-head { margin: 10px 4px 2px; font-size: 21px; color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.45); display: flex; justify-content: space-between; align-items: baseline; }
+.cx-head small { font-size: 15px; opacity: .9; }
+.cx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cx-card { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 2px 8px; align-items: center; padding: 6px 8px 7px 6px; border-radius: 16px; background: #fff; box-shadow: 0 3px 0 #a9cdf5; color: var(--ink); text-align: left; }
+.cx-card img { grid-row: span 3; width: 58px; height: 58px; object-fit: contain; border-radius: 12px; background: #eaf3ff; }
+.cx-card img.pending { opacity: .35; }
+.cx-card.unseen img { filter: brightness(0) opacity(.35); }
+.cx-card b { font-size: 15.5px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-card span { font-size: 13px; line-height: 1.2; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-card.unseen b { color: #9aaccc; }
+.medal-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.medal-row span { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 4px; border-radius: 12px; background: #fff; box-shadow: 0 2px 0 #a9cdf5; font-size: 15px; color: var(--ink); }
+.medal-row img { width: 28px; height: 28px; border-radius: 8px; }
 .setting.graphics { grid-template-columns: 1fr; gap: 6px; padding-right: 16px; }
 .setting.graphics .seg { display: flex; width: 100%; }
 #qualityNote { font-size: 15px; line-height: 1.25; }
@@ -721,8 +739,10 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
   <section id="goals" class="screen modal menu" hidden style="place-items:start center">
     <div class="col" style="height:100%">
       <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Achievements</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
+      <div class="seg goal-tabs" id="goalTabs"><button data-gt="goals" aria-pressed="true">Achievements</button><button data-gt="codex" aria-pressed="false">Codex</button></div>
       <div class="goalsum dim" id="goalSum"></div>
       <div class="list" id="goalList"></div>
+      <div class="codex" id="codexList" hidden></div>
     </div>
   </section>
 
@@ -786,6 +806,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
       <div class="stats"><div><b id="resTime">0:00</b><small>TIME</small></div><div><b id="resKills">0</b><small>KILLS</small></div><div><b id="resLevel">1</b><small>LEVEL</small></div></div>
       <div class="panel earn"><i class="coin"></i><span id="resCoins">+0</span></div>
       <p class="dim" style="text-align:center;margin:-6px 0 0;font-size:17px" id="resBreak"></p>
+      <div class="medal-row" id="resMedals" hidden></div>
       <div class="row-actions"><button class="jelly" id="btnContinue">Continue</button></div>
     </div>
   </section>
@@ -1483,6 +1504,16 @@ function modelDefs() {
       m.parts.push({ s: 'cap', a: [0.05 + dx - 0.04, 1.0, -0.16 + dz], b: [0.05 + dx - 0.04, 1.08, -0.165 + dz], r: 0.026, r2: 0.003, col: COL.tip, bone: 1, k: 0 });
     }
   });
+  // the goo medic: a staff topped with a glowing green orb, a white medic's cap with a red cross
+  add('healer', { ...STICK, torsoR: 0.09, torsoR2: 0.1 }, m => {
+    const h = m.J.haR, hd = m.J.head;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.42, h[2] + 0.02], b: [h[0], h[1] + 0.36, h[2] + 0.04], r: 0.022, col: COL.wood, bone: 6, k: 0 });
+    m.parts.push({ s: 'sph', c: [h[0], h[1] + 0.42, h[2] + 0.04], r: 0.068, col: hexToRgb('#6aff9a'), bone: 6, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [h[0], h[1] + 0.42, h[2] + 0.04], R: 0.075, r: 0.016, a0: -Math.PI, a1: Math.PI, col: COL.gold, bone: 6, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.07, hd[2]], rr: [0.15, 0.08, 0.15], col: hexToRgb('#ffffff'), bone: 2, k: 0.02 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.1, hd[2] + 0.13], hs: [0.05, 0.016, 0.022], rd: 0.006, col: hexToRgb('#ff3a4a'), bone: 2, k: 0 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.1, hd[2] + 0.13], hs: [0.016, 0.05, 0.022], rd: 0.006, col: hexToRgb('#ff3a4a'), bone: 2, k: 0 });
+  });
   add('bomber', { ...STICK, hipY: 0.52, shY: 0.81, headY: 0.99, headR: 0.15, armR: 0.052, legR: 0.062 }, m => {
     m.parts.push({ s: 'sph', c: [0, 0.66, 0.15], r: 0.13, col: COL.bomb, bone: 1, k: 0 });
     m.parts.push({ s: 'cap', a: [0, 0.78, 0.17], b: [0.03, 0.87, 0.2], r: 0.014, col: COL.fuse, bone: 1, k: 0 });
@@ -1701,20 +1732,20 @@ function bakeAnimations(defs) {
 
 const MODEL_CLIPS = {
   stickman: ['run', 'idle'], sprinter: ['run'], brute: ['run', 'slam'], archer: ['run', 'aim'], splitter: ['run'], shield: ['run'],
-  helmet: ['run'], spear: ['run', 'throw'], axe: ['run', 'slam'], javelin: ['run', 'throw'], bomber: ['run', 'idle'], knight: ['run', 'slam'],
+  helmet: ['run'], spear: ['run', 'throw'], axe: ['run', 'slam'], javelin: ['run', 'throw'], bomber: ['run', 'idle'], knight: ['run', 'slam'], healer: ['run'],
   stomper: ['run', 'slam', 'idle'], hurler: ['run', 'throw', 'idle'], charger: ['run', 'dizzy', 'idle'], twin: ['run', 'idle'], conductor: ['conduct', 'run', 'idle'],
   rock0: ['still'], rock1: ['still'], rock2: ['still'],
 };
 const MESH_CELLS = {
   stickman: 0.032, sprinter: 0.029, brute: 0.034, archer: 0.03, splitter: 0.032, shield: 0.03,
-  helmet: 0.03, spear: 0.029, axe: 0.029, javelin: 0.029, bomber: 0.03, knight: 0.029,
+  helmet: 0.03, spear: 0.029, axe: 0.029, javelin: 0.029, bomber: 0.03, knight: 0.029, healer: 0.029,
   stomper: 0.015, hurler: 0.015, charger: 0.015, twin: 0.015, conductor: 0.015,
   rock0: 0.045, rock1: 0.045, rock2: 0.045,
 };
 const CROWN_CELL = 0.02;
 // Build order: what chapter 1 needs first, bosses last
 const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'helmet', 'spear', 'stickman_crown', 'spear_crown', 'helmet_crown',
-  'axe', 'archer', 'brute', 'axe_crown', 'archer_crown', 'brute_crown', 'shield', 'javelin', 'bomber', 'splitter', 'knight', 'shield_crown', 'javelin_crown',
+  'axe', 'archer', 'brute', 'axe_crown', 'archer_crown', 'brute_crown', 'shield', 'javelin', 'bomber', 'splitter', 'knight', 'healer', 'shield_crown', 'javelin_crown',
   'stomper', 'hurler', 'charger', 'twin', 'conductor'];
 
 function prepareModelDefs() {
@@ -7778,6 +7809,16 @@ function modelDefs() {
       m.parts.push({ s: 'cap', a: [0.05 + dx - 0.04, 1.0, -0.16 + dz], b: [0.05 + dx - 0.04, 1.08, -0.165 + dz], r: 0.026, r2: 0.003, col: COL.tip, bone: 1, k: 0 });
     }
   });
+  // the goo medic: a staff topped with a glowing green orb, a white medic's cap with a red cross
+  add('healer', { ...STICK, torsoR: 0.09, torsoR2: 0.1 }, m => {
+    const h = m.J.haR, hd = m.J.head;
+    m.parts.push({ s: 'cap', a: [h[0], h[1] - 0.42, h[2] + 0.02], b: [h[0], h[1] + 0.36, h[2] + 0.04], r: 0.022, col: COL.wood, bone: 6, k: 0 });
+    m.parts.push({ s: 'sph', c: [h[0], h[1] + 0.42, h[2] + 0.04], r: 0.068, col: hexToRgb('#6aff9a'), bone: 6, k: 0 });
+    m.parts.push({ s: 'tor', ax: 'y', c: [h[0], h[1] + 0.42, h[2] + 0.04], R: 0.075, r: 0.016, a0: -Math.PI, a1: Math.PI, col: COL.gold, bone: 6, k: 0 });
+    m.parts.push({ s: 'ell', c: [hd[0], hd[1] + 0.07, hd[2]], rr: [0.15, 0.08, 0.15], col: hexToRgb('#ffffff'), bone: 2, k: 0.02 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.1, hd[2] + 0.13], hs: [0.05, 0.016, 0.022], rd: 0.006, col: hexToRgb('#ff3a4a'), bone: 2, k: 0 });
+    m.parts.push({ s: 'box', c: [hd[0], hd[1] + 0.1, hd[2] + 0.13], hs: [0.016, 0.05, 0.022], rd: 0.006, col: hexToRgb('#ff3a4a'), bone: 2, k: 0 });
+  });
   add('bomber', { ...STICK, hipY: 0.52, shY: 0.81, headY: 0.99, headR: 0.15, armR: 0.052, legR: 0.062 }, m => {
     m.parts.push({ s: 'sph', c: [0, 0.66, 0.15], r: 0.13, col: COL.bomb, bone: 1, k: 0 });
     m.parts.push({ s: 'cap', a: [0, 0.78, 0.17], b: [0.03, 0.87, 0.2], r: 0.014, col: COL.fuse, bone: 1, k: 0 });
@@ -7996,20 +8037,20 @@ function bakeAnimations(defs) {
 
 const MODEL_CLIPS = {
   stickman: ['run', 'idle'], sprinter: ['run'], brute: ['run', 'slam'], archer: ['run', 'aim'], splitter: ['run'], shield: ['run'],
-  helmet: ['run'], spear: ['run', 'throw'], axe: ['run', 'slam'], javelin: ['run', 'throw'], bomber: ['run', 'idle'], knight: ['run', 'slam'],
+  helmet: ['run'], spear: ['run', 'throw'], axe: ['run', 'slam'], javelin: ['run', 'throw'], bomber: ['run', 'idle'], knight: ['run', 'slam'], healer: ['run'],
   stomper: ['run', 'slam', 'idle'], hurler: ['run', 'throw', 'idle'], charger: ['run', 'dizzy', 'idle'], twin: ['run', 'idle'], conductor: ['conduct', 'run', 'idle'],
   rock0: ['still'], rock1: ['still'], rock2: ['still'],
 };
 const MESH_CELLS = {
   stickman: 0.032, sprinter: 0.029, brute: 0.034, archer: 0.03, splitter: 0.032, shield: 0.03,
-  helmet: 0.03, spear: 0.029, axe: 0.029, javelin: 0.029, bomber: 0.03, knight: 0.029,
+  helmet: 0.03, spear: 0.029, axe: 0.029, javelin: 0.029, bomber: 0.03, knight: 0.029, healer: 0.029,
   stomper: 0.015, hurler: 0.015, charger: 0.015, twin: 0.015, conductor: 0.015,
   rock0: 0.045, rock1: 0.045, rock2: 0.045,
 };
 const CROWN_CELL = 0.02;
 // Build order: what chapter 1 needs first, bosses last
 const MESH_ORDER = ['stickman', 'sprinter', 'rock0', 'rock1', 'rock2', 'helmet', 'spear', 'stickman_crown', 'spear_crown', 'helmet_crown',
-  'axe', 'archer', 'brute', 'axe_crown', 'archer_crown', 'brute_crown', 'shield', 'javelin', 'bomber', 'splitter', 'knight', 'shield_crown', 'javelin_crown',
+  'axe', 'archer', 'brute', 'axe_crown', 'archer_crown', 'brute_crown', 'shield', 'javelin', 'bomber', 'splitter', 'knight', 'healer', 'shield_crown', 'javelin_crown',
   'stomper', 'hurler', 'charger', 'twin', 'conductor'];
 
 function prepareModelDefs() {
@@ -17472,6 +17513,8 @@ const ENEMY_TYPES = {
   // the Golden Gooblin: a rare treasure runner that flees, spills coins when hit and escapes after a while
   gooblin: { model: 'gooblin', hp: 90, speed: 3.5, dmg: 0, xp: 8, radius: 0.55, scale: 1.65, tint: '#ffc93a', mass: 1.5, flee: true },
   knight: { model: 'knight', hp: 70, speed: 1.6, dmg: 8, xp: 5, radius: 0.5, scale: 1.55, tint: '#ec7a22', mass: 2.5, shield: true, ai: 'chop', hit: 14, wind: 0.45 },
+  // the goo medic hangs back behind the pack and, every few seconds, heals the foes round it (not bosses): take it out first
+  healer: { model: 'healer', name: 'Goo Medic', hp: 30, speed: 1.9, dmg: 4, xp: 4, radius: 0.4, scale: 1.4, tint: '#3fcf9a', mass: 1.1, heal: true },
   // ---------- chapters 1-10: each map's own enemy (see THEME_ENEMIES) ----------
   pigeon: { model: 'pigeon', hp: 10, speed: 2.8, dmg: 4, xp: 1, radius: 0.36, scale: 1.2, tint: '#9aa6bc', mass: 0.6, weave: 0.6, float: 0.12 },
   scarab: { model: 'scarab', hp: 22, speed: 2.2, dmg: 5, xp: 2, radius: 0.42, scale: 1.3, tint: '#2fb5a0', mass: 1.3, ai: 'lunge', hit: 9 },
@@ -17541,6 +17584,8 @@ const ENEMY_MIX = {
   sprinter: [1, 40, 0.18], helmet: [1, 60, 0.16], spear: [1, 90, 0.14], splitter: [4, 60, 0.1],
   axe: [2, 100, 0.12], archer: [2, 90, 0.1], shield: [3, 120, 0.1], brute: [3, 150, 0.07],
   javelin: [3, 120, 0.08], bomber: [4, 100, 0.08], knight: [5, 150, 0.06],
+  // the support roles spread through the later chapters: medics from 5, burrowing moles from 8 (inside the cap)
+  healer: [5, 110, 0.05], mole: [8, 140, 0.04],
 };
 const ELITE_TYPES = ['stickman', 'helmet', 'spear', 'axe', 'archer', 'brute', 'shield', 'javelin'];
 
@@ -19005,8 +19050,15 @@ const MORE_COSTUMES = [
     ...[1, -1].flatMap(sx => [['sph', 'head', [sx * 0.03, 0.43, 0.12], 0.012, 0.002, 2], ['ell', 'head', [sx * 0.1, 0.3, 0], [0.03, 0.05, 0.07], 0.005, 0]]),
   ] },
 ];
+// the Rush Crown: gold medals against every Boss Rush boss (the Rush Champion achievement)
+MORE_COSTUMES.push({ id: 'rushcrown', name: 'Rush Crown', cost: 0, goal: 'rush2', boost: { dmg: 8, cd: 4 }, pal: ['#ffc21a', '#ff3b4f', '#fff6c8'], parts: [
+  ['ell', 'head', [0, 0.17, 0], [0.235, 0.06, 0.235], 0.01, 0],
+  ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = i / 8 * TAU; return ['cap', 'head', [Math.sin(a) * 0.22, 0.2, Math.cos(a) * 0.22], [Math.sin(a) * 0.25, 0.4 + (i % 2) * 0.07, Math.cos(a) * 0.25], 0.04, 0.012, 0.01, 0]; }),
+  ...[0, 2, 4, 6].map(i => { const a = i / 8 * TAU; return ['sph', 'head', [Math.sin(a) * 0.25, 0.41, Math.cos(a) * 0.25], 0.035, 0.005, 1]; }),
+  ['sph', 'head', [0, 0.24, 0.235], 0.05, 0.01, 2, 0.02],
+] });
 COSTUMES.push(...MORE_COSTUMES);
-HAT_IDS.push('gradcap', 'fez', 'beret', 'hardhat', 'baseball', 'cone', 'tiara', 'pharaoh', 'buckethat', 'bulb', 'flowerpot', 'chickhat');
+HAT_IDS.push('rushcrown', 'gradcap', 'fez', 'beret', 'hardhat', 'baseball', 'cone', 'tiara', 'pharaoh', 'buckethat', 'bulb', 'flowerpot', 'chickhat');
 for (const c of MORE_COSTUMES) c.slot = HAT_IDS.includes(c.id) ? 'hat' : 'hood';
 COSTUMES.sort((a, b) => a.cost - b.cost);
 
@@ -19375,6 +19427,7 @@ function spawnEnemy(type, x, z, opts = {}) {
     aim: 0, reload: rand(1, 2.5), spawnT: 0,
   };
   run.enemies.push(e);
+  codexSeen(e);
   return e;
 }
 
@@ -19419,6 +19472,7 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
 function killEnemy(e) {
   const run = G.run;
   e.dying = 0.0001;
+  codexKill(e);
   run.kills++;
   if (e.elite) run.eliteKills++;
   sugarKill(run);
@@ -19688,6 +19742,8 @@ function spawnFromMix() {
   let total = 0; for (const k in w) total += w[k];
   let r = Math.random() * total, type = 'stickman';
   for (const k in w) { r -= w[k]; if (r <= 0) { type = k; break; } }
+  // (never more than three medics at once)
+  if (type === 'healer' && run.enemies.filter(o => o.type === 'healer' && !o.dying).length >= 3) type = 'stickman';
   const [x, z] = spawnPoint();
   if (type === 'sprinter') {
     const n = randInt(3, 5), h = G.hero.pos, dx = h[0] - x, dz = h[2] - z, d = Math.hypot(dx, dz) || 1;
@@ -19810,6 +19866,7 @@ function updateEnemyAI(e, dt) {
   if (e.def.ai && e.cool <= 0 && e.spawnT <= 0 && startEnemyAct(e, d, dx, dz)) return;
   let want = e.speed * e.slowMul;
   if (e.def.ai === 'toss' && d < 4.5) want = -e.speed * 0.6;
+  if (e.def.heal) want = healerAI(e, dt, d, want);
   if (e.def.ranged) {
     if (e.aim > 0) {
       want = 0;
@@ -19851,7 +19908,18 @@ function burrowAI(e, dt) {
   let dx = h[0] - e.x, dz = h[2] - e.z;
   const d = Math.hypot(dx, dz) || 1;
   e.underT += dt;
-  if (d < 2.6 || e.underT > 9) {
+  // close by: it stops and the ground shakes under a warning circle, then it bursts up
+  if (e.warnT > 0) {
+    e.warnT -= dt;
+    if (Math.random() < dt * 24) FX.part(e.x + rand(-0.5, 0.5), 0.1, e.z + rand(-0.5, 0.5), rand(-0.5, 0.5), rand(1.2, 2.4), rand(-0.5, 0.5), 0.07, 0.03, 0.45, [0.42, 0.34, 0.26], 1, 1, 6);
+    if (e.warnT > 0) return true;
+  } else if (d < 3.4 || e.underT > 9) {
+    e.warnT = 0.6;
+    addTele({ kind: 'circle', x: e.x, z: e.z, r: 1.25, dur: 0.6 });
+    return true;
+  }
+  if (e.warnT !== undefined && e.warnT <= 0) {
+    e.warnT = undefined;
     e.under = false; e.hidden = false; e.upT = 0; e.cool = 0.25; e.squash = 0.62; e.squashV = 6;
     FX.burst(e.x, 0.4, e.z, 16, [0.45, 0.36, 0.28], 4.5, 0.14, 0.6, 1, 3);
     FX.crack(e.x, e.z, 1.1);
@@ -22909,7 +22977,7 @@ function spawnBoss(id, x, z, opts) {
   };
   e.contactDmg = e.dmg;
   resolveCircle(e, e.radius * 1.4);
-  run.enemies.push(e); run.bosses.push(e);
+  run.enemies.push(e); run.bosses.push(e); codexSeen(e);
   if (B.noDrop) { e.ai.state = 'intro'; e.y = 0; return e; }
   e.y = 9;
   addTele({ kind: 'circle', x: e.x, z: e.z, r: e.radius * 2.2, dur: 1.2 });
@@ -25143,6 +25211,7 @@ function spawnMiniboss(k) {
       ai: { state: 'walk', t: 0, cd: 1.6, next: 0 } });
     e.contactDmg = e.dmg;
   }
+  for (const m of run.enemies) if (m.mini && m.miniK === k && !m.codexed) { m.codexed = true; codexSeen(m); }
   UI.banner(M.name);
   AUDIO.play('roar');
 }
@@ -29870,7 +29939,7 @@ function seaWeather(dt) {
 function seaMini(k) {
   const run = G.run, M = seaTheme().mini, [, hpK, scK] = MINI_VISITS[k], [x, z] = seaSpawnPoint();
   const e = seaFoe('pcapt', x, z);
-  e.mini = true; e.miniK = k; e.name = M.name; e.ride = M.ride; e.atk = M.atk;
+  e.mini = true; e.miniK = k; e.name = M.name; e.ride = M.ride; e.atk = M.atk; codexSeen(e);
   e.hp = e.maxHp = 300 * run.info.hpMul * hpK; e.scale *= scK; e.radius = M.ride === 'raft' ? 1.25 : 1.0;
   e.tint = hexToRgb(M.tint); e.ghost = !!M.ghost; e.spawnT = 0;
   e.ai = { state: 'circle', t: 2.5, ang: Math.atan2(x - OC.ship.x, z - OC.ship.z), n: 0 };
@@ -30037,7 +30106,7 @@ function seaBossStart() {
     slowT: 0, slowMul: 1, auraTint: 0, tint: hexToRgb(B.tint), spawnT: 0, ramCd: 0, clip: 'idle', clipU: 0,
     ai: { state: 'enter', t: 2.2, ang: Math.atan2(x - S.x, z - S.z), n: 0, tempo: 1 },
   };
-  run.enemies.push(e); run.bosses.push(e); run.bossTotalHp = hp;
+  run.enemies.push(e); run.bosses.push(e); run.bossTotalHp = hp; codexSeen(e);
   UI.bossIntro([id]); AUDIO.play('boss'); AUDIO.play('horn');
   G.cam.shake = 0.15;
 }
@@ -31217,6 +31286,120 @@ function rushClockStop(run, id) {
 const rushGolds = sv => RUSH_BOSSES.filter(id => sv.rushMedals && sv.rushMedals[id] && sv.rushMedals[id].m >= 3).length;
 const rushMedalsAny = sv => RUSH_BOSSES.filter(id => sv.rushMedals && sv.rushMedals[id] && sv.rushMedals[id].m >= 1).length;
 
+// ---------- the Codex (the Achievements screen's second tab) ----------
+// Every foe, miniboss and boss, land and sea: the ones met show their picture, how many fell, where they were first
+// met and, for bosses, the fastest kill (chapter and ocean runs) and the Boss Rush medal. Kept in sv.codex:
+// { key: { k: kills, at: 'Chapter 3', t: best seconds } }; keys are the enemy type, 'boss:<id>', 'mini:c<n>' (a
+// chapter's miniboss) or 'mini:o<n>' (an ocean's).
+function codexKey(e) { const run = G.run; return e.boss && !e.mini ? 'boss:' + e.type : e.mini ? 'mini:' + (run.sea ? 'o' : 'c') + run.chapter : e.type; }
+function codexWhere() { const run = G.run; return run.rush ? 'Boss Rush' : run.endless ? 'Endless' : run.sea ? 'Ocean ' + run.chapter : 'Chapter ' + run.chapter; }
+function codexEntry(k) { const C = G.save.codex = G.save.codex || {}; return C[k] || (C[k] = { k: 0, at: codexWhere() }); }
+function codexSeen(e) {
+  if (!G.run || !e || !G.save) return;
+  codexEntry(codexKey(e));
+  if (e.boss && !e.mini) e.bornT = G.run.t;
+}
+function codexKill(e) {
+  if (!G.run || !G.save) return;
+  const c = codexEntry(codexKey(e));
+  c.k++;
+  // (the fastest boss kill counts chapter and ocean runs: Boss Rush keeps its own times, with its medals)
+  if (e.boss && !e.mini && e.bornT !== undefined && !G.run.rush && !G.run.endless) {
+    const s = Math.round((G.run.t - e.bornT) * 10) / 10;
+    if (!c.t || s < c.t) c.t = s;
+  }
+}
+// everything the Codex lists, in sections
+function codexSections() {
+  const land = Object.keys(ENEMY_TYPES).filter(k => !ENEMY_TYPES[k].sea && k !== 'mini');
+  const sea = Object.keys(ENEMY_TYPES).filter(k => ENEMY_TYPES[k].sea);
+  const ln = n => CHAPTER_INFO_NAME(n);
+  return [
+    { title: 'Chapter bosses', items: CHAPTER_BOSSES.map((id, i) => ({ key: 'boss:' + id, name: BOSS_TYPES[id].name, icon: 'boss-' + id, boss: id, home: `Chapter ${i + 1}` })) },
+    { title: 'Ocean bosses', items: SEA_CHAPTERS.map((C, i) => ({ key: 'boss:' + C.boss, name: BOSS_TYPES[C.boss].name, icon: 'boss-' + C.boss, boss: C.boss, home: `Ocean ${i + 1}` })) },
+    { title: 'Minibosses', items: [
+      ...Object.keys(MINIBOSSES).map(n => ({ key: 'mini:c' + n, name: MINIBOSSES[n].name, icon: MINIBOSSES[n].boss ? 'boss-' + MINIBOSSES[n].boss : 'mini-c' + n, mini: MINIBOSSES[n], home: `Chapter ${n}` })),
+      ...SEA_CHAPTERS.map((C, i) => C.mini && ({ key: 'mini:o' + (i + 1), name: C.mini.name, icon: 'mini-o' + (i + 1), seaMini: C.mini, home: `Ocean ${i + 1}` })).filter(Boolean)] },
+    { title: 'Foes', items: land.map(k => ({ key: k, name: codexName(k), icon: 'foe-' + k, foe: k })) },
+    { title: 'Sea foes', items: sea.map(k => ({ key: k, name: codexName(k), icon: 'foe-' + k, foe: k })) },
+  ];
+}
+const CHAPTER_INFO_NAME = n => (typeof chapterInfo === 'function' ? chapterInfo(n).arenaName : '');
+// a readable name for an enemy type: its own name if it has one, else its id tidied up
+const CODEX_NAMES = { stickman: 'Goo Grunt', sprinter: 'Sprinter', helmet: 'Helmet Grunt', spear: 'Spearman', axe: 'Axeman', brute: 'Brute', archer: 'Archer', javelin: 'Javelin Thrower', splitter: 'Splitter',
+  shield: 'Shield Bearer', bomber: 'Bomber', slime: 'Slime', gooblin: 'Golden Gooblin', knight: 'Knight', zombie: 'Zombie', toysoldier: 'Toy Soldier', healer: 'Goo Medic',
+  pswim: 'Goo Pirate', pfloat: 'Floatie Pirate', ptube: 'Tube Pirate', phat: 'Hatted Pirate', pdiver: 'Diver', pbomb: 'Bomb Pirate', pparka: 'Parka Pirate', pmusket: 'Musketeer', pcapt: 'Pirate Captain',
+  pweed: 'Weed Pirate', pmer: 'Merfolk', pblink: 'Lost Pilot', pskel: 'Skeleton Pirate', pballoon: 'Balloon Pirate', pjelly: 'Glow Jelly', pgummy: 'Gummy Bear', pangler: 'Anglerfish' };
+const codexName = k => ENEMY_TYPES[k].name || CODEX_NAMES[k] || k.replace(/^./, c => c.toUpperCase()).replace(/(\d)/, ' $1');
+// a foe's picture: its model standing, in its own color (rendered once, a couple a frame while the Codex is open)
+function renderFoeIcon(key, model, tint) {
+  if (ICONS.map[key] || !R.enemyDraw[model]) return !!ICONS.map[key];
+  const m = MODELS.defs[model], clip = m.clips.idle || m.clips.run || m.clips.paddle || Object.values(m.clips)[0], t = hexToRgb(tint || '#f5891f');
+  iconBegin(); R.resetStreams();
+  pushEnemy(model, false, 0, 0, 0, 0.5, clip.row + 1, 1, 1, 0, 0, 0, t[0], t[1], t[2]);
+  const top = m.top || 1.1;
+  ICONS.map[key] = iconCapture([0.5 * top, top * 0.85, top * 1.6], [0, top * 0.5, 0], 0.62);
+  iconEnd(); R.resetStreams();
+  return true;
+}
+const CODEX = { queue: [] };
+function codexIconFor(it) {
+  if (ICONS.map[it.icon]) return true;
+  if (it.boss) { renderBossPortraitOf(it.boss); return !!ICONS.map[it.icon]; }
+  if (it.mini) { const M = it.mini; if (M.boss) { renderBossPortraitOf(M.boss); return !!ICONS.map[it.icon]; } return renderFoeIcon(it.icon, ENEMY_TYPES[M.type].model, M.tint); }
+  if (it.seaMini) return renderFoeIcon(it.icon, 'pcapt', it.seaMini.tint);
+  const D = ENEMY_TYPES[it.foe];
+  return renderFoeIcon(it.icon, D.model, D.tint);
+}
+// once a frame on the home screens while the Codex is open: draw two missing pictures and put them in place
+function pumpCodexIcons() {
+  if (!CODEX.queue.length) return;
+  let n = 0;
+  for (let i = 0; i < CODEX.queue.length && n < 2; i++) {
+    const it = CODEX.queue[i];
+    // (one whose model is not built yet waits at the back)
+    if (codexIconFor(it)) { CODEX.queue.splice(i--, 1); n++; document.querySelectorAll(`#codexList img[data-cx="${it.icon}"]`).forEach(im => { im.src = ICONS.map[it.icon]; im.classList.remove('pending'); }); }
+    else n += 0.5;
+  }
+}
+
+// ---------- the goo medic (ENEMY_TYPES.healer) ----------
+// It hangs back behind the pack (about 6 from the blob, backing off inside 4.5). Every 3.2 s, if a foe near it is
+// hurt, it raises its staff (the orb gathers light for half a second) and heals every foe within 4.5 by 30% of
+// their health, with green beams to each (bosses and minibosses are never healed). Three at most at once.
+const HEAL = { every: 3.2, cast: 0.55, radius: 4.5, amount: 0.3, keep: 6 };
+function healerOrb(e) { const s = e.scale, c = Math.cos(e.yaw), n = Math.sin(e.yaw); return [e.x - c * 0.17 * s + n * 0.05 * s, 1.18 * s, e.z + n * 0.17 * s + c * 0.05 * s]; }
+function healerAI(e, dt, d, want) {
+  e.healT = (e.healT ?? rand(1.2, 2.2)) - dt;
+  if (e.castT > 0) {
+    e.castT -= dt;
+    const o = healerOrb(e);
+    FX.glow(o[0], o[1], o[2], 0.3 + (HEAL.cast - e.castT) * 0.9, [0.4, 1, 0.6], 0.06, 1);
+    if (e.castT <= 0) healPulse(e);
+    return 0;
+  }
+  if (e.healT <= 0) {
+    e.healT = 0.7;
+    let hurt = false;
+    enemiesInRadius(e.x, e.z, HEAL.radius, o => { if (o !== e && !o.boss && !o.mini && !o.dying && o.hp < o.maxHp * 0.95) hurt = true; });
+    if (hurt && onScreen(e.x, e.z, 1)) { e.castT = HEAL.cast; e.healT = HEAL.every; AUDIO.play('shield', 0.6); }
+  }
+  if (d < 4.5) return -e.speed * 0.7;
+  if (d < HEAL.keep) return e.speed * 0.1;
+  return want;
+}
+function healPulse(e) {
+  const o = healerOrb(e);
+  let n = 0;
+  FX.ring(e.x, e.z, HEAL.radius, [0.35, 1, 0.55], 0.5, 0.7);
+  enemiesInRadius(e.x, e.z, HEAL.radius, a => {
+    if (a.boss || a.mini || a.dying || a.hp >= a.maxHp) return;
+    a.hp = Math.min(a.maxHp, a.hp + a.maxHp * HEAL.amount);
+    if (n++ < 8) addBolt(o[0], o[1], o[2], a.x, 0.6 * a.scale, a.z, 0.06, [0.4, 1, 0.6], 0.25);
+    FX.glow(a.x, 0.7 * a.scale, a.z, 0.5, [0.4, 1, 0.6], 0.3, 0.8);
+  });
+}
+
 // ---- 14-ui.js ----
 // ============================================================
 // UI: screens, HUD, level-up cards, chest roulette, overlay drawing
@@ -31983,6 +32166,10 @@ const UI = {
     $('resBreak').textContent = run.rush ? `${run.rushK} of ${RUSH_BOSSES.length} bosses beaten · ${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for the bosses`
       : run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
       : run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
+    // Boss Rush: each boss's kill time and medal
+    const mr = $('resMedals'), md = run.rush ? run.medals || [] : [];
+    mr.hidden = !md.length;
+    mr.replaceChildren(...md.map(m => { const sp = document.createElement('span'); sp.title = BOSS_TYPES[m.id].name; sp.innerHTML = `<img alt="">${m.m ? MEDAL_ICONS[m.m] : '·'} ${m.t}s`; sp.querySelector('img').src = ICONS.map['boss-' + m.id] || BLANK_IMG; return sp; }));
   },
 
   update(dt) {
@@ -32986,6 +33173,10 @@ const GOAL_VALUE = {
   // (oceans 11-20: has that ocean's boss been sunk; filled in below)
 };
 for (let n = 11; n <= 20; n++) GOAL_VALUE['sea' + n] = sv => (sv.sea && sv.sea.cleared[n] ? 1 : 0);
+// Boss Rush medals and the Codex (13r-boss-extras.js)
+GOAL_VALUE.rushmedals = sv => rushMedalsAny(sv);
+GOAL_VALUE.rushgold = sv => rushGolds(sv);
+GOAL_VALUE.codex = sv => Object.keys(sv.codex || {}).length;
 // group: icon color and order on the screen. desc: {n} is the target.
 const GOALS = [
   { id: 'kills1', group: 'fight', name: 'Goo Getter', desc: 'Defeat {n} foes', stat: 'kills', n: 500, coins: 150 },
@@ -33004,6 +33195,9 @@ const GOALS = [
   { id: 'ch5', group: 'chapter', name: 'Explorer', desc: 'Clear {n} chapters', stat: 'cleared', n: 5, coins: 600 },
   { id: 'ch10', group: 'chapter', name: 'Adventurer', desc: 'Clear {n} chapters', stat: 'cleared', n: 10, coins: 2000, scrolls: 1 },
   { id: 'ch15', group: 'chapter', name: 'Hero of Gel', desc: 'Clear {n} chapters', stat: 'cleared', n: 15, coins: 5000, scrolls: 3, skin: 'champion' },
+  { id: 'rush1', group: 'mode', name: 'Medalist', desc: 'Win a Boss Rush medal against {n} bosses', stat: 'rushmedals', n: 10, coins: 1500, scrolls: 1 },
+  { id: 'rush2', group: 'mode', name: 'Rush Champion', desc: 'Gold against all {n} Boss Rush bosses', stat: 'rushgold', n: RUSH_BOSSES.length, coins: 6000, scrolls: 3, costume: 'rushcrown' },
+  { id: 'codex', group: 'collect', name: 'Field Guide', desc: 'Discover {n} entries in the Codex', stat: 'codex', n: 60, coins: 1200, scrolls: 1 },
   { id: 'gooblin1', group: 'mode', name: 'Lucky Catch', desc: 'Catch a Golden Gooblin', stat: 'gooblins', n: 1, coins: 300 },
   { id: 'gooblin2', group: 'mode', name: 'Treasure Hunter', desc: 'Catch {n} Golden Gooblins', stat: 'gooblins', n: 10, coins: 1500, scrolls: 2 },
   { id: 'colors', group: 'collect', name: 'Fashionista', desc: 'Own {n} colors', stat: 'colors', n: 10, coins: 500 },
@@ -33056,7 +33250,48 @@ function goalsAddRun(run) {
 const TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M7 3h10v2h3.2a.8.8 0 0 1 .8.8c0 3-1.8 5.2-4.6 5.6A5.9 5.9 0 0 1 13 14.6V17h3v3H8v-3h3v-2.4a5.9 5.9 0 0 1-3.4-3.2C4.8 11 3 8.8 3 5.8a.8.8 0 0 1 .8-.8H7zm-2.3 3.6c.2 1.6 1.1 2.7 2.5 3.1A13 13 0 0 1 7 6.6zm14.6 0h-2.3c0 1-.1 2.1-.3 3.1 1.4-.4 2.4-1.5 2.6-3.1z"/></svg>';
 
 Object.assign(UI, {
+  // the Achievements screen's two tabs: the achievements, and the Codex
+  goalTab: 'goals',
+  setGoalTab(t) {
+    this.goalTab = t;
+    document.querySelectorAll('#goalTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.gt === t)));
+    $('goalList').hidden = t !== 'goals'; $('codexList').hidden = t !== 'codex';
+    this.renderGoals();
+  },
+  renderCodex() {
+    const sv = G.save, C = sv.codex || {}, nodes = [];
+    let seen = 0, total = 0;
+    CODEX.queue = [];
+    for (const S of codexSections()) {
+      const found = S.items.filter(it => C[it.key]).length;
+      seen += found; total += S.items.length;
+      const h = document.createElement('div'); h.className = 'cx-head'; h.innerHTML = '<span></span><small></small>';
+      h.firstChild.textContent = S.title; h.lastChild.textContent = `${found} / ${S.items.length}`;
+      const grid = document.createElement('div'); grid.className = 'cx-grid';
+      for (const it of S.items) {
+        const c = C[it.key], card = document.createElement('button');
+        card.className = 'cx-card' + (c ? '' : ' unseen');
+        card.innerHTML = '<img alt=""><b></b><span></span><span></span>';
+        const img = card.querySelector('img'), [l1, l2] = card.querySelectorAll('span');
+        img.dataset.cx = it.icon;
+        if (ICONS.map[it.icon]) img.src = ICONS.map[it.icon]; else { img.src = BLANK_IMG; img.classList.add('pending'); CODEX.queue.push(it); }
+        card.querySelector('b').textContent = c ? it.name : '???';
+        if (!c) { l1.textContent = it.home ? `In ${it.home}` : 'Not met yet'; l2.textContent = ''; }
+        else if (it.boss) {
+          l1.textContent = c.t ? `Best ${fmtTime(c.t)} · beaten ×${c.k}` : `Beaten ×${c.k}`;
+          const md = sv.rushMedals && sv.rushMedals[it.boss];
+          l2.textContent = RUSH_BOSSES.includes(it.boss) ? (md && md.m ? `${MEDAL_ICONS[md.m]} Rush ${md.t}s` : md ? `Rush ${md.t}s, no medal` : 'Boss Rush: no medal yet') : `First met: ${c.at}`;
+        } else { l1.textContent = `Defeated ×${fmtNum(c.k)}`; l2.textContent = `First met: ${c.at}`; }
+        card.addEventListener('click', () => { AUDIO.play('click'); this.toast(codexDetail(it, c), 5); });
+        grid.append(card);
+      }
+      nodes.push(h, grid);
+    }
+    $('goalSum').textContent = `${seen} of ${total} discovered · tap one for more`;
+    $('codexList').replaceChildren(...nodes);
+  },
   renderGoals() {
+    if (this.goalTab === 'codex') { this.syncCoins(); this.renderCodex(); return; }
     const sv = G.save, list = $('goalList');
     this.syncCoins();
     const done = GOALS.filter(g => sv.goals.claimed[g.id]).length;
@@ -33108,6 +33343,20 @@ Object.assign(UI, {
     this.renderGoals();
   },
 });
+
+// a Codex entry's full story, shown when it is tapped
+function codexDetail(it, c) {
+  if (!c) return `Not met yet. ${it.home ? 'Look for it in ' + it.home + '.' : 'It turns up out there somewhere.'}`;
+  let t = `${it.name}: ${it.boss ? 'beaten' : 'defeated'} ${fmtNum(c.k)} time${c.k === 1 ? '' : 's'}, first met in ${c.at}.`;
+  if (it.boss && c.t) t += ` Fastest: ${fmtTime(c.t)}.`;
+  if (it.boss && RUSH_BOSSES.includes(it.boss)) {
+    const [g, s, b] = rushMedalTimes(it.boss), md = G.save.rushMedals && G.save.rushMedals[it.boss];
+    t += ` Boss Rush medals: 🥇 ${g}s · 🥈 ${s}s · 🥉 ${b}s${md ? ` (your best ${md.t}s)` : ''}.`;
+  }
+  return t;
+}
+const BLANK_IMG = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+document.querySelectorAll('#goalTabs button').forEach(b => b.addEventListener('click', () => { AUDIO.play('click'); UI.setGoalTab(b.dataset.gt); }));
 
 // ---- 15-save.js ----
 // ============================================================
@@ -34280,6 +34529,7 @@ function loop(now) {
   } else if (s === 'home') {
     updateHome(dt);
     pumpHeroIcons();
+    if (UI.menuTab === 'goals' && UI.goalTab === 'codex') pumpCodexIcons();
     homeCamera(dt);
   } else if (G.run) updateCamera(0, false, true);
   // a few seconds of the game drawn (the home screen, or a run picked back up): this start worked

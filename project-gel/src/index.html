@@ -575,6 +575,24 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
 .seg { display: inline-flex; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 3px 0 #a9cdf5; }
 .seg button { padding: 8px 12px; font-size: 18px; color: var(--ink-dim); }
 #qualitySeg button { padding: 8px 9px; white-space: nowrap; flex: 1 1 0; }
+#goals .col { display: flex; flex-direction: column; }
+#goals .list, #goals .codex { flex: 1 1 auto; min-height: 0; max-height: none; }
+.goal-tabs { align-self: center; margin: 2px 0 4px; }
+.goal-tabs button { padding: 8px 22px; font-size: 18px; }
+.codex { overflow-y: auto; min-height: 0; padding: 2px 4px 16px; display: grid; gap: 6px; align-content: start; }
+.cx-head { margin: 10px 4px 2px; font-size: 21px; color: #fff; text-shadow: 0 2px 0 rgba(11,79,168,.45); display: flex; justify-content: space-between; align-items: baseline; }
+.cx-head small { font-size: 15px; opacity: .9; }
+.cx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cx-card { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 2px 8px; align-items: center; padding: 6px 8px 7px 6px; border-radius: 16px; background: #fff; box-shadow: 0 3px 0 #a9cdf5; color: var(--ink); text-align: left; }
+.cx-card img { grid-row: span 3; width: 58px; height: 58px; object-fit: contain; border-radius: 12px; background: #eaf3ff; }
+.cx-card img.pending { opacity: .35; }
+.cx-card.unseen img { filter: brightness(0) opacity(.35); }
+.cx-card b { font-size: 15.5px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-card span { font-size: 13px; line-height: 1.2; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-card.unseen b { color: #9aaccc; }
+.medal-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.medal-row span { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 4px; border-radius: 12px; background: #fff; box-shadow: 0 2px 0 #a9cdf5; font-size: 15px; color: var(--ink); }
+.medal-row img { width: 28px; height: 28px; border-radius: 8px; }
 .setting.graphics { grid-template-columns: 1fr; gap: 6px; padding-right: 16px; }
 .setting.graphics .seg { display: flex; width: 100%; }
 #qualityNote { font-size: 15px; line-height: 1.25; }
@@ -721,8 +739,10 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
   <section id="goals" class="screen modal menu" hidden style="place-items:start center">
     <div class="col" style="height:100%">
       <div class="subhead"><button class="icon-btn back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Achievements</h2><div class="pill"><i class="coin"></i><span class="coinsVal">0</span></div></div>
+      <div class="seg goal-tabs" id="goalTabs"><button data-gt="goals" aria-pressed="true">Achievements</button><button data-gt="codex" aria-pressed="false">Codex</button></div>
       <div class="goalsum dim" id="goalSum"></div>
       <div class="list" id="goalList"></div>
+      <div class="codex" id="codexList" hidden></div>
     </div>
   </section>
 
@@ -786,6 +806,7 @@ button { transition: translate .25s cubic-bezier(.2, .9, .3, 1.25); }
       <div class="stats"><div><b id="resTime">0:00</b><small>TIME</small></div><div><b id="resKills">0</b><small>KILLS</small></div><div><b id="resLevel">1</b><small>LEVEL</small></div></div>
       <div class="panel earn"><i class="coin"></i><span id="resCoins">+0</span></div>
       <p class="dim" style="text-align:center;margin:-6px 0 0;font-size:17px" id="resBreak"></p>
+      <div class="medal-row" id="resMedals" hidden></div>
       <div class="row-actions"><button class="jelly" id="btnContinue">Continue</button></div>
     </div>
   </section>

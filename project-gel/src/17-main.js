@@ -663,6 +663,7 @@ function loop(now) {
   } else if (s === 'home') {
     updateHome(dt);
     pumpHeroIcons();
+    if (UI.menuTab === 'goals' && UI.goalTab === 'codex') pumpCodexIcons();
     homeCamera(dt);
   } else if (G.run) updateCamera(0, false, true);
   // a few seconds of the game drawn (the home screen, or a run picked back up): this start worked

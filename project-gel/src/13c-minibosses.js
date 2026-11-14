@@ -56,6 +56,7 @@ function spawnMiniboss(k) {
       ai: { state: 'walk', t: 0, cd: 1.6, next: 0 } });
     e.contactDmg = e.dmg;
   }
+  for (const m of run.enemies) if (m.mini && m.miniK === k && !m.codexed) { m.codexed = true; codexSeen(m); }
   UI.banner(M.name);
   AUDIO.play('roar');
 }

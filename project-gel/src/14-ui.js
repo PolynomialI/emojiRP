@@ -763,6 +763,10 @@ const UI = {
     $('resBreak').textContent = run.rush ? `${run.rushK} of ${RUSH_BOSSES.length} bosses beaten · ${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for the bosses`
       : run.endless ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for surviving · best ${fmtTime(G.save.endlessBest || 0)}`
       : run.won ? `${fmtNum(run.coins)} picked up + ${fmtNum(run.reward)} for clearing the chapter` : `${fmtNum(run.coins)} picked up. Clear the boss for a bigger reward.`;
+    // Boss Rush: each boss's kill time and medal
+    const mr = $('resMedals'), md = run.rush ? run.medals || [] : [];
+    mr.hidden = !md.length;
+    mr.replaceChildren(...md.map(m => { const sp = document.createElement('span'); sp.title = BOSS_TYPES[m.id].name; sp.innerHTML = `<img alt="">${m.m ? MEDAL_ICONS[m.m] : '·'} ${m.t}s`; sp.querySelector('img').src = ICONS.map['boss-' + m.id] || BLANK_IMG; return sp; }));
   },
 
   update(dt) {

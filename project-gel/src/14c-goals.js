@@ -25,6 +25,10 @@ const GOAL_VALUE = {
   // (oceans 11-20: has that ocean's boss been sunk; filled in below)
 };
 for (let n = 11; n <= 20; n++) GOAL_VALUE['sea' + n] = sv => (sv.sea && sv.sea.cleared[n] ? 1 : 0);
+// Boss Rush medals and the Codex (13r-boss-extras.js)
+GOAL_VALUE.rushmedals = sv => rushMedalsAny(sv);
+GOAL_VALUE.rushgold = sv => rushGolds(sv);
+GOAL_VALUE.codex = sv => Object.keys(sv.codex || {}).length;
 // group: icon color and order on the screen. desc: {n} is the target.
 const GOALS = [
   { id: 'kills1', group: 'fight', name: 'Goo Getter', desc: 'Defeat {n} foes', stat: 'kills', n: 500, coins: 150 },
@@ -43,6 +47,9 @@ const GOALS = [
   { id: 'ch5', group: 'chapter', name: 'Explorer', desc: 'Clear {n} chapters', stat: 'cleared', n: 5, coins: 600 },
   { id: 'ch10', group: 'chapter', name: 'Adventurer', desc: 'Clear {n} chapters', stat: 'cleared', n: 10, coins: 2000, scrolls: 1 },
   { id: 'ch15', group: 'chapter', name: 'Hero of Gel', desc: 'Clear {n} chapters', stat: 'cleared', n: 15, coins: 5000, scrolls: 3, skin: 'champion' },
+  { id: 'rush1', group: 'mode', name: 'Medalist', desc: 'Win a Boss Rush medal against {n} bosses', stat: 'rushmedals', n: 10, coins: 1500, scrolls: 1 },
+  { id: 'rush2', group: 'mode', name: 'Rush Champion', desc: 'Gold against all {n} Boss Rush bosses', stat: 'rushgold', n: RUSH_BOSSES.length, coins: 6000, scrolls: 3, costume: 'rushcrown' },
+  { id: 'codex', group: 'collect', name: 'Field Guide', desc: 'Discover {n} entries in the Codex', stat: 'codex', n: 60, coins: 1200, scrolls: 1 },
   { id: 'gooblin1', group: 'mode', name: 'Lucky Catch', desc: 'Catch a Golden Gooblin', stat: 'gooblins', n: 1, coins: 300 },
   { id: 'gooblin2', group: 'mode', name: 'Treasure Hunter', desc: 'Catch {n} Golden Gooblins', stat: 'gooblins', n: 10, coins: 1500, scrolls: 2 },
   { id: 'colors', group: 'collect', name: 'Fashionista', desc: 'Own {n} colors', stat: 'colors', n: 10, coins: 500 },
@@ -95,7 +102,48 @@ function goalsAddRun(run) {
 const TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M7 3h10v2h3.2a.8.8 0 0 1 .8.8c0 3-1.8 5.2-4.6 5.6A5.9 5.9 0 0 1 13 14.6V17h3v3H8v-3h3v-2.4a5.9 5.9 0 0 1-3.4-3.2C4.8 11 3 8.8 3 5.8a.8.8 0 0 1 .8-.8H7zm-2.3 3.6c.2 1.6 1.1 2.7 2.5 3.1A13 13 0 0 1 7 6.6zm14.6 0h-2.3c0 1-.1 2.1-.3 3.1 1.4-.4 2.4-1.5 2.6-3.1z"/></svg>';
 
 Object.assign(UI, {
+  // the Achievements screen's two tabs: the achievements, and the Codex
+  goalTab: 'goals',
+  setGoalTab(t) {
+    this.goalTab = t;
+    document.querySelectorAll('#goalTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.gt === t)));
+    $('goalList').hidden = t !== 'goals'; $('codexList').hidden = t !== 'codex';
+    this.renderGoals();
+  },
+  renderCodex() {
+    const sv = G.save, C = sv.codex || {}, nodes = [];
+    let seen = 0, total = 0;
+    CODEX.queue = [];
+    for (const S of codexSections()) {
+      const found = S.items.filter(it => C[it.key]).length;
+      seen += found; total += S.items.length;
+      const h = document.createElement('div'); h.className = 'cx-head'; h.innerHTML = '<span></span><small></small>';
+      h.firstChild.textContent = S.title; h.lastChild.textContent = `${found} / ${S.items.length}`;
+      const grid = document.createElement('div'); grid.className = 'cx-grid';
+      for (const it of S.items) {
+        const c = C[it.key], card = document.createElement('button');
+        card.className = 'cx-card' + (c ? '' : ' unseen');
+        card.innerHTML = '<img alt=""><b></b><span></span><span></span>';
+        const img = card.querySelector('img'), [l1, l2] = card.querySelectorAll('span');
+        img.dataset.cx = it.icon;
+        if (ICONS.map[it.icon]) img.src = ICONS.map[it.icon]; else { img.src = BLANK_IMG; img.classList.add('pending'); CODEX.queue.push(it); }
+        card.querySelector('b').textContent = c ? it.name : '???';
+        if (!c) { l1.textContent = it.home ? `In ${it.home}` : 'Not met yet'; l2.textContent = ''; }
+        else if (it.boss) {
+          l1.textContent = c.t ? `Best ${fmtTime(c.t)} · beaten ×${c.k}` : `Beaten ×${c.k}`;
+          const md = sv.rushMedals && sv.rushMedals[it.boss];
+          l2.textContent = RUSH_BOSSES.includes(it.boss) ? (md && md.m ? `${MEDAL_ICONS[md.m]} Rush ${md.t}s` : md ? `Rush ${md.t}s, no medal` : 'Boss Rush: no medal yet') : `First met: ${c.at}`;
+        } else { l1.textContent = `Defeated ×${fmtNum(c.k)}`; l2.textContent = `First met: ${c.at}`; }
+        card.addEventListener('click', () => { AUDIO.play('click'); this.toast(codexDetail(it, c), 5); });
+        grid.append(card);
+      }
+      nodes.push(h, grid);
+    }
+    $('goalSum').textContent = `${seen} of ${total} discovered · tap one for more`;
+    $('codexList').replaceChildren(...nodes);
+  },
   renderGoals() {
+    if (this.goalTab === 'codex') { this.syncCoins(); this.renderCodex(); return; }
     const sv = G.save, list = $('goalList');
     this.syncCoins();
     const done = GOALS.filter(g => sv.goals.claimed[g.id]).length;
@@ -147,3 +195,17 @@ Object.assign(UI, {
     this.renderGoals();
   },
 });
+
+// a Codex entry's full story, shown when it is tapped
+function codexDetail(it, c) {
+  if (!c) return `Not met yet. ${it.home ? 'Look for it in ' + it.home + '.' : 'It turns up out there somewhere.'}`;
+  let t = `${it.name}: ${it.boss ? 'beaten' : 'defeated'} ${fmtNum(c.k)} time${c.k === 1 ? '' : 's'}, first met in ${c.at}.`;
+  if (it.boss && c.t) t += ` Fastest: ${fmtTime(c.t)}.`;
+  if (it.boss && RUSH_BOSSES.includes(it.boss)) {
+    const [g, s, b] = rushMedalTimes(it.boss), md = G.save.rushMedals && G.save.rushMedals[it.boss];
+    t += ` Boss Rush medals: 🥇 ${g}s · 🥈 ${s}s · 🥉 ${b}s${md ? ` (your best ${md.t}s)` : ''}.`;
+  }
+  return t;
+}
+const BLANK_IMG = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+document.querySelectorAll('#goalTabs button').forEach(b => b.addEventListener('click', () => { AUDIO.play('click'); UI.setGoalTab(b.dataset.gt); }));
