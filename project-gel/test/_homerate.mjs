@@ -1,0 +1,10 @@
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import path from 'node:path';
+const dir = path.dirname(new URL(import.meta.url).pathname);
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await (await browser.newContext({ viewport: { width: 1280, height: 760 } })).newPage();
+await page.addInitScript({ path: path.join(dir, 'harness.js') });
+await page.goto('file://' + path.join(dir, '..', 'dist', 'project-gel.html'));
+await page.waitForFunction(() => G.state === 'home' && HOME.foes.length >= 5 && HOME.foes.every(f => R.enemyDraw[f.model]), null, { timeout: 300000, polling: 300 });
+console.log(await page.evaluate(async () => { const t0 = HOME.t, p0 = performance.now(); let n = 0; const c = () => { n++; if (performance.now() - p0 < 3000) requestAnimationFrame(c); }; requestAnimationFrame(c); await new Promise(r => setTimeout(r, 3100)); return { gameSecs: +(HOME.t - t0).toFixed(2), realSecs: 3, frames: n, shots: HOME.shots.map(s => +s.t.toFixed(2)) }; }));
+await browser.close();

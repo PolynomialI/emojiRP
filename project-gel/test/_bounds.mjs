@@ -1,0 +1,13 @@
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import path from 'node:path';
+const dir = path.dirname(new URL(import.meta.url).pathname);
+const names = (process.env.M || 'cargo,battleship').split(',');
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await (await browser.newContext({ viewport: { width: 600, height: 400 } })).newPage();
+await page.addInitScript({ path: path.join(dir, 'harness.js') });
+await page.goto('file://' + path.join(dir, '..', 'dist', 'project-gel.html'));
+await page.waitForFunction(() => G.state === 'home', null, { timeout: 120000 });
+await page.evaluate(n => prioritizeMeshes(n), names);
+await page.waitForFunction(n => n.every(m => R.enemyDraw[m]), names, { timeout: 1200000, polling: 1000 });
+console.log(await page.evaluate(n => n.map(m => { const d = MODELS.defs[m]; return m + ' bmin ' + JSON.stringify((d.bmin || []).map(v => +v.toFixed(2))) + ' bmax ' + JSON.stringify((d.bmax || []).map(v => +v.toFixed(2))) + ' top ' + d.top; }).join('\n'), names));
+await browser.close();
