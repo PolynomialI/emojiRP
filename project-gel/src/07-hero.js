@@ -489,21 +489,23 @@ class Hero {
       ell([fm[0] + 0.12, fm[1] - 0.02, fm[2] + 0.05 + sw], 0.15, 0.04, 0.1, 0.04, lc + 1, 0);
       ell([fm[0] - 0.12, fm[1] - 0.02, fm[2] + 0.05 - sw], 0.15, 0.04, 0.1, 0.04, lc + 1, 0);
     } else if (legs === 'tentacles') {
-      // a squid's tentacles: each leg splits in two that curl and wave, and two more hang between them
-      const t = this.time, P = J.pelvis.p;
-      for (let i = 0; i < 2; i++) {
-        const hip = i ? J.hipB : J.hipA, knee = i ? J.kneeB : J.kneeA, foot = i ? J.footB : J.footA, sg = i ? -1 : 1;
-        for (const o of [0.07, -0.05]) {
-          const w = Math.sin(t * 2.6 + i * 2 + o * 20) * 0.05;
-          const kp = [knee.p[0] + sg * o, knee.p[1], knee.p[2] + w], fp = [foot.p[0] + sg * o * 2.2 + w, foot.p[1] - 0.02, foot.p[2] + 0.06 + Math.cos(t * 2.2 + o * 30) * 0.06];
-          cap(hip.p, kp, 0.11, 0.08, 0.08, lc, 0);
-          cap(kp, fp, 0.08, 0.025, 0.05, lc, 0);
-        }
-      }
-      for (const sx of [0.06, -0.06]) {
-        const w = Math.sin(t * 2.2 + sx * 40) * 0.06, mid = [P[0] + sx, P[1] - 0.45, P[2] + 0.06 + w];
-        cap([P[0] + sx, P[1] - 0.15, P[2] + 0.05], mid, 0.09, 0.06, 0.07, lc, 0);
-        cap(mid, [P[0] + sx * 1.5 + w, 0.06, P[2] + 0.18 + w], 0.06, 0.02, 0.04, lc, 0);
+      // a squid's tentacles: six long, limp arms that droop from under the body to the floor and lie spread out
+      // on it, thick at the root and thin at the tip, rippling sideways and flicking their tips up; they drag
+      // behind as the blob moves (three pieces each: down to the floor, along it, the curling tip)
+      const t = this.time, P = J.pelvis.p, v = J.pelvis.v;
+      for (let i = 0; i < 6; i++) {
+        const a = (i + 0.5) / 6 * TAU + 0.12 * Math.sin(t * 0.7 + i * 2.1), ca = Math.sin(a), sa = Math.cos(a), ph = t * 2.3 + i * 1.7;
+        // (sideways to the arm, for its ripple)
+        const nx = sa, nz = -ca, drag = k => [-v[0] * k, -v[2] * k];
+        const root = [P[0] + ca * 0.13, P[1] - 0.14, P[2] + sa * 0.13];
+        const d1 = drag(0.03), knee = [P[0] + ca * 0.38 + d1[0], 0.075, P[2] + sa * 0.38 + d1[1]];
+        const w1 = Math.sin(ph) * 0.11, d2 = drag(0.06), mid = [knee[0] + ca * 0.32 + nx * w1 + d2[0], 0.066, knee[2] + sa * 0.32 + nz * w1 + d2[1]];
+        // (the tip swings the other way from the middle, so the arm lies in an S, and now and then flicks up)
+        const w2 = -Math.sin(ph + 0.9) * 0.2, d3 = drag(0.09), lift = Math.max(0, Math.sin(ph * 0.9 + 2)) * 0.18;
+        const tip = [mid[0] + ca * 0.26 + nx * w2 + d3[0], 0.045 + lift, mid[2] + sa * 0.26 + nz * w2 + d3[1]];
+        cap(root, knee, 0.1, 0.085, 0.08, lc, 0);
+        cap(knee, mid, 0.085, 0.068, 0.05, lc, 0);
+        cap(mid, tip, 0.068, 0.045, 0.04, lc, 0);
       }
     } else {
       // under a robe only the shins and feet show, so the thighs are left out (and never poke through it)

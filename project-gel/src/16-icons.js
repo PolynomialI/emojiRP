@@ -7,6 +7,7 @@ const ICONS = {
 };
 
 function iconBegin() {
+  R.cull = false; // (icons aim their own camera after queueing: nothing of theirs may be culled)
   if (!ICONS.target) ICONS.target = GLX.target(ICONS.size, ICONS.size, { hdr: false, depth: true });
   const f = R.frame, c = R.cam;
   ICONS.saved = { spot: f.spot.slice(), fogRange: f.fogRange.slice(), spotMin: f.spotMin, time: f.time, eye: c.pos.slice(), target: c.target.slice(), fov: c.fovY };

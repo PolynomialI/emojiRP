@@ -18,7 +18,28 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   stronger, or plainly better, than the one before it: finding a new one should feel rewarding. Check a new one
   with `test/_dps.mjs` (IDS=its id plus the previous chapter's) and by playing it.
 
-## Ship looks everywhere, new sea upgrades, body costumes and hats, boat details (latest)
+## Squid tentacles, off-screen culling, see-through buildings from anywhere (latest)
+- **Squid costume** (sea costumes):
+  - Six long, limp tentacles (07-hero.js, legs 'tentacles') droop from under the body to the floor and lie spread out
+    on it in an S, thick to the end with rounded tips.
+  - They ripple sideways, flick their tips up now and then, and drag behind as the blob moves.
+  - The mantle is a rounded hood with a soft point, not a cone.
+- **Off-screen culling** (06-renderer.js `pushEnemy`):
+  - While the game's frame is built (`R.cullBegin` in renderFrame, once the camera is placed), a mesh instance
+    whose bounding sphere lies wholly outside the view is not queued, so its vertices never reach the GPU.
+  - The sphere comes from the model's mesh bounds, padded for squash and sway.
+  - Only drawing is skipped: nothing in the game reads these streams, and icons never cull.
+  - Measured (`test/_cull.mjs`): 56% of the instances in a chapter-3 frame and 63% in an ocean frame are skipped. The
+    picture is pixel-identical with culling on and off.
+- **See-through buildings and tall scenery from anywhere:**
+  - The fade used to guess from the map alone, assuming the camera stood straight south of the blob.
+  - In a corner the camera stops at the arena's edge and the blob sits off to one side, so a building could cover
+    it without fading.
+  - Now, as well, straight lines from the camera to the blob's middle, top and sides are tested against each
+    building's box (`hidesHero`, 11a-arena.js), up to the model's real top, roof fittings and all.
+  - The same test covers the other themes' tall props.
+
+## Ship looks everywhere, new sea upgrades, body costumes and hats, boat details
 - **Ship looks:**
   - Hull paint now reaches every big part in a ship's own hull color family (`paintLike` in 04l: bulwarks, castles,
     cabins, superstructure; decks, trim, windows and small fittings keep their colors). It shows plainly on all ten

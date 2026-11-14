@@ -547,6 +547,7 @@ function homeCamera(dt) {
 function renderFrame() {
   const f = R.frame, hero = G.hero, h = hero.pos;
   R.resetStreams();
+  R.cullBegin();
   SCENE.floor = true; SCENE.backdrop = null; SCENE.aura = null; SCENE.bubble = null; SCENE.pools = [];
   SCENE.arenaBox = G.run && G.state !== 'home' && !ARENA.boxes ? [ARENA.hw, ARENA.hd, ARENA.cr] : null;
   SCENE.hero = hero.out; SCENE.heroShadow = hero.shadow;
@@ -581,6 +582,7 @@ function renderFrame() {
     if (UI.menuTab === 'home' && G.state === 'home') emitHomeFoes();
   }
   FX.emit();
+  R.cull = false;
   R.drawScene();
   R.post();
 }

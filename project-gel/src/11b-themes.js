@@ -101,7 +101,11 @@ ARENA_FEATURES.city = {
     // see-through: a building that hides the hero fades out (the camera looks north, so "behind" is smaller z)
     const h = G.hero.pos;
     for (const o of st.tall) {
-      const behind = Math.abs(h[0] - o.x) < o.hw + 1.5 && h[2] < o.z + o.hd + 0.5 && h[2] > o.z - o.hd - o.height * 0.85;
+      // (and a real line of sight, for when the camera stops at the arena's edge and the blob is off to one side;
+      // the top is the model's real top, roof fittings and all)
+      if (o.top === undefined) { const B = MESHB[o.model]; o.top = Math.max(o.height, B ? B.hi[1] * (o.scale || 1) : 0) + 0.3; }
+      const behind = (Math.abs(h[0] - o.x) < o.hw + 1.5 && h[2] < o.z + o.hd + 0.5 && h[2] > o.z - o.hd - o.height * 0.85)
+        || hidesHero(o.x - o.hw - 0.3, o.x + o.hw + 0.3, o.top, o.z - o.hd - 0.3, o.z + o.hd + 0.3);
       o.fade = clamp((o.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.72);
     }
   },

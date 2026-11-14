@@ -195,13 +195,33 @@ function arenaBlast(x, z, r, power) { const F = ARENA.fx; if (F && F.def.blast) 
 function updateArenaFx(dt) { fadeOccluders(dt); const F = ARENA.fx; if (F && F.def.update) F.def.update(F.st, dt); }
 // tall scenery (trees, palms...) between the camera and the hero fades out; the camera looks north, so "behind" is smaller z
 // (the city's buildings do their own fading)
+// Does a box [x0, x1] x [0, top] x [z0, z1] stand between the camera and the blob? Straight lines from the camera to
+// the blob's middle and top and to either side of it, tested against the box: this holds wherever the camera is
+// (in a corner of the arena it stops following the blob, which then sits off to one side of the view)
+const SIGHT = [[0, 0.5], [0, 1.7], [-0.5, 1.0], [0.5, 1.0]];
+function hidesHero(x0, x1, top, z0, z1) {
+  const c = R.cam.pos, h = G.hero.pos, lo = [x0, 0, z0], hi = [x1, top, z1];
+  for (const [ox, oy] of SIGHT) {
+    const d = [h[0] + ox - c[0], (h[1] || 0) + oy - c[1], h[2] - c[2]];
+    let t0 = 0, t1 = 1, hit = true;
+    for (let k = 0; k < 3 && hit; k++) {
+      if (Math.abs(d[k]) < 1e-6) { if (c[k] < lo[k] || c[k] > hi[k]) hit = false; continue; }
+      let a = (lo[k] - c[k]) / d[k], b = (hi[k] - c[k]) / d[k];
+      if (a > b) { const q = a; a = b; b = q; }
+      t0 = Math.max(t0, a); t1 = Math.min(t1, b);
+      if (t0 > t1) hit = false;
+    }
+    if (hit) return true;
+  }
+  return false;
+}
 function fadeOccluders(dt) {
   const h = G.hero.pos;
   for (const o of ARENA.props) {
     const K = PROP_KINDS[o.kind], m = MODELS.defs[o.model];
     if (!(K.tall >= 2) || o.height || !m) continue;
     const sc = o.scale || o.r / K.unit, w = m.bmax[0] * sc + 0.6, top = m.top * sc;
-    const behind = Math.abs(h[0] - o.x) < w && h[2] < o.z + w * 0.5 && h[2] > o.z - top * 0.8 - w;
+    const behind = (Math.abs(h[0] - o.x) < w && h[2] < o.z + w * 0.5 && h[2] > o.z - top * 0.8 - w) || hidesHero(o.x - w + 0.4, o.x + w - 0.4, top, o.z - w + 0.4, o.z + w - 0.4);
     if (behind || o.fade) o.fade = clamp((o.fade || 0) + (behind ? 3 : -3) * dt, 0, 0.72);
   }
 }

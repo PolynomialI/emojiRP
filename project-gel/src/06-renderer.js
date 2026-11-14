@@ -546,9 +546,42 @@ function pushPart(x, y, z, size, r, g, b, a, vx, vy, vz, type) {
 }
 // Enemy instance: model name, elite flag, position, yaw, anim row, scale, squash, dead, flash, aura tint, tint rgb
 // fade: 0 solid, up to 1 dithered away (used to see through tall buildings)
+// Off-screen culling: while the game's own frame is being built (R.cull, set by renderFrame once the camera is
+// placed) an instance whose bounding sphere lies wholly outside the view is not queued, so the GPU never runs its
+// vertices. Only drawing is skipped: nothing in the game reads these streams. (Icons aim their own camera after
+// queueing, so they never cull.)
+const CULL = { planes: new Float32Array(20), sphere: {} };
+R.cull = false;
+R.cullBegin = function () {
+  const m = R.cam.viewProj, P = CULL.planes;
+  const set = (k, row, sg) => {
+    const a = m[3] + sg * m[row], b = m[7] + sg * m[4 + row], c = m[11] + sg * m[8 + row], d = m[15] + sg * m[12 + row], l = Math.hypot(a, b, c) || 1;
+    P[k * 4] = a / l; P[k * 4 + 1] = b / l; P[k * 4 + 2] = c / l; P[k * 4 + 3] = d / l;
+  };
+  set(0, 0, 1); set(1, 0, -1); set(2, 1, 1); set(3, 1, -1); set(4, 2, 1);
+  R.cull = true; R.culled = 0; R.queued = 0;
+};
+// a model's bounding sphere at scale 1: [centre height, radius] (from its mesh bounds, padded for squash and sway)
+function cullSphere(model) {
+  let s = CULL.sphere[model];
+  if (s) return s;
+  const B = MESHB[model];
+  if (!B) return null;
+  const cx = (B.lo[0] + B.hi[0]) / 2, cz = (B.lo[2] + B.hi[2]) / 2;
+  s = CULL.sphere[model] = [(B.lo[1] + B.hi[1]) / 2, (0.5 * Math.hypot(B.hi[0] - B.lo[0], B.hi[1] - B.lo[1], B.hi[2] - B.lo[2]) + Math.hypot(cx, cz)) * 1.25 + 0.3];
+  return s;
+}
 function pushEnemy(model, elite, x, y, z, yaw, row, scale, squash, dead, flash, aura, tr, tg, tb, fade = 0) {
   const e = R.enemyDraw[model];
   if (!e) return;
+  if (R.cull) {
+    R.queued++;
+    const sp = cullSphere(model);
+    if (sp) {
+      const cy = y + sp[0] * scale, r = sp[1] * scale, P = CULL.planes;
+      for (let k = 0; k < 20; k += 4) if (P[k] * x + P[k + 1] * cy + P[k + 2] * z + P[k + 3] < -r) { R.culled++; return; }
+    }
+  }
   const s = elite ? e.elite.stream : e.normal.stream, o = s.push();
   if (o < 0) return;
   const d = s.data;
