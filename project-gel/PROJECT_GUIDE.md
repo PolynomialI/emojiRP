@@ -302,6 +302,9 @@ show messages.
 
 ## 8. Testing
 
+**`test/TOOLS.md` lists every tool with its command.** The two to reach for first: `node test/shoot.mjs` (go anywhere in
+the game, run a snippet, take a screenshot) and `node test/sdf.mjs` (look inside a model with no browser).
+
 - **Fast checks:** `node build.mjs && node test/syntax.mjs`, then `node test/meshtime.mjs <models>` if models
   changed.
 - **The full regression:** `node test/game.mjs`, about 5-6 minutes, mostly waiting for every mesh. It reports mesh
