@@ -91,7 +91,11 @@ class Hero {
       pa: new Float32Array(HERO_MAXP * 4), pb: new Float32Array(HERO_MAXP * 4), pc: new Float32Array(HERO_MAXP * 4), count: 0,
       rotInv: new Float32Array(9), gearMat: new Float32Array(12), boundC: [0, 0, 0], boundR: 1, boxLo: new Float32Array(3), boxHi: new Float32Array(3), aoY: 0, flash: 0, glow: 0, wobble: 0.008, bubbles: 0, spark: 0, gloss: 1,
       chest: new Float32Array(4), pal: new Float32Array(60), grad: new Float32Array(4), groundY: 0,
+      faceC: new Float32Array(4), faceF: new Float32Array(3), faceU: new Float32Array(3), faceE: new Float32Array(4), faceE2: new Float32Array(4),
     };
+    // the face (painted on by the hero shader): blinks now and then, squints when hit, grins at a level-up, worries
+    // at low health and dozes off on the home screen. happyT / hurtT count down; the rest ease toward their targets
+    this.face = { open: 1, happy: 0, hurt: 0, worry: 0, sleep: 0, oh: 0, look: 0, blink: 0, blinkT: 3, happyT: 0, hurtT: 0, lookT: 2 };
     this.costume = null; this.hat = null; this.hatLift = 0; this.gear = null;
     this.lounge = 0; this.lng = 0; // lounge target and its eased blend (0 stands, 1 lies back on deck)
     this.shadow = { data: new Float32Array(14 * 4), count: 0, pos: [0, 0, 0] };
@@ -206,7 +210,34 @@ class Hero {
     if (b.onRelease) b.onRelease(w, b.cur * this.scale);
   }
 
+  // a moment of feeling: 'happy' (a level-up, a chest, a boss down) or 'hurt' (a hit)
+  emote(kind, secs) { const f = this.face; if (kind === 'happy') f.happyT = Math.max(f.happyT, secs || 1.6); else if (kind === 'hurt') f.hurtT = Math.max(f.hurtT, secs || 0.45); }
+  updateFace(dt) {
+    const f = this.face, run = G.run, home = G.state === 'home';
+    f.blinkT -= dt;
+    if (f.blinkT <= 0) { f.blink = 0.13; f.blinkT = rand(2.2, 5.5); }
+    f.blink = Math.max(0, f.blink - dt);
+    f.happyT = Math.max(0, f.happyT - dt); f.hurtT = Math.max(0, f.hurtT - dt);
+    // glancing about now and then when nothing is going on
+    f.lookT -= dt;
+    if (f.lookT <= 0) { f.lookT = rand(1.5, 4); f.lookTo = Math.random() < 0.5 ? 0 : rand(-1, 1); }
+    const asleep = home && homeDozing(), low = !home && run && run.hp > 0 && run.hp < run.maxHp * 0.3;
+    // (one feeling at a time: a hit beats a grin beats sleep beats worry)
+    const hurt = f.hurtT > 0 ? 1 : 0, happy = !hurt && f.happyT > 0 ? 1 : 0, sleep = !hurt && !happy && asleep ? 1 : 0, worry = !hurt && !happy && !sleep && low ? 1 : 0;
+    const k = 1 - Math.exp(-dt * 14), ks = 1 - Math.exp(-dt * 3);
+    f.hurt += (hurt - f.hurt) * k; f.happy += (happy - f.happy) * k; f.worry += (worry - f.worry) * k; f.sleep += (sleep - f.sleep) * (sleep ? ks : k);
+    f.open = f.blink > 0 ? 0.06 : 1;
+    f.look += ((f.lookTo || 0) - f.look) * (1 - Math.exp(-dt * 6));
+    // a sleepy blob breathes through its mouth, now and then blowing a little goo bubble
+    f.oh = sleep ? 0.5 + 0.5 * Math.sin(this.time * 1.6) : 0;
+    if (f.sleep > 0.8 && (f.bubT = (f.bubT || 0) - dt) <= 0) {
+      f.bubT = rand(2.2, 3.4);
+      const c = this.out.faceC, F = this.out.faceF, U = this.out.faceU, r = c[3];
+      if (r > 0) FX.part(c[0] + F[0] * r * 1.05 - U[0] * r * 0.24, c[1] + F[1] * r * 1.05 - U[1] * r * 0.24, c[2] + F[2] * r * 1.05 - U[2] * r * 0.24, F[0] * 0.05, 0.06, F[2] * 0.05, 0.02, 0.11, 1.8, [0.75, 0.92, 1], 0.55, 0, 0, 0);
+    }
+  }
   update(dt, moveVel, alive) {
+    this.updateFace(dt);
     if (this.gear && this.gear.myth) this.rainbowGear();
     this.time += dt;
     // movement and facing
@@ -717,6 +748,19 @@ class Hero {
     o.flash = this.flash; o.glow = this.glow; o.wobble = 0.007 * this.wobbleMul; o.bubbles = this.bubbles; o.spark = this.spark; o.gloss = this.gloss;
     const ch = this.toWorld(J.chest.p, tmp);
     o.chest[0] = ch[0]; o.chest[1] = ch[1]; o.chest[2] = ch[2] + 0; o.chest[3] = this.chestGlow;
+    // the face's frame: the head's middle, which way it faces and which way is up (it follows the blob lying back
+    // on a deck, squashing and turning); no face while it melts
+    {
+      const hp = J.head.p, fc = o.faceC, F = this.face;
+      tw(hp); const hx = w[0], hy = w[1], hz = w[2];
+      tw([hp[0], hp[1], hp[2] + 0.2]); let fx = w[0] - hx, fy = w[1] - hy, fz = w[2] - hz; let l = Math.hypot(fx, fy, fz) || 1;
+      o.faceF[0] = fx / l; o.faceF[1] = fy / l; o.faceF[2] = fz / l;
+      tw([hp[0], hp[1] + 0.2, hp[2]]); fx = w[0] - hx; fy = w[1] - hy; fz = w[2] - hz; l = Math.hypot(fx, fy, fz) || 1;
+      o.faceU[0] = fx / l; o.faceU[1] = fy / l; o.faceU[2] = fz / l;
+      fc[0] = hx; fc[1] = hy; fc[2] = hz; fc[3] = this.melt > 0.3 ? 0 : 0.225 * sc;
+      o.faceE[0] = F.open; o.faceE[1] = F.happy; o.faceE[2] = F.hurt; o.faceE[3] = F.worry;
+      o.faceE2[0] = F.sleep; o.faceE2[1] = F.oh; o.faceE2[2] = F.look; o.faceE2[3] = 0;
+    }
 
     // soft shadow spheres for the floor
     const sd = this.shadow.data;

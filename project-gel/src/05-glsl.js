@@ -769,6 +769,45 @@ uniform vec4 uGearMat[3]; // how metallic each gear color is (palette 8-19)
 uniform vec3 uBoxLo;    // the shapes' world-space box (padded): rays that miss it are dropped
 uniform vec3 uBoxHi;
 uniform int uZero; // never set, so always 0: loops that start at it cannot be unrolled
+// the face, painted on the head's goo: the head's middle and radius, which way it faces and which way is up, and the
+// expression (x: eyes open, y: happy, z: hurt, w: worried; uFaceE2 x: asleep, y: mouth open, z: glance sideways)
+uniform vec4 uFaceC;
+uniform vec3 uFaceF;
+uniform vec3 uFaceU;
+uniform vec4 uFaceE;
+uniform vec4 uFaceE2;
+float segD(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }
+// one eye (side: -1 the blob's right, +1 its left) as a distance in face units: an oval that blinks shut, a happy ^,
+// a squeezed > or <, and a sleepy closed curve, blended by the expression
+float faceEye(vec2 q, float side) {
+  vec2 c = vec2(side * 0.34 + uFaceE2.z * 0.05, 0.1);
+  float open = clamp(uFaceE.x, 0.0, 1.0), happy = uFaceE.y, hurt = uFaceE.z, sleep = uFaceE2.x;
+  float rest = max(0.0, 1.0 - happy - hurt - sleep);
+  vec2 e = (q - c) / vec2(0.1, max(0.155 * open, 0.022));
+  float dOpen = (length(e) - 1.0) * min(0.1, max(0.155 * open, 0.022));
+  vec2 h = q - c + vec2(0.0, 0.07);
+  float dHappy = h.y > -0.01 ? abs(length(h) - 0.12) - 0.03 : 1.0;
+  float dHurt = min(segD(q, c + vec2(side * 0.09, 0.075), c + vec2(-side * 0.07, 0.0)), segD(q, c + vec2(-side * 0.07, 0.0), c + vec2(side * 0.09, -0.075))) - 0.032;
+  vec2 s = q - c - vec2(0.0, 0.06);
+  float dSleep = s.y < 0.01 ? abs(length(s) - 0.11) - 0.028 : 1.0;
+  return (dOpen * rest + dHappy * happy + dHurt * hurt + dSleep * sleep) / max(1e-3, rest + happy + hurt + sleep);
+}
+// the mouth: a little smile, a wide open grin, a small round "oh" when hurt or asleep, a wobbly worried line
+float faceMouth(vec2 q, out float inside) {
+  float happy = uFaceE.y, hurt = uFaceE.z, worry = uFaceE.w * (1.0 - happy), sleep = uFaceE2.x;
+  float rest = max(0.0, 1.0 - happy - hurt - worry - sleep);
+  vec2 m = q - vec2(0.0, -0.1);
+  float dSmile = m.y < -0.04 ? abs(length(m) - 0.15) - 0.026 : 1.0;
+  vec2 g = q - vec2(0.0, -0.13);
+  float dGrin = max(length(g / vec2(1.0, 1.15)) - 0.2, g.y);
+  float o = 0.06 + 0.04 * uFaceE2.y;
+  float dOh = length((q - vec2(0.0, -0.24)) / vec2(0.75, 1.0)) - o;
+  float dWorry = abs(q.y + 0.25 + 0.02 * sin(q.x * 38.0)) - 0.024;
+  dWorry = max(dWorry, abs(q.x) - 0.15);
+  float w = rest + happy + hurt + worry + sleep;
+  inside = (happy + (hurt + sleep) * 0.8) / max(w, 1e-3);
+  return (dSmile * rest + dGrin * happy + dOh * (hurt + sleep) + dWorry * worry) / max(1e-3, w);
+}
 // the shapes this pixel's ray passes near (bit i: shape i). Each pixel tests its ray once against every shape's
 // padded bounding sphere; the march then skips the rest. With all the gear on (about 50 shapes) a ray meets only
 // a handful, so the march does a fraction of the work (the menus draw the blob big and were very slow)
@@ -795,15 +834,17 @@ vec3 primCol(float w, vec3 p) {
   return c;
 }
 // gear shapes (color weights 18-29, palette 8-19) are solid, not goo: x = 1 for gear, y = how metallic that color is
-vec2 primMat(float w) {
-  if (w < 17.5 || w > 29.5) return vec2(0.0);
+// z: 1 for anything worn (costume, hat, gear), 0 for the goo itself (where the face is painted)
+vec3 primMat(float w) {
+  float worn = w >= 9.5 ? 1.0 : 0.0;
+  if (w < 17.5 || w > 29.5) return vec3(0.0, 0.0, worn);
   int k = int(w - 18.0 + 0.5);
-  return vec2(1.0, uGearMat[k >> 2][k & 3]);
+  return vec3(1.0, uGearMat[k >> 2][k & 3], worn);
 }
 // distance, and when asked the blended color, glow and material of the shapes that meet here
-float mapH(vec3 p, bool wantCol, out vec3 col, out float g, out vec2 mat) {
+float mapH(vec3 p, bool wantCol, out vec3 col, out float g, out vec3 mat) {
   float d = prim(p, 0);
-  col = vec3(0.0); g = 0.0; mat = vec2(0.0);
+  col = vec3(0.0); g = 0.0; mat = vec3(0.0);
   if (wantCol) { col = primCol(uPC[0].y, p); g = uPC[0].w; mat = primMat(uPC[0].y); }
   // only the shapes this ray passes near, lowest first (their bits, one at a time: the loop runs as many times as
   // there are shapes near, not once per shape)
@@ -858,11 +899,11 @@ void main() {
   int j = 0;
   float alpha = 0.0, thin = 0.0, occ = 0.0, glowW = 0.0;
   vec3 p = ro, n = vec3(0.0), base = vec3(0.0);
-  vec2 gmat = vec2(0.0);
+  vec3 gmat = vec3(0.0);
   for (int i = uZero; i < 98; i++) {
     vec3 k = 2.0 * vec3(float(((j + 3) >> 1) & 1), float((j >> 1) & 1), float(j & 1)) - 1.0;
     vec3 q = march ? ro + rd * t : j < 4 ? p + k * 0.0016 : j == 4 ? p - n * 0.13 : j == 5 ? p + n * 0.05 : j == 6 ? p + n * 0.13 : p;
-    vec3 c; float g; vec2 m;
+    vec3 c; float g; vec3 m;
     float d = mapH(q, !march && j == 7, c, g, m);
     if (march) {
       float r = d / (t * uPixAng);
@@ -889,16 +930,46 @@ void main() {
   // living goo: slow swirls inside the body
   float sw = texture(uNoise, p.xz * 0.8 + vec2(p.y * 0.35, uTime * 0.025)).r + texture(uNoise, p.xy * 1.1 - vec2(uTime * 0.02, 0.0)).g;
   base *= 0.93 + 0.12 * (sw - 1.0) * 1.4;
+  // the face: drawn on the front of the head wherever the goo itself shows (not on a costume, hat or gear)
+  float faceInk = 0.0, faceGlint = 0.0;
+  if (uFaceC.w > 0.0 && gmat.z < 0.35) {
+    vec3 fq = p - uFaceC.xyz;
+    float fl = length(fq), fz = dot(fq, uFaceF) / fl;
+    if (abs(fl - uFaceC.w) < uFaceC.w * 0.16 && fz > 0.35) {
+      vec3 fr = normalize(cross(uFaceU, uFaceF));
+      vec2 q = vec2(dot(fq, fr), dot(fq, uFaceU)) / uFaceC.w;
+      float aa = max(fwidth(q.x) + fwidth(q.y), 0.012);
+      float dE = min(faceEye(q, -1.0), faceEye(q, 1.0));
+      float inside; float dM = faceMouth(q, inside);
+      // worried brows: tilted up toward the middle
+      float dB = min(segD(q, vec2(-0.47, 0.33), vec2(-0.22, 0.4)), segD(q, vec2(0.47, 0.33), vec2(0.22, 0.4))) - 0.024;
+      float eye = smoothstep(aa, -aa, dE), mouth = smoothstep(aa, -aa, dM), brow = smoothstep(aa, -aa, dB) * uFaceE.w * (1.0 - uFaceE.y);
+      // a glint in each open eye
+      float open = clamp(uFaceE.x, 0.0, 1.0) * max(0.0, 1.0 - uFaceE.y - uFaceE.z - uFaceE2.x);
+      vec2 gq = vec2(abs(q.x - uFaceE2.z * 0.05) - 0.31, q.y - 0.15);
+      faceGlint = smoothstep(aa, -aa, length(gq) - 0.032) * open * eye;
+      faceInk = max(max(eye, brow), mouth) * smoothstep(0.35, 0.55, fz);
+      // dark features on a light blob, light ones on a very dark blob; the open mouth is dark red with a tongue
+      float lum = dot(base, vec3(0.3, 0.55, 0.15));
+      vec3 inkC = lum < 0.22 ? vec3(0.92, 0.94, 1.0) : vec3(0.07, 0.05, 0.11);
+      vec3 mouthC = mix(inkC, mix(vec3(0.32, 0.05, 0.1), vec3(1.0, 0.45, 0.55), smoothstep(-0.2, -0.29, q.y)), inside * mouth);
+      vec3 featC = mouth > eye ? mouthC : inkC;
+      base = mix(base, featC, faceInk);
+      base = mix(base, vec3(1.0), faceGlint);
+    }
+  }
   float ao = clamp(1.0 - occ * 2.4, 0.0, 1.0) * mix(0.62, 1.0, smoothstep(0.0, 0.4, p.y - uAoY));
   float emissive = glowW + uGlow * 0.25 + uSpark * (0.6 + 0.4 * sin(uTime * 70.0));
   emissive += uChest.w * exp(-length(p - uChest.xyz) * 5.0) * 1.6;
-  vec3 col = gooShade(base, p, n, v, thin, ao, emissive, uGloss * 0.8);
+  vec3 col = gooShade(base, p, n, v, thin, ao, emissive * (1.0 - faceInk), uGloss * 0.8);
   // jelly: soft milky translucency, gentle shading and a bright candy rim
   float ndv0 = clamp(dot(n, v), 0.0, 1.0);
   float lum = dot(base, vec3(0.3, 0.55, 0.15));
   col = mix(col, base * (0.62 + 0.38 * ao) + col * 0.35, 0.35);
   col += mix(base, vec3(1.0), 0.5) * pow(1.0 - ndv0, 2.4) * (0.55 + 0.3 * (1.0 - lum));
   col += base * thin * 0.2;
+  // (painted on: the face keeps its own dark color under the jelly's glow, with a bright glint)
+  col = mix(col, base * (0.75 + 0.25 * ao) + vec3(faceGlint) * 0.6, faceInk * 0.85);
   if (uBubbles > 0.0) {
     vec2 bq = vec2(p.x * 3.2 + p.z * 1.7, p.y * 2.4 - uTime * 0.35);
     float cell = texture(uNoise, bq * 0.25).b;
@@ -1940,6 +2011,21 @@ void main() {
     vec2 q = abs(vUV);
     float star = max(1.0 - smoothstep(0.0, 0.12, q.x * 3.0 + q.y * 0.35), 1.0 - smoothstep(0.0, 0.12, q.y * 3.0 + q.x * 0.35));
     a = max(star, exp(-r * r * 12.0));
+  } else if (type == 5) {
+    // a heart (goo trails)
+    vec2 q = vec2(abs(vUV.x) * 0.95, vUV.y * 0.95 + 0.42);
+    float d;
+    if (q.y + q.x > 1.0) d = length(q - vec2(0.25, 0.75)) - 0.3536;
+    else d = sqrt(min(dot(q - vec2(0.0, 1.0), q - vec2(0.0, 1.0)), dot(q - 0.5 * max(q.x + q.y, 0.0), q - 0.5 * max(q.x + q.y, 0.0)))) * sign(q.x - q.y);
+    a = 1.0 - smoothstep(-0.03, 0.03, d);
+    col *= 0.85 + 0.3 * smoothstep(0.6, -0.2, length(vUV - vec2(-0.25, 0.25)));
+  } else if (type == 6) {
+    // a snowflake: six arms with a bright middle
+    float ang = atan(vUV.y, vUV.x), k = mod(ang + 0.5236, 1.0472) - 0.5236;
+    vec2 q = vec2(cos(k), sin(k)) * r;
+    float arm = (1.0 - smoothstep(0.04, 0.1, abs(q.y))) * (1.0 - smoothstep(0.85, 0.95, r));
+    float twig = (1.0 - smoothstep(0.03, 0.08, abs(abs(q.y) - (q.x - 0.5) * 0.7))) * step(0.5, q.x) * step(q.x, 0.8);
+    a = max(max(arm, twig), exp(-r * r * 16.0));
   } else {
     a = 1.0 - smoothstep(0.0, 0.12, abs(r - 0.82));
   }

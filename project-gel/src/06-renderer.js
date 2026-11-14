@@ -21,7 +21,7 @@ R.init = function (canvas) {
   // every program starts compiling now; boot waits on R.programsReady() and calls R.finishPrograms() before drawing
   const P = (vs, fs, name, attribs) => (R.progs[name] = GLX.programStart(vs, fs, name, attribs));
   P(VS_FLOOR, FS_FLOOR, 'floor', ['aPos']);
-  HERO_MAXP = clamp(Math.floor((gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS) - 96) / 3), 48, 72);
+  HERO_MAXP = clamp(Math.floor((gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS) - 104) / 3), 48, 72);
   P(VS_HERO, FS_HERO.replace('__HERO_MAXP__', String(HERO_MAXP)), 'hero', ['aCorner']);
   P(VS_IMP, FS_IMP, 'imp', ['aCorner', 'iPosS', 'iAxis', 'iP0', 'iP1']);
   P(VS_ENEMY, FS_ENEMY, 'enemy', ['aPos', 'aNrm', 'aBones', 'aW0', 'aAO', 'aCol', 'iPosYaw', 'iAnim', 'iFx', 'iTint']);
@@ -392,6 +392,7 @@ R.drawHero = function (h) {
   gl.uniform1f(u.uFlash, h.flash); gl.uniform1f(u.uGlow, h.glow); gl.uniform1f(u.uWobble, h.wobble);
   gl.uniform1f(u.uBubbles, h.bubbles); gl.uniform1f(u.uSpark, h.spark); gl.uniform1f(u.uGloss, h.gloss);
   gl.uniform4fv(u.uChest, h.chest);
+  gl.uniform4fv(u.uFaceC, h.faceC); gl.uniform3fv(u.uFaceF, h.faceF); gl.uniform3fv(u.uFaceU, h.faceU); gl.uniform4fv(u.uFaceE, h.faceE); gl.uniform4fv(u.uFaceE2, h.faceE2);
   gl.uniform3fv(u.uPal, h.pal); gl.uniform4fv(u.uGrad, h.grad); gl.uniform1f(u.uGroundY, h.groundY); gl.uniform1f(u.uAoY, h.aoY); gl.uniform4fv(u.uGearMat, h.gearMat);
   gl.uniform3fv(u.uBoxLo, h.boxLo); gl.uniform3fv(u.uBoxHi, h.boxHi);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);

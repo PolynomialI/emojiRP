@@ -41,7 +41,7 @@ function spawnMiniboss(k) {
       const B = BOSS_TYPES[id], e = spawnEnemy('stickman', x + i * 2.4, z, {});
       const spare = spareHurler(id), mh = spare ? 1 : MINI_HP, md = spare ? 1 : MINI_DMG;
       const hp = B.hp * 0.32 * run.info.hpMul * hpK * (ids.length > 1 ? 0.6 : 1) * mh;
-      Object.assign(e, { type: id, def: B, model: B.model, boss: true, mini: true, name: M.name, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * run.info.dmgMul * md,
+      Object.assign(e, { type: id, def: B, model: B.model, boss: true, mini: true, miniK: k, name: M.name, hp, maxHp: hp, speed: B.speed, dmg: B.dmg * run.info.dmgMul * md,
         radius: B.radius * 0.8 * scK, scale: B.scale * 0.8 * scK, mass: 40, xp: 30, tint: hexToRgb(i ? B.tint2 || B.tint : B.tint), y: 9, spawnT: 1.2,
         clip: 'run', clipU: 0, dizzy: 0, contactDmg: B.dmg * run.info.dmgMul * md,
         ai: { state: 'enter', t: 1.2, summonT: 8, throwT: 2.5, jumpCd: 2, attackT: 2.5, charges: 0, anchor: [x, z], orbit: rand(0, TAU), mode: 0 } });
@@ -52,7 +52,7 @@ function spawnMiniboss(k) {
   } else {
     const e = spawnEnemy(M.type, x, z, { scale: M.scale / ENEMY_TYPES[M.type].scale * scK, tint: M.tint });
     const hp = M.hp * run.info.hpMul * hpK * MINI_HP;
-    Object.assign(e, { mini: true, miniDef: M, name: M.name, hp, maxHp: hp, mass: 30, xp: 30, dmg: e.dmg * 1.6 * MINI_DMG, speed: e.speed * 0.9,
+    Object.assign(e, { mini: true, miniK: k, miniDef: M, name: M.name, hp, maxHp: hp, mass: 30, xp: 30, dmg: e.dmg * 1.6 * MINI_DMG, speed: e.speed * 0.9,
       ai: { state: 'walk', t: 0, cd: 1.6, next: 0 } });
     e.contactDmg = e.dmg;
   }

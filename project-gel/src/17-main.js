@@ -95,6 +95,8 @@ function initInput(canvas) {
   document.addEventListener('pointerdown', tapSplash, true);
   window.addEventListener('keydown', e => {
     if (DEV.onKey(e)) return;
+    // (typing in a text box, like the save code, is not playing)
+    if (e.target && /^(TEXTAREA|INPUT)$/.test(e.target.tagName)) return;
     const k = e.key.toLowerCase();
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
     INPUT.keys.add(k);
@@ -107,7 +109,9 @@ function initInput(canvas) {
   });
   window.addEventListener('keyup', e => INPUT.keys.delete(e.key.toLowerCase()));
   window.addEventListener('blur', () => { INPUT.keys.clear(); INPUT.stick.active = false; if (G.state === 'run') pauseGame(); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { if (G.state === 'run') pauseGame(); saveGame(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { if (G.state === 'run') pauseGame(); saveGame(); saveRunCheckpoint(); } });
+  // (the tab closed, or put away by the browser while the computer sleeps: keep the run)
+  window.addEventListener('pagehide', () => { saveRunCheckpoint(); saveGame(); });
   // the mouse position, always (the cave's crosshair follows it)
   window.addEventListener('pointermove', e => { INPUT.mx = e.clientX; INPUT.my = e.clientY; });
   canvas.addEventListener('pointerdown', e => {
@@ -158,15 +162,31 @@ function applySettings() {
   // 2x with MSAA was too much for laptop and Chromebook GPUs and made the game stutter
   else if (st.quality === 'high') { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = Math.min(dpr, 1.5); PERF.min = Math.min(1, PERF.max); }
   else if (st.quality === 'low') { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = PERF.min = Math.max(0.5, Math.min(dpr, 1) * 0.75); }
+  // Medium: the screen's own resolution (at most 1x), bloom but no MSAA, and fewer particles than High
+  else if (st.quality === 'medium') { R.settings.msaa = false; R.settings.bloom = true; PERF.ratio = PERF.max = Math.min(dpr, 1); PERF.min = Math.min(0.8, PERF.max); }
   else if (PERF.software) { R.settings.msaa = false; R.settings.bloom = false; PERF.ratio = PERF.max = 0.6; PERF.min = 0.5; }
   else { R.settings.msaa = true; R.settings.bloom = true; PERF.ratio = PERF.max = Math.min(dpr, 1.5); PERF.min = 0.6; }
+  // how many particles, ground marks and goo droplets can be alive at once
+  const caps = QUALITY_CAPS[st.quality] || QUALITY_CAPS.high;
+  FX.maxParts = caps[0]; FX.maxDecals = caps[1]; FX.maxDrops = caps[2];
+  $('fps').hidden = !st.fps;
   resize();
+}
+const QUALITY_CAPS = { auto: [3200, 700, 420], high: [3200, 700, 420], medium: [2000, 450, 260], low: [1200, 300, 160], ultra: [700, 200, 100] };
+// the frame-rate counter (Settings: FPS counter): frames a second and the slowest frame of the last half second
+const FPSC = { t: 0, n: 0, worst: 0 };
+function fpsTick(raw) {
+  if (!G.save || !G.save.settings.fps) return;
+  FPSC.t += raw; FPSC.n++; FPSC.worst = Math.max(FPSC.worst, raw);
+  if (FPSC.t < 0.5) return;
+  $('fps').textContent = `${Math.round(FPSC.n / FPSC.t)} FPS · ${Math.round(FPSC.worst * 1000)} ms`;
+  FPSC.t = 0; FPSC.n = 0; FPSC.worst = 0;
 }
 function resize() { R.resize(window.innerWidth, window.innerHeight, PERF.ratio); }
 function gpuName() { const d = gl.getExtension('WEBGL_debug_renderer_info'); return (d && gl.getParameter(d.UNMASKED_RENDERER_WEBGL)) || gl.getParameter(gl.RENDERER) || ''; }
 function adaptQuality(dt) {
   const q = G.save.settings.quality;
-  if ((q !== 'auto' && q !== 'high') || (G.state !== 'run' && G.state !== 'home')) { PERF.acc = PERF.frames = 0; return; }
+  if ((q !== 'auto' && q !== 'high' && q !== 'medium') || (G.state !== 'run' && G.state !== 'home')) { PERF.acc = PERF.frames = 0; return; }
   PERF.acc += dt; PERF.frames++;
   if (PERF.acc < 2) return;
   const avg = PERF.acc / PERF.frames;
@@ -257,6 +277,7 @@ function homePageChanged() {
   if (UI.homePage === 'sea') { prioritizeMeshes(SEA_MESHES); OC.stage = seaHomeStage(); HOME.seaFoes.length = 0; }
 }
 function goHome() {
+  clearRunCheckpoint();
   if (G.run && G.run.cave) caveLeave();
   if (G.run && G.run.sea) seaLeave();
   G.run = null; G.numbers.length = 0; G.bolts.length = 0; FX.clear();
@@ -270,10 +291,18 @@ function goHome() {
 }
 
 // ---------- home scene ----------
+// left alone for a while on the home screen the blob dozes off (it wakes when a grunt comes close, or at a touch)
+function homeDozing() {
+  if (HOME.idle < 18 || HOME.aim || HOME.drag) return false;
+  const F = seaStageOn() ? HOME.seaFoes : HOME.foes;
+  return !F.some(f => !f.dying && Math.hypot(f.x, f.z) < 5);
+}
 function updateHome(dt) {
   HOME.t += dt; HOME.idle += dt;
   const hero = G.hero, onHome = UI.menuTab === 'home';
   if (seaStageOn()) { updateSeaHome(dt); return; }
+  // the Trails tab shows the picked trail running round the blob's feet
+  if (UI.menuTab === 'skins' && UI.blobTab === 'trails') trailPreview(dt, UI.trailPreview);
   if (hero.lounge) { hero.lounge = hero.lng = 0; hero.faceYaw = null; hero.scale = 1; }
   hero.pos[0] = 0; hero.pos[1] = 0; hero.pos[2] = 0;
   if (!HOME.drag) { HOME.yaw += HOME.spinV * dt; HOME.spinV *= Math.exp(-dt * 2.5); }
@@ -347,7 +376,7 @@ function homeFoes(dt) {
     const facing = Math.abs(angleLerp(hero.yaw, a.yaw, 1) - hero.yaw) < 0.3;
     if (!a.fired && (facing || a.t > 0.7)) { a.fired = a.t; homeFire(a.foe); }
     if (a.fired && a.t > a.fired + 0.55) HOME.aim = null;
-  } else if ((HOME.shootT -= dt) <= 0 && !HOME.drag && HOME.idle > 1.5) {
+  } else if ((HOME.shootT -= dt) <= 0 && !HOME.drag && HOME.idle > 1.5 && !homeDozing()) {
     let best = null, bd = 1e9;
     for (const f of F) {
       const d = Math.hypot(f.x, f.z);
@@ -420,7 +449,7 @@ function seaHomeFoes(dt) {
     }
   }
   homeShots(dt);
-  if ((HOME.shootT -= dt) <= 0 && !HOME.drag && HOME.idle > 1.5) {
+  if ((HOME.shootT -= dt) <= 0 && !HOME.drag && HOME.idle > 1.5 && !homeDozing()) {
     HOME.shootT = rand(2.6, 4.2);
     let best = null, bd = 1e9;
     for (const f of F) { const d = Math.hypot(f.x, f.z); if (!f.dying && !homeTargeted(f) && f.appear >= 1 && d < bd) { bd = d; best = f; } }
@@ -601,6 +630,8 @@ function loop(now) {
   const dt = clamp(raw, 0, 0.05);
   lastT = now;
   PERF.fps += (1 / Math.max(raw, 1e-3) - PERF.fps) * 0.05;
+  fpsTick(raw);
+  MUSIC.tick(dt);
   R.frame.time += dt;
   if (PERF.resizeDue) { PERF.resizeDue = false; resize(); }
   readInput();
@@ -633,9 +664,10 @@ function loop(now) {
     updateHome(dt);
     pumpHeroIcons();
     homeCamera(dt);
-    // a few seconds of the home screen drawn: this start worked
-    if (BOOT_GUARD.set && R.frame.time > 3) bootGuardClear();
   } else if (G.run) updateCamera(0, false, true);
+  // a few seconds of the game drawn (the home screen, or a run picked back up): this start worked
+  if (BOOT_GUARD.set && R.frame.time > 3 && s !== 'loading') bootGuardClear();
+  if (G.run && s !== 'loading' && s !== 'results') resumeTick(dt);
   if (s !== 'loading') renderFrame();
   UI.update(dt);
   UI.drawOverlay(dt);
@@ -684,7 +716,8 @@ async function boot() {
   if (!ok) { showLoadError('This browser does not support WebGL2, which the game needs. Try a recent Chrome, Edge, Firefox or Safari.'); return; }
   // WebGL drawn by the CPU (no hardware acceleration) is far too slow for this game: use the lightest settings
   PERF.software = !window.__allowSoftwareGL && /swiftshader|llvmpipe|softpipe|software|basic render/i.test(gpuName());
-  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); setState('loading'); showLoadError('The graphics driver stopped the game. Reload the page to keep playing.'); });
+  // lost graphics (the computer slept, the driver reset): keep the run and reload into it (15a-resume.js)
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); onGraphicsLost(); });
   { const L = R.frame.lightDir, l = Math.hypot(...L); R.frame.lightDir = L.map(v => v / l); }
   applySettings();
   buildTextures();
@@ -711,8 +744,10 @@ async function boot() {
   // the setting can be on while the browser still falls back to software (blocked driver, or after graphics crashes)
   if (PERF.software) UI.toast(`Your browser is drawing the game without the graphics card (it reports "${gpuName()}"), so it will be slow. Restarting the browser often fixes this; try Graphics: Ultra low too.`, 10);
   else if (BOOT_GUARD.tripped) UI.toast('The game did not finish starting last time, so Graphics is now Ultra low. You can raise it again in Settings.', 10);
+  // an interrupted run (the page was closed, reloaded or lost its graphics): straight back into it
+  const resumed = resumeOnBoot();
   const off = offlineEarnings();
-  if (off) UI.showOffline(off.coins, off.hours);
+  if (off && !resumed) UI.showOffline(off.coins, off.hours);
   saveGame();
   setInterval(() => { if (G.state === 'home' || G.state === 'run') saveGame(); }, 30000);
   requestAnimationFrame(loop);

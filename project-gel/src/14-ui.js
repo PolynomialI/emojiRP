@@ -2,6 +2,14 @@
 // UI: screens, HUD, level-up cards, chest roulette, overlay drawing
 // ============================================================
 const $ = id => document.getElementById(id);
+// what each Graphics setting does, under the buttons
+const QUALITY_NOTES = {
+  auto: 'Starts sharp and smooth, and lowers the resolution, then the smoothing and glow, if frames slow down.',
+  high: 'Sharpest: up to 1.5x resolution, smoothed edges, glow, the most particles.',
+  medium: 'Your screen\u2019s resolution, glow, no edge smoothing, fewer particles.',
+  low: 'Three-quarter resolution, no glow or smoothing, half the particles.',
+  ultra: 'For slow computers: low resolution, 30 frames a second, the fewest effects.',
+};
 const UI = {
   menuTab: 'home', homePage: 'land', settingsFrom: null, lastHud: {}, slotSig: '', choiceLock: 0, reviveT: 0, skinPreview: null,
   overlay: null, octx: null, toastT: 0,
@@ -39,6 +47,18 @@ const UI = {
     $('btnSettingsDone').addEventListener('click', () => this.closeSettings());
     $('btnCollect').addEventListener('click', () => this.collectOffline());
     $('btnReset').addEventListener('click', () => { $('resetConfirm').hidden = false; });
+    // moving progress between browsers: Export downloads the save and copies its code; Import takes either back
+    $('btnExport').addEventListener('click', () => { AUDIO.play('click'); exportSave(); });
+    $('btnImport').addEventListener('click', () => { AUDIO.play('click'); $('importBox').hidden = false; $('importText').value = ''; $('importText').focus(); });
+    $('btnImportNo').addEventListener('click', () => { AUDIO.play('click'); $('importBox').hidden = true; });
+    $('btnImportFile').addEventListener('click', () => $('importFile').click());
+    $('importFile').addEventListener('change', async ev => { const f = ev.target.files && ev.target.files[0]; if (f) $('importText').value = await f.text(); ev.target.value = ''; });
+    $('btnImportGo').addEventListener('click', () => {
+      if (!importSave($('importText').value)) { this.toast('That is not a Project Gel save code or file.', 3); AUDIO.play('lose'); return; }
+      $('importBox').hidden = true;
+      applySettings(); applySkin(G.save.skin); this.syncSettings(); this.refreshHome();
+      AUDIO.play('chest'); this.toast('Save imported. Welcome back!', 3);
+    });
     $('btnResetNo').addEventListener('click', () => { $('resetConfirm').hidden = true; });
     $('btnResetYes').addEventListener('click', () => { G.save = defaultSave(); saveGame(); $('resetConfirm').hidden = true; applySkin(G.save.skin); this.syncSettings(); this.refreshHome(); this.toast('Progress erased'); });
     document.querySelectorAll('.switch').forEach(sw => sw.addEventListener('click', () => {
@@ -137,7 +157,7 @@ const UI = {
 
   openTab(tab) {
     this.openedAt = performance.now();
-    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; }
+    if (this.menuTab === 'skins' && tab !== 'skins') { applySkin(G.save.skin); this.skinPreview = null; this.costumePreview = null; this.hatPreview = null; this.trailPreview = null; }
     this.menuTab = tab;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     // (the Ships tab belongs to the ocean page: it opens there first, and the ground game never shows it)
@@ -262,8 +282,9 @@ const UI = {
   },
   // Three tabs: body colors, costumes and hats. Tapping a card previews it on the blob; the button buys or equips it.
   blobLists() {
-    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' || (this.blobTab === 'ships' && this.homePage === 'sea') ? this.blobTab : 'colors';
+    const sv = G.save, tab = this.blobTab === 'costumes' || this.blobTab === 'hats' || (this.blobTab === 'trails' && this.homePage !== 'sea') || (this.blobTab === 'ships' && this.homePage === 'sea') ? this.blobTab : 'colors';
     if (tab === 'ships') return { tab, list: [], owned: [], worn: null, sel: null, key: 'ship-' };
+    if (tab === 'trails') return { tab, list: BLOB_TRAILS, owned: sv.trails || ['none'], worn: sv.trail || 'none', sel: this.trailPreview, key: 'trail-' };
     if (tab === 'colors') return { tab, list: SKINS, owned: sv.skins, worn: sv.skin, sel: this.skinPreview, key: 'skin-' };
     if (tab === 'costumes') return { tab, list: costumesOf('hood'), owned: sv.costumes, worn: sv.costume, sel: this.costumePreview, key: 'costume-' };
     return { tab, list: costumesOf('hat'), owned: sv.costumes, worn: sv.hat, sel: this.hatPreview, key: 'costume-' };
@@ -273,12 +294,14 @@ const UI = {
     if (!this.skinPreview) this.skinPreview = sv.skin;
     if (!this.costumePreview) this.costumePreview = sv.costume;
     if (!this.hatPreview) this.hatPreview = sv.hat;
+    if (!this.trailPreview) this.trailPreview = sv.trail || 'none';
     const { tab, list, owned, worn, sel, key } = this.blobLists();
     this.syncCoins();
-    document.querySelectorAll('#blobTabs button').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.bt === tab)); if (b.dataset.bt === 'ships') b.hidden = this.homePage !== 'sea'; });
+    document.querySelectorAll('#blobTabs button').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.bt === tab)); if (b.dataset.bt === 'ships') b.hidden = this.homePage !== 'sea'; if (b.dataset.bt === 'trails') b.hidden = this.homePage === 'sea'; });
     if (tab === 'ships') { this.renderShipLooks(); return; }
     this.shipPreview = null; this.shipTabOn = false;
-    queueHeroIcons(list.map(s => key + s.id), true);
+    // (trail pictures are drawn flat, at once; the rest are the blob itself, rendered a few a frame)
+    if (tab === 'trails') list.forEach(trailIcon); else queueHeroIcons(list.map(s => key + s.id), true);
     grid.replaceChildren(...this.stagger(list.map(s => {
       const b = document.createElement('button');
       b.className = 'skin' + (s.id === sel ? ' sel' : '') + (worn === s.id ? ' worn' : '');
@@ -286,7 +309,7 @@ const UI = {
       // icons not drawn yet fill in as pumpHeroIcons makes them
       const k = key + s.id, img = b.querySelector('img');
       img.dataset.heroIcon = k; if (ICONS.map[k]) img.src = ICONS.map[k]; else img.classList.add('pending');
-      b.querySelector('span').textContent = s.id === 'none' ? (tab === 'hats' ? 'No hat' : 'No costume') : s.name;
+      b.querySelector('span').textContent = s.id === 'none' && tab !== 'trails' ? (tab === 'hats' ? 'No hat' : 'No costume') : s.name;
       // (a two-stat bonus is long: it shrinks to fit the card rather than run off it)
       const bt = s.boost ? fmtBoost(s.boost) : '', be = b.querySelector('.boost');
       be.textContent = bt; if (bt.length > 13) be.style.fontSize = Math.max(9.5, 13.5 * 13 / bt.length).toFixed(1) + 'px';
@@ -295,7 +318,7 @@ const UI = {
       else if (s.goal) sm.textContent = '🏆';
       else { sm.innerHTML = '<i class="coin"></i><span></span>'; sm.querySelector('span').textContent = fmtNum(s.cost); sm.classList.toggle('poor', sv.coins < s.cost); }
       b.addEventListener('click', () => {
-        if (tab === 'colors') this.skinPreview = s.id; else if (tab === 'costumes') this.costumePreview = s.id; else this.hatPreview = s.id;
+        if (tab === 'colors') this.skinPreview = s.id; else if (tab === 'costumes') this.costumePreview = s.id; else if (tab === 'trails') this.trailPreview = s.id; else this.hatPreview = s.id;
         applySkin(this.skinPreview, this.costumePreview, this.hatPreview); G.hero.impulse(1.4); AUDIO.play('click'); this.renderSkins();
       });
       return b;
@@ -379,9 +402,9 @@ const UI = {
     if (!s) return;
     if (!owned.includes(s.id)) {
       if (s.goal || sv.coins < s.cost) return;
-      sv.coins -= s.cost; owned.push(s.id); AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
+      sv.coins -= s.cost; owned.push(s.id); if (tab === 'trails') sv.trails = owned; AUDIO.play('coin'); this.toast(`${s.name} unlocked`);
     }
-    if (tab === 'colors') sv.skin = s.id; else if (tab === 'costumes') sv.costume = s.id; else sv.hat = s.id;
+    if (tab === 'colors') sv.skin = s.id; else if (tab === 'costumes') sv.costume = s.id; else if (tab === 'trails') sv.trail = s.id; else sv.hat = s.id;
     saveGame(); AUDIO.play('levelup'); G.hero.impulse(2);
     this.renderSkins(); this.refreshHome();
   },
@@ -439,12 +462,13 @@ const UI = {
   },
 
   // ---------- settings ----------
-  openSettings() { this.syncSettings(); this.show('settings', true); $('resetConfirm').hidden = true; $('btnReset').closest('.setting').hidden = G.state !== 'home'; },
+  openSettings() { this.syncSettings(); this.show('settings', true); $('resetConfirm').hidden = true; $('importBox').hidden = true; $('btnReset').closest('.setting').hidden = G.state !== 'home'; $('btnImport').closest('.setting').hidden = G.state !== 'home'; },
   closeSettings() { this.show('settings', false); AUDIO.play('click'); },
   syncSettings() {
     const st = G.save.settings;
     document.querySelectorAll('.switch').forEach(sw => sw.setAttribute('aria-checked', String(!!st[sw.dataset.set])));
     document.querySelectorAll('#qualitySeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.q === st.quality)));
+    $('qualityNote').textContent = QUALITY_NOTES[st.quality] || '';
   },
 
   // ---------- offline earnings ----------
@@ -569,6 +593,7 @@ const UI = {
     // (a level with nothing to offer passes quietly)
     if (!run.choices.length) { run.pending = Math.max(0, run.pending - 1); return; }
     this.renderChoices();
+    G.hero.emote('happy', 1.8);
     $('luSub').textContent = `Level ${run.level - run.pending + 1}`;
     this.choiceLock = performance.now() + 350;
     AUDIO.play('levelup');
@@ -619,6 +644,7 @@ const UI = {
 
   // ---------- chest ----------
   openChest() {
+    G.hero.emote('happy', 2);
     this.chestRun = G.run;
     const run = G.run;
     run.chestQueued--;

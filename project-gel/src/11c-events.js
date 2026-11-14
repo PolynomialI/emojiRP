@@ -117,6 +117,7 @@ function rushNext(run) {
 function rushStart(run) { run.rushK = 0; rushPicks(run, RUSH.startPicks); rushNext(run); }
 // a boss is down: loot, a breather, some health back and free upgrades. Returns true once the last one falls.
 function rushBossDown(run) {
+  if (run.bosses[0]) rushClockStop(run, run.bosses[0].type);
   for (const b of run.bosses) spawnPickup('chest', b.x, b.z);
   run.bosses = []; run.bossStarted = false; run.bossTotalHp = 0;
   run.rushK++;

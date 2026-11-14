@@ -128,6 +128,7 @@ function startSea(chapter) {
   seaIcons();
   G.timeScale = 1;
   setState('run');
+  if (RESUME.pending) applyResume();
 }
 // back to the home screen: the blob stands up again
 function seaLeave() { const h = G.hero; if (h) { h.lounge = h.lng = 0; h.faceYaw = null; h.pos[1] = 0; h.scale = 1; } }
@@ -424,8 +425,8 @@ function seaEvent(ev) {
     seaFoe(pick(seaTheme().mix.filter(m => m[0] !== 'pdiver')).at(0), x, z, { elite: true });
   } else if (ev.kind === 'surge') {
     for (let i = 0; i < Math.round(ev.n * run.info.rateMul); i++) seaSpawn();
-  } else if (ev.kind === 'mini') seaMini(ev.k);
-  else if (ev.kind === 'boss') seaBossStart();
+  } else if (ev.kind === 'mini') { seaMini(ev.k); resumeHp(ev, run.enemies.filter(e => e.mini && e.miniK === ev.k && !e.dying)); }
+  else if (ev.kind === 'boss') { seaBossStart(); resumeHp(ev, run.bosses); }
 }
 // ---------- swimmers: paddle in, get rammed, or climb on and hack at the hull ----------
 function seaFoes(dt) {
@@ -446,7 +447,11 @@ function seaFoes(dt) {
     if (frozen) { e.phase += dt * 0.4; continue; }
     if (e.frozen > 0) { e.frozen -= dt; continue; }
     // the sea's own creatures (island musketeers, divers, minibosses, bosses: 13m-sea-folk.js)
-    if (SEA_AI[e.type] && SEA_AI[e.type](e, dt, D)) continue;
+    if (e.boss && !e.mini) weakTick(e, dt);
+    TELE_OWNER = e.boss && !e.mini ? e : null;
+    const handled = SEA_AI[e.type] && SEA_AI[e.type](e, dt, D);
+    TELE_OWNER = null;
+    if (handled) continue;
     if (e.grab) {
       // aboard: ride along, hacking at the hull every so often
       const w = shipW(e.grab.lx, e.grab.lz);

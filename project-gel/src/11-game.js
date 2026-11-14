@@ -163,6 +163,8 @@ function startRun(chapter, opts = {}) {
   if (run.rush) rushStart(run);
   G.timeScale = 1;
   setState('run');
+  // (a run picked up again after the page was closed: 15a-resume.js)
+  if (RESUME.pending) applyResume();
 }
 
 function slotOf(id) { return G.run.slots.find(s => s.id === id); }
@@ -208,7 +210,7 @@ function evolveSkill(id) {
   const h = G.hero.pos;
   FX.ring(h[0], h[2], 7, [1, 0.82, 0.3], 0.8, 1); FX.ring(h[0], h[2], 4, [1, 0.95, 0.6], 0.6, 1);
   for (let i = 0; i < 36; i++) FX.star(h[0] + rand(-1.6, 1.6), rand(0.3, 2.6), h[2] + rand(-1.6, 1.6), rand(0.2, 0.4), [1, rand(0.75, 0.95), rand(0.2, 0.5)], rand(0.6, 1.1));
-  G.hero.impulse(3);
+  G.hero.impulse(3); G.hero.emote('happy', 2.2);
   UI.toast(`★ ${E.name}!`, 2);
 }
 function recomputeStats() {
@@ -287,6 +289,8 @@ function hurtEnemy(e, dmg, kx = 0, kz = 0, opts = {}) {
   // Lucky Splat: now and then a hit does double
   if (G.run.stats.crit && Math.random() < G.run.stats.crit) { dmg *= 2; opts = { ...opts, color: [1, 0.9, 0.2] }; }
   if (e.boss && e.dizzy > 0) dmg *= 1.5;
+  // a boss left open after a big attack: its weak point (13r-boss-extras.js)
+  if (e.weakT > 0) { dmg *= WEAK.mul; opts = { ...opts, color: [1, 0.72, 0.15] }; }
   if (e.frozen > 0 && G.run.absZero) dmg *= 1.2;
   // a sea pirate's floats take the damage first (13k-ocean.js)
   if (e.shell > 0) {
@@ -359,7 +363,7 @@ function hurtHero(dmg, fromX, fromZ) {
   dmg *= run.stats.armorMul;
   run.hp -= dmg;
   run.invuln = 0.35;
-  G.hero.hit([fromX, 0.8, fromZ]);
+  G.hero.hit([fromX, 0.8, fromZ]); G.hero.emote('hurt');
   run.hurtFlash = 0.55;
   G.cam.shake = Math.max(G.cam.shake, 0.08);
   addNumberAt(G.hero.pos[0], 2.0, G.hero.pos[2], dmg, [1, 0.35, 0.35]);
@@ -369,6 +373,8 @@ function hurtHero(dmg, fromX, fromZ) {
 }
 function heroDown() {
   const run = G.run;
+  // (no going back to before the fall by closing the page: a revive saves the run again)
+  clearRunCheckpoint();
   if (run.sea) { seaSinkStart(); return; }
   run.hp = 0;
   G.hero.meltTarget = 1;
@@ -506,6 +512,8 @@ function updateRun(dt) {
   HERO_PT.x = h[0]; HERO_PT.z = h[2];
   if (resolveCircle(HERO_PT, HERO_R)) { h[0] = HERO_PT.x; h[2] = HERO_PT.z; }
   hero.update(dt, run.vel, true);
+  // the goo trail cosmetic (10e-trails.js)
+  if (live && !run.cave) trailTick(dt, G.save.trail, h[0], h[2], Math.hypot(run.vel[0], run.vel[2]));
   updateArenaFx(dt);
   updateTempZones(dt);
 
@@ -548,13 +556,13 @@ function runEvent(ev) {
   } else if (ev.kind === 'surge') {
     for (let i = 0; i < Math.round((ev.n || 18) * run.info.rateMul * (run.sea ? 1 : LAND_SPAWN)); i++) spawnFromMix();
   } else if (ev.kind === 'boss') {
-    startBoss();
+    startBoss(); resumeHp(ev, run.bosses);
   } else if (ev.kind === 'mini') {
-    spawnMiniboss(ev.k);
+    spawnMiniboss(ev.k); resumeHp(ev, run.enemies.filter(e => e.mini && e.miniK === ev.k && !e.dying));
   } else if (ev.kind === 'gooblin') {
     spawnGooblin();
   } else if (ev.kind === 'eboss') {
-    if (!run.bossStarted) startBoss(ev.ids);
+    if (!run.bossStarted) { startBoss(ev.ids); resumeHp(ev, run.bosses); rushClockStart(run); }
   }
 }
 
@@ -614,7 +622,7 @@ function updateEnemies(dt) {
     if (e.frozen > 0) { e.frozen -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
     // trapped in a bubble (Bubble Trap): held off the ground, harmless, until it pops
     else if (e.bubbled > 0) { e.bubbled -= dt; e.vx = e.vz = 0; if (e.act) e.act = null; e.aim = 0; }
-    else if (e.boss) updateBoss(e, dt);
+    else if (e.boss) { TELE_OWNER = e.mini ? null : e; updateBoss(e, dt); TELE_OWNER = null; weakTick(e, dt); }
     else if (e.mini) updateMini(e, dt);
     else updateEnemyAI(e, dt);
     // knockback
@@ -1032,6 +1040,7 @@ function finishRun(won) {
   if (run.over) return;
   run.over = true;
   run.won = won;
+  clearRunCheckpoint();
   const sv = G.save;
   // Endless and Boss Rush pay a quarter
   const modeMul = run.endless || run.rush ? 0.25 : 1;

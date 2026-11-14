@@ -55,7 +55,7 @@ function spawnBoss(id, x, z, opts) {
 }
 
 // Telegraphs drawn on the floor: { kind: 'circle'|'lane', x, z, r, len, rot, t, dur }
-function addTele(o) { G.run.tele = G.run.tele || []; const t = { t: 0, ...o }; G.run.tele.push(t); return t; }
+function addTele(o) { G.run.tele = G.run.tele || []; const t = { t: 0, ...o }; if (TELE_OWNER && TELE_OWNER.boss) t.owner = TELE_OWNER; G.run.tele.push(t); return t; }
 // a telegraphed shot: its path shows as a red lane for TELE_SHOT seconds, then it flies down that lane (aimed
 // volleys: a boss's spread, a miniboss's fan of arrows, a gunslinger's sweep). Held in run.heldShots meanwhile.
 const TELE_SHOT = 0.5;
@@ -313,6 +313,7 @@ function bossBonk(e, hit) {
 function onBossKilled(e) {
   const run = G.run;
   run.bossKills++;
+  G.hero.emote('happy', 2.6);
   G.cam.shake = 0.3;
   FX.ring(e.x, e.z, 8, [1, 0.8, 0.5], 0.8);
   for (let i = 0; i < 12; i++) spawnPickup('coin', e.x + rand(-1.5, 1.5), e.z + rand(-1.5, 1.5), 3);
@@ -331,7 +332,7 @@ function onBossKilled(e) {
 function updateTelegraphs(dt) {
   const run = G.run;
   if (!run.tele) return;
-  for (const t of run.tele) t.t += dt;
+  for (const t of run.tele) { t.t += dt; if (t.owner && t.t >= t.dur && !t.done) teleLanded(t); }
   run.tele = run.tele.filter(t => t.t < t.dur && !t.done);
 }
 
@@ -369,6 +370,7 @@ function emitBossGrandeur(e) {
 }
 // the warnings: red circles, lanes and wedges filling up until the attack lands (on land and at sea)
 function emitTelegraphs(run) {
+  emitWeakRings(run);
   if (run.tele) for (const t of run.tele) {
     // hold: a danger that is already live (drawn full) rather than one filling up to strike
     const p = t.hold ? 1 : clamp(t.t / t.dur, 0, 1);
