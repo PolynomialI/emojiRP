@@ -19065,10 +19065,16 @@ function updateEnemyAI(e, dt) {
     if (e.aim > 0) {
       want = 0;
       e.aim += dt;
-      if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 3.2; }
+      if (e.aimDir) e.yaw = angleLerp(e.yaw, Math.atan2(e.aimDir[0], e.aimDir[1]), Math.min(1, dt * 12));
+      if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 3.2; e.aimDir = null; }
     } else {
       e.reload -= dt;
-      if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) { e.aim = 0.001; if (e.def.shotKind !== 'bullet') AUDIO.play('throw'); }
+      if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) {
+        e.aim = 0.001; if (e.def.shotKind !== 'bullet') AUDIO.play('throw');
+        // the aim locks where the blob is now and shows as a lane; the shot flies down it (step aside to dodge)
+        e.aimDir = [dx, dz];
+        addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.2, len: Math.min(12, (e.def.shotSpeed || 10) * 1.2), rot: Math.atan2(dx, dz), dur: 0.45 });
+      }
       if (d < 4.5) want = -e.speed * 0.6;
     }
   }
@@ -19076,7 +19082,7 @@ function updateEnemyAI(e, dt) {
   const k = 1 - Math.exp(-8 * dt);
   e.vx += (tvx - e.vx) * k; e.vz += (tvz - e.vz) * k;
   e.x += e.vx * dt; e.z += e.vz * dt;
-  e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
+  if (!(e.aim > 0 && e.aimDir)) e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
   e.phase += dt * Math.hypot(e.vx, e.vz) / (0.85 * e.scale);
 }
 
@@ -19210,12 +19216,14 @@ function throwJavelin(e, dmg) {
 
 function fireArrow(e) {
   if (e.def.shotKind === 'bullet') AUDIO.play('bang');
-  const h = G.hero.pos, dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
+  const h = G.hero.pos, dx = e.aimDir ? e.aimDir[0] : h[0] - e.x, dz = e.aimDir ? e.aimDir[1] : h[2] - e.z, d = Math.hypot(dx, dz) || 1;
   G.run.eShots.push({ kind: e.def.shotKind || 'arrow', ph: rand(0, 10), x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * (e.def.shotSpeed || 10), vy: 0, vz: dz / d * (e.def.shotSpeed || 10), dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
 }
 
 function updateEnemyShots(dt) {
   const run = G.run, h = G.hero.pos;
+  // telegraphed shots fly once their warning has run
+  if (run.heldShots && run.heldShots.length) { for (const q of run.heldShots) if ((q.t -= dt) <= 0) run.eShots.push(q.s); run.heldShots = run.heldShots.filter(q => q.t > 0); }
   for (const s of run.eShots) {
     s.life -= dt;
     if (s.kind === 'javelin') {
@@ -22159,6 +22167,14 @@ function spawnBoss(id, x, z, opts) {
 
 // Telegraphs drawn on the floor: { kind: 'circle'|'lane', x, z, r, len, rot, t, dur }
 function addTele(o) { G.run.tele = G.run.tele || []; const t = { t: 0, ...o }; G.run.tele.push(t); return t; }
+// a telegraphed shot: its path shows as a red lane for TELE_SHOT seconds, then it flies down that lane (aimed
+// volleys: a boss's spread, a miniboss's fan of arrows, a gunslinger's sweep). Held in run.heldShots meanwhile.
+const TELE_SHOT = 0.5;
+function teleShot(s) {
+  const sp = Math.hypot(s.vx, s.vz) || 1;
+  addTele({ kind: 'lane', x: s.x, z: s.z, r: Math.max(0.22, s.r || 0.25), len: Math.min(13, sp * Math.min(s.life || 2, 2.5)), rot: Math.atan2(s.vx, s.vz), dur: TELE_SHOT });
+  (G.run.heldShots = G.run.heldShots || []).push({ s, t: TELE_SHOT });
+}
 
 function bossFace(e, dt, rate = 6) { const h = G.hero.pos; e.yaw = angleLerp(e.yaw, Math.atan2(h[0] - e.x, h[2] - e.z), Math.min(1, dt * rate)); }
 function bossWalk(e, dt, tx, tz, speed) {
@@ -22462,6 +22478,19 @@ function emitBossGrandeur(e) {
     FX.glow(e.x + Math.cos(q) * e.radius * 0.7, y, e.z + Math.sin(q) * e.radius * 0.7, 0.35, ac, 0.3, 0.8);
   }
 }
+// the warnings: red circles, lanes and wedges filling up until the attack lands (on land and at sea)
+function emitTelegraphs(run) {
+  if (run.tele) for (const t of run.tele) {
+    // hold: a danger that is already live (drawn full) rather than one filling up to strike
+    const p = t.hold ? 1 : clamp(t.t / t.dur, 0, 1);
+    if (t.kind === 'circle') pushDecal(t.x, t.z, t.r, t.r, 0, 4, 0, p, 1, 0.22, 0.18, 0.9);
+    else if (t.kind === 'cone') pushDecal(t.x, t.z, t.r, t.r, -t.rot, 10, t.half, p, 1, 0.22, 0.18, 0.8);
+    else {
+      const cx = t.x + Math.sin(t.rot) * t.len / 2, cz = t.z + Math.cos(t.rot) * t.len / 2;
+      pushDecal(cx, cz, t.r, t.len / 2, -t.rot, 5, 0, p, 1, 0.22, 0.18, 0.85);
+    }
+  }
+}
 function emitRunScene() {
   const run = G.run, h = G.hero.pos, L = R.frame.lightDir;
   const sdx = -L[0] * 0.5, sdz = -L[2] * 0.5;
@@ -22495,16 +22524,7 @@ function emitRunScene() {
     R.ribStrip(pts, n, 0.25, [1, 0.5, 0.15, 0.35], 0, 0, 1);
   }
   // telegraphs
-  if (run.tele) for (const t of run.tele) {
-    // hold: a danger that is already live (drawn full) rather than one filling up to strike
-    const p = t.hold ? 1 : clamp(t.t / t.dur, 0, 1);
-    if (t.kind === 'circle') pushDecal(t.x, t.z, t.r, t.r, 0, 4, 0, p, 1, 0.22, 0.18, 0.9);
-    else if (t.kind === 'cone') pushDecal(t.x, t.z, t.r, t.r, -t.rot, 10, t.half, p, 1, 0.22, 0.18, 0.8);
-    else {
-      const cx = t.x + Math.sin(t.rot) * t.len / 2, cz = t.z + Math.cos(t.rot) * t.len / 2;
-      pushDecal(cx, cz, t.r, t.len / 2, -t.rot, 5, 0, p, 1, 0.22, 0.18, 0.85);
-    }
-  }
+  emitTelegraphs(run);
   // enemy shots
   for (const s of run.eShots) {
     if (s.kind === 'arrow') { const sp = Math.hypot(s.vx, s.vz) || 1; pushImp(s.x, s.y, s.z, 0.32, s.vx / sp, 0, s.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); }
@@ -22777,7 +22797,7 @@ BOSS_AI.sandworm = function (e, dt, d, dx, dz) {
         const n = rage ? 9 : 7, base = Math.atan2(dx, dz);
         for (let i = 0; i < n; i++) {
           const a = base + (i / (n - 1) - 0.5) * 1.4 + (ai.fired - 1) * 0.08;
-          run.eShots.push({ kind: 'sand', x: e.x, y: 1.1, z: e.z, vx: Math.sin(a) * 6.5, vy: 0, vz: Math.cos(a) * 6.5, dmg: 10 * run.info.dmgMul, r: 0.35, life: 2.6, ph: rand(0, 10) });
+          teleShot({ kind: 'sand', x: e.x, y: 1.1, z: e.z, vx: Math.sin(a) * 6.5, vy: 0, vz: Math.cos(a) * 6.5, dmg: 10 * run.info.dmgMul, r: 0.35, life: 2.6, ph: rand(0, 10) });
         }
         AUDIO.play('throw');
       }
@@ -23466,7 +23486,7 @@ BOSS_AI.hydra = function (e, dt, d, dx, dz) {
           const base = Math.atan2(h[0] - hd.x, h[2] - hd.z), m = rage ? 4 : 3;
           for (let j = 0; j < m; j++) {
             const a = base + (j - (m - 1) / 2) * 0.24 + (ai.volley === 2 ? 0.12 : 0);
-            run.eShots.push({ kind: 'seed', x: hd.x, y: 1.0, z: hd.z, vx: Math.sin(a) * 7.5, vy: 0, vz: Math.cos(a) * 7.5, dmg: 12 * run.info.dmgMul, r: 0.26, life: 4, ph: rand(0, 10) });
+            teleShot({ kind: 'seed', x: hd.x, y: 1.0, z: hd.z, vx: Math.sin(a) * 7.5, vy: 0, vz: Math.cos(a) * 7.5, dmg: 12 * run.info.dmgMul, r: 0.26, life: 4, ph: rand(0, 10) });
           }
           hd.recoil = 1;
         }
@@ -23601,7 +23621,7 @@ BOSS_AI.crab = function (e, dt, d, dx, dz) {
         const n = rage ? 11 : 8, base = Math.atan2(dx, dz);
         for (let i = 0; i < n; i++) {
           const a = base + (i - (n - 1) / 2) * (1.9 / (n - 1));
-          run.eShots.push({ kind: 'bubble', x: e.x + Math.sin(a) * 1.8, y: 1, z: e.z + Math.cos(a) * 1.8, vx: Math.sin(a) * 2.6, vy: 0, vz: Math.cos(a) * 2.6, dmg: 14 * run.info.dmgMul, r: 0.5, life: 6, home: 0.5, ph: rand(0, 10) });
+          teleShot({ kind: 'bubble', x: e.x + Math.sin(a) * 1.8, y: 1, z: e.z + Math.cos(a) * 1.8, vx: Math.sin(a) * 2.6, vy: 0, vz: Math.cos(a) * 2.6, dmg: 14 * run.info.dmgMul, r: 0.5, life: 6, home: 0.5, ph: rand(0, 10) });
         }
         AUDIO.play('split', 1.4);
       }
@@ -24451,7 +24471,7 @@ function updateMini(e, dt) {
         const n = 7, base = Math.atan2(dx, dz), step = 1.2 / (n - 1);
         for (let i = 0; i < n; i++) {
           const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 7;
-          run.eShots.push({ kind: M.shot || 'arrow', x: e.x + Math.sin(a) * 0.6 * s / 2, y: 0.9, z: e.z + Math.cos(a) * 0.6 * s / 2, vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: e.dmg * 0.9, r: 0.3, life: 2.4, ph: rand(0, 10), spin: rand(0, TAU) });
+          teleShot({ kind: M.shot || 'arrow', x: e.x + Math.sin(a) * 0.6 * s / 2, y: 0.9, z: e.z + Math.cos(a) * 0.6 * s / 2, vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: e.dmg * 0.9, r: 0.3, life: 2.4, ph: rand(0, 10), spin: rand(0, TAU) });
         }
         AUDIO.play('throw');
         if (--ai.volleys > 0) ai.t = 0.45; else toWalk();
@@ -24566,7 +24586,7 @@ BOSS_AI.outlaw = function (e, dt, d, dx, dz) {
         ai.shotT += 0.045;
         const u = ai.shots / (n - 1), rot = e.yaw + (u * 2 - 1) * half * sweep;
         outlawGun(e, ai.shots % 2, _gun);
-        run.eShots.push({ kind: 'bullet', ph: 0, x: _gun[0], y: 1.5, z: _gun[2], vx: Math.sin(rot) * OUTLAW.bulletV, vy: -0.3, vz: Math.cos(rot) * OUTLAW.bulletV, dmg: 9 * run.info.dmgMul, r: 0.24, life: 1.1 });
+        teleShot({ kind: 'bullet', ph: 0, x: _gun[0], y: 1.5, z: _gun[2], vx: Math.sin(rot) * OUTLAW.bulletV, vy: -0.3, vz: Math.cos(rot) * OUTLAW.bulletV, dmg: 9 * run.info.dmgMul, r: 0.24, life: 1.1 });
         FX.glow(_gun[0], _gun[1], _gun[2], 0.9, [1, 0.85, 0.45], 0.06, 1); FX.smoke(_gun[0], _gun[1], _gun[2], 0.35, [0.8, 0.78, 0.75], 0.5, 0.4);
         AUDIO.play('bang');
         ai.shots++;
@@ -27833,6 +27853,8 @@ function emitSea() {
   const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
   f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view * fog * fog, 140 * SEA.view * fog];
   SCENE.arenaBox = null; SCENE.pools = [];
+  // (warnings used to be drawn only on land: the pirate captain's ram lane, the musket pirates' aim)
+  emitTelegraphs(run);
   // the ship (or its pieces)
   if (OC.sink) {
     for (const P of OC.sink.pieces) {
@@ -28875,7 +28897,8 @@ SEA_AI.pmusket = (e, dt) => {
     e.aimT -= dt;
     e.act = { clip: 'aim', u: clamp(1 - e.aimT / 0.9, 0, 0.999) };
     if (e.aimT <= 0) {
-      const tx = S.x + S.vx * 0.4, tz = S.z + S.vz * 0.4, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
+      // (down the lane shown while it aimed)
+      const dx = e.aimDir[0], dz = e.aimDir[1], l = Math.hypot(dx, dz) || 1;
       OC.hz.push({ k: 'ball', x: e.x + dx / l * 0.5, y: e.y + 1.0, z: e.z + dz / l * 0.5, vx: dx / l * 13, vz: dz / l * 13, life: 2, dmg: e.dmg });
       FX.smoke(e.x + dx / l * 0.6, e.y + 1.0, e.z + dz / l * 0.6, 0.3, [0.92, 0.92, 0.95], 0.6, 0.8);
       AUDIO.play('bang', 1.2);
@@ -28883,7 +28906,13 @@ SEA_AI.pmusket = (e, dt) => {
     }
   } else {
     e.act = { clip: 'idle', u: e.phase % 1 };
-    if (e.reload <= 0 && d < 17 && !OC.sink) e.aimT = 0.9;
+    if (e.reload <= 0 && d < 17 && !OC.sink) {
+      // it aims where the ship is heading and shows the shot's line: steer out of it
+      e.aimT = 0.9;
+      const tx = S.x + S.vx * 0.9, tz = S.z + S.vz * 0.9, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
+      e.aimDir = [dx / l, dz / l];
+      addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.5, len: Math.min(20, l + 4), rot: Math.atan2(dx, dz), dur: 0.9 });
+    }
   }
   return true;
 };
@@ -29041,7 +29070,11 @@ SEA_AI.pcapt = (e, dt) => {
       const a = e.atk[ai.n++ % e.atk.length];
       if (a === 'ram') { ai.state = 'aim'; ai.t = 1.1; ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: e.radius, len: d + 4, rot: Math.atan2(dx, dz), dur: 1.1 }); }
       else if (a === 'bombs') { ai.state = 'throw'; ai.t = 0.8; ai.thrown = 0; }
-      else if (a === 'volley') { ai.state = 'volley'; ai.t = 0.6; }
+      else if (a === 'volley') {
+        // five cannonballs fanned at the ship: their lines show while the crew loads
+        ai.state = 'volley'; ai.t = 0.6; ai.a0 = Math.atan2(dx, dz);
+        for (let k = -2; k <= 2; k++) addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.45, len: 20, rot: ai.a0 + k * 0.16, dur: 0.6 });
+      }
       else { ai.state = 'call'; ai.t = 0.7; }
     }
   } else if (ai.state === 'aim') {
@@ -29072,7 +29105,7 @@ SEA_AI.pcapt = (e, dt) => {
   } else if (ai.state === 'volley') {
     e.vx *= 0.9; e.vz *= 0.9;
     if (ai.t <= 0) {
-      const a0 = Math.atan2(dx, dz);
+      const a0 = ai.a0 ?? Math.atan2(dx, dz);
       for (let k = -2; k <= 2; k++) { const a = a0 + k * 0.16; OC.hz.push({ k: 'ball', x: e.x, y: 1.4, z: e.z, vx: Math.sin(a) * 12, vz: Math.cos(a) * 12, life: 2, dmg: e.dmg * 0.4 }); }
       FX.smoke(e.x, 1.5, e.z, 0.6, [0.92, 0.92, 0.95], 0.7, 1); AUDIO.play('bang');
       ai.state = 'circle'; ai.t = 2.4;
@@ -30758,7 +30791,11 @@ const UI = {
         }
         if (kind === 'skill') { const gap = document.createElement('span'); gap.className = 'slot-gap'; cells.push(gap); }
       }
-      $('slots').replaceChildren(...cells);
+      // one row however many slots there are (the sea has a fifth skill slot): a column each, the gap between
+      const nS = slotLimit('skill'), nP = slotLimit('passive'), box = $('slots');
+      box.style.gridTemplateColumns = `repeat(${nS}, minmax(0, 1fr)) 6px repeat(${nP}, minmax(0, 1fr))`;
+      box.style.maxWidth = Math.round(450 * (nS + nP) / 8) + 'px';
+      box.replaceChildren(...cells);
     }
     this.updateAbilities(run);
     // the chapter bar fills toward the boss, then shows the boss's health (in the cave: the rooms, then the Bagger)

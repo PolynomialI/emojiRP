@@ -18,7 +18,36 @@ Also in this folder: `project-gel-blueprint.html` (the design blueprint) and `la
   stronger, or plainly better, than the one before it: finding a new one should feel rewarding. Check a new one
   with `test/_dps.mjs` (IDS=its id plus the previous chapter's) and by playing it.
 
-## Squid tentacles, off-screen culling, see-through buildings from anywhere (latest)
+## Attack warnings everywhere, warnings at sea, the slot bar in one row (latest)
+- **Attack telegraphs** for every enemy that needs one (they already covered most melee and boss attacks: spear and
+  bison lanes, axe/knight chop circles, bomb circles, javelin landing circles, most boss moves).
+  - **Ranged foes** (archers, gunslingers, magma imps, peppers, cloudlings) show a red aim lane while they draw.
+    The shot then flies down that lane, wherever the blob has gone, so stepping out of it dodges.
+  - **Telegraphed volleys** (`teleShot`, 13-enemies.js): each shot's path shows as a lane for 0.5 s, then it flies
+    down it (held in `run.heldShots` meanwhile). This covers aimed volleys that had no warning:
+    - a miniboss's fan of arrows;
+    - the sand spread, seed volleys and bubble fan bosses;
+    - the outlaw's sweeping gunfire.
+  - **Rings and spirals** (rubber-ball rings, jelly, ghost and spore spirals) keep their slow, visible projectiles
+    as their own warning: lanes for those would bury the screen.
+  - **Sea:**
+    - Musket pirates show their aim lane at the ship for 0.9 s and fire down it.
+    - The pirate captain's cannon volley shows its five lanes while the crew loads.
+  - **Bug:** warnings added with `addTele` were never drawn at sea (only the hazards' own landing circles were), so
+    even the pirate captain's ram lane was invisible. `emitTelegraphs` now draws them on land and at sea.
+  - `test/_tele.mjs` checks these.
+- **Slot bar:**
+  - It was a fixed grid of 4 skill and 4 passive columns. At sea (5 skill slots) the fifth skill box was squeezed
+    into the thin gap column and the fourth passive wrapped onto a second line.
+  - It now has a column per slot and widens a little for nine, so it is one row everywhere: 5 + 4 at sea, 4 + 4 on
+    land.
+- **Culling, measured in frames** (`test/_cullfps.mjs`, SwiftShader, culling on vs off):
+  - Chapter 7 with 260 foes: 262 -> 239 ms a frame (9% faster).
+  - Ocean 5 mid-run: 502 -> 490 ms (2%).
+  - The gain is small because most of a frame is pixel work (the blob, the floor, the water), and enemies walking
+    in from just past the edge are seldom wholly off screen.
+
+## Squid tentacles, off-screen culling, see-through buildings from anywhere
 - **Squid costume** (sea costumes):
   - Six long, limp tentacles (07-hero.js, legs 'tentacles') droop from under the body to the floor and lie spread out
     on it in an S, thick to the end with rounded tips.

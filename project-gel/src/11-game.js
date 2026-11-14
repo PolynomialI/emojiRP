@@ -701,10 +701,16 @@ function updateEnemyAI(e, dt) {
     if (e.aim > 0) {
       want = 0;
       e.aim += dt;
-      if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 3.2; }
+      if (e.aimDir) e.yaw = angleLerp(e.yaw, Math.atan2(e.aimDir[0], e.aimDir[1]), Math.min(1, dt * 12));
+      if (e.aim > 0.45) { fireArrow(e); e.aim = 0; e.reload = 3.2; e.aimDir = null; }
     } else {
       e.reload -= dt;
-      if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) { e.aim = 0.001; if (e.def.shotKind !== 'bullet') AUDIO.play('throw'); }
+      if (d < 6.5 && e.reload <= 0 && onScreen(e.x, e.z, -0.5)) {
+        e.aim = 0.001; if (e.def.shotKind !== 'bullet') AUDIO.play('throw');
+        // the aim locks where the blob is now and shows as a lane; the shot flies down it (step aside to dodge)
+        e.aimDir = [dx, dz];
+        addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.2, len: Math.min(12, (e.def.shotSpeed || 10) * 1.2), rot: Math.atan2(dx, dz), dur: 0.45 });
+      }
       if (d < 4.5) want = -e.speed * 0.6;
     }
   }
@@ -712,7 +718,7 @@ function updateEnemyAI(e, dt) {
   const k = 1 - Math.exp(-8 * dt);
   e.vx += (tvx - e.vx) * k; e.vz += (tvz - e.vz) * k;
   e.x += e.vx * dt; e.z += e.vz * dt;
-  e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
+  if (!(e.aim > 0 && e.aimDir)) e.yaw = angleLerp(e.yaw, Math.atan2(dx, dz), Math.min(1, dt * 10));
   e.phase += dt * Math.hypot(e.vx, e.vz) / (0.85 * e.scale);
 }
 
@@ -846,12 +852,14 @@ function throwJavelin(e, dmg) {
 
 function fireArrow(e) {
   if (e.def.shotKind === 'bullet') AUDIO.play('bang');
-  const h = G.hero.pos, dx = h[0] - e.x, dz = h[2] - e.z, d = Math.hypot(dx, dz) || 1;
+  const h = G.hero.pos, dx = e.aimDir ? e.aimDir[0] : h[0] - e.x, dz = e.aimDir ? e.aimDir[1] : h[2] - e.z, d = Math.hypot(dx, dz) || 1;
   G.run.eShots.push({ kind: e.def.shotKind || 'arrow', ph: rand(0, 10), x: e.x + dx / d * 0.4, y: 0.75, z: e.z + dz / d * 0.4, vx: dx / d * (e.def.shotSpeed || 10), vy: 0, vz: dz / d * (e.def.shotSpeed || 10), dmg: e.def.shot * G.run.info.dmgMul * (e.elite ? 2 : 1), r: 0.2, life: 1.2 });
 }
 
 function updateEnemyShots(dt) {
   const run = G.run, h = G.hero.pos;
+  // telegraphed shots fly once their warning has run
+  if (run.heldShots && run.heldShots.length) { for (const q of run.heldShots) if ((q.t -= dt) <= 0) run.eShots.push(q.s); run.heldShots = run.heldShots.filter(q => q.t > 0); }
   for (const s of run.eShots) {
     s.life -= dt;
     if (s.kind === 'javelin') {

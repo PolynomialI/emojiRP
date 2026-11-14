@@ -56,6 +56,14 @@ function spawnBoss(id, x, z, opts) {
 
 // Telegraphs drawn on the floor: { kind: 'circle'|'lane', x, z, r, len, rot, t, dur }
 function addTele(o) { G.run.tele = G.run.tele || []; const t = { t: 0, ...o }; G.run.tele.push(t); return t; }
+// a telegraphed shot: its path shows as a red lane for TELE_SHOT seconds, then it flies down that lane (aimed
+// volleys: a boss's spread, a miniboss's fan of arrows, a gunslinger's sweep). Held in run.heldShots meanwhile.
+const TELE_SHOT = 0.5;
+function teleShot(s) {
+  const sp = Math.hypot(s.vx, s.vz) || 1;
+  addTele({ kind: 'lane', x: s.x, z: s.z, r: Math.max(0.22, s.r || 0.25), len: Math.min(13, sp * Math.min(s.life || 2, 2.5)), rot: Math.atan2(s.vx, s.vz), dur: TELE_SHOT });
+  (G.run.heldShots = G.run.heldShots || []).push({ s, t: TELE_SHOT });
+}
 
 function bossFace(e, dt, rate = 6) { const h = G.hero.pos; e.yaw = angleLerp(e.yaw, Math.atan2(h[0] - e.x, h[2] - e.z), Math.min(1, dt * rate)); }
 function bossWalk(e, dt, tx, tz, speed) {
@@ -359,6 +367,19 @@ function emitBossGrandeur(e) {
     FX.glow(e.x + Math.cos(q) * e.radius * 0.7, y, e.z + Math.sin(q) * e.radius * 0.7, 0.35, ac, 0.3, 0.8);
   }
 }
+// the warnings: red circles, lanes and wedges filling up until the attack lands (on land and at sea)
+function emitTelegraphs(run) {
+  if (run.tele) for (const t of run.tele) {
+    // hold: a danger that is already live (drawn full) rather than one filling up to strike
+    const p = t.hold ? 1 : clamp(t.t / t.dur, 0, 1);
+    if (t.kind === 'circle') pushDecal(t.x, t.z, t.r, t.r, 0, 4, 0, p, 1, 0.22, 0.18, 0.9);
+    else if (t.kind === 'cone') pushDecal(t.x, t.z, t.r, t.r, -t.rot, 10, t.half, p, 1, 0.22, 0.18, 0.8);
+    else {
+      const cx = t.x + Math.sin(t.rot) * t.len / 2, cz = t.z + Math.cos(t.rot) * t.len / 2;
+      pushDecal(cx, cz, t.r, t.len / 2, -t.rot, 5, 0, p, 1, 0.22, 0.18, 0.85);
+    }
+  }
+}
 function emitRunScene() {
   const run = G.run, h = G.hero.pos, L = R.frame.lightDir;
   const sdx = -L[0] * 0.5, sdz = -L[2] * 0.5;
@@ -392,16 +413,7 @@ function emitRunScene() {
     R.ribStrip(pts, n, 0.25, [1, 0.5, 0.15, 0.35], 0, 0, 1);
   }
   // telegraphs
-  if (run.tele) for (const t of run.tele) {
-    // hold: a danger that is already live (drawn full) rather than one filling up to strike
-    const p = t.hold ? 1 : clamp(t.t / t.dur, 0, 1);
-    if (t.kind === 'circle') pushDecal(t.x, t.z, t.r, t.r, 0, 4, 0, p, 1, 0.22, 0.18, 0.9);
-    else if (t.kind === 'cone') pushDecal(t.x, t.z, t.r, t.r, -t.rot, 10, t.half, p, 1, 0.22, 0.18, 0.8);
-    else {
-      const cx = t.x + Math.sin(t.rot) * t.len / 2, cz = t.z + Math.cos(t.rot) * t.len / 2;
-      pushDecal(cx, cz, t.r, t.len / 2, -t.rot, 5, 0, p, 1, 0.22, 0.18, 0.85);
-    }
-  }
+  emitTelegraphs(run);
   // enemy shots
   for (const s of run.eShots) {
     if (s.kind === 'arrow') { const sp = Math.hypot(s.vx, s.vz) || 1; pushImp(s.x, s.y, s.z, 0.32, s.vx / sp, 0, s.vz / sp, 1, 14, 0, 0, 0, 0, 0, 0, 1); }

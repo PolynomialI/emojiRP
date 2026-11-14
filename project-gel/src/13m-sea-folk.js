@@ -81,7 +81,8 @@ SEA_AI.pmusket = (e, dt) => {
     e.aimT -= dt;
     e.act = { clip: 'aim', u: clamp(1 - e.aimT / 0.9, 0, 0.999) };
     if (e.aimT <= 0) {
-      const tx = S.x + S.vx * 0.4, tz = S.z + S.vz * 0.4, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
+      // (down the lane shown while it aimed)
+      const dx = e.aimDir[0], dz = e.aimDir[1], l = Math.hypot(dx, dz) || 1;
       OC.hz.push({ k: 'ball', x: e.x + dx / l * 0.5, y: e.y + 1.0, z: e.z + dz / l * 0.5, vx: dx / l * 13, vz: dz / l * 13, life: 2, dmg: e.dmg });
       FX.smoke(e.x + dx / l * 0.6, e.y + 1.0, e.z + dz / l * 0.6, 0.3, [0.92, 0.92, 0.95], 0.6, 0.8);
       AUDIO.play('bang', 1.2);
@@ -89,7 +90,13 @@ SEA_AI.pmusket = (e, dt) => {
     }
   } else {
     e.act = { clip: 'idle', u: e.phase % 1 };
-    if (e.reload <= 0 && d < 17 && !OC.sink) e.aimT = 0.9;
+    if (e.reload <= 0 && d < 17 && !OC.sink) {
+      // it aims where the ship is heading and shows the shot's line: steer out of it
+      e.aimT = 0.9;
+      const tx = S.x + S.vx * 0.9, tz = S.z + S.vz * 0.9, dx = tx - e.x, dz = tz - e.z, l = Math.hypot(dx, dz) || 1;
+      e.aimDir = [dx / l, dz / l];
+      addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.5, len: Math.min(20, l + 4), rot: Math.atan2(dx, dz), dur: 0.9 });
+    }
   }
   return true;
 };
@@ -247,7 +254,11 @@ SEA_AI.pcapt = (e, dt) => {
       const a = e.atk[ai.n++ % e.atk.length];
       if (a === 'ram') { ai.state = 'aim'; ai.t = 1.1; ai.tele = addTele({ kind: 'lane', x: e.x, z: e.z, r: e.radius, len: d + 4, rot: Math.atan2(dx, dz), dur: 1.1 }); }
       else if (a === 'bombs') { ai.state = 'throw'; ai.t = 0.8; ai.thrown = 0; }
-      else if (a === 'volley') { ai.state = 'volley'; ai.t = 0.6; }
+      else if (a === 'volley') {
+        // five cannonballs fanned at the ship: their lines show while the crew loads
+        ai.state = 'volley'; ai.t = 0.6; ai.a0 = Math.atan2(dx, dz);
+        for (let k = -2; k <= 2; k++) addTele({ kind: 'lane', x: e.x, z: e.z, r: 0.45, len: 20, rot: ai.a0 + k * 0.16, dur: 0.6 });
+      }
       else { ai.state = 'call'; ai.t = 0.7; }
     }
   } else if (ai.state === 'aim') {
@@ -278,7 +289,7 @@ SEA_AI.pcapt = (e, dt) => {
   } else if (ai.state === 'volley') {
     e.vx *= 0.9; e.vz *= 0.9;
     if (ai.t <= 0) {
-      const a0 = Math.atan2(dx, dz);
+      const a0 = ai.a0 ?? Math.atan2(dx, dz);
       for (let k = -2; k <= 2; k++) { const a = a0 + k * 0.16; OC.hz.push({ k: 'ball', x: e.x, y: 1.4, z: e.z, vx: Math.sin(a) * 12, vz: Math.cos(a) * 12, life: 2, dmg: e.dmg * 0.4 }); }
       FX.smoke(e.x, 1.5, e.z, 0.6, [0.92, 0.92, 0.95], 0.7, 1); AUDIO.play('bang');
       ai.state = 'circle'; ai.t = 2.4;

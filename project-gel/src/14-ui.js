@@ -485,7 +485,11 @@ const UI = {
         }
         if (kind === 'skill') { const gap = document.createElement('span'); gap.className = 'slot-gap'; cells.push(gap); }
       }
-      $('slots').replaceChildren(...cells);
+      // one row however many slots there are (the sea has a fifth skill slot): a column each, the gap between
+      const nS = slotLimit('skill'), nP = slotLimit('passive'), box = $('slots');
+      box.style.gridTemplateColumns = `repeat(${nS}, minmax(0, 1fr)) 6px repeat(${nP}, minmax(0, 1fr))`;
+      box.style.maxWidth = Math.round(450 * (nS + nP) / 8) + 'px';
+      box.replaceChildren(...cells);
     }
     this.updateAbilities(run);
     // the chapter bar fills toward the boss, then shows the boss's health (in the cave: the rooms, then the Bagger)

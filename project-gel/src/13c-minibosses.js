@@ -137,7 +137,7 @@ function updateMini(e, dt) {
         const n = 7, base = Math.atan2(dx, dz), step = 1.2 / (n - 1);
         for (let i = 0; i < n; i++) {
           const a = base + (i - (n - 1) / 2) * step + (ai.volleys % 2 ? step / 2 : 0), sp = 7;
-          run.eShots.push({ kind: M.shot || 'arrow', x: e.x + Math.sin(a) * 0.6 * s / 2, y: 0.9, z: e.z + Math.cos(a) * 0.6 * s / 2, vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: e.dmg * 0.9, r: 0.3, life: 2.4, ph: rand(0, 10), spin: rand(0, TAU) });
+          teleShot({ kind: M.shot || 'arrow', x: e.x + Math.sin(a) * 0.6 * s / 2, y: 0.9, z: e.z + Math.cos(a) * 0.6 * s / 2, vx: Math.sin(a) * sp, vy: 0, vz: Math.cos(a) * sp, dmg: e.dmg * 0.9, r: 0.3, life: 2.4, ph: rand(0, 10), spin: rand(0, TAU) });
         }
         AUDIO.play('throw');
         if (--ai.volleys > 0) ai.t = 0.45; else toWalk();

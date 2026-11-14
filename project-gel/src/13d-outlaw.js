@@ -63,7 +63,7 @@ BOSS_AI.outlaw = function (e, dt, d, dx, dz) {
         ai.shotT += 0.045;
         const u = ai.shots / (n - 1), rot = e.yaw + (u * 2 - 1) * half * sweep;
         outlawGun(e, ai.shots % 2, _gun);
-        run.eShots.push({ kind: 'bullet', ph: 0, x: _gun[0], y: 1.5, z: _gun[2], vx: Math.sin(rot) * OUTLAW.bulletV, vy: -0.3, vz: Math.cos(rot) * OUTLAW.bulletV, dmg: 9 * run.info.dmgMul, r: 0.24, life: 1.1 });
+        teleShot({ kind: 'bullet', ph: 0, x: _gun[0], y: 1.5, z: _gun[2], vx: Math.sin(rot) * OUTLAW.bulletV, vy: -0.3, vz: Math.cos(rot) * OUTLAW.bulletV, dmg: 9 * run.info.dmgMul, r: 0.24, life: 1.1 });
         FX.glow(_gun[0], _gun[1], _gun[2], 0.9, [1, 0.85, 0.45], 0.06, 1); FX.smoke(_gun[0], _gun[1], _gun[2], 0.35, [0.8, 0.78, 0.75], 0.5, 0.4);
         AUDIO.play('bang');
         ai.shots++;

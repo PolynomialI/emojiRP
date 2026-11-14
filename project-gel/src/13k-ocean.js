@@ -639,6 +639,8 @@ function emitSea() {
   const fog = SEA_CHAPTERS[run.chapter - 1].fogK || 1;
   f.spot = [S.x, 0, S.z, 1e4]; f.fogRange = [60 * SEA.view * fog * fog, 140 * SEA.view * fog];
   SCENE.arenaBox = null; SCENE.pools = [];
+  // (warnings used to be drawn only on land: the pirate captain's ram lane, the musket pirates' aim)
+  emitTelegraphs(run);
   // the ship (or its pieces)
   if (OC.sink) {
     for (const P of OC.sink.pieces) {

@@ -129,7 +129,7 @@ BOSS_AI.sandworm = function (e, dt, d, dx, dz) {
         const n = rage ? 9 : 7, base = Math.atan2(dx, dz);
         for (let i = 0; i < n; i++) {
           const a = base + (i / (n - 1) - 0.5) * 1.4 + (ai.fired - 1) * 0.08;
-          run.eShots.push({ kind: 'sand', x: e.x, y: 1.1, z: e.z, vx: Math.sin(a) * 6.5, vy: 0, vz: Math.cos(a) * 6.5, dmg: 10 * run.info.dmgMul, r: 0.35, life: 2.6, ph: rand(0, 10) });
+          teleShot({ kind: 'sand', x: e.x, y: 1.1, z: e.z, vx: Math.sin(a) * 6.5, vy: 0, vz: Math.cos(a) * 6.5, dmg: 10 * run.info.dmgMul, r: 0.35, life: 2.6, ph: rand(0, 10) });
         }
         AUDIO.play('throw');
       }
@@ -818,7 +818,7 @@ BOSS_AI.hydra = function (e, dt, d, dx, dz) {
           const base = Math.atan2(h[0] - hd.x, h[2] - hd.z), m = rage ? 4 : 3;
           for (let j = 0; j < m; j++) {
             const a = base + (j - (m - 1) / 2) * 0.24 + (ai.volley === 2 ? 0.12 : 0);
-            run.eShots.push({ kind: 'seed', x: hd.x, y: 1.0, z: hd.z, vx: Math.sin(a) * 7.5, vy: 0, vz: Math.cos(a) * 7.5, dmg: 12 * run.info.dmgMul, r: 0.26, life: 4, ph: rand(0, 10) });
+            teleShot({ kind: 'seed', x: hd.x, y: 1.0, z: hd.z, vx: Math.sin(a) * 7.5, vy: 0, vz: Math.cos(a) * 7.5, dmg: 12 * run.info.dmgMul, r: 0.26, life: 4, ph: rand(0, 10) });
           }
           hd.recoil = 1;
         }
@@ -953,7 +953,7 @@ BOSS_AI.crab = function (e, dt, d, dx, dz) {
         const n = rage ? 11 : 8, base = Math.atan2(dx, dz);
         for (let i = 0; i < n; i++) {
           const a = base + (i - (n - 1) / 2) * (1.9 / (n - 1));
-          run.eShots.push({ kind: 'bubble', x: e.x + Math.sin(a) * 1.8, y: 1, z: e.z + Math.cos(a) * 1.8, vx: Math.sin(a) * 2.6, vy: 0, vz: Math.cos(a) * 2.6, dmg: 14 * run.info.dmgMul, r: 0.5, life: 6, home: 0.5, ph: rand(0, 10) });
+          teleShot({ kind: 'bubble', x: e.x + Math.sin(a) * 1.8, y: 1, z: e.z + Math.cos(a) * 1.8, vx: Math.sin(a) * 2.6, vy: 0, vz: Math.cos(a) * 2.6, dmg: 14 * run.info.dmgMul, r: 0.5, life: 6, home: 0.5, ph: rand(0, 10) });
         }
         AUDIO.play('split', 1.4);
       }
